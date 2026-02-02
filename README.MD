@@ -1,5 +1,5 @@
 
-####### Budget Buddy
+###### Buddy
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy_Project.png)
 Budget Buddy is a Streamlit-based analytical assistant designed to support U.S. Federal budget
 analysts, financial managers, and policy professionals. It integrates large language models (LLMs),
