@@ -58,12 +58,13 @@ These fine-tuned models improve:
 
 - Financial guidance common across all federal agencies.
 
+- [![HuggingFace](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-sm.svg)](https://huggingface.co/datasets/leeroy-jankins/Regulations)
+
 | File Name | Description |
 |----------|-------------|
 | Balanced Budget and Emergency Deficit Control Act of 1985 | Establishes statutory limits on federal spending and deficit control mechanisms, including sequestration procedures. |
 | Budget Control Act of 2011 | Sets discretionary spending caps and establishes enforcement mechanisms to control federal deficits. |
 | Digital Accountability And Transparency Act of 2014 | Requires standardized federal spending data and improved transparency through government‑wide financial reporting. |
-| DOD Logo Overview | Provides official guidance on the authorized use and representation of Department of Defense logos and insignia. |
 | Federal Account Symbols And Titles Book | Defines Treasury account symbols and official titles used for federal budgetary and accounting purposes. |
 | Federal Acquisition Regulation | Establishes uniform policies and procedures governing the acquisition of goods and services by federal agencies. |
 | Federal Government Standards For Internal Controls | Defines the internal control framework for federal agencies to ensure accountability, integrity, and compliance. |
@@ -105,7 +106,9 @@ These fine-tuned models improve:
 
 ## Department of War Guidance
 
-- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.
+- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.\
+
+- [![HuggingFace](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-sm.svg)](https://huggingface.co/datasets/leeroy-jankins/Regulations)
 
 | File Name | Description |
 |----------|-------------|
