@@ -1,7 +1,7 @@
 
 ###### Buddy
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy_Project.png)
-Budget Buddy is a Streamlit-based analytical assistant designed to support U.S. Federal budget
+Budget Buddy is an AI tool designed to support U.S. Federal budget
 analysts, financial managers, and policy professionals. It integrates large language models (LLMs),
 retrieval-augmented generation (RAG), semantic search, and structured prompt governance to assist
 with interpretation of budget guidance, execution data, and authoritative financial policy
