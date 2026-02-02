@@ -11,7 +11,7 @@ The application is integrated with **GPT-5.2**, including **fine-tuned LLMs host
 **, trained on curated budgetary, financial, and policy datasets—particularly those reflected in the
 guidance tables and execution data described below.
 
----
+
 
 ## Core Capabilities
 
@@ -22,7 +22,7 @@ guidance tables and execution data described below.
 * Prompt and system-instruction version control
 * Exportable analytical outputs (Markdown, PDF)
 
----
+
 
 ## Model Integration
 
@@ -51,7 +51,7 @@ These fine-tuned models improve:
 * Terminology alignment (OMB, DoD, Treasury, GAO)
 * Consistency when answering budget and execution questions
 
----
+
 
 ## Guidance Corpus (Current)
 
@@ -168,7 +168,7 @@ service to agency budget and finance offices and other interested parties, the u
 submitted by the agencies.
 
 
----
+
 
 ## Application Features
 
@@ -225,7 +225,7 @@ This enables controlled experimentation and governance of AI behavior.
 * Export chat history as Markdown or PDF
 * Designed for briefings, documentation, and archival use
 
----
+
 
 ## Data Storage & Architecture
 
@@ -240,7 +240,7 @@ This enables controlled experimentation and governance of AI behavior.
     * Centralized prompt registries
     * Multi-user or shared analytical environments
 
----
+
 
 ## Intended Users
 
@@ -250,7 +250,7 @@ This enables controlled experimentation and governance of AI behavior.
 * Data scientists supporting budget formulation and execution
 * Program and portfolio analysts requiring explainable AI assistance
 
----
+
 
 ## Disclaimer
 
