@@ -1,19 +1,6 @@
-Below is a **revised, tighter `README.md`** for **Budget Buddy**, now **explicitly grounded in the
-attached guidance tables** and the current `app.py`, and clearly describing the **GPT-5.2 +
-fine-tuned Hugging Face model integration** without over-claiming.
 
-This version is suitable for:
-
-* a public or internal GitHub repo,
-* Streamlit / Hugging Face Spaces deployment,
-* or SES / senior-leader technical review.
-
----
-
-# Budget Buddy
-
-**AI for Budget Analysts**
-
+####### Budget Buddy
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy_Project.png)
 Budget Buddy is a Streamlit-based analytical assistant designed to support U.S. Federal budget
 analysts, financial managers, and policy professionals. It integrates large language models (LLMs),
 retrieval-augmented generation (RAG), semantic search, and structured prompt governance to assist
