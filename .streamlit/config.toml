@@ -1,0 +1,8 @@
+[theme]
+base = 'dark'
+primaryColor = "#0078FC"
+backgroundColor = "#141414"
+secondaryBackgroundColor = "#3C3C3C"
+textColor = "#FAFAFA"
+font = "Roboto"
+showSidebarBorder = true

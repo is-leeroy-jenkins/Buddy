@@ -1,0 +1,6 @@
+openai
+typing
+sentence-transformers>=2.6.1
+numpy>=1.26.0
+reportlab>=4.0.8
+openai
