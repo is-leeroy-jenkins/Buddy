@@ -9,9 +9,9 @@ retrieval-augmented generation (RAG), semantic search, and structured prompt gov
 with interpretation of budget guidance, execution data, and authoritative financial policy
 documents.
 
-The application is integrated with **GPT-5.2**, including **fine-tuned LLMs hosted on Hugging Face
-**, trained on curated budgetary, financial, and policy datasets—particularly those reflected in the
-guidance tables and execution data described below.
+Buddy is integrated with **GPT-5.2** and **fine-tuned** on datasets on vectorized budget execution 
+and policy datasets hosted on Huggingface:
+
 
 
 
