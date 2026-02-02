@@ -60,7 +60,7 @@ limited to—the following categories reflected in the attached tables:
 
 
 
-#### Department of War Guidance
+## Department of War Guidance
 
 - Support for DoD-specific budget formulation, execution, audit, and compliance analysis.
 
@@ -96,54 +96,54 @@ limited to—the following categories reflected in the attached tables:
 | Records Management Standards DTM 22‑001  | Establishes mandatory standards for managing, retaining, and disposing of DoD records. |
 | Use Of Non‑Government Owned Mobile Devices.  | Provides policy governing the use of personally owned mobile devices for official DoD activities. |
 
-#### Federal Budget Guidance
+## Federal Budget Guidance
 
 - Financial guidance common across all agencies. 
 
 | File Name | Description |
 |----------|-------------|
-| Balanced Budget and Emergency Deficit Control Act of 1985.pdf | Establishes statutory limits on federal spending and deficit control mechanisms, including sequestration procedures. |
-| Budget Control Act of 2011.pdf | Sets discretionary spending caps and establishes enforcement mechanisms to control federal deficits. |
-| Digital Accountability And Transparency Act of 2014.pdf | Requires standardized federal spending data and improved transparency through government‑wide financial reporting. |
-| DOD Logo Overview.pdf | Provides official guidance on the authorized use and representation of Department of Defense logos and insignia. |
-| Federal Account Symbols And Titles Book.pdf | Defines Treasury account symbols and official titles used for federal budgetary and accounting purposes. |
-| Federal Acquisition Regulation.pdf | Establishes uniform policies and procedures governing the acquisition of goods and services by federal agencies. |
-| Federal Government Standards For Internal Controls.pdf | Defines the internal control framework for federal agencies to ensure accountability, integrity, and compliance. |
-| Federal Managers Financial Integrity Act of 1982.pdf | Requires agencies to establish internal controls and report annually on their effectiveness. |
-| Federal Trust Fund Accounting Guide.pdf | Provides accounting guidance for the management and reporting of federal trust funds. |
-| Financial Management Regulations DOD 7000‑14‑R.pdf | Establishes DoD‑specific financial management policies, procedures, and accounting requirements. |
-| Fiscal Responsibility Act.pdf | Establishes statutory measures intended to improve fiscal discipline and control federal spending. |
-| Government Auditing Standards.pdf | Sets professional standards for audits of government organizations, programs, activities, and functions. |
-| Government Invoicing User Guide.pdf | Provides guidance on federal invoicing standards and processes for government transactions. |
-| Government Performance and Results Act of 1993.pdf | Requires agencies to engage in strategic planning and performance measurement to improve program effectiveness. |
-| GPRA Modernization Act of 2010.pdf | Updates GPRA by strengthening performance management, cross‑agency goals, and accountability. |
-| Incident Management Handbook.pdf | Provides guidance for managing and coordinating responses to incidents affecting government operations. |
-| Independent Offices Appropriation Act of 1953.pdf | Establishes authorities related to user fees and charges for services provided by federal agencies. |
-| Inspector General Act of 1978.pdf | Establishes Offices of Inspector General to conduct audits and investigations promoting efficiency and integrity. |
-| OMB Circular A‑11 Preparation Submission And Execution Of The Budget.pdf | Provides comprehensive guidance for preparing, submitting, and executing the President’s Budget. |
-| OMB Circular A‑11 Section 120 Apportionment Process.pdf | Defines the apportionment process used to control the rate of obligation of budgetary resources. |
-| OMB Circular A‑19 Legislative Coordination and Clearance.pdf | Establishes procedures for coordinating and clearing agency legislative proposals and testimony. |
-| OMB Circular A‑25 User Charges.pdf | Establishes federal policy for assessing user charges for government goods and services. |
-| OMB Circular A‑45 Rental and Construction of Government Quarters.pdf | Provides guidance on rental rates and construction policies for government‑owned housing. |
-| OMB Circular A‑76 Performance of Commercial Activities.pdf | Establishes policy for determining whether commercial activities should be performed by the government or private sector. |
-| OMB Circular A‑94 Discount Rates for Time‑Distributed Costs and Benefits.pdf | Provides discount rates and analytical guidance for benefit‑cost analysis of federal programs. |
-| OMB Circular A‑97 Services for State and Local Governments.pdf | Establishes policies for providing federal services to state and local governments. |
-| OMB Circular A‑123 Managements Responsibility for Enterprise Risk Management and Internal Control.pdf | Defines management responsibilities for internal control and enterprise risk management across federal agencies. |
-| OMB Circular A‑136 Financial Reporting Requirements.pdf | Establishes requirements for federal agency financial statements and reporting. |
-| Principles Of Federal Appropriations Law Volume One.pdf | Authoritative GAO guidance on foundational principles governing the use of federal appropriations. |
-| Principles Of Federal Appropriations Law Volume Two.pdf | Expands on appropriations law with detailed case law, interpretations, and applications. |
-| Statements of Federal Federal Financial Accounting Concepts and Standards.pdf | Establishes accounting concepts and standards for federal financial reporting. |
-| The Anti‑Deficiency Act PL 97‑258.pdf | Prohibits federal agencies from obligating or expending funds in excess of appropriations or before enactment. |
-| The Anti‑Deficiency Reform and Enforcement Act of 2018.pdf | Strengthens Anti‑Deficiency Act enforcement and reporting requirements to improve fiscal accountability. |
-| The Budget And Accounting Act of 1921.pdf | Establishes the federal budget process and created the Bureau of the Budget and the General Accounting Office. |
-| The Chief Financial Officers Act of 1990.pdf | Establishes agency Chief Financial Officers and modernizes federal financial management practices. |
-| The Congressional Budget and Impoundment Control Act of 1974.pdf | Establishes the congressional budget process and restricts executive impoundment of appropriated funds. |
-| The Economy Act of 1932.pdf | Authorizes interagency agreements for the provision of goods and services on a reimbursable basis. |
-| The Stafford Act.pdf | Provides the statutory framework for federal disaster response and emergency assistance. |
-| The Supplemental Appropriations Act 1955.pdf | Provides additional appropriations authority beyond regular annual funding acts. |
-| Title 2 Code of Federal Regulations – Uniform Administrative Requirements, Cost Principles, and Audit.pdf | Establishes uniform administrative, cost, and audit requirements for federal financial assistance. |
-| Title 31 Code of Federal Regulations – Money and Finance.pdf | Codifies Treasury and federal financial management regulations governing money and finance. |
-| US Standard General Ledger Account Definitions.pdf | Defines standardized account structures used for federal accounting and financial reporting. |
+| Balanced Budget and Emergency Deficit Control Act of 1985 | Establishes statutory limits on federal spending and deficit control mechanisms, including sequestration procedures. |
+| Budget Control Act of 2011 | Sets discretionary spending caps and establishes enforcement mechanisms to control federal deficits. |
+| Digital Accountability And Transparency Act of 2014 | Requires standardized federal spending data and improved transparency through government‑wide financial reporting. |
+| DOD Logo Overview | Provides official guidance on the authorized use and representation of Department of Defense logos and insignia. |
+| Federal Account Symbols And Titles Book | Defines Treasury account symbols and official titles used for federal budgetary and accounting purposes. |
+| Federal Acquisition Regulation | Establishes uniform policies and procedures governing the acquisition of goods and services by federal agencies. |
+| Federal Government Standards For Internal Controls | Defines the internal control framework for federal agencies to ensure accountability, integrity, and compliance. |
+| Federal Managers Financial Integrity Act of 1982 | Requires agencies to establish internal controls and report annually on their effectiveness. |
+| Federal Trust Fund Accounting Guide | Provides accounting guidance for the management and reporting of federal trust funds. |
+| Financial Management Regulations DOD 7000‑14‑R | Establishes DoD‑specific financial management policies, procedures, and accounting requirements. |
+| Fiscal Responsibility Act | Establishes statutory measures intended to improve fiscal discipline and control federal spending. |
+| Government Auditing Standards | Sets professional standards for audits of government organizations, programs, activities, and functions. |
+| Government Invoicing User Guide | Provides guidance on federal invoicing standards and processes for government transactions. |
+| Government Performance and Results Act of 1993 | Requires agencies to engage in strategic planning and performance measurement to improve program effectiveness. |
+| GPRA Modernization Act of 2010 | Updates GPRA by strengthening performance management, cross‑agency goals, and accountability. |
+| Incident Management Handbook | Provides guidance for managing and coordinating responses to incidents affecting government operations. |
+| Independent Offices Appropriation Act of 1953 | Establishes authorities related to user fees and charges for services provided by federal agencies. |
+| Inspector General Act of 1978 | Establishes Offices of Inspector General to conduct audits and investigations promoting efficiency and integrity. |
+| OMB Circular A‑11 Preparation Submission And Execution Of The Budget | Provides comprehensive guidance for preparing, submitting, and executing the President’s Budget. |
+| OMB Circular A‑11 Section 120 Apportionment Process | Defines the apportionment process used to control the rate of obligation of budgetary resources. |
+| OMB Circular A‑19 Legislative Coordination and Clearance | Establishes procedures for coordinating and clearing agency legislative proposals and testimony. |
+| OMB Circular A‑25 User Charges | Establishes federal policy for assessing user charges for government goods and services. |
+| OMB Circular A‑45 Rental and Construction of Government Quarters | Provides guidance on rental rates and construction policies for government‑owned housing. |
+| OMB Circular A‑76 Performance of Commercial Activities | Establishes policy for determining whether commercial activities should be performed by the government or private sector. |
+| OMB Circular A‑94 Discount Rates for Time‑Distributed Costs and Benefits | Provides discount rates and analytical guidance for benefit‑cost analysis of federal programs. |
+| OMB Circular A‑97 Services for State and Local Governments | Establishes policies for providing federal services to state and local governments. |
+| OMB Circular A‑123 Managements Responsibility for Enterprise Risk Management and Internal Control | Defines management responsibilities for internal control and enterprise risk management across federal agencies. |
+| OMB Circular A‑136 Financial Reporting Requirements | Establishes requirements for federal agency financial statements and reporting. |
+| Principles Of Federal Appropriations Law Volume One | Authoritative GAO guidance on foundational principles governing the use of federal appropriations. |
+| Principles Of Federal Appropriations Law Volume Two | Expands on appropriations law with detailed case law, interpretations, and applications. |
+| Statements of Federal Federal Financial Accounting Concepts and Standards | Establishes accounting concepts and standards for federal financial reporting. |
+| The Anti‑Deficiency Act PL 97‑258 | Prohibits federal agencies from obligating or expending funds in excess of appropriations or before enactment. |
+| The Anti‑Deficiency Reform and Enforcement Act of 2018 | Strengthens Anti‑Deficiency Act enforcement and reporting requirements to improve fiscal accountability. |
+| The Budget And Accounting Act of 1921 | Establishes the federal budget process and created the Bureau of the Budget and the General Accounting Office. |
+| The Chief Financial Officers Act of 1990 | Establishes agency Chief Financial Officers and modernizes federal financial management practices. |
+| The Congressional Budget and Impoundment Control Act of 1974 | Establishes the congressional budget process and restricts executive impoundment of appropriated funds. |
+| The Economy Act of 1932 | Authorizes interagency agreements for the provision of goods and services on a reimbursable basis. |
+| The Stafford Act | Provides the statutory framework for federal disaster response and emergency assistance. |
+| The Supplemental Appropriations Act 1955 | Provides additional appropriations authority beyond regular annual funding acts. |
+| Title 2 Code of Federal Regulations – Uniform Administrative Requirements, Cost Principles, and Audit | Establishes uniform administrative, cost, and audit requirements for federal financial assistance. |
+| Title 31 Code of Federal Regulations – Money and Finance | Codifies Treasury and federal financial management regulations governing money and finance. |
+| US Standard General Ledger Account Definitions | Defines standardized account structures used for federal accounting and financial reporting. |
 
 
 
