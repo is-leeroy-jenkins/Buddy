@@ -58,47 +58,9 @@ These fine-tuned models improve:
 Budget Buddy is explicitly designed to operate against authoritative guidance, including—but not
 limited to—the following categories reflected in the attached tables:
 
-
-
-## Department of War Guidance
-
-- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.
-
-| File Name | Description |
-|----------|-------------|
-| Access Management For DOD Information Systems DOD 8520‑04  | Establishes Department of Defense policy for identity, credential, and access management (ICAM) across DoD information systems. |
-| Acquisition Management Of Contractor‑Prepared Data DOD 5010‑12  | Defines requirements for managing, retaining, and accessing data produced by contractors during DoD acquisitions. |
-| Acquisition Transformation Strategy  | Outlines DoD‑wide strategic objectives for modernizing acquisition processes, governance, and workforce practices. |
-| Administrative Instruction DODAM 28  | Provides administrative procedures and internal management guidance under the DoD Administrative Management framework. |
-| Audit Manual DOD 7600‑07  | Establishes audit policies, responsibilities, and procedures for DoD financial and performance audits. |
-| Civilian Personnel Management System Payroll DOD 1400‑25‑v550  | Governs payroll administration within the DoD Civilian Personnel Management System (CPMS). |
-| Civilian Personnel Management System Performance DOD 1400‑25‑v430  | Defines performance management policies for DoD civilian employees, including evaluation and appraisal standards. |
-| Cybersecurity Reciprocity Playbook DOD 2024‑01‑02  | Provides guidance for reciprocal acceptance of cybersecurity authorizations across DoD components to reduce duplication. |
-| DevSecOps Fundamentals v2.5  | Introduces core principles, practices, and terminology for implementing DevSecOps in DoD environments. |
-| DevSecOps OSS Development  | Addresses the development and use of open‑source software within DoD DevSecOps pipelines. |
-| DevSecOps Playbook DODCIO 2021‑10‑19  | Official DoD CIO guidance for planning, implementing, and scaling DevSecOps capabilities. |
-| DevSecOps Reference Design AWS Managed Services DODCIO 2021‑10‑19  | Provides a reference architecture for deploying DevSecOps using AWS managed services in DoD contexts. |
-| DNS IP Address Use And Approval DOD 8410  | Establishes policy for allocation, registration, and approval of DNS names and IP address usage within DoD networks. |
-| DOD Cloud Reference Design Cloud GitHub Azure  | Reference architecture describing DoD‑approved cloud implementation patterns using Microsoft Azure. |
-| DOD AI Strategy  | Defines DoD objectives, priorities, and governance principles for artificial intelligence adoption. |
-| Emergency Management Program DOD 6055‑17  | Establishes policy for preparedness, response, recovery, and mitigation of emergencies affecting DoD operations. |
-| Forms Management Program DOD 7750‑08  | Governs the lifecycle management of DoD forms, including standardization and control. |
-| Information Network Transport DOD 8010‑01  | Provides policy for managing DoD network transport infrastructure and communications pathways. |
-| Information Technology Standards DOD 8310‑01  | Establishes requirements for adopting and enforcing IT standards across the Department of Defense. |
-| Infosec Program and Securing SCI DOD 5200‑01p  | Governs information security programs, including the protection of Sensitive Compartmented Information (SCI). |
-| Management Of DOD IE DOD 8000‑01  | Establishes governance for managing the DoD Information Enterprise (IE). |
-| Multifactor Authentication DOD Networks  | Defines requirements for implementing MFA across DoD network environments to strengthen access security. |
-| National Defense Strategy 2026  | Sets strategic defense priorities, threats, and force‑planning guidance for the Department of Defense. |
-| Online Information Management And Electronic Messaging DOD 8170‑01  | Establishes policy for managing official DoD online content and electronic communications. |
-| OPSEC Manual DOD 5205‑02  | Provides policy and procedures for Operations Security to protect critical information from adversaries. |
-| Personnel Identity Protection Program DOD 1000‑25  | Establishes policies for identity protection and credentialing of DoD personnel. |
-| PPBE Reform Activities FY2026  | Describes planned reforms to the Planning, Programming, Budgeting, and Execution (PPBE) process for FY2026. |
-| Records Management Standards DTM 22‑001  | Establishes mandatory standards for managing, retaining, and disposing of DoD records. |
-| Use Of Non‑Government Owned Mobile Devices.  | Provides policy governing the use of personally owned mobile devices for official DoD activities. |
-
 ## Federal Budget Guidance
 
-- Financial guidance common across all agencies. 
+- Financial guidance common across all federal agencies.
 
 | File Name | Description |
 |----------|-------------|
@@ -145,7 +107,41 @@ limited to—the following categories reflected in the attached tables:
 | Title 31 Code of Federal Regulations – Money and Finance | Codifies Treasury and federal financial management regulations governing money and finance. |
 | US Standard General Ledger Account Definitions | Defines standardized account structures used for federal accounting and financial reporting. |
 
+## Department of War Guidance
 
+- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.
+
+| File Name | Description |
+|----------|-------------|
+| Access Management For DOD Information Systems DOD 8520‑04  | Establishes Department of Defense policy for identity, credential, and access management (ICAM) across DoD information systems. |
+| Acquisition Management Of Contractor‑Prepared Data DOD 5010‑12  | Defines requirements for managing, retaining, and accessing data produced by contractors during DoD acquisitions. |
+| Acquisition Transformation Strategy  | Outlines DoD‑wide strategic objectives for modernizing acquisition processes, governance, and workforce practices. |
+| Administrative Instruction DODAM 28  | Provides administrative procedures and internal management guidance under the DoD Administrative Management framework. |
+| Audit Manual DOD 7600‑07  | Establishes audit policies, responsibilities, and procedures for DoD financial and performance audits. |
+| Civilian Personnel Management System Payroll DOD 1400‑25‑v550  | Governs payroll administration within the DoD Civilian Personnel Management System (CPMS). |
+| Civilian Personnel Management System Performance DOD 1400‑25‑v430  | Defines performance management policies for DoD civilian employees, including evaluation and appraisal standards. |
+| Cybersecurity Reciprocity Playbook DOD 2024‑01‑02  | Provides guidance for reciprocal acceptance of cybersecurity authorizations across DoD components to reduce duplication. |
+| DevSecOps Fundamentals v2.5  | Introduces core principles, practices, and terminology for implementing DevSecOps in DoD environments. |
+| DevSecOps OSS Development  | Addresses the development and use of open‑source software within DoD DevSecOps pipelines. |
+| DevSecOps Playbook DODCIO 2021‑10‑19  | Official DoD CIO guidance for planning, implementing, and scaling DevSecOps capabilities. |
+| DevSecOps Reference Design AWS Managed Services DODCIO 2021‑10‑19  | Provides a reference architecture for deploying DevSecOps using AWS managed services in DoD contexts. |
+| DNS IP Address Use And Approval DOD 8410  | Establishes policy for allocation, registration, and approval of DNS names and IP address usage within DoD networks. |
+| DOD Cloud Reference Design Cloud GitHub Azure  | Reference architecture describing DoD‑approved cloud implementation patterns using Microsoft Azure. |
+| DOD AI Strategy  | Defines DoD objectives, priorities, and governance principles for artificial intelligence adoption. |
+| Emergency Management Program DOD 6055‑17  | Establishes policy for preparedness, response, recovery, and mitigation of emergencies affecting DoD operations. |
+| Forms Management Program DOD 7750‑08  | Governs the lifecycle management of DoD forms, including standardization and control. |
+| Information Network Transport DOD 8010‑01  | Provides policy for managing DoD network transport infrastructure and communications pathways. |
+| Information Technology Standards DOD 8310‑01  | Establishes requirements for adopting and enforcing IT standards across the Department of Defense. |
+| Infosec Program and Securing SCI DOD 5200‑01p  | Governs information security programs, including the protection of Sensitive Compartmented Information (SCI). |
+| Management Of DOD IE DOD 8000‑01  | Establishes governance for managing the DoD Information Enterprise (IE). |
+| Multifactor Authentication DOD Networks  | Defines requirements for implementing MFA across DoD network environments to strengthen access security. |
+| National Defense Strategy 2026  | Sets strategic defense priorities, threats, and force‑planning guidance for the Department of Defense. |
+| Online Information Management And Electronic Messaging DOD 8170‑01  | Establishes policy for managing official DoD online content and electronic communications. |
+| OPSEC Manual DOD 5205‑02  | Provides policy and procedures for Operations Security to protect critical information from adversaries. |
+| Personnel Identity Protection Program DOD 1000‑25  | Establishes policies for identity protection and credentialing of DoD personnel. |
+| PPBE Reform Activities FY2026  | Describes planned reforms to the Planning, Programming, Budgeting, and Execution (PPBE) process for FY2026. |
+| Records Management Standards DTM 22‑001  | Establishes mandatory standards for managing, retaining, and disposing of DoD records. |
+| Use Of Non‑Government Owned Mobile Devices.  | Provides policy governing the use of personally owned mobile devices for official DoD activities. |
 
 
 ## File A (Account Balances)
