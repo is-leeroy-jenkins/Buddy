@@ -148,11 +148,7 @@ limited to—the following categories reflected in the attached tables:
 
 
 
-## Execution & Reporting Data
-
-Budget Buddy is structured to support analysis of **federal budget execution data**, including:
-
-#### File A (Account Balances)
+## File A (Account Balances)
 
 - File A (Account Balances) is part of the package of data submitted to USAspending.gov every month by
 federal agencies, as required by the DATA Act. As part of the monthly submission process, agencies
@@ -163,7 +159,7 @@ Balance System (GTAS), or choose to upload their own custom File A data.
 reporting agency, with additional breakdown by Budget Function. It includes both award and non-award
 spending (grouped together), and crosswalks with the SF 133 report.
 
-#### SF 133 Report on Budget Execution and Budgetary Resources
+## SF 133 Report on Budget Execution and Budgetary Resources
 
 - The SF 133 Report on Budget Execution and Budgetary Resources fulfills the requirement in 31 U.S.C.
 1511 - 1514 that the President review Federal expenditures at least four times a year. 
