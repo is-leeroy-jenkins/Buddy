@@ -54,12 +54,6 @@ These fine-tuned models improve:
 * Consistency when answering budget and execution questions
 
 
-
-## Guidance Corpus (Current)
-
-Budget Buddy is explicitly designed to operate against authoritative guidance, including—but not
-limited to—the following categories reflected in the attached tables:
-
 ## Federal Budget Guidance
 
 - Financial guidance common across all federal agencies.
