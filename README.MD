@@ -24,8 +24,10 @@ and policy datasets hosted on Huggingface:
 * Prompt and system-instruction version control
 * Exportable analytical outputs (Markdown, PDF)
 
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
-
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy.gif)
+___
 ## Model Integration
 
 ### GPT-5.2 (Primary Inference Engine)
