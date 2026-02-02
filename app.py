@@ -45,7 +45,6 @@ from __future__ import annotations
 import streamlit as st
 import numpy as np
 import pandas as pd
-import streamlit_extras
 from openai import OpenAI
 import base64
 import io

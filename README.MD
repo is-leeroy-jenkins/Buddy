@@ -262,4 +262,4 @@ submissions, or policy actions.
 ## 📝 License
 
 - Buddy is published under
-  the [MIT General Public License v3](https://github.com/is-leeroy-jenkins/Boo/blob/main/LICENSE).
+  the [MIT General Public License v3 Jan 5, 2026](https://github.com/is-leeroy-jenkins/Boo/blob/main/LICENSE).
