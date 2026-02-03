@@ -46,12 +46,13 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from openai import OpenAI
+from PIL import Image, ImageFilter, ImageEnhance
 import base64
 import io
+from pathlib import Path
 import multiprocessing
 import os
 import sqlite3
-from pathlib import Path
 from typing import Any, Dict, List, Tuple, Optional
 import re
 from reportlab.lib.pagesizes import LETTER
@@ -79,6 +80,11 @@ PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 
 PROMPT_VERSION = '5'
 
+VECTOR_STORE_ID = ['vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0']
+
+FILE_ID = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt', 'file-WPmTsHFYDLGHbyERqJdyqv', 'file-DW5TuqYoEfqFfqFFsMXBvy',
+		'file-U8ExiB6aJunAeT6872HtEU', 'file-FHkNiF6Rv29eCkAWEagevT', 'file-XsjQorjtffHTWjth8EVnkL' ]
+
 TEXT_TYPES = { 'output_text' }
 
 MARKDOWN_HEADING_PATTERN: re.Pattern[ str ] = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
@@ -94,7 +100,7 @@ CPU_CORES = multiprocessing.cpu_count( )
 
 ANALYST = '❓'
 
-BUDDY_PATH = r'resources/buddy.png'
+BUDDY = '🧠'
 
 # ==============================================================================
 # UTILITIES
@@ -178,8 +184,6 @@ def markdown_converter( markdown: str ) -> str:
 			output.pop( )
 		return "\n".join( output )
 
-# --------------------------------------------------------------------------------------
-
 def image_to_base64( path: str ) -> str:
 	with open( path, "rb" ) as f:
 		return base64.b64encode( f.read( ) ).decode( )
@@ -195,24 +199,6 @@ def cosine_sim( a: np.ndarray, b: np.ndarray ) -> float:
 	denom = np.linalg.norm( a ) * np.linalg.norm( b )
 	return float( np.dot( a, b ) / denom ) if denom else 0.0
 
-def image_to_avatar_b64( path: str ) -> str:
-	"""
-		Purpose:
-		--------
-		Convert an image file into a Base64 data URI suitable for Streamlit chat avatars.
-	
-		Parameters:
-		-----------
-		path (str): Path to the image file.
-	
-		Returns:
-		--------
-		str: Base64-encoded data URI.
-	"""
-	data = Path( path ).read_bytes( )
-	encoded = base64.b64encode( data ).decode( "utf-8" )
-	return f"data:image/png;base64,{encoded}"
-
 # ==============================================================================
 # Configuration
 # ==============================================================================
@@ -221,7 +207,6 @@ client = OpenAI( )
 # ==============================================================================
 # Page Setup
 # ==============================================================================
-BUDDY = image_to_avatar_b64( BUDDY_PATH )
 
 AVATARS = { 'user': ANALYST, 'assistant': BUDDY, }
 
@@ -660,10 +645,34 @@ with tab_chat:
 			try:
 				with st.spinner( 'Analyzing Guidance and Data...' ):
 					response = client.responses.create(
-						prompt={ 'id': PROMPT_ID, 'version': PROMPT_VERSION },
-						input=[ { 'role': 'user', "content": full_input } ],
-						include=[ "web_search_call.action.sources", "code_interpreter_call.outputs",
+						prompt={
+								'id': PROMPT_ID,
+								'version': PROMPT_VERSION },
+						input=[
+								{
+										'role': 'user',
+										'content': full_input
+								}
 						],
+						tools=[
+								{
+										'type': 'file_search',
+										'vector_store_ids': VECTOR_STORE_IDS,
+								},
+								{
+										'type': 'web_search',
+										'user_location': { 'type': 'approximate' },
+										'search_context_size': 'medium',
+										'filters': { 'allowed_domains': [ 'www.congress.gov' ] },
+								},
+								{
+										'type': 'code_interpreter',
+										'container': { 'type': 'auto' }
+								},
+						],
+						include=[ 'file_search_call.sources', 'web_search_call.action.sources',
+								'code_interpreter_call.outputs', ],
+						store=True,
 					)
 				
 				answer = extract_answer( response )
