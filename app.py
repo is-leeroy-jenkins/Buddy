@@ -80,9 +80,9 @@ PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 
 PROMPT_VERSION = '5'
 
-VECTOR_STORE_ID = ['vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0']
+VECTOR_STORE_IDS = ['vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0']
 
-FILE_ID = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt', 'file-WPmTsHFYDLGHbyERqJdyqv', 'file-DW5TuqYoEfqFfqFFsMXBvy',
+FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt', 'file-WPmTsHFYDLGHbyERqJdyqv', 'file-DW5TuqYoEfqFfqFFsMXBvy',
 		'file-U8ExiB6aJunAeT6872HtEU', 'file-FHkNiF6Rv29eCkAWEagevT', 'file-XsjQorjtffHTWjth8EVnkL' ]
 
 TEXT_TYPES = { 'output_text' }
