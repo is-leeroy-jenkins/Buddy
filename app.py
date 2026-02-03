@@ -309,7 +309,7 @@ st.logo( LOGO, size='large', link=CRS )
 st.set_page_config( page_title=APP_TITLE, layout="wide",
 	page_icon=FAVICON, initial_sidebar_state='collapsed' )
 
-st.markdown( DOD_CSS, unsafe_allow_html=True )
+st.markdown( get_dod_css( dod_mode ), unsafe_allow_html=True )
 
 st.caption( APP_SUBTITLE )
 
