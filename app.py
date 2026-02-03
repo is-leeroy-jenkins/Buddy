@@ -77,7 +77,7 @@ APP_SUBTITLE = 'AI for Budget Analysts'
 
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 
-PROMPT_VERSION = '3'
+PROMPT_VERSION = '5'
 
 TEXT_TYPES = { 'output_text' }
 
@@ -94,19 +94,7 @@ CPU_CORES = multiprocessing.cpu_count( )
 
 ANALYST = '❓'
 
-BUDDY = r''
-# ==============================================================================
-# Configuration
-# ==============================================================================
-client = OpenAI( )
-
-# ==============================================================================
-# Page Setup
-# ==============================================================================
-st.logo( LOGO, size='large', link=CRS )
-st.set_page_config( page_title=APP_TITLE, layout="wide",
-	page_icon=FAVICON, initial_sidebar_state='collapsed' )
-st.caption( APP_SUBTITLE )
+BUDDY_PATH = r'resources/buddy.png'
 
 # ==============================================================================
 # UTILITIES
@@ -125,16 +113,16 @@ def xml_converter( text: str ) -> str:
 			str:
 				Markdown-formatted text using level-2 headings (##).
 	"""
-	markdown_blocks: List[ str ] = [ ]	
+	markdown_blocks: List[ str ] = [ ]
 	for match in XML_BLOCK_PATTERN.finditer( text ):
 		raw_tag: str = match.group( "tag" )
 		body: str = match.group( "body" ).strip( )
 		
 		# Humanize tag name for Markdown heading
-		heading: str = raw_tag.replace( "_", " " ).replace( "-", " " ).title( )		
+		heading: str = raw_tag.replace( "_", " " ).replace( "-", " " ).title( )
 		markdown_blocks.append( f"## {heading}" )
 		if body:
-			markdown_blocks.append( body )	
+			markdown_blocks.append( body )
 	return "\n\n".join( markdown_blocks )
 
 def markdown_converter( markdown: str ) -> str:
@@ -153,41 +141,42 @@ def markdown_converter( markdown: str ) -> str:
 			str:
 				XML-delimited text suitable for storage in the prompt database.
 				
-	"""	
+	"""
 	lines: List[ str ] = markdown.splitlines( )
-	output: List[ str ] = [ ]	
+	output: List[ str ] = [ ]
 	current_tag: Optional[ str ] = None
-	buffer: List[ str ] = [ ]	
+	buffer: List[ str ] = [ ]
+	
 	def flush( ) -> None:
 		"""
 		Emit the currently buffered section as an XML-delimited block.
 		"""
-		nonlocal current_tag, buffer		
+		nonlocal current_tag, buffer
 		if current_tag is None:
 			return
-		body: str = "\n".join( buffer ).strip( )		
+		body: str = "\n".join( buffer ).strip( )
 		output.append( f"<{current_tag}>" )
 		if body:
 			output.append( body )
 		output.append( f"</{current_tag}>" )
-		output.append( "" )		
+		output.append( "" )
 		buffer.clear( )
 		for line in lines:
-			match = MARKDOWN_HEADING_PATTERN.match( line )		
+			match = MARKDOWN_HEADING_PATTERN.match( line )
 			if match:
-				flush( )			
+				flush( )
 				title: str = match.group( 'title' )
-				current_tag = ( title.strip( ) .lower( )
-						.replace( ' ', '_' ) .replace( '-', '_' ) )
+				current_tag = (title.strip( ).lower( )
+				               .replace( ' ', '_' ).replace( '-', '_' ))
 			else:
 				if current_tag is not None:
-					buffer.append( line )	
+					buffer.append( line )
 		flush( )
 		
 		# Remove trailing whitespace blocks
 		while output and not output[ -1 ].strip( ):
 			output.pop( )
-		return "\n".join( output )                                              
+		return "\n".join( output )
 
 # --------------------------------------------------------------------------------------
 
@@ -223,6 +212,25 @@ def image_to_avatar_b64( path: str ) -> str:
 	data = Path( path ).read_bytes( )
 	encoded = base64.b64encode( data ).decode( "utf-8" )
 	return f"data:image/png;base64,{encoded}"
+
+# ==============================================================================
+# Configuration
+# ==============================================================================
+client = OpenAI( )
+
+# ==============================================================================
+# Page Setup
+# ==============================================================================
+BUDDY = image_to_avatar_b64( BUDDY_PATH )
+
+AVATARS = { 'user': ANALYST, 'assistant': BUDDY, }
+
+st.logo( LOGO, size='large', link=CRS )
+
+st.set_page_config( page_title=APP_TITLE, layout="wide",
+	page_icon=FAVICON, initial_sidebar_state='collapsed' )
+
+st.caption( APP_SUBTITLE )
 
 # ==============================================================================
 # Session State
@@ -641,14 +649,14 @@ with tab_chat:
 					'content': user_input }
 		)
 		
-		with st.chat_message( 'user' ):
+		with st.chat_message( 'user', avatar=ANALYST ):
 			st.markdown( user_input )
 		
 		full_input = build_intent_prefix(
 			st.session_state.execution_mode
 		) + user_input
 		
-		with st.chat_message( 'assistant' ):
+		with st.chat_message( 'assistant', avatar=BUDDY ):
 			try:
 				with st.spinner( 'Analyzing Guidance and Data...' ):
 					response = client.responses.create(
