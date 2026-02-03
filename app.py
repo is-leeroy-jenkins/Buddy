@@ -670,10 +670,9 @@ with tab_chat:
 										'container': { 'type': 'auto' }
 								},
 						],
-						include=[ 'file_search_call.sources', 'web_search_call.action.sources',
-								'code_interpreter_call.outputs', ],
-						store=True,
-					)
+						include=[ "file_search_call.results", "web_search_call.action.sources",
+								"code_interpreter_call.outputs", ],
+						store=True,)
 				
 				answer = extract_answer( response )
 				sources = extract_sources( response )
