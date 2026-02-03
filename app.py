@@ -72,13 +72,15 @@ LOGO = r'resources/buddy_logo.ico'
 
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
+HEADING = "#007AFC"
+
 APP_TITLE = 'Buddy'
 
 APP_SUBTITLE = 'AI for Budget Analysts'
 
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 
-PROMPT_VERSION = '5'
+PROMPT_VERSION = '8'
 
 VECTOR_STORE_IDS = ['vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0']
 
@@ -199,6 +201,99 @@ def cosine_sim( a: np.ndarray, b: np.ndarray ) -> float:
 	denom = np.linalg.norm( a ) * np.linalg.norm( b )
 	return float( np.dot( a, b ) / denom ) if denom else 0.0
 
+def sanitize_markdown( text: str ) -> str:
+	# Remove bold markers
+	text = re.sub( r"\*\*(.*?)\*\*", r"\1", text )
+	# Optional: remove italics
+	text = re.sub( r"\*(.*?)\*", r"\1", text )
+	return text
+
+def style_headings( text: str, color: str ) -> str:
+	return re.sub(
+		r"^##\s+(.*)$",
+		rf'<h2 style="color:{color};">\1</h2>',
+		text,
+		flags=re.MULTILINE
+	)
+
+def get_dod_css( light_mode: bool ) -> str:
+	if not light_mode:
+		# =========================
+		# DARK MODE
+		# =========================
+		return """
+        <style>
+        /* Headings */
+        .stChatMessage .stMarkdown h1,
+        .stChatMessage .stMarkdown h2,
+        .stChatMessage .stMarkdown h3 {
+            color: rgb(0, 120, 252) !important;
+        }
+
+        /* Body text */
+        .stChatMessage .stMarkdown p,
+        .stChatMessage .stMarkdown li,
+        .stChatMessage .stMarkdown span {
+            color: rgb(200, 200, 200) !important;
+        }
+
+        /* Strong */
+        .stChatMessage .stMarkdown strong {
+            color: rgb(220, 220, 220) !important;
+        }
+
+        /* Links */
+        .stChatMessage .stMarkdown a {
+            color: rgb(0, 120, 252) !important;
+            text-decoration: underline;
+        }
+
+        /* Blockquotes */
+        .stChatMessage .stMarkdown blockquote {
+            color: rgb(200, 200, 200) !important;
+            border-left: 4px solid rgb(0, 120, 252);
+        }
+        </style>
+        """
+	else:
+		# =========================
+		# LIGHT MODE
+		# =========================
+		return """
+        <style>
+        /* Headings */
+        .stChatMessage .stMarkdown h1,
+        .stChatMessage .stMarkdown h2,
+        .stChatMessage .stMarkdown h3 {
+            color: rgb(0, 120, 252) !important;
+        }
+
+        /* Body text */
+        .stChatMessage .stMarkdown p,
+        .stChatMessage .stMarkdown li,
+        .stChatMessage .stMarkdown span {
+            color: rgb(45, 45, 45) !important;
+        }
+
+        /* Strong */
+        .stChatMessage .stMarkdown strong {
+            color: rgb(20, 20, 20) !important;
+        }
+
+        /* Links */
+        .stChatMessage .stMarkdown a {
+            color: rgb(0, 84, 166) !important;
+            text-decoration: underline;
+        }
+
+        /* Blockquotes */
+        .stChatMessage .stMarkdown blockquote {
+            color: rgb(45, 45, 45) !important;
+            border-left: 4px solid rgb(0, 120, 252);
+        }
+        </style>
+        """
+
 # ==============================================================================
 # Configuration
 # ==============================================================================
@@ -207,13 +302,14 @@ client = OpenAI( )
 # ==============================================================================
 # Page Setup
 # ==============================================================================
-
 AVATARS = { 'user': ANALYST, 'assistant': BUDDY, }
 
 st.logo( LOGO, size='large', link=CRS )
 
 st.set_page_config( page_title=APP_TITLE, layout="wide",
 	page_icon=FAVICON, initial_sidebar_state='collapsed' )
+
+st.markdown( DOD_CSS, unsafe_allow_html=True )
 
 st.caption( APP_SUBTITLE )
 
@@ -299,26 +395,36 @@ def extract_sources( response ) -> List[ Dict[ str, Any ] ]:
 	
 	for item in response.output:
 		t = getattr( item, 'type', None )
-		if t not in ('web_search_call', 'file_search_call'):
-			continue
 		
-		raw = None
-		if getattr( item, 'sources', None ):
-			raw = item.sources
-		elif getattr( item, 'action', None ) and getattr( item.action, 'sources', None ):
-			raw = item.action.sources
-		
-		if raw:
-			for src in raw:
-				s = normalize( src )
-				sources.append(
-					{
+		# -------------------------
+		# Web search (citations)
+		# -------------------------
+		if t == 'web_search_call':
+			raw = getattr( item.action, 'sources', None )
+			if raw:
+				for src in raw:
+					s = normalize( src )
+					sources.append( {
 							'title': s.get( 'title' ),
 							'snippet': s.get( 'snippet' ),
 							'url': s.get( 'url' ),
+							'file_id': None,
+					} )
+		
+		# -------------------------
+		# File search (vector store)
+		# -------------------------
+		elif t == 'file_search_call':
+			raw = getattr( item, 'results', None )
+			if raw:
+				for r in raw:
+					s = normalize( r )
+					sources.append( {
+							'title': s.get( 'file_name' ) or s.get( 'title' ),
+							'snippet': s.get( 'text' ),
+							'url': None,
 							'file_id': s.get( 'file_id' ),
-					}
-				)
+					} )
 	
 	return sources
 
@@ -510,6 +616,13 @@ def load_embedder( ) -> SentenceTransformer:
 # Sidebar
 # ==============================================================================
 with st.sidebar:
+	st.header( "" )
+	st.divider( )
+	dod_mode = st.toggle(
+		"DoD Light Mode",
+		value=False,
+		help="Toggle DoD light-mode text styling (background unchanged)."
+	)
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	st.subheader( '⚙️ AI Settings' )
 	st.radio( 'Execution Mode',
@@ -523,60 +636,6 @@ with st.sidebar:
 	
 	st.divider( )
 	st.subheader( '🧠 Mind Controls' )
-	
-	# ---------------------
-	# Model initialization
-	ctx: int = st.slider( 'Context Window',
-		min_value=2048, max_value=8192, value=DEFAULT_CTX, step=512,
-		help=( 'Maximum number of tokens the model uses: including system instructions, '
-		       'history, and context.' ), )
-	
-	threads: int = st.slider( 'CPU Threads',
-		min_value=1, max_value=CPU_CORES, value=CPU_CORES, step=1,
-		help=(
-				'Number of CPU threads used for inference; higher values improve speed but increase CPU '
-				'usage.' ), )
-	
-	# ---------------------
-	# Inference parameters
-	max_tokens: int = st.slider( 'Max Tokens',
-		min_value=128, max_value=4096, value=1024, step=128,
-		help='Maximum number of tokens generated per response.', )
-	
-	temperature: float = st.slider( 'Temperature',
-		min_value=0.1, max_value=1.5, value=0.7, step=0.1,
-		help=(
-				'Controls randomness in generation; lower values are more deterministic, higher values '
-				'increase creativity.' ), )
-	
-	top_p: float = st.slider( 'Top-p',
-		min_value=0.1, max_value=1.0, value=0.9, step=0.05,
-		help=(
-				'Nucleus sampling threshold; limits token selection to the smallest set whose cumulative '
-				'probability exceeds this value.' ), )
-	
-	top_k: int = st.slider( 'Top-k',
-		min_value=1, max_value=50, value=5, step=1,
-		help='Limits token selection to the top K most probable tokens at each step.', )
-	
-	repeat_penalty: float = st.slider( 'Repeat Penalty',
-		min_value=1.0, max_value=2.0, value=1.1, step=0.05,
-		help='Penalizes repeated tokens to reduce looping and redundant responses.', )
-	
-	repeat_last_n: int = st.slider( 'Repeat Window',
-		min_value=0, max_value=1024, value=64, step=16,
-		help='Number of recent tokens considered for repetition penalties; 0 disables the window.', )
-	
-	presence_penalty: float = st.slider( 'Presence Penalty',
-		min_value=0.0, max_value=2.0, value=0.0, step=0.05,
-		help='Encourages introducing new topics by penalizing tokens already present in the context.', )
-	
-	frequency_penalty: float = st.slider( 'Frequency Penalty',
-		min_value=0.0, max_value=2.0, value=0.0, step=0.05,
-		help='Reduces repeated phrasing by penalizing tokens based on how often they appear.', )
-	
-	seed: int = st.number_input( 'Random Seed', value=-1, step=1,
-		help='Set to a fixed value for reproducible outputs; use -1 for a random seed each run.', )
 	
 	# ----------
 	# Init
@@ -592,9 +651,7 @@ with st.sidebar:
 # ======================================================================================
 # TAB LIST
 # ======================================================================================
-tab_chat, tab_guidance, tab_analysis, tab_system, tab_basic, tab_semantic, tab_prompt, tab_export = st.tabs(
-	[ '🧠 Chat', '🏛️ Guidance', '📈 Analysis', '🧬 System Instructions', '📚 Retrieval Augmentation', '🔍 Semantic Search',
-	  '📝 Prompt Engineering', '💻 Data Export' ] )
+tab_chat,  tab_export = st.tabs([ '🧠 Chat',  '💻 Data Export' ] )
 
 def build_prompt( user_input: str ) -> str:
 	prompt = f"<|system|>\n{st.session_state.system_prompt}\n</s>\n"
@@ -617,307 +674,122 @@ def build_prompt( user_input: str ) -> str:
 	prompt += f"<|user|>\n{user_input}\n</s>\n<|assistant|>\n"
 	return prompt
 
-# ============================================================================
+# =============================================================================
 # CHAT TAB
-# ============================================================================
+# =============================================================================
 with tab_chat:
-	st.subheader( '' )
-	for msg in st.session_state.chat_history:
-		with st.chat_message( msg[ "role" ] ):
-			st.markdown( msg[ "content" ] )
+	st.subheader( "" )
 	
-	user_input = st.chat_input( "Got a Planning, Programming, or Budget Execution question?..." )
+	user_input = st.chat_input( "Do you have a Planning, Programming, or Budget Execution question?" )
+	
 	if user_input:
-		st.session_state.chat_history.append(
-			{
-					'role': 'user',
-					'content': user_input }
-		)
-		
-		with st.chat_message( 'user', avatar=ANALYST ):
+		# -------------------------------
+		# Render user message
+		# -------------------------------
+		with st.chat_message( "user", avatar=ANALYST ):
 			st.markdown( user_input )
 		
-		full_input = build_intent_prefix(
-			st.session_state.execution_mode
-		) + user_input
-		
-		with st.chat_message( 'assistant', avatar=BUDDY ):
+		# -------------------------------
+		# Run prompt
+		# -------------------------------
+		with st.chat_message( "assistant", avatar=BUDDY ):
 			try:
-				with st.spinner( 'Analyzing Guidance and Data...' ):
+				with st.spinner( "Running prompt..." ):
 					response = client.responses.create(
 						prompt={
-								'id': PROMPT_ID,
-								'version': PROMPT_VERSION },
+								"id": PROMPT_ID,
+								"version": PROMPT_VERSION,
+						},
 						input=[
 								{
-										'role': 'user',
-										'content': full_input
+										"role": "user",
+										"content": [
+												{
+														"type": "input_text",
+														"text": user_input,
+												}
+										],
 								}
 						],
 						tools=[
 								{
-										'type': 'file_search',
-										'vector_store_ids': VECTOR_STORE_IDS,
+										"type": "file_search",
+										"vector_store_ids": VECTOR_STORE_IDS,
 								},
 								{
-										'type': 'web_search',
-										'user_location': { 'type': 'approximate' },
-										'search_context_size': 'medium',
-										'filters': { 'allowed_domains': [ 'www.congress.gov' ] },
+										"type": "web_search",
+										"filters": {
+												"allowed_domains": [
+														"congress.gov",
+														"google.com",
+														"gao.gov",
+														"omb.gov",
+														"defense.gov",
+												]
+										},
+										"search_context_size": "medium",
+										"user_location": {
+												"type": "approximate"
+										},
 								},
 								{
-										'type': 'code_interpreter',
-										'container': { 'type': 'auto' }
+										"type": "code_interpreter",
+										"container": {
+												"type": "auto",
+												"file_ids": [
+														"file-Wd8G8pbLSgVjHur8Qv4mdt",
+														"file-WPmTsHFYDLGHbyERqJdyqv",
+														"file-DW5TuqYoEfqFfqFFsMXBvy",
+														"file-U8ExiB6aJunAeT6872HtEU",
+														"file-FHkNiF6Rv29eCkAWEagevT",
+														"file-XsjQorjtffHTWjth8EVnkL",
+												],
+										},
 								},
 						],
-						include=[ "file_search_call.results", "web_search_call.action.sources",
-								"code_interpreter_call.outputs", ],
-						store=True,)
+						include=[
+								"web_search_call.action.sources",
+								"code_interpreter_call.outputs",
+						],
+						store=True,
+					)
 				
-				answer = extract_answer( response )
-				sources = extract_sources( response )
-				analysis = extract_analysis( response )
+				# -------------------------------
+				# Extract and render text output
+				# -------------------------------
+				output_text = ""
 				
-				if answer:
-					st.markdown( answer )
-				elif sources or analysis[ 'tables' ]:
-					st.info(
-						'Response generated via tools. '
-						'See Guidance or Analysis tabs.'
+				for item in response.output:
+					if item.type == "message":
+						for part in item.content:
+							if part.type == "output_text":
+								output_text += part.text
+				
+				if output_text.strip( ):
+					st.markdown(
+						f"<div class='buddy-response'>{output_text}</div>",
+						unsafe_allow_html=True
 					)
 				else:
-					st.warning( 'No textual response returned.' )
+					st.warning( "No text response returned by the prompt." )
 				
-				st.session_state.last_answer = answer
-				st.session_state.last_sources = sources
-				st.session_state.last_analysis = analysis
-				
+				# -------------------------------
+				# Persist minimal chat history
+				# -------------------------------
 				st.session_state.chat_history.append(
 					{
-							'role': 'assistant',
-							'content': answer or '' }
+							"role": "user",
+							"content": user_input }
+				)
+				st.session_state.chat_history.append(
+					{
+							"role": "assistant",
+							"content": output_text }
 				)
 			
 			except Exception as e:
-				st.error( 'An error occurred while processing the response.' )
+				st.error( "An error occurred while running the prompt." )
 				st.exception( e )
-
-# =============================================================================
-# GUIDANCE TAB
-# =============================================================================
-with tab_guidance:
-	st.subheader( '' )
-	if st.session_state.execution_mode == 'Analysis Only':
-		st.info( 'Guidance Suppressed Due to Analysis Only mode.' )
-	elif not st.session_state.last_sources:
-		st.info( 'No guidance sources available.' )
-	else:
-		for i, src in enumerate( st.session_state.last_sources, start=1 ):
-			st.markdown( f"**{i}. {src.get( 'title' ) or 'Source'}**" )
-			if src.get( 'snippet' ):
-				st.markdown( src[ 'snippet' ] )
-			if src.get( 'url' ):
-				st.markdown( f"[Link]({src[ 'url' ]})" )
-			st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-
-# =============================================================================
-# ANALYSIS TAB
-# =============================================================================
-with tab_analysis:
-	st.subheader( '' )
-	if st.session_state.execution_mode == 'Guidance Only':
-		st.info( 'Guidance Only mode.' )
-	else:
-		analysis = st.session_state.last_analysis
-		
-		if not (analysis[ 'tables' ] or analysis[ 'files' ] or analysis[ 'text' ]):
-			st.info( 'No analysis artifacts available.' )
-		else:
-			for tbl in analysis[ 'tables' ]:
-				if 'data' in tbl:
-					st.dataframe( tbl[ 'data' ] )
-			
-			for txt in analysis[ 'text' ]:
-				st.code( txt, language='text' )
-			
-			for f in analysis[ 'files' ]:
-				file_id = f.get( 'id' )
-				file_name = f.get( 'name', 'download' )
-				if file_id:
-					file_bytes = client.files.content( file_id ).read( )
-					st.download_button( label=f'Download {file_name}', data=file_bytes,
-						file_name=file_name, )
-
-# ==============================================================================
-# SYSTEM TAB
-# ==============================================================================
-with tab_system:
-	st.subheader( '' )
-	
-	# ------------------
-	# Prompt selector
-	df_prompts = fetch_prompts_df( )
-	prompt_names = [ '' ] + df_prompts[ 'Name' ].tolist( )
-	
-	selected_name: str = st.selectbox( 'Load System Prompt', prompt_names,
-		key='system_prompt_selector' )
-	
-	st.session_state.pending_system_prompt_name = ( selected_name if selected_name else None )
-	
-	# ---------------
-	# Action buttons
-	col_load, col_clear, col_edit, col_spacer, col_xml_md, col_md_xml = st.columns( [ 1,
-	                                                                                  1,
-	                                                                                  1,
-	                                                                                  0.5,
-	                                                                                  1.5,
-	                                                                                  1.5 ] )
-	
-	with col_load:
-		load_clicked: bool = st.button( 'Load',
-			disabled=st.session_state.pending_system_prompt_name is None )
-	
-	with col_clear:
-		clear_clicked: bool = st.button( 'Clear' )
-	
-	with col_edit:
-		edit_clicked: bool = st.button( 'Edit',
-			disabled=st.session_state.pending_system_prompt_name is None )
-	
-	with col_spacer:
-		st.write( '' )
-	
-	with col_xml_md:
-		to_markdown_clicked: bool = st.button( 'XML → Markdown',
-			help='Replace XML-like delimiters with Markdown headings (##).' )
-	
-	with col_md_xml:
-		to_xml_clicked: bool = st.button( 'Markdown → XML',
-			help='Replace Markdown headings (##) with XML-like delimiters.' )
-	
-	# -----------------
-	# Button behaviors
-	if load_clicked:
-		record = fetch_prompt_by_name( st.session_state.pending_system_prompt_name )
-		if record:
-			st.session_state.system_prompt = record[ 'Text' ]
-			st.session_state.selected_prompt_id = record[ 'PromptsId' ]
-	
-	if clear_clicked:
-		st.session_state.system_prompt = ''
-		st.session_state.selected_prompt_id = None
-	
-	if edit_clicked:
-		record = fetch_prompt_by_name( st.session_state.pending_system_prompt_name )
-		if record:
-			st.session_state.selected_prompt_id = record[ 'PromptsId' ]
-	
-	if to_markdown_clicked:
-		try:
-			st.session_state.system_prompt = xml_converter(
-				st.session_state.system_prompt
-			)
-			st.success( 'Converted to Markdown.' )
-		except Exception as exc:
-			st.error( f'Conversion failed: {exc}' )
-	
-	if to_xml_clicked:
-		try:
-			st.session_state.system_prompt = markdown_converter(
-				st.session_state.system_prompt
-			)
-			st.success( 'Converted to XML-delimited format.' )
-		except Exception as exc:
-			st.error( f'Conversion failed: {exc}' )
-	
-	# ----------------------
-	# System prompt editor
-	st.text_area( 'System Prompt', key='system_prompt', height=260,
-		help=( 'Edit System Instructions here. Use XML-like tags or Markdown headings (##). '
-				'Conversion tools are provided above.' ) )
-
-# ==============================================================================
-# RETREIVAL TAB
-# ==============================================================================
-with tab_basic:
-	st.subheader( '' )
-	files = st.file_uploader( 'Upload documents', accept_multiple_files=True )
-	if files:
-		st.session_state.basic_docs.clear( )
-		for f in files:
-			st.session_state.basic_docs.extend( chunk_text( f.read( ).decode( errors='ignore' ) ) )
-		st.success( f'{len( st.session_state.basic_docs )} chunks loaded' )
-
-# ==============================================================================
-# SEMANTIC SEARCH TAB
-# ==============================================================================
-with tab_semantic:
-	st.subheader( '' )
-	st.session_state.use_semantic = st.checkbox( 'Use Semantic Context',
-		st.session_state.use_semantic )
-	files = st.file_uploader( 'Upload for embedding', accept_multiple_files=True )
-	if files:
-		chunks = [ ]
-		for f in files:
-			chunks.extend( chunk_text( f.read( ).decode( errors='ignore' ) ) )
-		vecs = embedder.encode( chunks )
-		with sqlite3.connect( DB_PATH ) as conn:
-			conn.execute( 'DELETE FROM embeddings' )
-			for c, v in zip( chunks, vecs ):
-				conn.execute(
-					'INSERT INTO embeddings (chunk, vector) VALUES (?, ?)',
-					(c, v.tobytes( )) )
-		st.success( 'Semantic index built' )
-
-# ==============================================================================
-# PROMPT ENGINEERING TAB
-# ==============================================================================
-with tab_prompt:
-	st.subheader( '' )
-	df = fetch_prompts_df( )
-	if st.session_state.selected_prompt_id:
-		df[ 'Selected' ] = df[ 'PromptsId' ] == st.session_state.selected_prompt_id
-	
-	edited = st.data_editor( df, hide_index=True, use_container_width=True )
-	sel = edited.loc[ edited[ 'Selected' ], 'PromptsId' ].tolist( )
-	st.session_state.selected_prompt_id = sel[ 0 ] if len( sel ) == 1 else None
-	
-	prompt = fetch_prompt_by_id( st.session_state.selected_prompt_id ) or \
-	         {  'Name': '', 'Text': '', 'Version': '', 'ID': '' }
-	
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-	
-	c1, c2 = st.columns( 2 )
-	with c1:
-		if st.button( '+ New' ):
-			st.session_state.selected_prompt_id = None
-			prompt = {
-					'Name': '',
-					'Text': '',
-					'Version': '',
-					'ID': '' }
-	with c2:
-		if st.button( '🗑 Delete', disabled=st.session_state.selected_prompt_id is None ):
-			delete_prompt( st.session_state.selected_prompt_id )
-			st.session_state.selected_prompt_id = None
-			st.rerun( )
-	
-	name = st.text_input( 'Name', prompt[ 'Name' ] )
-	version = st.text_input( 'Version', prompt[ 'Version' ] )
-	pid = st.text_input( 'ID', prompt[ 'ID' ] )
-	text = st.text_area( 'Prompt Text', prompt[ 'Text' ], height=260 )
-	
-	if st.button( '💾 Save' ):
-		data = {
-				'Name': name,
-				'Text': text,
-				'Version': version,
-				'ID': pid }
-		if st.session_state.selected_prompt_id:
-			update_prompt( st.session_state.selected_prompt_id, data )
-		else:
-			insert_prompt( data )
-		st.rerun( )
 
 # ==============================================================================
 # Data Export Tab
