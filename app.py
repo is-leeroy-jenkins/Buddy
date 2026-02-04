@@ -305,6 +305,17 @@ def inject_response_css( ) -> None:
 		</style>
 		""", unsafe_allow_html=True )
 
+def style_subheaders( ) -> None:
+	st.markdown(
+		"""
+		<style>
+		h3 {
+			color: rgb(0, 120, 252);
+		}
+		</style>
+		""",
+		unsafe_allow_html=True )
+	
 def init_state( ) -> None:
 	if 'chat_history' not in st.session_state:
 		st.session_state.chat_history = [ ]
@@ -684,6 +695,8 @@ st.caption( APP_SUBTITLE )
 
 inject_response_css( )
 
+style_subheaders( )
+
 init_state( )
 
 # ======================================================================================
@@ -856,6 +869,10 @@ def text_model_options( chat ):
 		return _safe( 'gemini', 'model_options', chat.model_options )
 	if _provider( ) == 'Groq':
 		return _safe( 'grok', 'model_options', chat.model_options )
+	if _provider( ) == 'Mistral':
+		return _safe( 'missy', 'model_options', chat.model_options )
+	if _provider( ) == 'Claude':
+		return _safe( 'claude', 'model_options', chat.model_options )
 	return chat.model_options
 
 # ---------------- IMAGES ----------------
@@ -866,6 +883,10 @@ def image_model_options( image ):
 		return _safe( 'gemini', 'image_model_options', image.model_options )
 	if _provider( ) == 'Groq':
 		return _safe( 'grok', 'image_model_options', image.model_options )
+	if _provider( ) == 'Mistral':
+		return _safe( 'missy', 'image_model_options', image.model_options )
+	if _provider( ) == 'Claude':
+		return _safe( 'claude', 'image_model_options', image.model_options )
 	return image.model_options
 
 def image_size_or_aspect_options( image ):
@@ -875,6 +896,10 @@ def image_size_or_aspect_options( image ):
 		return _safe( 'gemini', 'aspect_options', image.size_options )
 	if _provider( ) == 'Groq':
 		return _safe( 'grok', 'aspect_options', image.size_options )
+	if _provider( ) == 'Mistral':
+		return _safe( 'missy', 'aspect_options', image.size_options )
+	if _provider( ) == 'Claude':
+		return _safe( 'claude', 'aspect_options', image.size_options )
 	return image.size_options
 
 # ---------------- AUDIO ----------------
