@@ -373,16 +373,11 @@ def extract_answer( response ) -> str:
 
 def extract_sources( response ) -> List[ Dict[ str, Any ] ]:
 	sources: List[ Dict[ str, Any ] ] = [ ]
-	
 	if not response or not getattr( response, 'output', None ):
 		return sources
 	
 	for item in response.output:
 		t = getattr( item, 'type', None )
-		
-		# -------------------------
-		# Web search (citations)
-		# -------------------------
 		if t == 'web_search_call':
 			raw = getattr( item.action, 'sources', None )
 			if raw:
