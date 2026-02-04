@@ -930,15 +930,22 @@ with st.sidebar:
 		google_key = st.text_input(
 			'Google API Key',
 			type='password',
-			value=st.session_state.groq_api_key or '',
+			value=st.session_state.google_api_key or '',
 			help='Overrides GOOGLE_API_KEY from config.py for this session only.'
 		)
 		
 		mistral_key = st.text_input(
 			'Mistral API Key',
 			type='password',
-			value=st.session_state.groq_api_key or '',
+			value=st.session_state.mistral_api_key or '',
 			help='Overrides MISTRAL_API_KEY from config.py for this session only.'
+		)
+		
+		xai_key = st.text_input(
+			'xAi API Key',
+			type='password',
+			value=st.session_state.xai_api_key or '',
+			help='Overrides XAI_API_KEY from config.py for this session only.'
 		)
 		
 		if openai_key:
