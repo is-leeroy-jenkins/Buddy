@@ -989,18 +989,11 @@ with st.sidebar:
 	mode = st.sidebar.radio( 'Mode', MODES, index=0 )
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	
-# ======================================================================================
-# TABS
-# ======================================================================================
-chat_tab, text_tab, image_tab, audio_tab, files_tab, rag_tab, vector_tab, promt_tab, qna_tab, data_tab = st.tabs(
-	[ '🧠 Chat Completion', '📜 Text Generation', '🖼️ Image API', '✨ Audio API', '📖 Files API', '🧬 Embeddings', '☁️ Vector Stores',
-	  '📝 Prompt Engineering', '❓ Document Q&A', '💻 Data Export' ] )
-
 # =============================================================================
-# CHAT TAB
+# CHAT MODE
 # =============================================================================
 if mode == 'Chat':
-	st.header( "" )
+	st.subheader( "🧠 Chat Completions" )
 	provider_module = get_provider_module( )
 	
 	# ------------------------------------------------------------------
@@ -1106,7 +1099,7 @@ if mode == 'Chat':
 # TEXT MODE
 # ======================================================================================
 elif mode == "Text":
-	st.header( "" )
+	st.subheader( "📝 Text Generation" )
 	provider_module = get_provider_module( )
 	chat = provider_module.Chat( )
 	
@@ -1249,9 +1242,10 @@ elif mode == "Text":
 		)
 
 # ======================================================================================
-# IMAGES TAB
+# IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
+	st.subheader( '🖼️ Image Generation & Analysis')
 	provider_module = get_provider_module( )
 	image = provider_module.Image( )
 	
@@ -1443,13 +1437,14 @@ elif mode == "Images":
 						st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
-# AUDIO TAB
+# AUDIO MODE
 # ======================================================================================
 elif mode == "Audio":
 	# ------------------------------------------------------------------
 	# Provider-aware Audio instantiation
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
+	st.subheader( '🗣️ Audio API')
 	
 	transcriber = None
 	translator = None
@@ -1609,11 +1604,11 @@ elif mode == "Audio":
 						st.error( f"Text-to-speech failed: {exc}" )
 
 # ======================================================================================
-# EMBEDDINGS TAB
+# EMBEDDINGS MODE
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
-	
+	st.subheader( '🉑 Vector Embeddings')
 	if not hasattr( provider_module, 'Embedding' ):
 		st.info( 'Embeddings are not supported by the selected provider.' )
 	else:
@@ -1674,7 +1669,7 @@ elif mode == 'Embeddings':
 						st.error( f'Embedding failed: {exc}' )
 
 # ======================================================================================
-# VECTOR TAB
+# VECTOR MODE
 # ======================================================================================
 elif mode == "Vector Store":
 	try:
@@ -1682,6 +1677,7 @@ elif mode == "Vector Store":
 	except NameError:
 		chat = get_provider_module( ).Chat( )
 	
+	st.subheader( '🕸️ Vector Stores')
 	vs_map = getattr( chat, "vector_stores", None )
 	if vs_map and isinstance( vs_map, dict ):
 		st.markdown( "**Known vector stores (local mapping)**" )
@@ -1787,7 +1783,7 @@ elif mode == "Vector Store":
 			"`chat.vector_stores` mapping exists." )
 
 # ======================================================================================
-# PROMPT ENGINEERING TAB
+# PROMPT ENGINEERING MODE
 # ======================================================================================
 elif mode == "Prompt Engineering":
 	import sqlite3
@@ -1796,6 +1792,7 @@ elif mode == "Prompt Engineering":
 	TABLE = 'Prompts'
 	PAGE_SIZE = 10
 	
+	st.subheader( '📝 Prompt Engineering')
 	# ------------------------------------------------------------------
 	# Session state (single source of truth)
 	# ------------------------------------------------------------------
@@ -1851,26 +1848,18 @@ elif mode == "Prompt Engineering":
 		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 	
 	with c2:
-		st.selectbox(
-			'Sort by',
-			[ 'PromptsId',
-			  'Name',
-			  'Version' ],
-			key='pe_sort_col',
-		)
+		st.selectbox( 'Sort by',
+			[ 'PromptsId',  'Name', 'Version' ], key='pe_sort_col', )
 	
 	with c3:
-		st.selectbox( 'Direction',
-			[ 'ASC',  'DESC' ], key='pe_sort_dir', )
+		st.selectbox( 'Direction', [ 'ASC',  'DESC' ], key='pe_sort_dir', )
 	
 	with c4:
 		st.markdown(
 			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
 			unsafe_allow_html=True,
 		)
-		a1, a2, a3 = st.columns( [ 2,
-		                           1,
-		                           1 ] )
+		a1, a2, a3 = st.columns( [ 2, 1,  1 ] )
 		with a1:
 			jump_id = st.number_input(
 				"Go to ID",
@@ -1931,11 +1920,7 @@ elif mode == "Prompt Engineering":
 			}
 		)
 	
-	edited = st.data_editor(
-		table_rows,
-		hide_index=True,
-		use_container_width=True,
-	)
+	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True, )
 	
 	selected = [ r for r in edited if r.get( "Selected" ) ]
 	if len( selected ) == 1:
@@ -1947,9 +1932,7 @@ elif mode == "Prompt Engineering":
 	# ------------------------------------------------------------------
 	# Paging
 	# ------------------------------------------------------------------
-	p1, p2, p3 = st.columns( [ 0.25,
-	                           3.5,
-	                           0.25 ] )
+	p1, p2, p3 = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with p1:
 		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
 			st.session_state.pe_page -= 1
@@ -1958,8 +1941,8 @@ elif mode == "Prompt Engineering":
 	with p3:
 		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
 			st.session_state.pe_page += 1
-	
-	st.divider( )
+			
+	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	
 	# ------------------------------------------------------------------
 	# Converter controls
@@ -2035,9 +2018,10 @@ elif mode == "Prompt Engineering":
 				reset_selection( )
 
 # ======================================================================================
-# DOCUMENTS TAB
+# DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Documents':
+	st.subheader( '📚 Document Q & A')
 	uploaded = st.file_uploader(
 		'Upload documents (session only)',
 		type=[ 'pdf', 'txt', 'md', 'docx' ],
@@ -2142,12 +2126,13 @@ elif mode == 'Documents':
 # ======================================================================================
 # FILES API MODE
 # ======================================================================================
-elif tab_files or mode == "Files":
+elif mode == "Files":
 	try:
 		chat  # type: ignore
 	except NameError:
 		chat = Chat( )
 	
+	st.subheader( '📁 Files API' )
 	list_method = None
 	for name in (
 				'retrieve_files',
@@ -2287,9 +2272,9 @@ elif tab_files or mode == "Files":
 						st.error( f"Delete failed: {exc}" )
 
 # ==============================================================================
-# DATA TAB
+# DATA MODE
 # ==============================================================================
-elif mode == 'Data Export':
+elif mode == '🚀 Data Export':
 	st.subheader( '' )
 	st.markdown( '###### Export' )
 	
