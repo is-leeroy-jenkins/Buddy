@@ -8,7 +8,7 @@
       Last Modified By:        Terry D. Eppler
       Last Modified On:        01-20-2026
   ******************************************************************************************
-  <copyright file='app.py' company='Terry D. Eppler'>
+  <copyright file="app.py" company="Terry D. Eppler">
 
 	     app.py
 	     Copyright ©  2026  Terry Eppler
@@ -83,7 +83,7 @@ GEMINI = r'resources/gemma_logo.png'
 
 GROQ = r'resources/grok_logo.png'
 
-BLUE_DIVIDER = '<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>'
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
 APP_TITLE = 'Buddy'
 
@@ -102,12 +102,12 @@ WEB_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov
 
 TEXT_TYPES = { 'output_text' }
 
-MARKDOWN_HEADING_PATTERN: re.Pattern[ str ] = re.compile( r'^##\s+(?P<title>.+?)\s*$' )
+MARKDOWN_HEADING_PATTERN: re.Pattern[ str ] = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
 
-XML_BLOCK_PATTERN: re.Pattern[ str ] = re.compile( r'<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>',
+XML_BLOCK_PATTERN: re.Pattern[ str ] = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>",
 	re.DOTALL )
 
-DB_PATH = 'stores/sqlite/Data.db'
+DB_PATH = "stores/sqlite/Data.db"
 
 ANALYST = '❓'
 
@@ -140,76 +140,83 @@ MODES = [
 		'Prompt Engineering',
 		'Data Export' ]
 
-_TAG_OPEN = re.compile( r'<([A-Za-z0-9_\-:.]+)>' )
+_TAG_OPEN = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
 
-_TAG_CLOSE = re.compile( r'</([A-Za-z0-9_\-:.]+)>' )
+_TAG_CLOSE = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
 
-LOGO_MAP = { 'GPT': GPT, 'Gemini': GEMINI, 'Groq': GROQ, }
+LOGO_MAP = { "GPT": GPT, "Gemini": GEMINI, "Groq": GROQ, }
 
 # ==============================================================================
 # UTILITIES
 # ==============================================================================
 def xml_converter( text: str ) -> str:
-	'''
-		Purpose:
+	"""
+		
+			Purpose:
+			_________
 			Convert XML-delimited prompt text into Markdown by treating XML-like
 			tags as section delimiters, not as strict XML.
 	
-		Parameters:
-			text (str):
-				Prompt text containing XML-like opening and closing tags.
+			Parameters:
+			-----------
+			text (str) - Prompt text containing XML-like opening and closing tags.
 	
-		Returns:
-			str:
-				Markdown-formatted text using level-2 headings (##).
-	'''
+			Returns:
+			---------
+			Markdown-formatted text using level-2 headings (##).
+	"""
 	markdown_blocks: List[ str ] = [ ]
 	for match in XML_BLOCK_PATTERN.finditer( text ):
-		raw_tag: str = match.group( 'tag' )
-		body: str = match.group( 'body' ).strip( )
+		raw_tag: str = match.group( "tag" )
+		body: str = match.group( "body" ).strip( )
 		
 		# Humanize tag name for Markdown heading
-		heading: str = raw_tag.replace( '_', ' ' ).replace( '-', ' ' ).title( )
-		markdown_blocks.append( f'## {heading}' )
+		heading: str = raw_tag.replace( "_", " " ).replace( "-", " " ).title( )
+		markdown_blocks.append( f"## {heading}" )
 		if body:
 			markdown_blocks.append( body )
-	return '\n\n'.join( markdown_blocks )
+	return "\n\n".join( markdown_blocks )
 
 def markdown_converter( markdown: str ) -> str:
-	'''
-	
+	"""
+		
 		Purpose:
-			Convert Markdown-formatted system instructions back into
-			XML-delimited prompt text by treating level-2 headings (##)
-			as section delimiters.
+		_________
+		Convert Markdown-formatted system instructions back into
+		XML-delimited prompt text by treating level-2 headings (##)
+		as section delimiters.
 	
 		Parameters:
-			markdown (str):
-				Markdown text using '##' headings to indicate sections.
+		-----------
+		markdown (str)- Markdown text using '##' headings to indicate sections.
 	
 		Returns:
-			str:
-				XML-delimited text suitable for storage in the prompt database.
+		--------
+		str - XML-delimited text suitable for storage in the prompt database.
 				
-	'''
+	"""
 	lines: List[ str ] = markdown.splitlines( )
 	output: List[ str ] = [ ]
 	current_tag: Optional[ str ] = None
 	buffer: List[ str ] = [ ]
 	
 	def flush( ) -> None:
-		'''
-		Emit the currently buffered section as an XML-delimited block.
-		'''
+		"""
+		
+			Purpose:
+			_________
+			Emit the currently buffered section as an XML-delimited block.
+			
+		"""
 		nonlocal current_tag, buffer
 		if current_tag is None:
 			return
-		body: str = '\n'.join( buffer ).strip( )
-		output.append( f'<{current_tag}>' )
+		body: str = "\n".join( buffer ).strip( )
+		output.append( f"<{current_tag}>" )
 		if body:
 			output.append( body )
-		output.append( f'</{current_tag}>' )
-		output.append( '' )
+		output.append( f"</{current_tag}>" )
+		output.append( "" )
 		buffer.clear( )
 		for line in lines:
 			match = MARKDOWN_HEADING_PATTERN.match( line )
@@ -226,11 +233,11 @@ def markdown_converter( markdown: str ) -> str:
 		# Remove trailing whitespace blocks
 		while output and not output[ -1 ].strip( ):
 			output.pop( )
-		return '\n'.join( output )
+		return "\n".join( output )
 
 def encode_image_base64( path: str ) -> str:
 	data = Path( path ).read_bytes( )
-	return base64.b64encode( data ).decode( 'utf-8' )
+	return base64.b64encode( data ).decode( "utf-8" )
 
 def chunk_text( text: str, size: int = 1200, overlap: int = 200 ) -> List[ str ]:
 	chunks, i = [ ], 0
@@ -245,22 +252,22 @@ def cosine_sim( a: np.ndarray, b: np.ndarray ) -> float:
 
 def sanitize_markdown( text: str ) -> str:
 	# Remove bold markers
-	text = re.sub( r'\*\*(.*?)\*\*', r'\1', text )
+	text = re.sub( r"\*\*(.*?)\*\*", r"\1", text )
 	# Optional: remove italics
-	text = re.sub( r'\*(.*?)\*', r'\1', text )
+	text = re.sub( r"\*(.*?)\*", r"\1", text )
 	return text
 
 def style_headings( text: str, color: str ) -> str:
 	return re.sub(
-		r'^##\s+(.*)$',
-		rf'<h2 style='color:{color};'>\1</h2>',
+		r"^##\s+(.*)$",
+		rf'<h2 style="color:{color};">\1</h2>',
 		text,
 		flags=re.MULTILINE
 	)
 
 def inject_response_css( ) -> None:
 	st.markdown(
-		'''
+		"""
 		<style>
 		/* Chat message text */
 		.stChatMessage p {
@@ -295,7 +302,7 @@ def inject_response_css( ) -> None:
 		}
 
 		</style>
-		''', unsafe_allow_html=True )
+		""", unsafe_allow_html=True )
 
 def init_state( ) -> None:
 	if 'chat_history' not in st.session_state:
@@ -319,7 +326,7 @@ def init_state( ) -> None:
 
 def reset_state( ) -> None:
 	st.session_state.chat_history = [ ]
-	st.session_state.last_answer = ''
+	st.session_state.last_answer = ""
 	st.session_state.last_sources = [ ]
 	st.session_state.last_analysis = {
 			'tables': [ ],
@@ -335,7 +342,7 @@ def normalize( obj: Any ) -> Dict[ str, Any ]:
 	return {
 			k: getattr( obj, k )
 			for k in dir( obj )
-			if not k.startswith( '_' ) and not callable( getattr( obj, k ) )
+			if not k.startswith( "_" ) and not callable( getattr( obj, k ) )
 	}
 
 def extract_answer( response ) -> str:
@@ -436,17 +443,17 @@ def extract_analysis( response ) -> Dict[ str, Any ]:
 	return artifacts
 
 def save_temp( upload ) -> str:
-	'''Save uploaded file to a named temporary file and return path.'''
+	"""Save uploaded file to a named temporary file and return path."""
 	with tempfile.NamedTemporaryFile( delete=False ) as tmp:
 		tmp.write( upload.read( ) )
 		return tmp.name
 
 def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
-	'''
+	"""
 		Extract token usage from a response object/dict.
 		Returns dict with prompt_tokens, completion_tokens, total_tokens.
 		Defensive: returns zeros if not present.
-	'''
+	"""
 	usage = {
 			'prompt_tokens': 0,
 			'completion_tokens': 0,
@@ -457,61 +464,61 @@ def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 	
 	raw = None
 	try:
-		raw = getattr( resp, 'usage', None )
+		raw = getattr( resp, "usage", None )
 	except Exception:
 		raw = None
 	
 	if not raw and isinstance( resp, dict ):
-		raw = resp.get( 'usage' )
+		raw = resp.get( "usage" )
 	
 	if not raw:
 		return usage
 	
 	try:
 		if isinstance( raw, dict ):
-			usage[ 'prompt_tokens' ] = int( raw.get( 'prompt_tokens', 0 ) )
-			usage[ 'completion_tokens' ] = int(
-				raw.get( 'completion_tokens', raw.get( 'output_tokens', 0 ) )
+			usage[ "prompt_tokens" ] = int( raw.get( "prompt_tokens", 0 ) )
+			usage[ "completion_tokens" ] = int(
+				raw.get( "completion_tokens", raw.get( "output_tokens", 0 ) )
 			)
-			usage[ 'total_tokens' ] = int(
+			usage[ "total_tokens" ] = int(
 				raw.get(
-					'total_tokens',
-					usage[ 'prompt_tokens' ] + usage[ 'completion_tokens' ],
+					"total_tokens",
+					usage[ "prompt_tokens" ] + usage[ "completion_tokens" ],
 				)
 			)
 		else:
-			usage[ 'prompt_tokens' ] = int( getattr( raw, 'prompt_tokens', 0 ) )
-			usage[ 'completion_tokens' ] = int(
-				getattr( raw, 'completion_tokens', getattr( raw, 'output_tokens', 0 ) ) )
-			usage[ 'total_tokens' ] = int(
-				getattr( raw, 'total_tokens',
-					usage[ 'prompt_tokens' ] + usage[ 'completion_tokens' ], ) )
+			usage[ "prompt_tokens" ] = int( getattr( raw, "prompt_tokens", 0 ) )
+			usage[ "completion_tokens" ] = int(
+				getattr( raw, "completion_tokens", getattr( raw, "output_tokens", 0 ) ) )
+			usage[ "total_tokens" ] = int(
+				getattr( raw, "total_tokens",
+					usage[ "prompt_tokens" ] + usage[ "completion_tokens" ], ) )
 	except Exception:
-		usage[ 'total_tokens' ] = (usage[ 'prompt_tokens' ] + usage[ 'completion_tokens' ])
+		usage[ "total_tokens" ] = (usage[ "prompt_tokens" ] + usage[ "completion_tokens" ])
 	
 	return usage
 
 def _update_token_counters( resp: Any ) -> None:
-	'''
+	"""
 		Update session_state.last_call_usage and accumulate into session_state.token_usage.
-	'''
+	"""
 	usage = _extract_usage_from_response( resp )
 	st.session_state.last_call_usage = usage
-	st.session_state.token_usage[ 'prompt_tokens' ] += usage.get( 'prompt_tokens', 0 )
-	st.session_state.token_usage[ 'completion_tokens' ] += usage.get( 'completion_tokens', 0 )
-	st.session_state.token_usage[ 'total_tokens' ] += usage.get( 'total_tokens', 0 )
+	st.session_state.token_usage[ "prompt_tokens" ] += usage.get( "prompt_tokens", 0 )
+	st.session_state.token_usage[ "completion_tokens" ] += usage.get( "completion_tokens", 0 )
+	st.session_state.token_usage[ "total_tokens" ] += usage.get( "total_tokens", 0 )
 
 def _display_value( val: Any ) -> str:
-	'''
+	"""
 		Render a friendly display string for header values.
 		None -> em dash; otherwise str(value).
-	'''
+	"""
 	if val is None:
-		return '—'
+		return "—"
 	try:
 		return str( val )
 	except Exception:
-		return '—'
+		return "—"
 
 def build_intent_prefix( mode: str ) -> str:
 	if mode == 'Guidance Only':
@@ -529,9 +536,9 @@ def build_intent_prefix( mode: str ) -> str:
 	return ''
 
 def ensure_db( ) -> None:
-	Path( 'stores/sqlite' ).mkdir( parents=True, exist_ok=True )
+	Path( "stores/sqlite" ).mkdir( parents=True, exist_ok=True )
 	with sqlite3.connect( DB_PATH ) as conn:
-		conn.execute( '''
+		conn.execute( """
                       CREATE TABLE IF NOT EXISTS chat_history
                       (
                           id
@@ -544,8 +551,8 @@ def ensure_db( ) -> None:
                           content
                           TEXT
                       )
-		              ''' )
-		conn.execute( '''
+		              """ )
+		conn.execute( """
                       CREATE TABLE IF NOT EXISTS embeddings
                       (
                           id
@@ -558,8 +565,8 @@ def ensure_db( ) -> None:
                           vector
                           BLOB
                       )
-		              ''' )
-		conn.execute( '''
+		              """ )
+		conn.execute( """
                       CREATE TABLE IF NOT EXISTS Prompts
                       (
                           PromptsId
@@ -587,38 +594,33 @@ def ensure_db( ) -> None:
                           AUTOINCREMENT
                       )
                           )
-		              ''' )
+		              """ )
 
 def save_message( role: str, content: str ) -> None:
 	with sqlite3.connect( DB_PATH ) as conn:
-		conn.execute(
-			'INSERT INTO chat_history (role, content) VALUES (?, ?)',
-			(role, content)
-		)
+		conn.execute( "INSERT INTO chat_history (role, content) VALUES (?, ?)", (role, content) )
 
 def load_history( ) -> List[ Tuple[ str, str ] ]:
 	with sqlite3.connect( DB_PATH ) as conn:
-		return conn.execute(
-			'SELECT role, content FROM chat_history ORDER BY id'
-		).fetchall( )
+		return conn.execute( "SELECT role, content FROM chat_history ORDER BY id" ).fetchall( )
 
 def clear_history( ) -> None:
 	with sqlite3.connect( DB_PATH ) as conn:
-		conn.execute( 'DELETE FROM chat_history' )
+		conn.execute( "DELETE FROM chat_history" )
 
 def fetch_prompts_df( ) -> pd.DataFrame:
 	with sqlite3.connect( DB_PATH ) as conn:
 		df = pd.read_sql_query(
-			'SELECT PromptsId, Name, Version, ID FROM Prompts ORDER BY PromptsId DESC',
+			"SELECT PromptsId, Name, Version, ID FROM Prompts ORDER BY PromptsId DESC",
 			conn
 		)
-	df.insert( 0, 'Selected', False )
+	df.insert( 0, "Selected", False )
 	return df
 
 def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( DB_PATH ) as conn:
 		cur = conn.execute(
-			'SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE PromptsId=?',
+			"SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE PromptsId=?",
 			(pid,)
 		)
 		row = cur.fetchone( )
@@ -627,7 +629,7 @@ def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( DB_PATH ) as conn:
 		cur = conn.execute(
-			'SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE Name=?',
+			"SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE Name=?",
 			(name,)
 		)
 		row = cur.fetchone( )
@@ -636,40 +638,40 @@ def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 def insert_prompt( data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( DB_PATH ) as conn:
 		conn.execute(
-			'INSERT INTO Prompts (Name, Text, Version, ID) VALUES (?, ?, ?, ?)',
-			(data[ 'Name' ], data[ 'Text' ], data[ 'Version' ], data[ 'ID' ])
+			"INSERT INTO Prompts (Name, Text, Version, ID) VALUES (?, ?, ?, ?)",
+			(data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ])
 		)
 
 def update_prompt( pid: int, data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( DB_PATH ) as conn:
 		conn.execute(
-			'UPDATE Prompts SET Name=?, Text=?, Version=?, ID=? WHERE PromptsId=?',
-			(data[ 'Name' ], data[ 'Text' ], data[ 'Version' ], data[ 'ID' ], pid)
+			"UPDATE Prompts SET Name=?, Text=?, Version=?, ID=? WHERE PromptsId=?",
+			(data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ], pid)
 		)
 
 def delete_prompt( pid: int ) -> None:
 	with sqlite3.connect( DB_PATH ) as conn:
-		conn.execute( 'DELETE FROM Prompts WHERE PromptsId=?', (pid,) )
+		conn.execute( "DELETE FROM Prompts WHERE PromptsId=?", (pid,) )
 
 def build_prompt( user_input: str ) -> str:
-	prompt = f'<|system|>\n{st.session_state.system_prompt}\n</s>\n'
+	prompt = f"<|system|>\n{st.session_state.system_prompt}\n</s>\n"
 	
 	if st.session_state.use_semantic:
 		with sqlite3.connect( DB_PATH ) as conn:
-			rows = conn.execute( 'SELECT chunk, vector FROM embeddings' ).fetchall( )
+			rows = conn.execute( "SELECT chunk, vector FROM embeddings" ).fetchall( )
 		if rows:
 			q = embedder.encode( [ user_input ] )[ 0 ]
 			scored = [ (c, cosine_sim( q, np.frombuffer( v ) )) for c, v in rows ]
 			for c, _ in sorted( scored, key=lambda x: x[ 1 ], reverse=True )[ :top_k ]:
-				prompt += f'<|system|>\n{c}\n</s>\n'
+				prompt += f"<|system|>\n{c}\n</s>\n"
 	
 	for d in st.session_state.basic_docs[ :6 ]:
-		prompt += f'<|system|>\n{d}\n</s>\n'
+		prompt += f"<|system|>\n{d}\n</s>\n"
 	
 	for r, c in st.session_state.messages:
-		prompt += f'<|{r}|>\n{c}\n</s>\n'
+		prompt += f"<|{r}|>\n{c}\n</s>\n"
 	
-	prompt += f'<|user|>\n{user_input}\n</s>\n<|assistant|>\n'
+	prompt += f"<|user|>\n{user_input}\n</s>\n<|assistant|>\n"
 	return prompt
 
 # ==============================================================================
@@ -791,10 +793,10 @@ def get_provider_module( ):
 	return __import__( module_name )
 
 def get_chat_instance( ):
-	'''
+	"""
 		Returns a Chat() instance for the currently selected provider.
 		Ensures Gemini / Grok functionality is not bypassed.
-	'''
+	"""
 	provider_module = get_provider_module( )
 	return provider_module.Chat( )
 
@@ -871,14 +873,14 @@ def embedding_model_options( embed ):
 # ==============================================================================
 with st.sidebar:
 	logo_slot = st.empty( )
-	provider = st.session_state.get( 'provider', 'GPT' )
+	provider = st.session_state.get( "provider", "GPT" )
 	
-	st.subheader( '' )
+	st.subheader( "" )
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-	provider = st.selectbox( 'Provider', list( PROVIDERS.keys( ) ),
-		index=list( PROVIDERS.keys( ) ).index( st.session_state.get( 'provider', 'GPT' ) ) )
+	provider = st.selectbox( "Provider", list( PROVIDERS.keys( ) ),
+		index=list( PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
 	
-	st.session_state[ 'provider' ] = provider
+	st.session_state[ "provider" ] = provider
 	logo_path = LOGO_MAP.get( provider )
 	
 	with st.expander( 'Keys:', expanded=False ):
@@ -942,7 +944,7 @@ tab_chat, tab_text, tab_image, tab_audio, tab_files, tab_rag, tab_vec, tab_promp
 # CHAT TAB
 # =============================================================================
 if mode == 'Chat':
-	st.header( '' )
+	st.header( "" )
 	provider_module = get_provider_module( )
 	
 	# ------------------------------------------------------------------
@@ -962,13 +964,13 @@ if mode == 'Chat':
 	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
 	
 	with center:
-		user_input = st.chat_input( 'Do you have a Planning, Programming, or Budget Execution question?' )
+		user_input = st.chat_input( "Do you have a Planning, Programming, or Budget Execution question?" )
 		
 		if user_input:
 			# -------------------------------
 			# Render user message
 			# -------------------------------
-			with st.chat_message( 'user', avatar=ANALYST ):
+			with st.chat_message( "user", avatar=ANALYST ):
 				st.markdown( user_input )
 			
 			# -------------------------------
@@ -996,28 +998,28 @@ if mode == 'Chat':
 							],
 							store=True,
 						)
-					sources = st.session_state.get( 'last_sources', [ ] )
+					sources = st.session_state.get( "last_sources", [ ] )
 		
 					if sources:
-						st.markdown( '#### Sources' )
+						st.markdown( "#### Sources" )
 						for i, src in enumerate( sources, 1 ):
-							url = src.get( 'url' )
-							title = src.get( 'title' ) or src.get( 'file_name' ) or f'Source {i}'
+							url = src.get( "url" )
+							title = src.get( "title" ) or src.get( "file_name" ) or f"Source {i}"
 							
 							if url:
-								st.markdown( f'- [{title}]({url})' )
-							elif src.get( 'file_id' ):
-								st.markdown( f'- {title} _(Vector Store File: `{src[ 'file_id' ]}`)_' )
+								st.markdown( f"- [{title}]({url})" )
+							elif src.get( "file_id" ):
+								st.markdown( f"- {title} _(Vector Store File: `{src[ 'file_id' ]}`)_" )
 					
 					# -------------------------------
 					# Extract and render text output
 					# -------------------------------
-					output_text = ''
+					output_text = ""
 				
 					for item in response.output:
-						if item.type == 'message':
+						if item.type == "message":
 							for part in item.content:
-								if part.type == 'output_text':
+								if part.type == "output_text":
 									output_text += part.text
 					
 					if output_text.strip( ):
@@ -1041,14 +1043,14 @@ if mode == 'Chat':
 						}
 					)
 				except Exception as e:
-					st.error( 'An error occurred while running the prompt.' )
+					st.error( "An error occurred while running the prompt." )
 					st.exception( e )
 
 # ======================================================================================
 # TEXT MODE
 # ======================================================================================
-elif mode == 'Text':
-	st.header( '' )
+elif mode == "Text":
+	st.header( "" )
 	provider_module = get_provider_module( )
 	chat = provider_module.Chat( )
 	
@@ -1178,22 +1180,22 @@ elif mode == 'Text':
 	
 	if any( lcu.values( ) ):
 		st.info(
-			f'Last call — prompt: {lcu[ 'prompt_tokens' ]}, '
-			f'completion: {lcu[ 'completion_tokens' ]}, '
-			f'total: {lcu[ 'total_tokens' ]}'
+			f"Last call — prompt: {lcu[ 'prompt_tokens' ]}, "
+			f"completion: {lcu[ 'completion_tokens' ]}, "
+			f"total: {lcu[ 'total_tokens' ]}"
 		)
 	
-	if tu[ 'total_tokens' ] > 0:
+	if tu[ "total_tokens" ] > 0:
 		st.write(
-			f'Session totals — prompt: {tu[ 'prompt_tokens' ]} · '
-			f'completion: {tu[ 'completion_tokens' ]} · '
-			f'total: {tu[ 'total_tokens' ]}'
+			f"Session totals — prompt: {tu[ 'prompt_tokens' ]} · "
+			f"completion: {tu[ 'completion_tokens' ]} · "
+			f"total: {tu[ 'total_tokens' ]}"
 		)
 
 # ======================================================================================
 # IMAGES MODE
 # ======================================================================================
-elif mode == 'Images':
+elif mode == "Images":
 	provider_module = get_provider_module( )
 	image = provider_module.Image( )
 	
@@ -1201,27 +1203,27 @@ elif mode == 'Images':
 	# Sidebar — Image Settings
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.header( 'Image Settings' )
+		st.header( "Image Settings" )
 		st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ---------------- Model ----------------
 		image_model = st.selectbox(
-			'Model',
+			"Model",
 			image.model_options,
 			index=(
-					image.model_options.index( st.session_state[ 'image_model' ] )
-					if st.session_state.get( 'image_model' ) in image.model_options
+					image.model_options.index( st.session_state[ "image_model" ] )
+					if st.session_state.get( "image_model" ) in image.model_options
 					else 0
 			),
 		)
-		st.session_state[ 'image_model' ] = image_model
+		st.session_state[ "image_model" ] = image_model
 		
 		# ---------------- Size / Aspect Ratio (provider-aware) ----------------
-		if hasattr( image, 'aspect_options' ):
-			size_or_aspect = st.selectbox( 'Aspect Ratio', image.aspect_options, )
+		if hasattr( image, "aspect_options" ):
+			size_or_aspect = st.selectbox( "Aspect Ratio", image.aspect_options, )
 			size_arg = size_or_aspect
 		else:
-			size_or_aspect = st.selectbox( 'Size', image.size_options, )
+			size_or_aspect = st.selectbox( "Size", image.size_options, )
 			size_arg = size_or_aspect
 		
 		# ---------------- Quality ----------------
@@ -1324,7 +1326,7 @@ elif mode == 'Images':
 				)
 			
 			chosen_model = st.selectbox(
-				'Model (analysis)',
+				"Model (analysis)",
 				[ image_model,
 				  None ],
 				index=0,
@@ -1334,8 +1336,8 @@ elif mode == 'Images':
 					image_model if chosen_model is None else chosen_model
 			)
 			
-			if st.button( 'Analyze Image' ):
-				with st.spinner( 'Analyzing image…' ):
+			if st.button( "Analyze Image" ):
+				with st.spinner( "Analyzing image…" ):
 					analysis_result = None
 					try:
 						if chosen_method:
@@ -1349,10 +1351,10 @@ elif mode == 'Images':
 									)
 						else:
 							for fallback in (
-										'analyze',
-										'describe_image',
-										'describe',
-										'caption',
+										"analyze",
+										"describe_image",
+										"describe",
+										"caption",
 							):
 								if hasattr( image, fallback ):
 									func = getattr( image, fallback )
@@ -1364,30 +1366,30 @@ elif mode == 'Images':
 						
 						if analysis_result is None:
 							st.warning(
-								'No analysis output returned by the available methods.'
+								"No analysis output returned by the available methods."
 							)
 						else:
 							if isinstance( analysis_result, (dict, list) ):
 								st.json( analysis_result )
 							else:
-								st.markdown( '**Analysis result:**' )
+								st.markdown( "**Analysis result:**" )
 								st.write( analysis_result )
 							
 							try:
 								_update_token_counters(
-									getattr( image, 'response', None )
+									getattr( image, "response", None )
 									or analysis_result
 								)
 							except Exception:
 								pass
 					
 					except Exception as exc:
-						st.error( f'Analysis Failed: {exc}' )
+						st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
 # AUDIO MODE
 # ======================================================================================
-elif mode == 'Audio':
+elif mode == "Audio":
 	# ------------------------------------------------------------------
 	# Provider-aware Audio instantiation
 	# ------------------------------------------------------------------
@@ -1397,75 +1399,75 @@ elif mode == 'Audio':
 	translator = None
 	tts = None
 	
-	if hasattr( provider_module, 'Transcription' ):
+	if hasattr( provider_module, "Transcription" ):
 		transcriber = provider_module.Transcription( )
-	if hasattr( provider_module, 'Translation' ):
+	if hasattr( provider_module, "Translation" ):
 		translator = provider_module.Translation( )
-	if hasattr( provider_module, 'TTS' ):
+	if hasattr( provider_module, "TTS" ):
 		tts = provider_module.TTS( )
 	
 	# ------------------------------------------------------------------
 	# Sidebar — Audio Settings (NO functionality removed)
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.header( 'Audio Settings' )
+		st.header( "Audio Settings" )
 		
 		st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ---------------- Task ----------------
 		available_tasks = [ ]
 		if transcriber is not None:
-			available_tasks.append( 'Transcribe' )
+			available_tasks.append( "Transcribe" )
 		if translator is not None:
-			available_tasks.append( 'Translate' )
+			available_tasks.append( "Translate" )
 		if tts is not None:
-			available_tasks.append( 'Text-to-Speech' )
+			available_tasks.append( "Text-to-Speech" )
 		
 		if not available_tasks:
-			st.info( 'Audio is not supported by the selected provider.' )
+			st.info( "Audio is not supported by the selected provider." )
 			task = None
 		else:
-			task = st.selectbox( 'Task', available_tasks )
+			task = st.selectbox( "Task", available_tasks )
 		
 		# ---------------- Model (provider-correct) ----------------
 		audio_model = None
 		model_options = [ ]
 		
-		if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
+		if task == "Transcribe" and transcriber and hasattr( transcriber, "model_options" ):
 			model_options = transcriber.model_options
-		elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
+		elif task == "Translate" and translator and hasattr( translator, "model_options" ):
 			model_options = translator.model_options
-		elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
+		elif task == "Text-to-Speech" and tts and hasattr( tts, "model_options" ):
 			model_options = tts.model_options
 		
 		if model_options:
 			audio_model = st.selectbox(
-				'Model',
+				"Model",
 				model_options,
 				index=(
-						model_options.index( st.session_state.get( 'audio_model' ) )
-						if st.session_state.get( 'audio_model' ) in model_options
+						model_options.index( st.session_state.get( "audio_model" ) )
+						if st.session_state.get( "audio_model" ) in model_options
 						else 0
 				),
 			)
-			st.session_state[ 'audio_model' ] = audio_model
+			st.session_state[ "audio_model" ] = audio_model
 		
 		# ---------------- Language / Voice Options ----------------
 		language = None
 		voice = None
 		
-		if task in ('Transcribe', 'Translate'):
-			obj = transcriber if task == 'Transcribe' else translator
-			if obj and hasattr( obj, 'language_options' ):
+		if task in ("Transcribe", "Translate"):
+			obj = transcriber if task == "Transcribe" else translator
+			if obj and hasattr( obj, "language_options" ):
 				language = st.selectbox(
-					'Language',
+					"Language",
 					obj.language_options,
 				)
 		
-		if task == 'Text-to-Speech' and tts:
-			if hasattr( tts, 'voice_options' ):
+		if task == "Text-to-Speech" and tts:
+			if hasattr( tts, "voice_options" ):
 				voice = st.selectbox(
-					'Voice',
+					"Voice",
 					tts.voice_options,
 				)
 	
@@ -1542,13 +1544,13 @@ elif mode == 'Audio':
 						
 						try:
 							_update_token_counters(
-								getattr( tts, 'response', None )
+								getattr( tts, "response", None )
 							)
 						except Exception:
 							pass
 					
 					except Exception as exc:
-						st.error( f'Text-to-speech failed: {exc}' )
+						st.error( f"Text-to-speech failed: {exc}" )
 
 # ======================================================================================
 # EMBEDDINGS MODE
@@ -1575,9 +1577,9 @@ elif mode == 'Embeddings':
 			)
 			st.session_state[ 'embed_model' ] = embed_model
 			method = None
-			if hasattr( embed, 'methods' ):
+			if hasattr( embed, "methods" ):
 				method = st.selectbox(
-					'Method',
+					"Method",
 					embed.methods,
 				)
 		
@@ -1618,35 +1620,35 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # Vector Store MODE
 # ======================================================================================
-elif mode == 'Vector Store':
+elif mode == "Vector Store":
 	try:
 		chat  # type: ignore
 	except NameError:
 		chat = get_provider_module( ).Chat( )
 	
-	vs_map = getattr( chat, 'vector_stores', None )
+	vs_map = getattr( chat, "vector_stores", None )
 	if vs_map and isinstance( vs_map, dict ):
-		st.markdown( '**Known vector stores (local mapping)**' )
+		st.markdown( "**Known vector stores (local mapping)**" )
 		for name, vid in vs_map.items( ):
-			st.write( f'- **{name}** — `{vid}`' )
-		st.markdown( '---' )
+			st.write( f"- **{name}** — `{vid}`" )
+		st.markdown( "---" )
 	
-	with st.expander( 'Create Vector Store', expanded=False ):
-		new_store_name = st.text_input( 'New store name' )
-		if st.button( 'Create store' ):
+	with st.expander( "Create Vector Store", expanded=False ):
+		new_store_name = st.text_input( "New store name" )
+		if st.button( "Create store" ):
 			if not new_store_name:
-				st.warning( 'Enter a store name.' )
+				st.warning( "Enter a store name." )
 			else:
 				try:
-					if hasattr( chat, 'create_store' ):
+					if hasattr( chat, "create_store" ):
 						res = chat.create_store( new_store_name )
-						st.success( f'Create call submitted for '{new_store_name}'.' )
+						st.success( f"Create call submitted for '{new_store_name}'." )
 					else:
-						st.warning( 'create_store method not found on chat object.' )
+						st.warning( "create_store method not found on chat object." )
 				except Exception as exc:
-					st.error( f'Create store failed: {exc}' )
+					st.error( f"Create store failed: {exc}" )
 	
-	st.markdown( '**Manage Stores**' )
+	st.markdown( "**Manage Stores**" )
 	options: List[ tuple ] = [ ]
 	if vs_map and isinstance( vs_map, dict ):
 		options = list( vs_map.items( ) )
@@ -1680,12 +1682,12 @@ elif mode == 'Vector Store':
 			options = [ ]
 	
 	if options:
-		names = [ f'{n} — {i}' for n, i in options ]
-		sel = st.selectbox( 'Select a vector store', options=names )
+		names = [ f"{n} — {i}" for n, i in options ]
+		sel = st.selectbox( "Select a vector store", options=names )
 		sel_id: Optional[ str ] = None
 		sel_name: Optional[ str ] = None
 		for n, i in options:
-			label = f'{n} — {i}'
+			label = f"{n} — {i}"
 			if label == sel:
 				sel_id = i
 				sel_name = n
@@ -1693,13 +1695,13 @@ elif mode == 'Vector Store':
 		
 		c1, c2 = st.columns( [ 1, 1 ] )
 		with c1:
-			if st.button( 'Retrieve store' ):
+			if st.button( "Retrieve store" ):
 				try:
-					if sel_id and hasattr( chat, 'retrieve_store' ):
+					if sel_id and hasattr( chat, "retrieve_store" ):
 						vs = chat.retrieve_store( sel_id )
 						st.json(
 							vs.__dict__
-							if hasattr( vs, '__dict__' )
+							if hasattr( vs, "__dict__" )
 							else vs
 						)
 					else:
@@ -1722,16 +1724,16 @@ elif mode == 'Vector Store':
 							'or no store selected.'
 						)
 				except Exception as exc:
-					st.error( f'Delete failed: {exc}' )
+					st.error( f"Delete failed: {exc}" )
 	else:
 		st.info(
-			'No vector stores discovered. Create one or confirm '
-			'`chat.vector_stores` mapping exists.' )
+			"No vector stores discovered. Create one or confirm "
+			"`chat.vector_stores` mapping exists." )
 
 # ======================================================================================
 # PROMPT ENGINEERING MODE
 # ======================================================================================
-elif mode == 'Prompt Engineering':
+elif mode == "Prompt Engineering":
 	import sqlite3
 	import math
 	
@@ -1742,13 +1744,13 @@ elif mode == 'Prompt Engineering':
 	# Session state (single source of truth)
 	# ------------------------------------------------------------------
 	st.session_state.setdefault( 'pe_page', 1 )
-	st.session_state.setdefault( 'pe_search', '' )
+	st.session_state.setdefault( 'pe_search', "" )
 	st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
 	st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
 	st.session_state.setdefault( 'pe_selected_id', None )
 	
-	st.session_state.setdefault( 'pe_name', '' )
-	st.session_state.setdefault( 'pe_text', '' )
+	st.session_state.setdefault( 'pe_name', "" )
+	st.session_state.setdefault( 'pe_text', "" )
 	st.session_state.setdefault( 'pe_version', 1 )
 	
 	# ------------------------------------------------------------------
@@ -1759,14 +1761,14 @@ elif mode == 'Prompt Engineering':
 	
 	def reset_selection( ):
 		st.session_state.pe_selected_id = None
-		st.session_state.pe_name = ''
-		st.session_state.pe_text = ''
+		st.session_state.pe_name = ""
+		st.session_state.pe_text = ""
 		st.session_state.pe_version = 1
 	
 	def load_prompt( pid: int ) -> None:
 		with get_conn( ) as conn:
 			cur = conn.execute(
-				f'SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?',
+				f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
 				(pid,),
 			)
 			row = cur.fetchone( )
@@ -1807,7 +1809,7 @@ elif mode == 'Prompt Engineering':
 	
 	with c4:
 		st.markdown(
-			'<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>',
+			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
 			unsafe_allow_html=True,
 		)
 		a1, a2, a3 = st.columns( [ 2,
@@ -1815,42 +1817,42 @@ elif mode == 'Prompt Engineering':
 		                           1 ] )
 		with a1:
 			jump_id = st.number_input(
-				'Go to ID',
+				"Go to ID",
 				min_value=1,
 				step=1,
-				label_visibility='collapsed',
+				label_visibility="collapsed",
 			)
 		with a2:
-			if st.button( 'Go' ):
+			if st.button( "Go" ):
 				st.session_state.pe_selected_id = int( jump_id )
 				load_prompt( int( jump_id ) )
 		with a3:
-			if st.button( 'Undo' ):
+			if st.button( "Undo" ):
 				reset_selection( )
 	
 	# ------------------------------------------------------------------
 	# Load prompt table
 	# ------------------------------------------------------------------
-	where = ''
+	where = ""
 	params = [ ]
 	
 	if st.session_state.pe_search:
-		where = 'WHERE Name LIKE ? OR Text LIKE ?'
-		s = f'%{st.session_state.pe_search}%'
+		where = "WHERE Name LIKE ? OR Text LIKE ?"
+		s = f"%{st.session_state.pe_search}%"
 		params.extend( [ s,
 		                 s ] )
 	
 	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
 	
-	query = f'''
+	query = f"""
         SELECT PromptsId, Name, Text, Version, ID
         FROM {TABLE}
         {where}
         ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
         LIMIT {PAGE_SIZE} OFFSET {offset}
-    '''
+    """
 	
-	count_query = f'SELECT COUNT(*) FROM {TABLE} {where}'
+	count_query = f"SELECT COUNT(*) FROM {TABLE} {where}"
 	
 	with get_conn( ) as conn:
 		rows = conn.execute( query, params ).fetchall( )
@@ -1879,9 +1881,9 @@ elif mode == 'Prompt Engineering':
 		use_container_width=True,
 	)
 	
-	selected = [ r for r in edited if r.get( 'Selected' ) ]
+	selected = [ r for r in edited if r.get( "Selected" ) ]
 	if len( selected ) == 1:
-		pid = selected[ 0 ][ 'PromptsId' ]
+		pid = selected[ 0 ][ "PromptsId" ]
 		if pid != st.session_state.pe_selected_id:
 			st.session_state.pe_selected_id = pid
 			load_prompt( pid )
@@ -1893,12 +1895,12 @@ elif mode == 'Prompt Engineering':
 	                           3.5,
 	                           0.25 ] )
 	with p1:
-		if st.button( '◀ Prev' ) and st.session_state.pe_page > 1:
+		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
 			st.session_state.pe_page -= 1
 	with p2:
-		st.markdown( f'Page **{st.session_state.pe_page}** of **{total_pages}**' )
+		st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
 	with p3:
-		if st.button( 'Next ▶' ) and st.session_state.pe_page < total_pages:
+		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
 			st.session_state.pe_page += 1
 	
 	st.divider( )
@@ -1919,7 +1921,7 @@ elif mode == 'Prompt Engineering':
 	with st.expander( 'Create / Edit Prompt', expanded=True ):
 		st.text_input(
 			'PromptsId',
-			value=st.session_state.pe_selected_id or '',
+			value=st.session_state.pe_selected_id or "",
 			disabled=True,
 		)
 		st.text_input( 'Name', key='pe_name' )
@@ -1929,15 +1931,15 @@ elif mode == 'Prompt Engineering':
 		c1, c2, c3 = st.columns( 3 )
 		
 		with c1:
-			if st.button( 'Save Changes' if st.session_state.pe_selected_id else 'Create Prompt' ):
+			if st.button( "Save Changes" if st.session_state.pe_selected_id else "Create Prompt" ):
 				with get_conn( ) as conn:
 					if st.session_state.pe_selected_id:
 						conn.execute(
-							f'''
+							f"""
                             UPDATE {TABLE}
                             SET Name=?, Text=?, Version=?
                             WHERE PromptsId=?
-                            ''',
+                            """,
 							(
 									st.session_state.pe_name,
 									st.session_state.pe_text,
@@ -1947,10 +1949,10 @@ elif mode == 'Prompt Engineering':
 						)
 					else:
 						conn.execute(
-							f'''
+							f"""
                             INSERT INTO {TABLE} (Name, Text, Version)
                             VALUES (?, ?, ?)
-                            ''',
+                            """,
 							(
 									st.session_state.pe_name,
 									st.session_state.pe_text,
@@ -1988,12 +1990,12 @@ elif mode == 'Documents':
 	if uploaded:
 		for up in uploaded:
 			st.session_state.files.append( save_temp( up ) )
-		st.success( f'Saved {len( uploaded )} file(s) to session' )
+		st.success( f"Saved {len( uploaded )} file(s) to session" )
 	
 	if st.session_state.files:
-		st.markdown( '**Uploaded documents (session-only)**' )
+		st.markdown( "**Uploaded documents (session-only)**" )
 		idx = st.selectbox(
-			'Choose a document',
+			"Choose a document",
 			options=list( range( len( st.session_state.files ) ) ),
 			format_func=lambda i: st.session_state.files[ i ],
 		)
@@ -2001,31 +2003,31 @@ elif mode == 'Documents':
 		
 		c1, c2 = st.columns( [ 1, 1 ] )
 		with c1:
-			if st.button( 'Remove selected document' ):
+			if st.button( "Remove selected document" ):
 				removed = st.session_state.files.pop( idx )
-				st.success( f'Removed {removed}' )
+				st.success( f"Removed {removed}" )
 		with c2:
-			if st.button( 'Show selected path' ):
-				st.info( f'Local temp path: {selected_path}' )
+			if st.button( "Show selected path" ):
+				st.info( f"Local temp path: {selected_path}" )
 		
-		st.markdown( '---' )
+		st.markdown( "---" )
 		question = st.text_area(
-			'Ask a question about the selected document'
+			"Ask a question about the selected document"
 		)
-		if st.button( 'Ask Document' ):
+		if st.button( "Ask Document" ):
 			if not question:
 				st.warning(
-					'Enter a question before asking.'
+					"Enter a question before asking."
 				)
 			else:
-				with st.spinner( 'Running document Q&A…' ):
+				with st.spinner( "Running document Q&A…" ):
 					try:
 						try:
 							chat  # type: ignore
 						except NameError:
 							chat = get_provider_module( ).Chat( )
 						answer = None
-						if hasattr( chat, 'summarize_document' ):
+						if hasattr( chat, "summarize_document" ):
 							try:
 								answer = chat.summarize_document(
 									prompt=question,
@@ -2035,56 +2037,56 @@ elif mode == 'Documents':
 								answer = chat.summarize_document(
 									question, selected_path
 								)
-						elif hasattr( chat, 'ask_document' ):
+						elif hasattr( chat, "ask_document" ):
 							answer = chat.ask_document(
 								selected_path, question
 							)
-						elif hasattr( chat, 'document_qa' ):
+						elif hasattr( chat, "document_qa" ):
 							answer = chat.document_qa(
 								selected_path, question
 							)
 						else:
 							raise RuntimeError(
-								'No document-QA method found on chat object.'
+								"No document-QA method found on chat object."
 							)
 						
-						st.markdown( '**Answer:**' )
-						st.markdown( answer or 'No answer returned.' )
+						st.markdown( "**Answer:**" )
+						st.markdown( answer or "No answer returned." )
 						
 						st.session_state.messages.append(
 							{
-									'role': 'user',
-									'content': f'[Document question] {question}',
+									"role": "user",
+									"content": f"[Document question] {question}",
 							}
 						)
 						st.session_state.messages.append(
 							{
-									'role': 'assistant',
-									'content': answer or '',
+									"role": "assistant",
+									"content": answer or "",
 							}
 						)
 						
 						try:
 							_update_token_counters(
-								getattr( chat, 'response', None )
+								getattr( chat, "response", None )
 								or answer
 							)
 						except Exception:
 							pass
 					except Exception as e:
 						st.error(
-							f'Document Q&A failed: {e}'
+							f"Document Q&A failed: {e}"
 						)
 	else:
 		st.info(
-			'No client-side documents uploaded this session. '
-			'Use the uploader in the sidebar to add files.'
+			"No client-side documents uploaded this session. "
+			"Use the uploader in the sidebar to add files."
 		)
 
 # ======================================================================================
 # FILES API MODE
 # ======================================================================================
-elif tab_files or mode == 'Files':
+elif tab_files or mode == "Files":
 	try:
 		chat  # type: ignore
 	except NameError:
@@ -2116,29 +2118,29 @@ elif tab_files or mode == 'Files':
 	if uploaded_file:
 		tmp_path = save_temp( uploaded_file )
 		upload_fn = None
-		for name in ('upload_file', 'upload', 'files_upload'):
+		for name in ("upload_file", "upload", "files_upload"):
 			if hasattr( chat, name ):
 				upload_fn = getattr( chat, name )
 				break
 		if not upload_fn:
 			st.warning(
-				'No upload function found on chat object (upload_file).'
+				"No upload function found on chat object (upload_file)."
 			)
 		else:
-			with st.spinner( 'Uploading to Files API...' ):
+			with st.spinner( "Uploading to Files API..." ):
 				try:
 					fid = upload_fn( tmp_path )
-					st.success( f'Uploaded; file id: {fid}' )
+					st.success( f"Uploaded; file id: {fid}" )
 				except Exception as exc:
-					st.error( f'Upload failed: {exc}' )
+					st.error( f"Upload failed: {exc}" )
 	
-	if st.button( 'List files' ):
+	if st.button( "List files" ):
 		if not list_method:
 			st.warning(
-				'No file-listing method found on chat object.'
+				"No file-listing method found on chat object."
 			)
 		else:
-			with st.spinner( 'Listing files...' ):
+			with st.spinner( "Listing files..." ):
 				try:
 					files_resp = list_method( )
 					files_list = [ ]
@@ -2146,8 +2148,8 @@ elif tab_files or mode == 'Files':
 						files_list = [ ]
 					elif isinstance( files_resp, dict ):
 						files_list = (
-								files_resp.get( 'data' )
-								or files_resp.get( 'files' )
+								files_resp.get( "data" )
+								or files_resp.get( "files" )
 								or [ ]
 						)
 					elif isinstance( files_resp, list ):
@@ -2155,7 +2157,7 @@ elif tab_files or mode == 'Files':
 					else:
 						try:
 							files_list = getattr(
-								files_resp, 'data', files_resp
+								files_resp, "data", files_resp
 							)
 						except Exception:
 							files_list = [ files_resp ]
@@ -2164,22 +2166,22 @@ elif tab_files or mode == 'Files':
 					for f in files_list:
 						try:
 							fid = (
-									f.get( 'id' )
+									f.get( "id" )
 									if isinstance( f, dict )
-									else getattr( f, 'id', None )
+									else getattr( f, "id", None )
 							)
 							name = (
-									f.get( 'filename' )
+									f.get( "filename" )
 									if isinstance( f, dict )
 									else getattr(
-										f, 'filename', None
+										f, "filename", None
 									)
 							)
 							purpose = (
-									f.get( 'purpose' )
+									f.get( "purpose" )
 									if isinstance( f, dict )
 									else getattr(
-										f, 'purpose', None
+										f, "purpose", None
 									)
 							)
 						except Exception:
@@ -2188,45 +2190,45 @@ elif tab_files or mode == 'Files':
 							purpose = None
 						rows.append(
 							{
-									'id': fid,
-									'filename': name,
-									'purpose': purpose,
+									"id": fid,
+									"filename": name,
+									"purpose": purpose,
 							}
 						)
 					if rows:
 						st.table( rows )
 					else:
-						st.info( 'No files returned.' )
+						st.info( "No files returned." )
 				except Exception as exc:
-					st.error( f'List files failed: {exc}' )
+					st.error( f"List files failed: {exc}" )
 	
-	if 'files_list' in locals( ) and files_list:
+	if "files_list" in locals( ) and files_list:
 		file_ids = [
-				r.get( 'id' )
+				r.get( "id" )
 				if isinstance( r, dict )
-				else getattr( r, 'id', None )
+				else getattr( r, "id", None )
 				for r in files_list
 		]
 		sel = st.selectbox(
-			'Select file id to delete', options=file_ids
+			"Select file id to delete", options=file_ids
 		)
-		if st.button( 'Delete selected file' ):
+		if st.button( "Delete selected file" ):
 			del_fn = None
-			for name in ('delete_file', 'delete', 'files_delete'):
+			for name in ("delete_file", "delete", "files_delete"):
 				if hasattr( chat, name ):
 					del_fn = getattr( chat, name )
 					break
 			if not del_fn:
 				st.warning(
-					'No delete function found on chat object.'
+					"No delete function found on chat object."
 				)
 			else:
-				with st.spinner( 'Deleting file...' ):
+				with st.spinner( "Deleting file..." ):
 					try:
 						res = del_fn( sel )
-						st.success( f'Delete result: {res}' )
+						st.success( f"Delete result: {res}" )
 					except Exception as exc:
-						st.error( f'Delete failed: {exc}' )
+						st.error( f"Delete failed: {exc}" )
 
 # ==============================================================================
 # DATA TAB
@@ -2296,19 +2298,19 @@ elif mode == 'Data Export':
 # Footer — Fixed Bottom Status Bar (Desktop-style)
 # ======================================================================================
 st.markdown(
-	'''
+	"""
 	<style>
 	.block-container {
 		padding-bottom: 3rem;
 	}
 	</style>
-	''',
+	""",
 	unsafe_allow_html=True,
 )
 
 # ---- Fixed footer container
 st.markdown(
-	'''
+	"""
 	<style>
 	.boo-status-bar {
 		position: fixed;
@@ -2329,7 +2331,7 @@ st.markdown(
 		max-width: 100%;
 	}
 	</style>
-	''',
+	""",
 	unsafe_allow_html=True,
 )
 
@@ -2341,11 +2343,11 @@ _mode_to_model_key = {
 		'Embeddings': 'embed_model',
 }
 
-provider_val = st.session_state.get( 'provider', '—' )
-mode_val = mode or '—'
+provider_val = st.session_state.get( "provider", "—" )
+mode_val = mode or "—"
 
 active_model = st.session_state.get(
-	_mode_to_model_key.get( mode, '' ),
+	_mode_to_model_key.get( mode, "" ),
 	None,
 )
 
@@ -2383,17 +2385,17 @@ elif mode == 'Embeddings':
 	if method is not None:
 		right_parts.append( f'Method: {method}' )
 
-right_text = ' · '.join( right_parts ) if right_parts else '—'
+right_text = " · ".join( right_parts ) if right_parts else "—"
 
 # ---- Render footer
 st.markdown(
-	f'''
-    <div class='boo-status-bar'>
-        <div class='boo-status-inner'>
+	f"""
+    <div class="boo-status-bar">
+        <div class="boo-status-inner">
             <span>{provider_val} — {mode_val}</span>
             <span>{right_text}</span>
         </div>
     </div>
-    ''',
+    """,
 	unsafe_allow_html=True,
 )
