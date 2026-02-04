@@ -78,15 +78,49 @@ FAVICON = r'resources/favicon.ico'
 
 CRS = r'https://www.congress.gov/crs-appropriations-status-table'
 
-GPT = r'resources/buddy_logo.ico'
+GPT_LOGO = r'resources/buddy_logo.ico'
 
-GEMINI = r'resources/gemini_logo.png'
+GPT_MODES = [ 'Chat',
+              'Text',
+              'Images',
+              'Audio',
+              'Embeddings',
+              'Documents',
+              'Files',
+              'VectorStore' ]
 
-GROQ = r'resources/grok_logo.png'
+GEMINI_LOGO = r'resources/gemini_logo.png'
 
-MISTRAL = r'resources/mistral_logo.png'
+GEMINI_MODES = [ 'Chat',
+                 'Text',
+                 'Images',
+                 'Audio',
+                 'Embeddings',
+                 'Documents',
+                 'Files' ]
 
-CLAUDE = r'resources/claude_logo.png'
+GROQ_LOGO = r'resources/grok_logo.png'
+
+GROQ_MODES = [ 'Chat',
+               'Text',
+               'Images',
+               'Audio',
+               'Embeddings',
+               'Documents',
+               'Files',
+               'VectorStores' ]
+
+MISTRAL_LOGO = r'resources/mistral_logo.png'
+
+MISTRAL_MODES = [ 'Chat',
+                  'Text',
+                  'Images',
+                  'Embeddings',
+                  'Documents' ]
+
+CLAUDE_LOGO = r'resources/claude_logo.png'
+
+CLAUDE_MODES = [ 'Chat', 'Text', 'Images', 'Documents', 'Files' ]
 
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
@@ -149,7 +183,7 @@ _TAG_OPEN = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
 
 _TAG_CLOSE = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
 
-LOGO_MAP = { 'GPT': GPT, 'Gemini': GEMINI, 'Groq': GROQ, 'Mistral': MISTRAL, 'Claude': CLAUDE }
+LOGO_MAP = { 'GPT': GPT_LOGO, 'Gemini': GEMINI_LOGO, 'Groq': GROQ_LOGO, 'Mistral': MISTRAL_LOGO, 'Claude': CLAUDE_LOGO }
 
 # ==============================================================================
 # UTILITIES
@@ -699,8 +733,6 @@ st.caption( APP_SUBTITLE )
 
 inject_response_css( )
 
-style_subheaders( )
-
 init_state( )
 
 # ======================================================================================
@@ -941,7 +973,8 @@ def embedding_model_options( embed ):
 with st.sidebar:
 	logo_slot = st.empty( )
 	provider = st.session_state.get( "provider", "GPT" )
-	
+
+	style_subheaders( )
 	st.subheader( "" )
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	provider = st.selectbox( "Provider", list( PROVIDERS.keys( ) ),
