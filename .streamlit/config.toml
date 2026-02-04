@@ -1,8 +1,7 @@
 [theme]
-base = 'dark'
-primaryColor = "#0078FC"
+base = "dark"
 backgroundColor = "#141414"
 secondaryBackgroundColor = "#3C3C3C"
-textColor = "#FAFAFA"
-font = "Roboto"
-showSidebarBorder = true
+textColor = "#E0E0E0"
+primaryColor = "#0078FC"
+font = 'Roboto'
