@@ -149,7 +149,7 @@ _TAG_OPEN = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
 
 _TAG_CLOSE = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
 
-LOGO_MAP = { "GPT": GPT, "Gemini": GEMINI, "Groq": GROQ, }
+LOGO_MAP = { 'GPT': GPT, 'Gemini': GEMINI, 'Groq': GROQ, 'Mistral': MISTRAL, 'Claude': CLAUDE }
 
 # ==============================================================================
 # UTILITIES
