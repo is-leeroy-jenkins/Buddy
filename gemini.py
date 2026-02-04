@@ -142,146 +142,6 @@ class Gemini( ):
 		self.modalities = None;
 		self.stops = None
 
-class FileStore( Gemini ):
-	'''
-
-		Purpose:
-		--------
-		Class encapsulating Gemini's FileStores API for uploading and managing remote assets.
-
-		Attributes:
-		-----------
-		client       : Client - Initialized GenAI client
-		file_id      : str - ID of the target file
-		display_name : str - User-friendly label for the file
-		mime_type    : str - Content type of the file
-		file_path    : str - Local filesystem path
-		file_list    : list - Collection of remote File objects
-		response     : any - RAW API response object
-		use_vertex   : bool - Integration flag
-
-		Methods:
-		--------
-		upload( path, name )      : Uploads a local file to Gemini storage
-		retrieve( file_id )       : Fetches metadata for a specific remote file
-		list_files( )             : Lists all files currently in remote storage
-		delete( file_id )         : Removes a file from remote storage
-
-	'''
-	client: Optional[ genai.Client ]
-	file_id: Optional[ str ]
-	display_name: Optional[ str ]
-	mime_type: Optional[ str ]
-	file_path: Optional[ str ]
-	file_list: Optional[ List[ File ] ]
-	response: Optional[ Any ]
-	use_vertex: Optional[ bool ]
-	
-	def __init__( self, use_ai: bool=False, version: str='v1alpha' ):
-		super( ).__init__( )
-		self.use_vertex = use_ai
-		self.api_version = version
-		self.http_options = HttpOptions( api_version=self.api_version )
-		self.client = genai.Client( vertexai=self.use_vertex, api_key=self.api_key,
-			http_options=self.http_options )
-		self.file_id = None;
-		self.display_name = None;
-		self.mime_type = None
-		self.file_path = None;
-		self.file_list = [ ];
-		self.response = None
-	
-	def upload( self, path: str, name: str=None ) -> File | None:
-		"""
-		Purpose: Uploads a file from a local path to Gemini's remote temporal storage.
-		Parameters:
-		-----------
-		path: str - Local filesystem path to the file.
-		name: str - Optional display name for the file.
-		Returns:
-		--------
-		Optional[ File ] - Metadata object of the uploaded file.
-		"""
-		try:
-			throw_if( 'path', path )
-			self.file_path = path;
-			self.display_name = name
-			self.response = self.client.files.upload( path=self.file_path,
-				config={
-						'display_name': self.display_name } )
-			return self.response
-		except Exception as e:
-			exception = Error( e );
-			exception.module = 'gemini'
-			exception.cause = 'FileStore'
-			exception.method = 'upload( self, path: str, name: str ) -> Optional[ File ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def retrieve( self, file_id: str ) -> Optional[ File ]:
-		"""
-		Purpose: Retrieves the metadata and state of a previously uploaded file.
-		Parameters:
-		-----------
-		file_id: str - The unique identifier of the remote file.
-		Returns:
-		--------
-		Optional[ File ] - File metadata object.
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.response = self.client.files.get( name=self.file_id )
-			return self.response
-		except Exception as e:
-			exception = Error( e );
-			exception.module = 'gemini'
-			exception.cause = 'FileStore'
-			exception.method = 'retrieve( self, file_id: str ) -> Optional[ File ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def list_files( self ) -> List[ File ] | None:
-		"""
-		Purpose: Returns a list of all files currently stored in the user's remote project.
-		Returns:
-		--------
-		Optional[ List[ File ] ] - List of File metadata objects.
-		"""
-		try:
-			self.file_list = list( self.client.files.list( ) )
-			return self.file_list
-		except Exception as e:
-			exception = Error( e );
-			exception.module = 'gemini'
-			exception.cause = 'FileStore'
-			exception.method = 'list_files( self ) -> Optional[ List[ File ] ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def delete( self, file_id: str ) -> bool | None:
-		"""
-		Purpose: Deletes a specific file from remote storage to free up project quota.
-		Parameters:
-		-----------
-		file_id: str - Unique identifier of the file to remove.
-		Returns:
-		--------
-		bool - True if deletion was successful.
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.client.files.delete( name=self.file_id )
-			return True
-		except Exception as e:
-			exception = Error( e );
-			exception.module = 'gemini'
-			exception.cause = 'FileStore'
-			exception.method = 'delete( self, file_id: str ) -> bool'
-			error = ErrorDialog( exception )
-			error.show( )
-
 class Chat( Gemini ):
 	'''
 
@@ -566,6 +426,146 @@ class Chat( Gemini ):
 			exception.module = 'gemini'
 			exception.cause = 'Chat'
 			exception.method = 'summarize_document( self, prompt, filepath, model ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class FileStore( Gemini ):
+	'''
+
+		Purpose:
+		--------
+		Class encapsulating Gemini's FileStores API for uploading and managing remote assets.
+
+		Attributes:
+		-----------
+		client       : Client - Initialized GenAI client
+		file_id      : str - ID of the target file
+		display_name : str - User-friendly label for the file
+		mime_type    : str - Content type of the file
+		file_path    : str - Local filesystem path
+		file_list    : list - Collection of remote File objects
+		response     : any - RAW API response object
+		use_vertex   : bool - Integration flag
+
+		Methods:
+		--------
+		upload( path, name )      : Uploads a local file to Gemini storage
+		retrieve( file_id )       : Fetches metadata for a specific remote file
+		list_files( )             : Lists all files currently in remote storage
+		delete( file_id )         : Removes a file from remote storage
+
+	'''
+	client: Optional[ genai.Client ]
+	file_id: Optional[ str ]
+	display_name: Optional[ str ]
+	mime_type: Optional[ str ]
+	file_path: Optional[ str ]
+	file_list: Optional[ List[ File ] ]
+	response: Optional[ Any ]
+	use_vertex: Optional[ bool ]
+	
+	def __init__( self, use_ai: bool = False, version: str = 'v1alpha' ):
+		super( ).__init__( )
+		self.use_vertex = use_ai
+		self.api_version = version
+		self.http_options = HttpOptions( api_version=self.api_version )
+		self.client = genai.Client( vertexai=self.use_vertex, api_key=self.api_key,
+			http_options=self.http_options )
+		self.file_id = None;
+		self.display_name = None;
+		self.mime_type = None
+		self.file_path = None;
+		self.file_list = [ ];
+		self.response = None
+	
+	def upload( self, path: str, name: str = None ) -> File | None:
+		"""
+		Purpose: Uploads a file from a local path to Gemini's remote temporal storage.
+		Parameters:
+		-----------
+		path: str - Local filesystem path to the file.
+		name: str - Optional display name for the file.
+		Returns:
+		--------
+		Optional[ File ] - Metadata object of the uploaded file.
+		"""
+		try:
+			throw_if( 'path', path )
+			self.file_path = path;
+			self.display_name = name
+			self.response = self.client.files.upload( path=self.file_path,
+				config={
+						'display_name': self.display_name } )
+			return self.response
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'FileStore'
+			exception.method = 'upload( self, path: str, name: str ) -> Optional[ File ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def retrieve( self, file_id: str ) -> Optional[ File ]:
+		"""
+		Purpose: Retrieves the metadata and state of a previously uploaded file.
+		Parameters:
+		-----------
+		file_id: str - The unique identifier of the remote file.
+		Returns:
+		--------
+		Optional[ File ] - File metadata object.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			self.file_id = file_id
+			self.response = self.client.files.get( name=self.file_id )
+			return self.response
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'FileStore'
+			exception.method = 'retrieve( self, file_id: str ) -> Optional[ File ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def list_files( self ) -> List[ File ] | None:
+		"""
+		Purpose: Returns a list of all files currently stored in the user's remote project.
+		Returns:
+		--------
+		Optional[ List[ File ] ] - List of File metadata objects.
+		"""
+		try:
+			self.file_list = list( self.client.files.list( ) )
+			return self.file_list
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'FileStore'
+			exception.method = 'list_files( self ) -> Optional[ List[ File ] ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def delete( self, file_id: str ) -> bool | None:
+		"""
+		Purpose: Deletes a specific file from remote storage to free up project quota.
+		Parameters:
+		-----------
+		file_id: str - Unique identifier of the file to remove.
+		Returns:
+		--------
+		bool - True if deletion was successful.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			self.file_id = file_id
+			self.client.files.delete( name=self.file_id )
+			return True
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'FileStore'
+			exception.method = 'delete( self, file_id: str ) -> bool'
 			error = ErrorDialog( exception )
 			error.show( )
 
