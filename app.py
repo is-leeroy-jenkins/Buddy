@@ -927,6 +927,20 @@ with st.sidebar:
 			help='Overrides GROQ_API_KEY from config.py for this session only.'
 		)
 		
+		google_key = st.text_input(
+			'Google API Key',
+			type='password',
+			value=st.session_state.groq_api_key or '',
+			help='Overrides GOOGLE_API_KEY from config.py for this session only.'
+		)
+		
+		mistral_key = st.text_input(
+			'Mistral API Key',
+			type='password',
+			value=st.session_state.groq_api_key or '',
+			help='Overrides MISTRAL_API_KEY from config.py for this session only.'
+		)
+		
 		if openai_key:
 			st.session_state.openai_api_key = openai_key
 			os.environ[ 'OPENAI_API_KEY' ] = openai_key
@@ -938,6 +952,19 @@ with st.sidebar:
 		if groq_key:
 			st.session_state.groq_api_key = groq_key
 			os.environ[ 'GROQ_API_KEY' ] = groq_key
+		
+		if google_key:
+			st.session_state.google_api_key = google_key
+			os.environ[ 'GOOGLE_API_KEY' ] = google_key
+		
+		if mistral_key:
+			st.session_state.mistral_api_key = mistral_key
+			os.environ[ 'MISTRAL_API_KEY' ] = mistral_key
+		
+		if xai_key:
+			st.session_state.xai_api_key = xai_key
+			os.environ[ 'XAI_API_KEY' ] = xai_key
+	
 	with logo_slot:
 		if logo_path and os.path.exists( logo_path ):
 			col1, col2, col3 = st.columns( [ 1,  2,  1 ] )
