@@ -697,6 +697,15 @@ if 'gemini_api_key' not in st.session_state:
 if 'groq_api_key' not in st.session_state:
 	st.session_state.groq_api_key = ''
 
+if 'google_api_key' not in st.session_state:
+	st.session_state.google_api_key = ''
+	
+if 'mistral_api_key' not in st.session_state:
+	st.session_state.mistral_api_key = ''
+
+if 'xai_api_key' not in st.session_state:
+	st.session_state.xai_api_key = ''
+	
 if st.session_state.openai_api_key == '':
 	default = getattr( cfg, 'OPENAI_API_KEY', '' )
 	if default:
@@ -714,6 +723,24 @@ if st.session_state.groq_api_key == '':
 	if default:
 		st.session_state.groq_api_key = default
 		os.environ[ 'GROQ_API_KEY' ] = default
+
+if st.session_state.google_api_key == '':
+	default = getattr( cfg, 'GOOGLE_API_KEY', '' )
+	if default:
+		st.session_state.google_api_key = default
+		os.environ[ 'GOOGLE_API_KEY' ] = default
+
+if st.session_state.mistral_api_key == '':
+	default = getattr( cfg, 'MISTRAL_API_KEY', '' )
+	if default:
+		st.session_state.mistral_api_key = default
+		os.environ[ 'MISTRAL_API_KEY' ] = default
+
+if st.session_state.xai_api_key == '':
+	default = getattr( cfg, 'XAI_API_KEY', '' )
+	if default:
+		st.session_state.xai_api_key = default
+		os.environ[ 'XAI_API_KEY' ] = default
 
 if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 	st.session_state[ 'provider' ] = 'GPT'
