@@ -80,6 +80,14 @@ CRS = r'https://www.congress.gov/crs-appropriations-status-table'
 
 GPT_LOGO = r'resources/buddy_logo.ico'
 
+GEMINI_LOGO = r'resources/gemini_logo.png'
+
+GROQ_LOGO = r'resources/grok_logo.png'
+
+MISTRAL_LOGO = r'resources/mistral_logo.png'
+
+CLAUDE_LOGO = r'resources/claude_logo.png'
+
 GPT_MODES = [ 'Chat',
               'Text',
               'Images',
@@ -89,8 +97,6 @@ GPT_MODES = [ 'Chat',
               'Files',
               'VectorStore' ]
 
-GEMINI_LOGO = r'resources/gemini_logo.png'
-
 GEMINI_MODES = [ 'Chat',
                  'Text',
                  'Images',
@@ -98,8 +104,6 @@ GEMINI_MODES = [ 'Chat',
                  'Embeddings',
                  'Documents',
                  'Files' ]
-
-GROQ_LOGO = r'resources/grok_logo.png'
 
 GROQ_MODES = [ 'Chat',
                'Text',
@@ -110,7 +114,6 @@ GROQ_MODES = [ 'Chat',
                'Files',
                'VectorStores' ]
 
-MISTRAL_LOGO = r'resources/mistral_logo.png'
 
 MISTRAL_MODES = [ 'Chat',
                   'Text',
@@ -118,15 +121,13 @@ MISTRAL_MODES = [ 'Chat',
                   'Embeddings',
                   'Documents' ]
 
-CLAUDE_LOGO = r'resources/claude_logo.png'
-
 CLAUDE_MODES = [ 'Chat', 'Text', 'Images', 'Documents', 'Files' ]
 
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
 APP_TITLE = 'Buddy'
 
-APP_SUBTITLE = 'AI for Budget Analysts'
+APP_SUBTITLE = 'Budget Execution AI'
 
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 
@@ -278,7 +279,7 @@ def encode_image_base64( path: str ) -> str:
 	data = Path( path ).read_bytes( )
 	return base64.b64encode( data ).decode( "utf-8" )
 
-def chunk_text( text: str, size: int = 1200, overlap: int = 200 ) -> List[ str ]:
+def chunk_text( text: str, size: int=1200, overlap: int=200 ) -> List[ str ]:
 	chunks, i = [ ], 0
 	while i < len( text ):
 		chunks.append( text[ i:i + size ] )
@@ -347,12 +348,19 @@ def style_subheaders( ) -> None:
 	st.markdown(
 		"""
 		<style>
+		/* Main UI subheaders */
 		h3 {
+			color: rgb(0, 120, 252);
+		}
+
+		/* Chat subheaders */
+		.stChatMessage h3 {
 			color: rgb(0, 120, 252);
 		}
 		</style>
 		""",
-		unsafe_allow_html=True )
+		unsafe_allow_html=True
+	)
 	
 def init_state( ) -> None:
 	if 'chat_history' not in st.session_state:
@@ -1861,241 +1869,6 @@ elif mode == "Vector Store":
 			"`chat.vector_stores` mapping exists." )
 
 # ======================================================================================
-# PROMPT ENGINEERING MODE
-# ======================================================================================
-elif mode == "Prompt Engineering":
-	import sqlite3
-	import math
-	
-	TABLE = 'Prompts'
-	PAGE_SIZE = 10
-	
-	st.subheader( '📝 Prompt Engineering')
-	# ------------------------------------------------------------------
-	# Session state (single source of truth)
-	# ------------------------------------------------------------------
-	st.session_state.setdefault( 'pe_page', 1 )
-	st.session_state.setdefault( 'pe_search', "" )
-	st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
-	st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
-	st.session_state.setdefault( 'pe_selected_id', None )
-	
-	st.session_state.setdefault( 'pe_name', "" )
-	st.session_state.setdefault( 'pe_text', "" )
-	st.session_state.setdefault( 'pe_version', 1 )
-	
-	# ------------------------------------------------------------------
-	# DB helpers
-	# ------------------------------------------------------------------
-	def get_conn( ):
-		return sqlite3.connect( DB_PATH )
-	
-	def reset_selection( ):
-		st.session_state.pe_selected_id = None
-		st.session_state.pe_name = ""
-		st.session_state.pe_text = ""
-		st.session_state.pe_version = 1
-	
-	def load_prompt( pid: int ) -> None:
-		with get_conn( ) as conn:
-			cur = conn.execute(
-				f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
-				(pid,),
-			)
-			row = cur.fetchone( )
-			if row:
-				st.session_state.pe_name = row[ 0 ]
-				st.session_state.pe_text = row[ 1 ]
-				st.session_state.pe_version = row[ 2 ]
-	
-	# ------------------------------------------------------------------
-	# XML / Markdown converters
-	# ------------------------------------------------------------------
-	def xml_to_md( ):
-		st.session_state.pe_text = xml_converter( st.session_state.pe_text )
-	
-	def md_to_xml( ):
-		st.session_state.pe_text = markdown_converter( st.session_state.pe_text )
-	
-	# ------------------------------------------------------------------
-	# Controls (table filters)
-	# ------------------------------------------------------------------
-	c1, c2, c3, c4 = st.columns( [ 4,  2, 2, 3 ] )
-	
-	with c1:
-		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
-	
-	with c2:
-		st.selectbox( 'Sort by',
-			[ 'PromptsId',  'Name', 'Version' ], key='pe_sort_col', )
-	
-	with c3:
-		st.selectbox( 'Direction', [ 'ASC',  'DESC' ], key='pe_sort_dir', )
-	
-	with c4:
-		st.markdown(
-			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
-			unsafe_allow_html=True,
-		)
-		a1, a2, a3 = st.columns( [ 2, 1,  1 ] )
-		with a1:
-			jump_id = st.number_input(
-				"Go to ID",
-				min_value=1,
-				step=1,
-				label_visibility="collapsed",
-			)
-		with a2:
-			if st.button( "Go" ):
-				st.session_state.pe_selected_id = int( jump_id )
-				load_prompt( int( jump_id ) )
-		with a3:
-			if st.button( "Undo" ):
-				reset_selection( )
-	
-	# ------------------------------------------------------------------
-	# Load prompt table
-	# ------------------------------------------------------------------
-	where = ""
-	params = [ ]
-	
-	if st.session_state.pe_search:
-		where = "WHERE Name LIKE ? OR Text LIKE ?"
-		s = f"%{st.session_state.pe_search}%"
-		params.extend( [ s,
-		                 s ] )
-	
-	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
-	
-	query = f"""
-        SELECT PromptsId, Name, Text, Version, ID
-        FROM {TABLE}
-        {where}
-        ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
-        LIMIT {PAGE_SIZE} OFFSET {offset}
-    """
-	
-	count_query = f"SELECT COUNT(*) FROM {TABLE} {where}"
-	
-	with get_conn( ) as conn:
-		rows = conn.execute( query, params ).fetchall( )
-		total_rows = conn.execute( count_query, params ).fetchone( )[ 0 ]
-	
-	total_pages = max( 1, math.ceil( total_rows / PAGE_SIZE ) )
-	
-	# ------------------------------------------------------------------
-	# Prompt table
-	# ------------------------------------------------------------------
-	table_rows = [ ]
-	for r in rows:
-		table_rows.append(
-			{
-					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
-					'PromptsId': r[ 0 ],
-					'Name': r[ 1 ],
-					'Version': r[ 3 ],
-					'ID': r[ 4 ],
-			}
-		)
-	
-	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True, )
-	
-	selected = [ r for r in edited if r.get( "Selected" ) ]
-	if len( selected ) == 1:
-		pid = selected[ 0 ][ "PromptsId" ]
-		if pid != st.session_state.pe_selected_id:
-			st.session_state.pe_selected_id = pid
-			load_prompt( pid )
-	
-	# ------------------------------------------------------------------
-	# Paging
-	# ------------------------------------------------------------------
-	p1, p2, p3 = st.columns( [ 0.25,  3.5, 0.25 ] )
-	with p1:
-		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
-			st.session_state.pe_page -= 1
-	with p2:
-		st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
-	with p3:
-		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
-			st.session_state.pe_page += 1
-			
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-	
-	# ------------------------------------------------------------------
-	# Converter controls
-	# ------------------------------------------------------------------
-	with st.expander( 'XML ↔ Markdown Converter', expanded=False ):
-		b1, b2 = st.columns( 2 )
-		with b1:
-			st.button( 'Convert XML → Markdown', on_click=xml_to_md )
-		with b2:
-			st.button( 'Convert Markdown → XML', on_click=md_to_xml )
-	
-	# ------------------------------------------------------------------
-	# Create / Edit Prompt
-	# ------------------------------------------------------------------
-	with st.expander( 'Create / Edit Prompt', expanded=True ):
-		st.text_input(
-			'PromptsId',
-			value=st.session_state.pe_selected_id or "",
-			disabled=True,
-		)
-		st.text_input( 'Name', key='pe_name' )
-		st.text_area( 'Text', key='pe_text', height=260 )
-		st.number_input( 'Version', min_value=1, key='pe_version' )
-		
-		c1, c2, c3 = st.columns( 3 )
-		
-		with c1:
-			if st.button( "Save Changes" if st.session_state.pe_selected_id else "Create Prompt" ):
-				with get_conn( ) as conn:
-					if st.session_state.pe_selected_id:
-						conn.execute(
-							f"""
-                            UPDATE {TABLE}
-                            SET Name=?, Text=?, Version=?
-                            WHERE PromptsId=?
-                            """,
-							(
-									st.session_state.pe_name,
-									st.session_state.pe_text,
-									st.session_state.pe_version,
-									st.session_state.pe_selected_id,
-							),
-						)
-					else:
-						conn.execute(
-							f"""
-                            INSERT INTO {TABLE} (Name, Text, Version)
-                            VALUES (?, ?, ?)
-                            """,
-							(
-									st.session_state.pe_name,
-									st.session_state.pe_text,
-									st.session_state.pe_version,
-							),
-						)
-					conn.commit( )
-				st.success( 'Saved.' )
-				reset_selection( )
-		
-		with c2:
-			if st.session_state.pe_selected_id and st.button( 'Delete' ):
-				with get_conn( ) as conn:
-					conn.execute(
-						f'DELETE FROM {TABLE} WHERE PromptsId=?',
-						(st.session_state.pe_selected_id,),
-					)
-					conn.commit( )
-				reset_selection( )
-				st.success( 'Deleted.' )
-		
-		with c3:
-			if st.button( 'Clear Selection' ):
-				reset_selection( )
-
-# ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Documents':
@@ -2348,6 +2121,251 @@ elif mode == "Files":
 						st.success( f"Delete result: {res}" )
 					except Exception as exc:
 						st.error( f"Delete failed: {exc}" )
+
+# ======================================================================================
+# PROMPT ENGINEERING MODE
+# ======================================================================================
+elif mode == "Prompt Engineering":
+	import sqlite3
+	import math
+	
+	TABLE = 'Prompts'
+	PAGE_SIZE = 10
+	
+	st.subheader( '📝 Prompt Engineering' )
+	# ------------------------------------------------------------------
+	# Session state (single source of truth)
+	# ------------------------------------------------------------------
+	st.session_state.setdefault( 'pe_page', 1 )
+	st.session_state.setdefault( 'pe_search', "" )
+	st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
+	st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
+	st.session_state.setdefault( 'pe_selected_id', None )
+	
+	st.session_state.setdefault( 'pe_name', "" )
+	st.session_state.setdefault( 'pe_text', "" )
+	st.session_state.setdefault( 'pe_version', 1 )
+	
+	# ------------------------------------------------------------------
+	# DB helpers
+	# ------------------------------------------------------------------
+	def get_conn( ):
+		return sqlite3.connect( DB_PATH )
+	
+	def reset_selection( ):
+		st.session_state.pe_selected_id = None
+		st.session_state.pe_name = ""
+		st.session_state.pe_text = ""
+		st.session_state.pe_version = 1
+	
+	def load_prompt( pid: int ) -> None:
+		with get_conn( ) as conn:
+			cur = conn.execute(
+				f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
+				(pid,),
+			)
+			row = cur.fetchone( )
+			if row:
+				st.session_state.pe_name = row[ 0 ]
+				st.session_state.pe_text = row[ 1 ]
+				st.session_state.pe_version = row[ 2 ]
+	
+	# ------------------------------------------------------------------
+	# XML / Markdown converters
+	# ------------------------------------------------------------------
+	def xml_to_md( ):
+		st.session_state.pe_text = xml_converter( st.session_state.pe_text )
+	
+	def md_to_xml( ):
+		st.session_state.pe_text = markdown_converter( st.session_state.pe_text )
+	
+	# ------------------------------------------------------------------
+	# Controls (table filters)
+	# ------------------------------------------------------------------
+	c1, c2, c3, c4 = st.columns( [ 4,
+	                               2,
+	                               2,
+	                               3 ] )
+	
+	with c1:
+		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
+	
+	with c2:
+		st.selectbox( 'Sort by',
+			[ 'PromptsId',
+			  'Name',
+			  'Version' ], key='pe_sort_col', )
+	
+	with c3:
+		st.selectbox( 'Direction', [ 'ASC',
+		                             'DESC' ], key='pe_sort_dir', )
+	
+	with c4:
+		st.markdown(
+			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
+			unsafe_allow_html=True,
+		)
+		a1, a2, a3 = st.columns( [ 2,
+		                           1,
+		                           1 ] )
+		with a1:
+			jump_id = st.number_input(
+				"Go to ID",
+				min_value=1,
+				step=1,
+				label_visibility="collapsed",
+			)
+		with a2:
+			if st.button( "Go" ):
+				st.session_state.pe_selected_id = int( jump_id )
+				load_prompt( int( jump_id ) )
+		with a3:
+			if st.button( "Undo" ):
+				reset_selection( )
+	
+	# ------------------------------------------------------------------
+	# Load prompt table
+	# ------------------------------------------------------------------
+	where = ""
+	params = [ ]
+	
+	if st.session_state.pe_search:
+		where = "WHERE Name LIKE ? OR Text LIKE ?"
+		s = f"%{st.session_state.pe_search}%"
+		params.extend( [ s,
+		                 s ] )
+	
+	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
+	
+	query = f"""
+        SELECT PromptsId, Name, Text, Version, ID
+        FROM {TABLE}
+        {where}
+        ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
+        LIMIT {PAGE_SIZE} OFFSET {offset}
+    """
+	
+	count_query = f"SELECT COUNT(*) FROM {TABLE} {where}"
+	
+	with get_conn( ) as conn:
+		rows = conn.execute( query, params ).fetchall( )
+		total_rows = conn.execute( count_query, params ).fetchone( )[ 0 ]
+	
+	total_pages = max( 1, math.ceil( total_rows / PAGE_SIZE ) )
+	
+	# ------------------------------------------------------------------
+	# Prompt table
+	# ------------------------------------------------------------------
+	table_rows = [ ]
+	for r in rows:
+		table_rows.append(
+			{
+					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
+					'PromptsId': r[ 0 ],
+					'Name': r[ 1 ],
+					'Version': r[ 3 ],
+					'ID': r[ 4 ],
+			}
+		)
+	
+	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True, )
+	
+	selected = [ r for r in edited if r.get( "Selected" ) ]
+	if len( selected ) == 1:
+		pid = selected[ 0 ][ "PromptsId" ]
+		if pid != st.session_state.pe_selected_id:
+			st.session_state.pe_selected_id = pid
+			load_prompt( pid )
+	
+	# ------------------------------------------------------------------
+	# Paging
+	# ------------------------------------------------------------------
+	p1, p2, p3 = st.columns( [ 0.25,
+	                           3.5,
+	                           0.25 ] )
+	with p1:
+		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
+			st.session_state.pe_page -= 1
+	with p2:
+		st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
+	with p3:
+		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
+			st.session_state.pe_page += 1
+	
+	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
+	
+	# ------------------------------------------------------------------
+	# Converter controls
+	# ------------------------------------------------------------------
+	with st.expander( 'XML ↔ Markdown Converter', expanded=False ):
+		b1, b2 = st.columns( 2 )
+		with b1:
+			st.button( 'Convert XML → Markdown', on_click=xml_to_md )
+		with b2:
+			st.button( 'Convert Markdown → XML', on_click=md_to_xml )
+	
+	# ------------------------------------------------------------------
+	# Create / Edit Prompt
+	# ------------------------------------------------------------------
+	with st.expander( 'Create / Edit Prompt', expanded=True ):
+		st.text_input(
+			'PromptsId',
+			value=st.session_state.pe_selected_id or "",
+			disabled=True,
+		)
+		st.text_input( 'Name', key='pe_name' )
+		st.text_area( 'Text', key='pe_text', height=260 )
+		st.number_input( 'Version', min_value=1, key='pe_version' )
+		
+		c1, c2, c3 = st.columns( 3 )
+		
+		with c1:
+			if st.button( "Save Changes" if st.session_state.pe_selected_id else "Create Prompt" ):
+				with get_conn( ) as conn:
+					if st.session_state.pe_selected_id:
+						conn.execute(
+							f"""
+                            UPDATE {TABLE}
+                            SET Name=?, Text=?, Version=?
+                            WHERE PromptsId=?
+                            """,
+							(
+									st.session_state.pe_name,
+									st.session_state.pe_text,
+									st.session_state.pe_version,
+									st.session_state.pe_selected_id,
+							),
+						)
+					else:
+						conn.execute(
+							f"""
+                            INSERT INTO {TABLE} (Name, Text, Version)
+                            VALUES (?, ?, ?)
+                            """,
+							(
+									st.session_state.pe_name,
+									st.session_state.pe_text,
+									st.session_state.pe_version,
+							),
+						)
+					conn.commit( )
+				st.success( 'Saved.' )
+				reset_selection( )
+		
+		with c2:
+			if st.session_state.pe_selected_id and st.button( 'Delete' ):
+				with get_conn( ) as conn:
+					conn.execute(
+						f'DELETE FROM {TABLE} WHERE PromptsId=?',
+						(st.session_state.pe_selected_id,),
+					)
+					conn.commit( )
+				reset_selection( )
+				st.success( 'Deleted.' )
+		
+		with c3:
+			if st.button( 'Clear Selection' ):
+				reset_selection( )
 
 # ==============================================================================
 # DATA MODE
