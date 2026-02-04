@@ -80,9 +80,13 @@ CRS = r'https://www.congress.gov/crs-appropriations-status-table'
 
 GPT = r'resources/buddy_logo.ico'
 
-GEMINI = r'resources/gemma_logo.png'
+GEMINI = r'resources/gemini_logo.png'
 
 GROQ = r'resources/grok_logo.png'
+
+MISTRAL = r'resources/mistral_logo.png'
+
+CLAUDE = r'resources/claude_logo.png'
 
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
