@@ -990,10 +990,10 @@ with st.sidebar:
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	
 # ======================================================================================
-# TAB LIST
+# TABS
 # ======================================================================================
-tab_chat, tab_text, tab_image, tab_audio, tab_files, tab_rag, tab_vec, tab_prompt, tab_qa, tab_data = st.tabs(
-	[ '🧠 Chat', '📜 Text', '🖼️ Image', '✨ Audio', '📖 Files', '🧬 Embeddings', '☁️ Vector Stores',
+chat_tab, text_tab, image_tab, audio_tab, files_tab, rag_tab, vector_tab, promt_tab, qna_tab, data_tab = st.tabs(
+	[ '🧠 Chat Completion', '📜 Text Generation', '🖼️ Image API', '✨ Audio API', '📖 Files API', '🧬 Embeddings', '☁️ Vector Stores',
 	  '📝 Prompt Engineering', '❓ Document Q&A', '💻 Data Export' ] )
 
 # =============================================================================
@@ -1249,7 +1249,7 @@ elif mode == "Text":
 		)
 
 # ======================================================================================
-# IMAGES MODE
+# IMAGES TAB
 # ======================================================================================
 elif mode == "Images":
 	provider_module = get_provider_module( )
@@ -1443,7 +1443,7 @@ elif mode == "Images":
 						st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
-# AUDIO MODE
+# AUDIO TAB
 # ======================================================================================
 elif mode == "Audio":
 	# ------------------------------------------------------------------
@@ -1609,7 +1609,7 @@ elif mode == "Audio":
 						st.error( f"Text-to-speech failed: {exc}" )
 
 # ======================================================================================
-# EMBEDDINGS MODE
+# EMBEDDINGS TAB
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
@@ -1674,7 +1674,7 @@ elif mode == 'Embeddings':
 						st.error( f'Embedding failed: {exc}' )
 
 # ======================================================================================
-# Vector Store MODE
+# VECTOR TAB
 # ======================================================================================
 elif mode == "Vector Store":
 	try:
@@ -1787,7 +1787,7 @@ elif mode == "Vector Store":
 			"`chat.vector_stores` mapping exists." )
 
 # ======================================================================================
-# PROMPT ENGINEERING MODE
+# PROMPT ENGINEERING TAB
 # ======================================================================================
 elif mode == "Prompt Engineering":
 	import sqlite3
@@ -2035,7 +2035,7 @@ elif mode == "Prompt Engineering":
 				reset_selection( )
 
 # ======================================================================================
-# DOCUMENTS MODE
+# DOCUMENTS TAB
 # ======================================================================================
 elif mode == 'Documents':
 	uploaded = st.file_uploader(
