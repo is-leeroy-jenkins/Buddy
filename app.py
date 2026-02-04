@@ -56,6 +56,7 @@ import multiprocessing
 import os
 import sqlite3
 from typing import Any, Dict, List, Tuple, Optional
+import tempfile
 import re
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
