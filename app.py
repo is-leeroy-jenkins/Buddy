@@ -77,7 +77,11 @@ FAVICON = r'resources/favicon.ico'
 
 CRS = r'https://www.congress.gov/crs-appropriations-status-table'
 
-LOGO = r'resources/buddy_logo.ico'
+GPT = r'resources/buddy_logo.ico'
+
+GEMINI = r'resources/gemma_logo.png'
+
+GROQ = r'resources/grok_logo.png'
 
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
@@ -140,11 +144,7 @@ _TAG_OPEN = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
 
 _TAG_CLOSE = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
 
-LOGO_MAP = {
-		"GPT": os.path.join( BASE_DIR, "resources", "gpt_logo.png" ),
-		"Gemini": os.path.join( BASE_DIR, "resources", "gemma_logo.png" ),
-		"Groq": os.path.join( BASE_DIR, "resources", "grok_logo.png" ),
-}
+LOGO_MAP = { "GPT": GPT, "Gemini": GEMINI, "Groq": GROQ, }
 
 # ==============================================================================
 # UTILITIES
@@ -679,8 +679,6 @@ client = OpenAI( )
 
 AVATARS = { 'user': ANALYST, 'assistant': BUDDY, }
 
-st.logo( LOGO, size='large', link=CRS )
-
 st.set_page_config( page_title=APP_TITLE, layout="wide",
 	page_icon=FAVICON, initial_sidebar_state='collapsed' )
 
@@ -922,29 +920,8 @@ with st.sidebar:
 			with col2:
 				logo_path = LOGO_MAP.get( provider )
 				if logo_path and os.path.exists( logo_path ):
-					encoded_logo = encode_image_base64( logo_path )
+					st.logo( logo_path, size='large', link=CRS )
 					
-					st.markdown(
-						f"""
-							<div style="
-								display: flex;
-								justify-content: center;
-								align-items: center;
-								min-height: 20px;
-								margin-bottom: 25px;
-							">
-								<img
-									src="data:image/png;base64,{encoded_logo}"
-									style="
-										width: 50px;
-										height: auto;
-										display: block;
-									"
-								/>
-							</div>
-							""",
-						unsafe_allow_html=True,
-					)
 	
 	if st.button( 'Clear Chat' ):
 		reset_state( )
@@ -964,7 +941,7 @@ tab_chat, tab_text, tab_image, tab_audio, tab_files, tab_rag, tab_vec, tab_promp
 # =============================================================================
 # CHAT TAB
 # =============================================================================
-if tab_chat or mode == 'Chat':
+if mode == 'Chat':
 	st.header( "" )
 	provider_module = get_provider_module( )
 	
@@ -1070,7 +1047,7 @@ if tab_chat or mode == 'Chat':
 # ======================================================================================
 # TEXT MODE
 # ======================================================================================
-elif tab_text or mode == "Text":
+elif mode == "Text":
 	st.header( "" )
 	provider_module = get_provider_module( )
 	chat = provider_module.Chat( )
@@ -1216,7 +1193,7 @@ elif tab_text or mode == "Text":
 # ======================================================================================
 # IMAGES MODE
 # ======================================================================================
-elif tab_image or mode == "Images":
+elif mode == "Images":
 	provider_module = get_provider_module( )
 	image = provider_module.Image( )
 	
@@ -1410,7 +1387,7 @@ elif tab_image or mode == "Images":
 # ======================================================================================
 # AUDIO MODE
 # ======================================================================================
-elif tab_audio or mode == "Audio":
+elif mode == "Audio":
 	# ------------------------------------------------------------------
 	# Provider-aware Audio instantiation
 	# ------------------------------------------------------------------
@@ -1576,7 +1553,7 @@ elif tab_audio or mode == "Audio":
 # ======================================================================================
 # EMBEDDINGS MODE
 # ======================================================================================
-elif tab_rag or mode == 'Embeddings':
+elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
 	
 	if not hasattr( provider_module, 'Embedding' ):
@@ -1641,7 +1618,7 @@ elif tab_rag or mode == 'Embeddings':
 # ======================================================================================
 # Vector Store MODE
 # ======================================================================================
-elif tab_vec or mode == "Vector Store":
+elif mode == "Vector Store":
 	try:
 		chat  # type: ignore
 	except NameError:
@@ -1754,7 +1731,7 @@ elif tab_vec or mode == "Vector Store":
 # ======================================================================================
 # PROMPT ENGINEERING MODE
 # ======================================================================================
-elif tab_prompt or mode == "Prompt Engineering":
+elif mode == "Prompt Engineering":
 	import sqlite3
 	import math
 	
@@ -2002,7 +1979,7 @@ elif tab_prompt or mode == "Prompt Engineering":
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
-elif tab_qa or mode == 'Documents':
+elif mode == 'Documents':
 	uploaded = st.file_uploader(
 		'Upload documents (session only)',
 		type=[ 'pdf', 'txt', 'md', 'docx' ],
@@ -2254,7 +2231,7 @@ elif tab_files or mode == "Files":
 # ==============================================================================
 # DATA TAB
 # ==============================================================================
-elif tab_data or mode == 'Data Export':
+elif mode == 'Data Export':
 	st.subheader( '' )
 	st.markdown( '###### Export' )
 	

@@ -1,4 +1,5 @@
 typing
+typing_extensions
 sentence-transformers>=2.6.1
 numpy>=1.26.0
 reportlab>=4.0.8
@@ -6,4 +7,5 @@ openai
 groq
 google
 google-genai
+pydantic
 tiktoken
