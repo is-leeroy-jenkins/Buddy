@@ -706,7 +706,10 @@ if 'mistral_api_key' not in st.session_state:
 
 if 'xai_api_key' not in st.session_state:
 	st.session_state.xai_api_key = ''
-	
+
+if 'claude_api_key' not in st.session_state:
+	st.session_state.claude_api_key = ''
+
 if st.session_state.openai_api_key == '':
 	default = getattr( cfg, 'OPENAI_API_KEY', '' )
 	if default:
@@ -742,6 +745,12 @@ if st.session_state.xai_api_key == '':
 	if default:
 		st.session_state.xai_api_key = default
 		os.environ[ 'XAI_API_KEY' ] = default
+
+if st.session_state.claude_api_key == '':
+	default = getattr( cfg, 'CLAUDE_API_KEY', '' )
+	if default:
+		st.session_state.claude_api_key = default
+		os.environ[ 'CLAUDE_API_KEY' ] = default
 
 if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 	st.session_state[ 'provider' ] = 'GPT'
@@ -805,7 +814,9 @@ if 'provider' not in st.session_state:
 if 'api_keys' not in st.session_state:
 	st.session_state.api_keys = { 'GPT': None,
 			'Groq': None,
-			'Gemini': None, }
+			'Gemini': None,
+	        'Mistral': None,
+	        'Claude': None }
 
 # ======================================================================================
 #  PROVIDER
@@ -817,8 +828,12 @@ def get_provider_module( ):
 
 def get_chat_instance( ):
 	"""
+
+		Purpose:
+		-------
 		Returns a Chat() instance for the currently selected provider.
 		Ensures Gemini / Grok functionality is not bypassed.
+		
 	"""
 	provider_module = get_provider_module( )
 	return provider_module.Chat( )
