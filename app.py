@@ -157,6 +157,8 @@ PROVIDERS = {
 		'GPT': 'gpt',
 		'Gemini': 'gemini',
 		'Groq': 'grok',
+		'Mistral': 'missy',
+		'Claude': 'claude'
 }
 
 MODE_CLASS_MAP = { 'Chat': None,
@@ -167,6 +169,9 @@ MODE_CLASS_MAP = { 'Chat': None,
 		           'Transcription' ],
 		'Embeddings': [ 'Embedding' ],
 }
+
+PROVIDER_MODE_MAP = { 'GPT': GPT_MODES, 'Gemini': GEMINI_MODES, 'Grok': GROQ_MODES,
+                      'Mistral': MISTRAL_MODES, 'Claude': CLAUDE_MODES}
 
 MODES = [
 		'Chat',
@@ -348,18 +353,15 @@ def style_subheaders( ) -> None:
 	st.markdown(
 		"""
 		<style>
-		/* Main UI subheaders */
-		h3 {
-			color: rgb(0, 120, 252);
-		}
-
-		/* Chat subheaders */
-		.stChatMessage h3 {
-			color: rgb(0, 120, 252);
+		div[data-testid="stMarkdownContainer"] h2,
+		div[data-testid="stMarkdownContainer"] h3,
+		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h2,
+		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h3 {
+			color: rgb(0, 120, 252) !important;
 		}
 		</style>
 		""",
-		unsafe_allow_html=True
+		unsafe_allow_html=True,
 	)
 	
 def init_state( ) -> None:
