@@ -2274,9 +2274,9 @@ elif mode == "Files":
 # ==============================================================================
 # DATA MODE
 # ==============================================================================
-elif mode == '🚀 Data Export':
-	st.subheader( '' )
-	st.markdown( '###### Export' )
+elif mode == 'Data Export':
+	st.subheader( '🚀  Export' )
+	st.markdown( '' )
 	
 	# -----------------------------------
 	# Prompt export (System Instructions)
