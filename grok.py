@@ -334,10 +334,12 @@ class Images( Grok ):
 	response_format: Optional[ str ]
 	client: Optional[ Client ]
 	image_url: Optional[ str ]
+	image_path: Optional[ str ]
 	detail: Optional[ str ]
 	size: Optional[ str ]
 	tool_choice: Optional[ str ]
 	response_format: Optional[ str ]
+	response: Optional[ ImageResponse ]
 	
 	def __init__( self ):
 		"""
@@ -408,13 +410,12 @@ class Images( Grok ):
 		         "photorealistic" ]
 	
 	@property
-	def response_format_options( self ) -> List[ str ]:
-		return [ "url",
-		         "b64_json" ]
+	def format_options( self ) -> List[ str ]:
+		return [ 'jpg/jpeg', 'png' ]
 	
-	def generate( self, prompt: str, model: str='grok-2-image-1212', n: int=None,
+	def create( self, prompt: str, url: str, model: str='grok-imagine-image', n: int=None,
 			aspect_ratio: str=None, resolution: str=None, quality: str=None,
-			style: str=None, response_format: str=None ):
+			style: str=None, format: str='png' ) -> ImageResponse | None:
 		"""
 		
 			Purpose:
@@ -439,15 +440,21 @@ class Images( Grok ):
 		"""
 		try:
 			throw_if( 'prompt', prompt )
+			throw_if( 'url', url )
+			self.image_url = url
 			self.model = model
 			self.n = n
 			self.aspect_ratio = aspect_ratio
 			self.resolution = resolution
 			self.quality = quality
 			self.style = style
-			self.response_format = response_format
+			self.response_format = format
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.response = self.client.image.sample( prompt=self.prompt,
+				model="grok-imagine-image", aspect_ratio=self.aspect_ratio,
+				image_format=self.response_format, image_url=self.image_url, )
+			return self.response
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -456,8 +463,8 @@ class Images( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def edit( self, image_path: str, prompt: str, mask_path: str=None, model: str=None,
-			n: int=None, aspect_ratio: str=None, resolution: str=None,
+	def edit( self, image_path: str, prompt: str, model: str='grok-imagine-image',
+			aspect_ratio: str=None, resolution: str=None,
 			quality: str=None, style: str=None, response_format: str=None ):
 		"""
 		
@@ -486,36 +493,22 @@ class Images( Grok ):
 		try:
 			throw_if( 'image_path', image_path )
 			throw_if( 'prompt', prompt )
-			
 			self.model = model
+			self.image_path = image_path
 			self.n = n
 			self.aspect_ratio = aspect_ratio
 			self.resolution = resolution
 			self.quality = quality
 			self.style = style
 			self.response_format = response_format
-			
-			files = {
-					'image': open( image_path, 'rb' ) }
-			if mask_path:
-				files[ 'mask' ] = open( mask_path, 'rb' )
-			
-			data = {
-					'prompt': prompt,
-					'model': self.model,
-					'n': self.n,
-					'aspect_ratio': self.aspect_ratio,
-					'resolution': self.resolution,
-					'quality': self.quality,
-					'style': self.style,
-					'response_format': self.response_format,
-			}
-			
-			url = f'{self.base_url}/images/edits'
-			response = self.client.post( url, data=data, files=files, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.json( ).get( 'data', [ ] )
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			with open( self.image_path, "rb" ) as f:
+				image_data = base64.b64encode( f.read( ) ).decode( "utf-8" )
+				self.response = self.client.image.sample(
+					prompt=self.prompt, model=self.model, aspect_ratio=self.aspect_ratio,
+					image_url=f"data:image/jpeg;base64,{image_data}", )
+				return self.response
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
