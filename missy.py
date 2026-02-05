@@ -182,9 +182,9 @@ class Chat( Mistral ):
 	file: Optional[ Any ]
 	response: Optional[ Any ]
 
-	def __init__( self, number: int = 1, temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, store: bool = True, stream: bool = False,
-			instruct: Optional[ str ] = None ) -> None:
+	def __init__( self, number: int = 1, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=False,
+			instruct: str=None ) -> None:
 			"""
 				
 				Purpose:
@@ -354,9 +354,7 @@ class Chat( Mistral ):
 			self.store = store;
 			self.stream = stream
 			self.instructions = instruct
-			payload: Dict[ str, Any ] = {
-					'model': self.model,
-					'input': self.prompt,
+			payload = {'model': self.model,'input': self.prompt,
 					'max_output_tokens': self.max_completion_tokens }
 			if self.temperature is not None:
 				payload[ 'temperature' ] = self.temperature
@@ -378,9 +376,9 @@ class Chat( Mistral ):
 						yield out
 			return ''.join( list( _gen( ) ) )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Chat';
+			ex = Error( e )
+			ex.module = 'mistral'
+			ex.cause = 'Chat'
 			ex.method = 'generate_text(self, prompt)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -431,8 +429,8 @@ class Chat( Mistral ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def analyze_image( self, prompt: str, url: str, model: str = 'mistral-vision', max_tokens: int = 1024 ) -> \
-	Optional[ str ]:
+	def analyze_image( self, prompt: str, url: str,
+			model: str='mistral-vision', max_tokens: int=1024 ) -> str | None:
 		"""
 		
 			Purpose:
@@ -456,21 +454,18 @@ class Chat( Mistral ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'url', url )
-			input_payload = [ { 'role': 'user',
-			                    'content': [ { 'type': 'text', 'text': prompt },
-					                         { 'type': 'image_url',
-							                'image_url': {'url': url } } ] } ]
-			payload = {'model': model,'input': input_payload,
-					'max_output_tokens': max_tokens }
+			input_payload = [{'role': 'user', 'content': [ { 'type': 'text', 'text': prompt },
+		                     {'type': 'image_url', 'image_url': {'url': url } }]}]
+			payload = {'model': model,'input': input_payload, 'max_output_tokens': max_tokens }
 			resp = self._post_json( '/responses', payload, stream=False )
 			data = resp.json( )
 			return data.get( 'output_text' ) or data.get( 'output' )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Chat';
+			ex = Error( e )
+			ex.module = 'mistral'
+			ex.cause = 'Chat'
 			ex.method = 'analyze_image(self, prompt, url)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -502,11 +497,10 @@ class Chat( Mistral ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
-			throw_if( 'src_url', src_url );
+			throw_if( 'prompt', prompt )
+			throw_if( 'src_url', src_url )
 			throw_if( 'dest_path', dest_path )
-			payload = { 'model': model, 'prompt': prompt,
-					'image_url': src_url, 'size': size }
+			payload = { 'model': model, 'prompt': prompt, 'image_url': src_url, 'size': size }
 			resp = self._post_json( '/images/edit', payload, stream=False )
 			data = resp.json( )
 			content = data.get( 'data', [ { } ] )[ 0 ]
@@ -517,15 +511,15 @@ class Chat( Mistral ):
 				return str( out )
 			return content.get( 'url' ) or None
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Chat';
+			ex = Error( e )
+			ex.module = 'mistral'
+			ex.cause = 'Chat'
 			ex.method = 'edit_image(self, prompt, src_url, dest_path)'
 			error = ErrorDialog( ex )
 			error.show( )
 	
 	def summarize_document( self, prompt: str, pdf_path: str,
-			model: str='mistral-instruct', max_tokens: int=2048 ) -> Optional[ str ]:
+			model: str='mistral-instruct', max_tokens: int=2048 ) -> str | None:
 		"""
 		
 			Purpose:
@@ -549,29 +543,28 @@ class Chat( Mistral ):
 			
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'pdf_path', pdf_path )
 			files = Files( )
-			f = files.upload( file_name=Path( pdf_path ).name, content_bytes=Path( pdf_path ).read_bytes( ), purpose='user_data' )
+			f = files.upload( file_name=Path( pdf_path ).name,
+				content_bytes=Path( pdf_path ).read_bytes( ), purpose='user_data' )
 			file_id = f.get( 'id' ) if isinstance( f, dict ) else None
-			input_payload = [ { 'role': 'user', 'content': [ {  'type': 'file',
-			                                                    'file': {  'file_id': file_id } },
-					                               { 'type': 'text', 'text': prompt } ] } ]
-			payload = { 'model': model, 'input': input_payload,
-					'max_output_tokens': max_tokens }
+			input_payload = [{'role': 'user','content': [{'type': 'file', 'file': {'file_id': file_id }},
+					       {'type': 'text', 'text': prompt}]}]
+			payload = { 'model': model, 'input': input_payload, 'max_output_tokens': max_tokens }
 			resp = self._post_json( '/responses', payload, stream=False )
 			data = resp.json( )
 			return data.get( 'output_text' ) or data.get( 'output' )
 		except Exception as e:
-			ex = Error( e );
+			ex = Error( e )
 			ex.module = 'mistral'
 			ex.cause = 'Chat'
 			ex.method = 'summarize_document(self, prompt, pdf_path)'
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def search_web( self, prompt: str, model: str = 'mistral-small', recency: int = 30,
-			max_results: int = 100 ) -> Optional[ str ]:
+	def search_web( self, prompt: str, model: str='mistral-small', recency: int=30,
+			max_results: int=100 ) -> str | None:
 		"""
 		
 			Purpose:
@@ -597,15 +590,15 @@ class Chat( Mistral ):
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			web_options = { 'search_recency_days': recency, 'max_search_results': max_results }
-			payload = { 'model': model, 'web_search_options': web_options, 'input': prompt }
+			web_options = {'search_recency_days': recency, 'max_search_results': max_results }
+			payload = {'model': model, 'web_search_options': web_options, 'input': prompt }
 			resp = self._post_json( '/responses', payload, stream=False )
 			data = resp.json( )
 			return data.get( 'output_text' ) or data.get( 'output' )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Chat';
+			ex = Error( e )
+			ex.module = 'mistral'
+			ex.cause = 'Chat'
 			ex.method = 'search_web(self, prompt)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -635,7 +628,7 @@ class Chat( Mistral ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
 			tools = [ ]
 			if store_id:
@@ -647,8 +640,8 @@ class Chat( Mistral ):
 			return data.get( 'output_text' ) or data.get( 'output' )
 		except Exception as e:
 			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Chat';
+			ex.module = 'mistral'
+			ex.cause = 'Chat'
 			ex.method = 'search_files(self, prompt)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -675,12 +668,13 @@ class Chat( Mistral ):
 		try:
 			throw_if( 'filepath', filepath )
 			files = Files( )
-			result = files.upload( file_name=Path( filepath ).name, content_bytes=Path( filepath ).read_bytes( ), purpose=purpose )
+			result = files.upload( file_name=Path( filepath ).name,
+				content_bytes=Path( filepath ).read_bytes( ), purpose=purpose )
 			return result.get( 'id' ) if isinstance( result, dict ) else None
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Chat';
+			ex = Error( e )
+			ex.module = 'mistral'
+			ex.cause = 'Chat'
 			ex.method = 'upload_file(self, filepath, purpose)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -820,9 +814,9 @@ class Transcription( Mistral ):
 				resp.raise_for_status( )
 				return resp.json( ).get( 'text' ) or resp.json( )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'mistral';
-			ex.cause = 'Transcription';
+			ex = Error( e )
+			ex.module = 'mistral'
+			ex.cause = 'Transcription'
 			ex.method = 'transcribe(self, path)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -1155,8 +1149,8 @@ class TTS( Mistral ):
 		
 		"""
 		try:
-			throw_if( 'text', text );
-			throw_if( 'output_path', output_path );
+			throw_if( 'text', text )
+			throw_if( 'output_path', output_path )
 			throw_if( 'model', model )
 			payload = { 'model': model, 'voice': voice,
 					'speed': speed, 'format': fmt, 'input': text }
@@ -1164,7 +1158,7 @@ class TTS( Mistral ):
 			data = resp.json( )
 			content = data.get( 'data', [ { } ] )[ 0 ]
 			if isinstance( content, dict ) and 'b64_audio' in content:
-				out = Path( output_path );
+				out = Path( output_path )
 				out.parent.mkdir( parents=True, exist_ok=True )
 				out.write_bytes( bytes( content[ 'b64_audio' ], 'utf-8' ) )
 				return str( out )
@@ -1278,9 +1272,7 @@ class Image( Mistral ):
 						  'image_url': { 'url': self.image_url, }, }, ], } ],
 					'temperature': temperature if temperature is not None else self.temperature,
 					'top_p': top_p if top_p is not None else self.top_p,
-					'max_tokens': max_tokens if max_tokens is not None else self.max_tokens,
-			}
-			
+					'max_tokens': max_tokens if max_tokens is not None else self.max_tokens,}
 			response = requests.post( url=f'{self.base_url}/chat/completions',
 				headers=self.headers, json=payload, timeout=120, )
 			response.raise_for_status( )
@@ -1290,9 +1282,7 @@ class Image( Mistral ):
 			exception = Error( e )
 			exception.module = 'mistral'
 			exception.cause = 'Vision'
-			exception.method = (
-					'analyze_image(self, prompt, image_url, model, temperature, top_p, max_tokens)'
-			)
+			exception.method = 'analyze_image(self, prompt, url, model, temp, top_p, tokens )'
 			error = ErrorDialog( exception )
 			error.show( )
 	
