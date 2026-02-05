@@ -639,7 +639,7 @@ class Chat( Mistral ):
 			data = resp.json( )
 			return data.get( 'output_text' ) or data.get( 'output' )
 		except Exception as e:
-			ex = Error( e );
+			ex = Error( e )
 			ex.module = 'mistral'
 			ex.cause = 'Chat'
 			ex.method = 'search_files(self, prompt)'
