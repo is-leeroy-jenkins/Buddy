@@ -646,7 +646,7 @@ class Chat( Mistral ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def upload_file( self, filepath: str, purpose: str='user_data' ) -> Optional[ str ]:
+	def upload_file( self, filepath: str, purpose: str='user_data' ) -> str | None:
 		"""
 			
 			Purpose:
@@ -842,7 +842,7 @@ class Translation( Mistral ):
 		return [ 'en', 'es', 'fr', 'de', 'zh', 'it', 'ja' ]
 	
 	def translate( self, path: str, source_lang: str=None, target_lang: str='en',
-			model: str='whisper-1' ) -> Optional[ str ]:
+			model: str='whisper-1' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -891,7 +891,6 @@ class TTS( Mistral ):
 		Text-to-speech helper.
 	
 	"""
-	
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.model = None
@@ -1268,8 +1267,7 @@ class Image( Mistral ):
 			payload = { 'model': self.model, 'messages': [
 						{ 'role': 'user', 'content': [
 						{ 'type': 'text', 'text': self.prompt, },
-						{ 'type': 'image_url',
-						  'image_url': { 'url': self.image_url, }, }, ], } ],
+						{ 'type': 'image_url', 'image_url': { 'url': self.image_url, }, }, ], } ],
 					'temperature': temperature if temperature is not None else self.temperature,
 					'top_p': top_p if top_p is not None else self.top_p,
 					'max_tokens': max_tokens if max_tokens is not None else self.max_tokens,}
