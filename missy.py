@@ -1265,9 +1265,9 @@ class Image( Mistral ):
 			self.image_url = image_url
 			self.model = model
 			payload = { 'model': self.model, 'messages': [
-						{ 'role': 'user', 'content': [
-						{ 'type': 'text', 'text': self.prompt, },
-						{ 'type': 'image_url', 'image_url': { 'url': self.image_url, }, }, ], } ],
+					{ 'role': 'user', 'content': [
+					{ 'type': 'text', 'text': self.prompt, },
+					{ 'type': 'image_url', 'image_url': { 'url': self.image_url, }, }, ], } ],
 					'temperature': temperature if temperature is not None else self.temperature,
 					'top_p': top_p if top_p is not None else self.top_p,
 					'max_tokens': max_tokens if max_tokens is not None else self.max_tokens,}
@@ -1279,7 +1279,7 @@ class Image( Mistral ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'mistral'
-			exception.cause = 'Vision'
+			exception.cause = 'Images'
 			exception.method = 'analyze_image(self, prompt, url, model, temp, top_p, tokens )'
 			error = ErrorDialog( exception )
 			error.show( )
