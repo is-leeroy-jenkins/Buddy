@@ -495,7 +495,6 @@ class Images( Grok ):
 			throw_if( 'prompt', prompt )
 			self.model = model
 			self.image_path = image_path
-			self.n = n
 			self.aspect_ratio = aspect_ratio
 			self.resolution = resolution
 			self.quality = quality
@@ -505,9 +504,8 @@ class Images( Grok ):
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 			with open( self.image_path, "rb" ) as f:
 				image_data = base64.b64encode( f.read( ) ).decode( "utf-8" )
-				self.response = self.client.image.sample(
-					prompt=self.prompt, model=self.model, aspect_ratio=self.aspect_ratio,
-					image_url=f"data:image/jpeg;base64,{image_data}", )
+				self.response = self.client.image.sample( prompt=self.prompt, model=self.model,
+					aspect_ratio=self.aspect_ratio, image_url=f"data:image/jpeg;base64,{image_data}", )
 				return self.response
 		except Exception as e:
 			ex = Error( e )
