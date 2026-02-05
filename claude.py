@@ -142,12 +142,12 @@ class Chat( Claude ):
 			Optional system instruction.
 		
 	"""
-	model: Optional[ str ];
-	messages: Optional[ List[ Dict[ str, Any ] ] ];
+	model: Optional[ str ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	system_prompt: Optional[ str ]
 	
-	def __init__( self, number: int = 1, temperature: float = 0.7, top_p: float = 0.9, max_tokens: int = 8192,
-			stream: bool = False, system_prompt: Optional[ str ] = None ) -> None:
+	def __init__( self, number: int=1, temperature: float=0.7, top_p: float=0.9, max_tokens: int=8192,
+			stream: bool=False, system_prompt: str=None ) -> None:
 		"""
 		
 			Purpose:
@@ -201,9 +201,8 @@ class Chat( Claude ):
 		"""
 		return [ 'claude-3-opus', 'claude-3-sonnet', 'claude-2',  'claude-instant' ]
 	
-	def generate_text( self, prompt: str, model: str = 'claude-3-sonnet', temperature: Optional[
-		float ] = None, top_p: Optional[ float ] = None, max_tokens: Optional[ int ] = None, stream: Optional[
-				bool ] = None ) -> Optional[ str ]:
+	def generate_text( self, prompt: str, model: str='claude-3-sonnet',
+			temperature: float=None, top_p: float=None, max_tokens: int=None, stream: bool=None ) -> str:
 		"""
 		
 			Purpose:
@@ -231,17 +230,12 @@ class Chat( Claude ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			self.prompt = prompt;
+			self.prompt = prompt
 			self.model = model
-			payload: Dict[ str, Any ] = {
-					'model': self.model,
-					'messages': [ {
-							              'role': 'user',
-							              'content': self.prompt } ],
-					'max_tokens': max_tokens if max_tokens is not None else self.max_completion_tokens,
-			}
+			payload = {'model': self.model,'messages': [{'role': 'user','content': self.prompt } ],
+					'max_tokens': max_tokens if max_tokens is not None else self.max_completion_tokens,}
 			if temperature is not None:
 				payload[ 'temperature' ] = temperature
 			if top_p is not None:
@@ -252,7 +246,6 @@ class Chat( Claude ):
 			if not use_stream:
 				resp = self._post_json( '/messages', payload, stream=False )
 				data = resp.json( )
-				# Anthropic responses often nest content; try common paths
 				if isinstance( data, dict ):
 					if 'completion' in data:
 						return data.get( 'completion' )
@@ -262,20 +255,16 @@ class Chat( Claude ):
 					# fallback
 					return data.get( 'output' ) or data.get( 'content' )
 				return None
-			# streaming (SSE)
 			resp = self._post_json( '/messages', payload, stream=True )
-			
 			def _gen( ) -> Generator[ str, None, None ]:
 				for line in resp.iter_lines( ):
 					evt = _as_sse_json( line )
 					if not evt:
 						continue
-					# attempt to extract progressive text
 					if 'completion' in evt:
 						yield evt[ 'completion' ]
 					elif 'delta' in evt and isinstance( evt[ 'delta' ], dict ):
 						yield evt[ 'delta' ].get( 'content', '' )
-			
 			return ''.join( list( _gen( ) ) )
 		except Exception as e:
 			ex = Error( e )
@@ -286,7 +275,7 @@ class Chat( Claude ):
 			error.show( )
 	
 	def analyze_image( self, prompt: str, image_url: str,
-			model: str='claude-vision', max_tokens: int=2048 ) -> Optional[ str ]:
+			model: str='claude-vision', max_tokens: int=2048 ) -> str | None:
 		"""
 		
 			Purpose:
@@ -310,7 +299,7 @@ class Chat( Claude ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'image_url', image_url )
 			payload = { 'model': model, 'messages': [ { 'role': 'user',
 						 'content': self.prompt or prompt,  'image_url': image_url } ],
@@ -351,7 +340,7 @@ class Chat( Claude ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'pdf_path', pdf_path )
 			files = Files( )
 			upload_resp = files.upload( file_name=Path( pdf_path ).name,
@@ -367,7 +356,7 @@ class Chat( Claude ):
 			resp = self._post_json( '/messages', payload, stream=False )
 			return resp.json( ).get( 'completion' ) or resp.json( ).get( 'output' )
 		except Exception as e:
-			ex = Error( e );
+			ex = Error( e )
 			ex.module = 'claude'
 			ex.cause = 'Chat'
 			ex.method = 'summarize_document(self, prompt, pdf_path)'
@@ -399,11 +388,11 @@ class Chat( Claude ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
 			web_options = { 'search_recency_days': recency, 'max_search_results': max_results }
 			payload = { 'model': model, 'messages': [ {
-						 'role': 'user', 'content': prompt } ], 'web_search_options': web_options }
+						'role': 'user', 'content': prompt } ], 'web_search_options': web_options }
 			resp = self._post_json( '/messages', payload, stream=False )
 			return resp.json( ).get( 'completion' ) or resp.json( ).get( 'output' )
 		except Exception as e:
@@ -585,13 +574,8 @@ class Images( Claude ):
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			payload = {
-					'model': model,
-					'prompt': prompt,
-					'n': number,
-					'size': size,
-					'quality': quality,
-					'style': style }
+			payload = { 'model': model, 'prompt': prompt, 'n': number, 'size': size,
+					'quality': quality, 'style': style }
 			resp = self._post_json( '/images/generate', payload, stream=False )
 			data = resp.json( )
 			if fmt == 'url':
@@ -630,7 +614,7 @@ class Images( Claude ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'image_url', image_url )
 			messages = [ { 'role': 'user', 'content': prompt, 'image_url': image_url } ]
 			payload = { 'model': model, 'messages': messages, 'max_tokens': max_tokens }
@@ -671,19 +655,15 @@ class Images( Claude ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
-			throw_if( 'src_url', src_url );
+			throw_if( 'prompt', prompt )
+			throw_if( 'src_url', src_url )
 			throw_if( 'output_path', output_path )
-			payload = {
-					'model': model,
-					'prompt': prompt,
-					'image_url': src_url,
-					'size': size }
+			payload = {'model': model,'prompt': prompt,'image_url': src_url,'size': size }
 			resp = self._post_json( '/images/edit', payload, stream=False )
 			data = resp.json( )
 			content = data.get( 'data', [ { } ] )[ 0 ]
 			if isinstance( content, dict ) and 'b64_json' in content:
-				out = Path( output_path );
+				out = Path( output_path )
 				out.parent.mkdir( parents=True, exist_ok=True )
 				out.write_bytes( bytes( content[ 'b64_json' ], 'utf-8' ) )
 				return str( out )
@@ -712,7 +692,6 @@ class Embedding( Claude ):
 		Embedding helper using Claude embedding endpoints.
 		
 	"""
-	
 	def __init__( self ) -> None:
 		"""
 			
@@ -763,10 +742,8 @@ class Embedding( Claude ):
 		         'float64',
 		         'base64' ]
 	
-	def create( self, text: Union[
-		str, List[ str ] ], model: str = 'claude-embed', encoding_format: str = 'float32',
-			metadata: Optional[ Dict[ str, Any ] ] = None, output_dimension: Optional[
-				int ] = None ) -> Optional[ List[ float ] ]:
+	def create( self, text: Union[ str, List[ str ] ], model: str='claude-embed',
+			encoding_format: str='float32', metadata: Dict[ str, Any ]=None, output_dimension: int=None ) -> List[ float ] | None:
 		"""
 		
 			Purpose:
@@ -792,11 +769,9 @@ class Embedding( Claude ):
 		
 		"""
 		try:
-			throw_if( 'text', text );
+			throw_if( 'text', text )
 			throw_if( 'model', model )
-			payload: Dict[ str, Any ] = {
-					'model': model,
-					'input': text }
+			payload = { 'model': model, 'input': text }
 			if encoding_format is not None:
 				payload[ 'encoding_format' ] = encoding_format
 			if metadata is not None:
@@ -828,8 +803,7 @@ class Files( Claude ):
 		File upload / list / retrieve / delete helpers for Claude-compatible file endpoints.
 	
 	"""
-	def upload( self, file_name: str, content_bytes: bytes, purpose: str ) -> Optional[
-		Dict[ str, Any ] ]:
+	def upload( self, file_name: str, content_bytes: bytes, purpose: str ) -> Dict[ str, Any ] | None:
 		"""
 			
 			Purpose:
@@ -851,22 +825,20 @@ class Files( Claude ):
 		
 		"""
 		try:
-			throw_if( 'file_name', file_name );
-			throw_if( 'content_bytes', content_bytes );
+			throw_if( 'file_name', file_name )
+			throw_if( 'content_bytes', content_bytes )
 			throw_if( 'purpose', purpose )
 			url = f'{self.base_url}/files'
-			files = {
-					'file': (file_name, content_bytes) }
-			data = {
-					'purpose': purpose }
+			files = { 'file': (file_name, content_bytes) }
+			data = { 'purpose': purpose }
 			resp = requests.post( url=url, headers={
 					'x-api-key': self.api_key or '' }, files=files, data=data, timeout=self.timeout )
 			resp.raise_for_status( )
 			return resp.json( )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'claude';
-			ex.cause = 'Files';
+			ex = Error( e )
+			ex.module = 'claude'
+			ex.cause = 'Files'
 			ex.method = 'upload(self, file_name, content_bytes, purpose)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -886,9 +858,9 @@ class Files( Claude ):
 		try:
 			return self._get( '/files' ).json( )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'claude';
-			ex.cause = 'Files';
+			ex = Error( e )
+			ex.module = 'claude'
+			ex.cause = 'Files'
 			ex.method = 'list(self)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -911,12 +883,12 @@ class Files( Claude ):
 		
 		"""
 		try:
-			throw_if( 'file_id', file_id );
+			throw_if( 'file_id', file_id )
 			return self._get( f'/files/{file_id}' ).json( )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'claude';
-			ex.cause = 'Files';
+			ex = Error( e )
+			ex.module = 'claude'
+			ex.cause = 'Files'
 			ex.method = 'retrieve(self, file_id)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -1031,8 +1003,8 @@ class Transcription( Claude ):
 		         'it',
 		         'ja' ]
 	
-	def transcribe( self, path: str, model: str = 'whisper-1', language: Optional[
-		str ] = 'en', format: str = 'text' ) -> Optional[ str ]:
+	def transcribe( self, path: str, model: str='whisper-1',
+			language: str='en', format: str='text' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1059,12 +1031,8 @@ class Transcription( Claude ):
 			throw_if( 'path', path )
 			throw_if( 'model', model )
 			with open( path, 'rb' ) as fh:
-				files = {
-						'file': (Path( path ).name, fh) }
-				data = {
-						'model': model,
-						'language': language,
-						'format': format }
+				files = { 'file': (Path( path ).name, fh) }
+				data = { 'model': model, 'language': language, 'format': format }
 				resp = requests.post( url=f'{self.base_url}/audio/transcriptions', headers={
 						'x-api-key': self.api_key or '' }, files=files, data=data, timeout=self.timeout )
 				resp.raise_for_status( )
