@@ -48,7 +48,6 @@ import requests
 from boogr import Error, ErrorDialog
 import config as cfg
 
-
 def throw_if( name: str, value: object ) -> None:
 	"""
 	
@@ -341,7 +340,7 @@ class Chat( Mistral ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
 			self.prompt = prompt;
 			self.model = model;
