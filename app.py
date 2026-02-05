@@ -1072,7 +1072,7 @@ with st.sidebar:
 	style_subheaders( )
 	st.subheader( "" )
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-	provider = st.selectbox( "Provider", list( PROVIDERS.keys( ) ),
+	provider = st.selectbox( "API", list( PROVIDERS.keys( ) ),
 		index=list( PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
 	
 	st.session_state[ "provider" ] = provider
@@ -1159,7 +1159,7 @@ with st.sidebar:
 		st.rerun( )
 		
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-	mode = st.sidebar.radio( 'Mode', MODES, index=0 )
+	mode = st.sidebar.radio( 'Select Mode', MODES, index=0 )
 	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	
 # =============================================================================
@@ -1173,7 +1173,7 @@ if mode == 'Chat':
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.subheader( '⚙️  Chat Settings' )
+		st.text( '⚙️  Chat Settings' )
 		st.radio( 'Execution Mode',
 			options=[ 'Standard', 'Guidance Only', 'Analysis Only' ],
 			index=[ 'Standard', 'Guidance Only',
@@ -1290,7 +1290,7 @@ elif mode == "Text":
 		st.session_state[ 'text_model' ] = text_model
 		
 		# ---------------- Parameters ----------------
-		with st.expander( 'Parameters:', expanded=True ):
+		with st.expander( '🔣 Parameters:', expanded=True ):
 			temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01, )
 			st.session_state[ 'temperature' ] = float( temperature )
@@ -1427,17 +1427,14 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	with st.sidebar:
 		st.text( '⚙️ Image Settings' )
-		st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ---------------- Model ----------------
 		image_model = st.selectbox(
 			"Model",
 			image.model_options,
-			index=(
-					image.model_options.index( st.session_state[ "image_model" ] )
+			index=( image.model_options.index( st.session_state[ "image_model" ] )
 					if st.session_state.get( "image_model" ) in image.model_options
-					else 0
-			),
+					else 0 ),
 		)
 		st.session_state[ "image_model" ] = image_model
 		
@@ -1636,7 +1633,6 @@ elif mode == "Audio":
 	with st.sidebar:
 		st.text( '⚙️ Audio Settings' )
 		
-		st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ---------------- Task ----------------
 		available_tasks = [ ]
@@ -1781,31 +1777,23 @@ elif mode == "Audio":
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
-	st.subheader( '🉑 Vector Embeddings')
+	st.subheader( '⛓️  Vector Embeddings')
 	if not hasattr( provider_module, 'Embedding' ):
 		st.info( 'Embeddings are not supported by the selected provider.' )
 	else:
 		embed = provider_module.Embedding( )
 		with st.sidebar:
-			st.header( 'Embedding Settings' )
+			st.text( '⚙️ Embedding Settings' )
 			
-			st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-			embed_model = st.selectbox(
-				'Model',
-				embed.model_options,
-				index=(
-						embed.model_options.index( st.session_state[ 'embed_model' ] )
+			embed_model = st.selectbox( 'Model', embed.model_options,
+				index=( embed.model_options.index( st.session_state[ 'embed_model' ] )
 						if st.session_state.get( 'embed_model' ) in embed.model_options
-						else 0
-				),
+						else 0 ),
 			)
 			st.session_state[ 'embed_model' ] = embed_model
 			method = None
 			if hasattr( embed, "methods" ):
-				method = st.selectbox(
-					"Method",
-					embed.methods,
-				)
+				method = st.selectbox( "Method", embed.methods, )
 		
 		# ------------------------------------------------------------------
 		# Main UI — Embedding execution (unchanged behavior)

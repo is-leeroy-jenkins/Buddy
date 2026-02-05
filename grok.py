@@ -420,7 +420,7 @@ class Chat( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def upload_file( self, filepath: str, purpose: st ='user_data' ) -> str | None:
+	def upload_file( self, filepath: str, purpose: str='user_data' ) -> str | None:
 		"""
 		
 			Purpose:
