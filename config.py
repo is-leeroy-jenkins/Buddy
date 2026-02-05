@@ -42,11 +42,24 @@
   ******************************************************************************************
   '''
 import os
+import re
 
 
-#------------- CONSTANTS ---------------------
-GROK_ORGANIZATION = 'Leeroy'
-GROK_TIMEOUT = 60
+#------------- COMMON CONSTANTS ---------------------
+BASE_DIR = os.path.dirname( os.path.abspath( __file__ ) )
+FAVICON = r'resources/favicon.ico'
+CRS = r'https://www.congress.gov/crs-appropriations-status-table'
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
+APP_TITLE = 'Buddy'
+APP_SUBTITLE = 'Budget Execution AI'
+OPEN_TAG = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
+CLSOE_TAG = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
+MARKDOWN_HEADING_PATTERN = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
+XML_BLOCK_PATTERN = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>", re.DOTALL )
+DB_PATH = "stores/sqlite/Data.db"
+ANALYST = '❓'
+BUDDY = '🧠'
+PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Groq': 'grok', }
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
@@ -55,6 +68,58 @@ GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
 GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 
+#----------------- GPT CONFIG -------------------
+GPT_LOGO = r'resources/buddy_logo.ico'
 
-# ---------------- ENDPOINTS ------------------
+GPT_VECTOR_STORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
+                      'vs_697f86ad98888191b967685ae558bfc0' ]
+
+GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
+              'file-WPmTsHFYDLGHbyERqJdyqv',
+              'file-DW5TuqYoEfqFfqFFsMXBvy',
+              'file-U8ExiB6aJunAeT6872HtEU',
+              'file-FHkNiF6Rv29eCkAWEagevT',
+              'file-XsjQorjtffHTWjth8EVnkL' ]
+
+GPT_DOMAINS = [ 'congress.gov',
+                'google.com',
+                'gao.gov',
+                'omb.gov',
+                'defense.gov' ]
+
+GPT_MODES = [ 'Chat',
+              'Text',
+              'Images',
+              'Audio',
+              'Embeddings',
+              'Documents',
+              'Files',
+              'Vector Store',
+              'Prompt Engineering',
+              'Data Export' ]
+
+# ---------------- GROK CONFIG ------------------
 GROK_BASE_URL = r'https://api.x.ai/v1'
+GROK_ORGANIZATION = 'Leeroy'
+GROK_TIMEOUT = 60
+GROQ_LOGO = r'resources/grok_logo.png'
+GROQ_MODES = [ 'Text',
+               'Images',
+               'Embeddings',
+               'Documents',
+               'Files',
+               'Vector Store',
+               'Prompt Engineering',
+               'Data Export' ]
+
+# ---------------- GEMINI CONFIG ------------------
+GEMINI_LOGO = r'resources/gemini_logo.png'
+GEMINI_MODES = [ 'Text',
+                 'Images',
+                 'Embeddings',
+                 'Audio',
+                 'Documents',
+                 'Files',
+                 'Vector Store',
+                 'Prompt Engineering',
+                 'Data Export' ]

@@ -51,7 +51,7 @@ from google.genai import types
 from google.genai.types import (Part, GenerateContentConfig, ImageConfig, FunctionCallingConfig,
                                 GenerateImagesConfig, GenerateVideosConfig, ThinkingConfig,
                                 GeneratedImage, EmbedContentConfig, Content, ContentEmbedding,
-                                Candidate, HttpOptions, GenerateImagesResponse,
+                                Candidate, HttpOptions, GenerateImagesResponse, Field,
                                 GenerateContentResponse, GenerateVideosResponse, Image, File)
 import config as cfg
 from boogr import ErrorDialog, Error
@@ -569,7 +569,7 @@ class FileStore( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class Embedding( Gemini ):
+class Embeddings( Gemini ):
 	'''
 
 		Purpose:
@@ -995,7 +995,7 @@ class Translation( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class Image( Gemini ):
+class Images( Gemini ):
 	"""
 
 	    Purpose

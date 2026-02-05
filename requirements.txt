@@ -1,4 +1,3 @@
-anthropic
 typing
 typing_extensions
 sentence-transformers>=2.6.1
@@ -11,4 +10,3 @@ google-genai
 pydantic
 tiktoken
 xai-sdk
-mistralai

@@ -71,8 +71,6 @@ class GPT:
 	client: Optional[ OpenAI ]
 	prompt: Optional[ str ]
 	response_format: Optional[ str ]
-	header: Optional[ GptHeader ]
-	endpoints: Optional[ GptEndpoints ]
 	number: Optional[ int ]
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
@@ -83,8 +81,6 @@ class GPT:
 	stops: Optional[ List[ str ] ]
 	
 	def __init__( self ):
-		self.header = GptHeader( )
-		self.endpoints = GptEndpoints( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.modalities = [ 'text', 'audio' ]
 		self.stops = [ '#', ';' ]
@@ -909,7 +905,7 @@ class Chat( GPT ):
 		         'delete_file',
 		         'upload_file', ]
 	
-class Embedding( GPT ):
+class Embeddings( GPT ):
 	"""
 	
 	    Purpose
@@ -1689,7 +1685,7 @@ class Translation( GPT ):
 		         'translate',
 		         'model_options', ]
 
-class Image( GPT ):
+class Images( GPT ):
 	"""
 	
 	    Purpose

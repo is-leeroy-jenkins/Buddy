@@ -49,6 +49,8 @@ from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
 import groq
 from groq import Groq
+from xai_sdk.aio.image import ImageResponse
+
 import config as cfg
 from boogr import ErrorDialog, Error
 import config as cfg
@@ -91,6 +93,7 @@ class Grok:
 	timeout: Optional[ float ]
 	number: Optional[ int ]
 	model: Optional[ str ]
+	store: Optional[ bool ]
 	response_format: Optional[ str ]
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
@@ -157,7 +160,7 @@ class Chat( Grok ):
 	reasoning_effort: Optional[ str ]
 	previous_response_id: Optional[ str ]
 	client: Optional[ Client ]
-	chat_response: Optional[ Client.chat  ]
+	chat_response: Optional[ Any  ]
 	
 	def __init__( self ):
 		"""
@@ -366,7 +369,6 @@ class Images( Grok ):
 		self.style = None
 		self.response_format = None
 		self.client = None
-		self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 	
 
 	@property
@@ -454,7 +456,7 @@ class Images( Grok ):
 			self.response = self.client.image.sample( prompt=self.prompt,
 				model="grok-imagine-image", aspect_ratio=self.aspect_ratio,
 				image_format=self.response_format, image_url=self.image_url, )
-			return self.response
+			return self.response.image
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'

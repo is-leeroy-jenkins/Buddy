@@ -63,11 +63,17 @@ from reportlab.pdfgen import canvas
 from sentence_transformers import SentenceTransformer
 from gpt import (
 	Chat,
-	Image,
-	Embedding,
+	Images,
+	Embeddings,
+	TTS,
 	Transcription,
 	Translation,
+	VectorStore,
 )
+
+from gemini import ( Chat, Images, Embeddings, Transcription, TTS, Translation, FileStore )
+
+from grok import ( Chat, Images, Embeddings, Files, Collections )
 
 # ==============================================================================
 # CONSTANTS
@@ -83,10 +89,6 @@ GPT_LOGO = r'resources/buddy_logo.ico'
 GEMINI_LOGO = r'resources/gemini_logo.png'
 
 GROQ_LOGO = r'resources/grok_logo.png'
-
-MISTRAL_LOGO = r'resources/mistral_logo.png'
-
-CLAUDE_LOGO = r'resources/claude_logo.png'
 
 GPT_MODES = [ 'Chat',
               'Text',
@@ -108,20 +110,10 @@ GEMINI_MODES = [ 'Chat',
 GROQ_MODES = [ 'Chat',
                'Text',
                'Images',
-               'Audio',
                'Embeddings',
                'Documents',
                'Files',
                'VectorStores' ]
-
-
-MISTRAL_MODES = [ 'Chat',
-                  'Text',
-                  'Images',
-                  'Embeddings',
-                  'Documents' ]
-
-CLAUDE_MODES = [ 'Chat', 'Text', 'Images', 'Documents', 'Files' ]
 
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 
@@ -133,19 +125,18 @@ PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 
 PROMPT_VERSION = '12'
 
-VECTOR_STORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0' ]
+GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0' ]
 
-FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt', 'file-WPmTsHFYDLGHbyERqJdyqv', 'file-DW5TuqYoEfqFfqFFsMXBvy',
+GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt', 'file-WPmTsHFYDLGHbyERqJdyqv', 'file-DW5TuqYoEfqFfqFFsMXBvy',
 		'file-U8ExiB6aJunAeT6872HtEU', 'file-FHkNiF6Rv29eCkAWEagevT', 'file-XsjQorjtffHTWjth8EVnkL' ]
 
-WEB_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov' ]
+GPT_WEB_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov' ]
 
 TEXT_TYPES = { 'output_text' }
 
-MARKDOWN_HEADING_PATTERN: re.Pattern[ str ] = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
+MARKDOWN_HEADING_PATTERN = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
 
-XML_BLOCK_PATTERN: re.Pattern[ str ] = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>",
-	re.DOTALL )
+XML_BLOCK_PATTERN  = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>", re.DOTALL )
 
 DB_PATH = "stores/sqlite/Data.db"
 
@@ -153,43 +144,18 @@ ANALYST = '❓'
 
 BUDDY = '🧠'
 
-PROVIDERS = {
-		'GPT': 'gpt',
-		'Gemini': 'gemini',
-		'Groq': 'grok',
-		'Mistral': 'missy',
-		'Claude': 'claude'
-}
+PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Groq': 'grok', }
 
 MODE_CLASS_MAP = { 'Chat': None,
 		'Text': [ 'Chat' ],
 		'Images': [ 'Image' ],
-		'Audio': [ 'TTS',
-		           'Translation',
-		           'Transcription' ],
+		'Audio': [ 'TTS', 'Translation', 'Transcription' ],
 		'Embeddings': [ 'Embedding' ],
 }
 
-CLASS_MODE_MAP = { 'GPT': GPT_MODES, 'Gemini': GEMINI_MODES, 'Grok': GROQ_MODES,
-                      'Mistral': MISTRAL_MODES, 'Claude': CLAUDE_MODES}
+CLASS_MODE_MAP = { 'GPT': cfg.GPT_MODES, 'Gemini': cfg.GEMINI_MODES, 'Grok': cfg.GROQ_MODES  }
 
-MODES = [
-		'Chat',
-		'Text',
-		'Images',
-		'Audio',
-		'Embeddings',
-		'Documents',
-		'Files',
-		'Vector Store',
-		'Prompt Engineering',
-		'Data Export' ]
-
-_TAG_OPEN = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
-
-_TAG_CLOSE = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
-
-LOGO_MAP = { 'GPT': GPT_LOGO, 'Gemini': GEMINI_LOGO, 'Groq': GROQ_LOGO, 'Mistral': MISTRAL_LOGO, 'Claude': CLAUDE_LOGO }
+LOGO_MAP = { 'GPT': cfg.GPT_LOGO, 'Gemini': cfg.GEMINI_LOGO, 'Groq': cfg.GROQ_LOGO }
 
 # ==============================================================================
 # UTILITIES
@@ -677,7 +643,7 @@ def build_intent_prefix( mode: str ) -> str:
 
 def ensure_db( ) -> None:
 	Path( "stores/sqlite" ).mkdir( parents=True, exist_ok=True )
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( """
                       CREATE TABLE IF NOT EXISTS chat_history
                       (
@@ -737,19 +703,19 @@ def ensure_db( ) -> None:
 		              """ )
 
 def save_message( role: str, content: str ) -> None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "INSERT INTO chat_history (role, content) VALUES (?, ?)", (role, content) )
 
 def load_history( ) -> List[ Tuple[ str, str ] ]:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		return conn.execute( "SELECT role, content FROM chat_history ORDER BY id" ).fetchall( )
 
 def clear_history( ) -> None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM chat_history" )
 
 def fetch_prompts_df( ) -> pd.DataFrame:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		df = pd.read_sql_query(
 			"SELECT PromptsId, Name, Version, ID FROM Prompts ORDER BY PromptsId DESC",
 			conn
@@ -758,7 +724,7 @@ def fetch_prompts_df( ) -> pd.DataFrame:
 	return df
 
 def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
 			"SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE PromptsId=?",
 			(pid,)
@@ -767,7 +733,7 @@ def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 		return dict( zip( [ c[ 0 ] for c in cur.description ], row ) ) if row else None
 
 def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
 			"SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE Name=?",
 			(name,)
@@ -776,21 +742,21 @@ def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 		return dict( zip( [ c[ 0 ] for c in cur.description ], row ) ) if row else None
 
 def insert_prompt( data: Dict[ str, Any ] ) -> None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute(
 			"INSERT INTO Prompts (Name, Text, Version, ID) VALUES (?, ?, ?, ?)",
 			(data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ])
 		)
 
 def update_prompt( pid: int, data: Dict[ str, Any ] ) -> None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute(
 			"UPDATE Prompts SET Name=?, Text=?, Version=?, ID=? WHERE PromptsId=?",
 			(data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ], pid)
 		)
 
 def delete_prompt( pid: int ) -> None:
-	with sqlite3.connect( DB_PATH ) as conn:
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM Prompts WHERE PromptsId=?", (pid,) )
 
 def build_prompt( user_input: str ) -> str:
@@ -819,12 +785,12 @@ def build_prompt( user_input: str ) -> str:
 # ==============================================================================
 client = OpenAI( )
 
-AVATARS = { 'user': ANALYST, 'assistant': BUDDY, }
+AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
 
-st.set_page_config( page_title=APP_TITLE, layout='wide',
-	page_icon=FAVICON, initial_sidebar_state='collapsed' )
+st.set_page_config( page_title=cfg.APP_TITLE, layout='wide',
+	page_icon=cfg.FAVICON, initial_sidebar_state='collapsed' )
 
-st.caption( APP_SUBTITLE )
+st.caption( cfg.APP_SUBTITLE )
 
 inject_response_css( )
 
@@ -844,18 +810,13 @@ if 'groq_api_key' not in st.session_state:
 
 if 'google_api_key' not in st.session_state:
 	st.session_state.google_api_key = ''
-	
-if 'mistral_api_key' not in st.session_state:
-	st.session_state.mistral_api_key = ''
 
 if 'xai_api_key' not in st.session_state:
 	st.session_state.xai_api_key = ''
 
-if 'claude_api_key' not in st.session_state:
-	st.session_state.claude_api_key = ''
 
 if st.session_state.openai_api_key == '':
-	default = getattr( cfg, 'OPENAI_API_KEY', '' )
+	default = cfg.OPENAI_API_KEY
 	if default:
 		st.session_state.openai_api_key = default
 		os.environ[ 'OPENAI_API_KEY' ] = default
@@ -878,23 +839,11 @@ if st.session_state.google_api_key == '':
 		st.session_state.google_api_key = default
 		os.environ[ 'GOOGLE_API_KEY' ] = default
 
-if st.session_state.mistral_api_key == '':
-	default = getattr( cfg, 'MISTRAL_API_KEY', '' )
-	if default:
-		st.session_state.mistral_api_key = default
-		os.environ[ 'MISTRAL_API_KEY' ] = default
-
 if st.session_state.xai_api_key == '':
 	default = getattr( cfg, 'XAI_API_KEY', '' )
 	if default:
 		st.session_state.xai_api_key = default
 		os.environ[ 'XAI_API_KEY' ] = default
-
-if st.session_state.claude_api_key == '':
-	default = getattr( cfg, 'CLAUDE_API_KEY', '' )
-	if default:
-		st.session_state.claude_api_key = default
-		os.environ[ 'CLAUDE_API_KEY' ] = default
 
 if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 	st.session_state[ 'provider' ] = 'GPT'
@@ -958,16 +907,14 @@ if 'provider' not in st.session_state:
 if 'api_keys' not in st.session_state:
 	st.session_state.api_keys = { 'GPT': None,
 			'Groq': None,
-			'Gemini': None,
-	        'Mistral': None,
-	        'Claude': None }
+			'Gemini': None,}
 
 # ======================================================================================
 #  PROVIDER
 # ======================================================================================
 def get_provider_module( ):
 	provider = st.session_state.get( 'provider', 'GPT' )
-	module_name = PROVIDERS.get( provider, 'gpt' )
+	module_name = cfg.PROVIDERS.get( provider, 'gpt' )
 	return __import__( module_name )
 
 def get_chat_instance( ):
@@ -1071,9 +1018,9 @@ with st.sidebar:
 
 	style_subheaders( )
 	st.subheader( "" )
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	provider = st.selectbox( "API", list( PROVIDERS.keys( ) ),
-		index=list( PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
+		index=list( cfg.PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
 	
 	st.session_state[ "provider" ] = provider
 	logo_path = LOGO_MAP.get( provider )
@@ -1107,13 +1054,6 @@ with st.sidebar:
 			help='Overrides GOOGLE_API_KEY from config.py for this session only.'
 		)
 		
-		mistral_key = st.text_input(
-			'Mistral API Key',
-			type='password',
-			value=st.session_state.mistral_api_key or '',
-			help='Overrides MISTRAL_API_KEY from config.py for this session only.'
-		)
-		
 		xai_key = st.text_input(
 			'xAi API Key',
 			type='password',
@@ -1137,10 +1077,6 @@ with st.sidebar:
 			st.session_state.google_api_key = google_key
 			os.environ[ 'GOOGLE_API_KEY' ] = google_key
 		
-		if mistral_key:
-			st.session_state.mistral_api_key = mistral_key
-			os.environ[ 'MISTRAL_API_KEY' ] = mistral_key
-		
 		if xai_key:
 			st.session_state.xai_api_key = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
@@ -1151,16 +1087,23 @@ with st.sidebar:
 			with col2:
 				logo_path = LOGO_MAP.get( provider )
 				if logo_path and os.path.exists( logo_path ):
-					st.logo( logo_path, size='large', link=CRS )
+					st.logo( logo_path, size='large', link=cfg.CRS )
 					
 	
 	if st.button( 'Clear Chat' ):
 		reset_state( )
 		st.rerun( )
 		
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
-	mode = st.sidebar.radio( 'Select Mode', MODES, index=0 )
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	if provider == 'Gemini':
+		mode = st.sidebar.radio( 'Select Mode', cfg.GEMINI_MODES, index=0 )
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	elif provider == 'Grok':
+		mode = st.sidebar.radio( 'Select Mode', cfg.GROQ_MODES, index=0 )
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	else:
+		mode = st.sidebar.radio( 'Select Mode', cfg.GPT_MODES, index=0 )
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	
 # =============================================================================
 # CHAT MODE
