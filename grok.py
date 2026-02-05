@@ -51,6 +51,9 @@ import groq
 from groq import Groq
 import config as cfg
 from boogr import ErrorDialog, Error
+import config as cfg
+from xai_sdk import Client
+from xai_sdk.chat import user, system
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -61,428 +64,112 @@ def encode_image( image_path: str ) -> str:
 	with open( image_path, "rb" ) as image_file:
 		return base64.b64encode( image_file.read( ) ).decode( 'utf-8' )
 
-class Grok( ):
+class Grok:
 	"""
 	
 		Purpose:
 		--------
-		Base class for Grok provider wrappers. Encapsulates authentication, HTTP helpers,
-		and common controls used across specialized classes.
-		
-		Attributes:
-		-----------
-		api_key : Optional[str]
-			API key from config (cfg.GROK_API_KEY).
-		base_url : str
-			Base URL used for Grok API calls.
-		headers : Dict[str, str]
-			Default headers for requests.
-		timeout : int
-			Default HTTP timeout in seconds.
-		modalities : Optional[List[str]]
-			Supported modalities (text, image, audio).
-		stops : Optional[List[str]]
-			Default stop tokens.
-		number : Optional[int]
-			Default count for completions.
-		temperature : Optional[float]
-			Default temperature setting.
-		top_p : Optional[float]
-			Default top_p setting.
-		max_completion_tokens : Optional[int]
-			Default max tokens.
-		response_format : Optional[str]
-			Preferred response format.
-			
-	"""
-	api_key: Optional[ str ]
-	headers: Dict[ str, str ]
-	modalities: Optional[ List[ str ] ]
-	stops: Optional[ List[ str ] ]
-	number: Optional[ int ]
-	temperature: Optional[ float ]
-	top_p: Optional[ float ]
-	max_completion_tokens: Optional[ int ]
-	response_format: Optional[ str ]
-	timeout: Optional[ int ]
-	number: Optional[ int ]
-	temperature: Optional[ float ]
-	top_p: Optional[ float ]
-	max_completion_tokens: Optional[ int ]
-	response_format: Optional[ str ]
+		Base class for xAI (Grok) REST API functionality.
 	
-	def __init__( self ) -> None:
+		This class provides:
+			- API key and base URL management
+			- Common request headers
+			- Shared HTTP helpers for JSON and streaming requests
+	
+		Notes:
+		------
+		xAI exposes an OpenAI-compatible REST surface at:
+			https://api.x.ai/v1
+	
+		All child capability classes (Chat, Images, Embeddings, Files, etc.)
+		are expected to route through the helpers defined here.
+	
+	"""
+	base_url: Optional[ str ]
+	api_key: Optional[ str ]
+	organization: Optional[ str ]
+	timeout: Optional[ float ]
+	number: Optional[ int ]
+	model: Optional[ str ]
+	response_format: Optional[ str ]
+	temperature: Optional[ float ]
+	top_percent: Optional[ float ]
+	frequency_penalty: Optional[ float ]
+	presence_penalty: Optional[ float ]
+	max_completion_tokens: Optional[ int ]
+	instructions: Optional[ str ]
+	prompt: Optional[ str ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
+	tool_choice: Optional[ str ]
+	
+	def __init__( self ):
 		"""
 			
 			Purpose:
 			--------
-			Initialize shared configuration for Grok API usage.
-		
-			Returns:
-			--------
-			None
-		
+			Initialize the Grok (xAI) API client.
+	
+			Parameters:
+			-----------
+			cfg : object
+				Configuration object providing API credentials and options.
+			
 		"""
-		self.api_key: Optional[ str ] = getattr( cfg, 'GROK_API_KEY', None )
-		self.base_url: str = getattr( cfg, 'GROK_BASE_URL', 'https://api.grok.ai/v1' )
-		self.headers: Dict[ str, str ] = {
-				'Authorization': f'Bearer {self.api_key or ""}',
-				'Content-Type': 'application/json' }
-		self.timeout: int = 120
-		self.modalities = [ 'text', 'images', 'audio' ]
-		self.stops = [ '#', ';' ]
-		self.number = None
+		self.api_key = cfg.GROK_API_KEY
+		self.base_url = cfg.GROK_BASE_URL
+		self.organization = None
+		self.timeout = None
+		self.instructions = None
+		self.prompt = None
+		self.model = None
+		self.max_output_tokens = None
 		self.temperature = None
 		self.top_p = None
-		self.max_completion_tokens = None
+		self.tool_choice = None
 		self.response_format = None
 
 class Chat( Grok ):
 	"""
-		
+	
 		Purpose:
 		--------
-		Chat class providing single- and multi-turn chat completions and multimodal
-		interactions (image + text) when models support them.
-	
-		Attributes:
-		-----------
-		model : Optional[str]
-			Selected model id.
-		messages : Optional[List[Dict[str, Any]]]
-			Message payload for multi-turn chat.
-		system_prompt : Optional[str]
-			Optional system-level instruction.
-			
-	"""
-	model: Optional[ str ]
-	messages: Optional[ List[ Dict[ str, Any ] ] ]
-	system_prompt: Optional[ str ]
-	
-	def __init__( self, number: int=1, temperature: float=0.7, top_p: float=0.9,
-			max_tokens: int=4096, stream: bool=False, system_prompt: str=None ) -> None:
-		"""
-		
-			Purpose:
-			--------
-			Initialize Chat instance with sampling defaults.
-	
-			Parameters:
-			-----------
-			number : int
-				Number of completions to request.
-			temperature : float
-				Sampling temperature.
-			top_p : float
-				Nucleus sampling value.
-			max_tokens : int
-				Maximum tokens to generate.
-			stream : bool
-				Whether to request streaming output.
-			system_prompt : Optional[str]
-				Optional system-level instruction.
-	
-			Returns:
-			--------
-			None
-			
-		"""
-		super( ).__init__( )
-		self.number = number
-		self.temperature = temperature
-		self.top_p = top_p
-		self.max_completion_tokens = max_tokens
-		self.stream = stream
-		self.system_prompt = system_prompt
-		self.model = None
-		self.messages = None
-		self.prompt = None
-		self.response = None
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		"""
-			
-			Purpose:
-			--------
-			Representative Grok model ids for chat/completions.
-	
-			Returns:
-			--------
-			List[str]
-		
-		"""
-		return [ 'grok-1',
-		         'grok-1-mini',
-		         'grok-vision-1',
-		         'grok-code-1' ]
-	
-	def generate_text( self, prompt: str, model: str='grok-1', temperature: float=None,
-			top_p: float=None, max_tokens: int=None, stream: bool=None ) -> str | None:
-		"""
-			
-			Purpose:
-			--------
-			Generate a completion given a prompt.
-	
-			Parameters:
-			-----------
-			prompt : str
-				Prompt or user message.
-			model : str
-				Model id to use.
-			temperature : Optional[float]
-				Temperature override.
-			top_p : Optional[float]
-				Top-p override.
-			max_tokens : Optional[int]
-				Max tokens override.
-			stream : Optional[bool]
-				Streaming override.
-	
-			Returns:
-			--------
-			Optional[str]
-		
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			self.prompt = prompt
-			self.model = model
-			payload = {'model': self.model, 'messages': [ {  'role': 'user', 'content': self.prompt } ],
-					'max_tokens': max_tokens if max_tokens is not None else self.max_completion_tokens }
-			if temperature is not None:
-				payload[ 'temperature' ] = temperature
-			if top_p is not None:
-				payload[ 'top_p' ] = top_p
-			if self.system_prompt:
-				payload[ 'system' ] = self.system_prompt
-			use_stream = stream if stream is not None else self.stream
-			if not use_stream:
-				resp = self._post_json( '/chat/completions', payload, stream=False )
-				data = resp.json( )
-				if isinstance( data, dict ):
-					choices = data.get( 'choices' ) or data.get( 'outputs' ) or [ ]
-					if isinstance( choices, list ) and len( choices ) > 0:
-						first = choices[ 0 ]
-						if isinstance( first, dict ):
-							msg = first.get( 'message' ) or first.get( 'output' ) or first
-							if isinstance( msg, dict ):
-								return msg.get( 'content' ) or msg.get( 'text' ) or None
-							return str( msg )
-				return None
-			resp = self._post_json( '/chat/completions', payload, stream=True )
-			
-			def _gen( ) -> Generator[ str, None, None ]:
-				for line in resp.iter_lines( ):
-					evt = _as_sse_json( line )
-					if not evt:
-						continue
-					if 'delta' in evt and isinstance( evt[ 'delta' ], dict ):
-						yield evt[ 'delta' ].get( 'content', '' )
-					elif 'content' in evt:
-						yield evt.get( 'content', '' )
-			return ''.join( list( _gen( ) ) )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Chat'
-			ex.method = 'generate_text(self, prompt)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def analyze_image( self, prompt: str, image_url: str,
-			model: str='grok-vision-1', max_tokens: int=1024 ) -> str | None:
-		"""
-			
-			Purpose:
-			--------
-			Analyze an image with a textual instruction (multimodal usage).
-	
-			Parameters:
-			-----------
-			prompt : str
-				Instruction to guide analysis.
-			image_url : str
-				Publicly accessible image URL.
-			model : str
-				Vision-capable model id.
-			max_tokens : int
-				Maximum tokens to produce.
-	
-			Returns:
-			--------
-			Optional[str]
-		
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'image_url', image_url )
-			payload = { 'model': model,
-			            'messages': [ {'role': 'user', 'content': prompt, 'image_url': image_url } ],
-					    'max_tokens': max_tokens }
-			resp = self._post_json( '/chat/completions', payload, stream=False )
-			return (resp.json( ).get( 'output_text' ) or
-			        resp.json( ).get( 'choices', [ ] )[ 0 ].get( 'message', { } ).get( 'content' ))
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Chat'
-			ex.method = 'analyze_image(self, prompt, image_url)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def summarize_document( self, prompt: str, pdf_path: str,
-			model: str='grok-1', max_tokens: int=1024 ) -> str | None:
-		"""
-		
-			Purpose:
-			--------
-			Upload a local document and summarize it using a completion call.
-	
-			Parameters:
-			-----------
-			prompt : str
-				Summarization instructions.
-			pdf_path : str
-				Local PDF path.
-			model : str
-				Model id.
-			max_tokens : int
-				Max tokens for summary.
-	
-			Returns:
-			--------
-			Optional[str]
-		
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'pdf_path', pdf_path )
-			files = Files( )
-			upload_resp = files.upload( file_name=Path( pdf_path ).name,
-				content_bytes=Path( pdf_path ).read_bytes( ), purpose='user_data' )
-			file_id = upload_resp.get( 'id' ) if isinstance( upload_resp, dict ) else None
-			if not file_id:
-				raise RuntimeError( 'File upload failed' )
-			payload = { 'model': model, 'messages': [ { 'role': 'user', 'content': prompt,
-						'file': { 'file_id': file_id } } ], 'max_tokens': max_tokens }
-			resp = self._post_json( '/chat/completions', payload, stream=False )
-			return ( resp.json( ).get( 'output_text' ) or
-			        resp.json( ).get( 'choices', [ ] )[ 0 ].get( 'message', { } ).get( 'content' ) )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Chat'
-			ex.method = 'summarize_document(self, prompt, pdf_path)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def search_web( self, prompt: str, model: str='grok-1',
-			recency: int=30, max_results: int=50 ) -> str:
-		"""
-		
-			Purpose:
-			--------
-			Perform a web-augmented chat completion (web search integration) if supported.
-	
-			Parameters:
-			-----------
-			prompt : str
-				Query or instruction.
-			model : str
-				Model id.
-			recency : int
-				Recency days for web results.
-			max_results : int
-				Maximum web results to include.
-	
-			Returns:
-			--------
-			Optional[str]
-		
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			web_options = {'search_recency_days': recency, 'max_search_results': max_results }
-			payload = { 'model': model, 'messages': [ { 'role': 'user', 'content': prompt } ],
-						'web_search_options': web_options }
-			resp = self._post_json( '/chat/completions', payload, stream=False )
-			return ( resp.json( ).get( 'output_text' ) or
-			        resp.json( ).get( 'choices', [ ] )[ 0 ].get( 'message', { } ).get( 'content' ) )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Chat'
-			ex.method = 'search_web(self, prompt)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def upload_file( self, filepath: str, purpose: str='user_data' ) -> str | None:
-		"""
-		
-			Purpose:
-			--------
-			Upload a local file to Grok's files endpoint.
-	
-			Parameters:
-			-----------
-			filepath : str
-				Local path to file.
-			purpose : str
-				Upload purpose.
-	
-			Returns:
-			--------
-			Optional[str]
-			
-		"""
-		try:
-			throw_if( 'filepath', filepath )
-			files = Files( )
-			result = files.upload( file_name=Path( filepath ).name,
-				content_bytes=Path( filepath ).read_bytes( ), purpose=purpose )
-			return result.get( 'id' ) if isinstance( result, dict ) else None
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Chat'
-			ex.method = 'upload_file(self, filepath, purpose)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def __dir__( self ) -> List[ str ]:
-		return [ 'model',
-		         'model_options',
-		         'generate_text',
-		         'analyze_image',
-		         'summarize_document',
-		         'search_web',
-		         'upload_file' ]
+		Generate text and manage stateful conversations using the
+		xAI Responses API.
 
-class Images( Grok ):
-	"""
-		
-		Purpose:
+		This class is a direct, faithful mapping of xAI's documented
+		Responses API and does not emulate OpenAI legacy endpoints.
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
 		--------
-		Images wrapper for generation and vision analysis using Grok's image-capable models.
-	
-		Methods:
-		--------
-		generate(...) -> url/base64
-		analyze(...) -> text analysis
-		edit(...) -> edited image result
+		None
 	
 	"""
-	def __init__( self ) -> None:
+	
+	model: Optional[ str ]
+	max_output_tokens: Optional[ int ]
+	temperature: Optional[ float ]
+	top_p: Optional[ float ]
+	include_reasoning: Optional[ bool ]
+	reasoning_effort: Optional[ str ]
+	previous_response_id: Optional[ str ]
+	client: Optional[ Client ]
+	chat_response: Optional[ Client.chat  ]
+	
+	def __init__( self ):
 		"""
-			
+		
 			Purpose:
 			--------
-			Initialize Images helper.
-	
+			Initialize the Chat capability and HTTP client.
+
+			Parameters:
+			-----------
+			None
+
 			Returns:
 			--------
 			None
@@ -490,61 +177,13 @@ class Images( Grok ):
 		"""
 		super( ).__init__( )
 		self.model = None
-		self.quality = None
-		self.size = None
-		self.style = None
-		self.response_format = None
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		"""
-		
-				Purpose:
-				--------
-				Representative Grok image/multimodal model ids.
-		
-				Returns:
-				--------
-				List[str]
-				
-		"""
-		return [ 'grok-vision-1',
-		         'grok-1' ]
-	
-	@property
-	def size_options( self ) -> List[ str ]:
-		"""
-			
-			Purpose:
-			--------
-			Standard image size options.
-	
-			Returns:
-			--------
-			List[str]
-		
-		"""
-		return [ '256x256',
-		         '512x512',
-		         '1024x1024',
-		         '1792x1024' ]
-	
-	@property
-	def quality_options( self ) -> List[ str ]:
-		"""
-			
-			Purpose:
-			--------
-			Preset quality options.
-	
-			Returns:
-			--------
-			List[str]
-		
-		"""
-		return [ 'low',
-		         'medium',
-		         'high' ]
+		self.max_output_tokens = None
+		self.temperature = None
+		self.top_p = None
+		self.include_reasoning = None
+		self.reasoning_effort = None
+		self.previous_response_id = None
+		self.tool_choice = 'auto'
 	
 	@property
 	def format_options( self ) -> List[ str ]:
@@ -552,195 +191,18 @@ class Images( Grok ):
 		
 			Purpose:
 			--------
-			Supported response formats.
-	
+			Return supported xAI text-capable models.
+
+			Parameters:
+			-----------
+			None
+
 			Returns:
 			--------
 			List[str]
-			
-		"""
-		return [ 'url',
-		         'base64',
-		         'png',
-		         'jpeg' ]
-	
-	def generate( self, prompt: str, model: str='grok-vision-1', number: int=1,
-			size: str='1024x1024', quality: str='high',
-			style: str='natural', fmt: str='url' ) -> str | None:
-		"""
-			
-			Purpose:
-			--------
-			Generate images using a Grok image-capable model.
-	
-			Parameters:
-			-----------
-			prompt : str
-				Text prompt for generation.
-			model : str
-				Model id.
-			number : int
-				Number of images.
-			size : str
-				Output size.
-			quality : str
-				Quality preset.
-			style : str
-				Style preset.
-			fmt : str
-				Response format.
-	
-			Returns:
-			--------
-			Optional[str]
 		
 		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			payload = { 'model': model, 'prompt': prompt, 'n': number, 'size': size,
-					'quality': quality, 'style': style }
-			resp = self._post_json( '/images/generate', payload, stream=False )
-			data = resp.json( )
-			if fmt == 'url':
-				return data.get( 'data', [ { } ] )[ 0 ].get( 'url' )
-			return data
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'generate(self, prompt)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def analyze( self, prompt: str, image_url: str,
-			model: str='grok-vision-1', max_tokens: int=1024 ) -> str | None:
-		"""
-			
-			Purpose:
-			--------
-			Analyze a remote image given a textual instruction.
-	
-			Parameters:
-			-----------
-			prompt : str
-				Instruction text.
-			image_url : str
-				Public image URL.
-			model : str
-				Vision-capable model id.
-			max_tokens : int
-				Maximum tokens to generate.
-	
-			Returns:
-			--------
-			Optional[str]
-		
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'image_url', image_url )
-			messages = [ { 'role': 'user', 'content': prompt, 'image_url': image_url } ]
-			payload = { 'model': model, 'messages': messages, 'max_tokens': max_tokens }
-			resp = self._post_json( '/chat/completions', payload, stream=False )
-			return resp.json( ).get( 'output_text' ) or resp.json( ).get( 'choices', [ ] )[
-				0 ].get( 'message', { } ).get( 'content' )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'analyze(self, prompt, image_url)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def edit( self, prompt: str, src_url: str, output_path: str,
-			model: str='grok-vision-1', size: str='1024x1024' ) -> str | None:
-		"""
-			
-			Purpose:
-			--------
-			Edit an image and optionally save a returned base64 result locally.
-	
-			Parameters:
-			-----------
-			prompt : str
-				Editing instructions.
-			src_url : str
-				Source image URL.
-			output_path : str
-				Local destination path.
-			model : str
-				Model id.
-			size : str
-				Output size.
-	
-			Returns:
-			--------
-			Optional[str]
-			
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'src_url', src_url )
-			throw_if( 'output_path', output_path )
-			payload = { 'model': model, 'prompt': prompt, 'image_url': src_url, 'size': size }
-			resp = self._post_json( '/images/edit', payload, stream=False )
-			data = resp.json( )
-			content = data.get( 'data', [ { } ] )[ 0 ]
-			if isinstance( content, dict ) and 'b64_json' in content:
-				out = Path( output_path );
-				out.parent.mkdir( parents=True, exist_ok=True )
-				out.write_bytes( bytes( content[ 'b64_json' ], 'utf-8' ) )
-				return str( out )
-			return content.get( 'url' ) or None
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'edit(self, prompt, src_url, output_path)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def __dir__( self ) -> List[ str ]:
-		return [ 'model_options',
-		         'size_options',
-		         'quality_options',
-		         'format_options',
-		         'generate',
-		         'analyze',
-		         'edit' ]
-
-class Embedding( Grok ):
-	'''
-
-		Purpose:
-		--------
-		Generates vector representations using Hybrid/OpenAI compatible services.
-
-    '''
-	client: Optional[ Groq ]
-	response: Optional[ Any ]
-	embedding: Optional[ List[ float ] ]
-	encoding_format: Optional[ str ]
-	dimensions: Optional[ int ]
-	input_text: Optional[ str ]
-	
-	def __init__( self ) -> None:
-		"""
-			
-			Purpose:
-			--------
-			Initialize embedding helper.
-	
-			Returns:
-			--------
-			None
-			
-		"""
-		super( ).__init__( )
-		self.model = None
-		self.encoding_format = None
-		self.dimensions = None
+		return [ 'text', 'json_object' ]
 	
 	@property
 	def model_options( self ) -> List[ str ]:
@@ -748,104 +210,579 @@ class Embedding( Grok ):
 		
 			Purpose:
 			--------
-			Embedding model ids.
-		
+			Return supported xAI text-capable models.
+
+			Parameters:
+			-----------
+			None
+
 			Returns:
 			--------
 			List[str]
 		
 		"""
-		return [ 'grok-embed-1',
-		         'grok-embed-large' ]
+		return [ 'grok-4', 'grok-4-1', 'grok-4-fast-reasoning',		 
+				 'grok-4-1-fast-reasoning', 'grok-3', 'grok-3-mini', ]
 	
 	@property
-	def encoding_options( self ) -> List[ str ]:
+	def reasoning_options( self ) -> List[ str ]:
 		"""
 		
 			Purpose:
 			--------
-			Encoding format choices.
+			Return supported reasoning effort levels.
+
+			Notes:
+			------
+			Only valid for model = 'grok-3-mini'.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'low', 'high' ]
+	
+	def generate_text( self, prompt: str, model: str='grok-3-mini', max_tokens: int=None,
+			temperature: float=None, top_p: float=None, include_reasoning: bool=None,
+			reasoning_effort: str=None, instruct: str=None ):
+		"""
+		
+			Purpose:
+			--------
+			Generate text using the xAI Responses API.
+
+			If previous_response_id is set, the conversation will be
+			continued server-side.
+
+			Parameters:
+			-----------
+			prompt : str
+				User input prompt.
+			model : str | None
+				Model identifier.
+			max_output_tokens : int | None
+				Maximum number of tokens in the response.
+			temperature : float | None
+			top_p : float | None
+			include_reasoning : bool | None
+				Whether to include encrypted reasoning content.
+			reasoning_effort : str | None
+				Reasoning effort level (grok-3-mini only).
+
+			Returns:
+			--------
+			str
+		
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.model = model
+			self.max_output_tokens = max_tokens
+			self.temperature = temperature
+			self.top_p = top_p
+			self.instructions = instruct
+			self.include_reasoning = include_reasoning
+			self.reasoning_effort = reasoning_effort
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+			                              'Content-Type': 'application/json', } )
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.prompt ) )
+			chat_response = self.client.chat.create( model=self.model, messages=self.messages )
+			return chat_response
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Chat'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+
+
+class Images( Grok ):
+	"""
+	
+		Purpose:
+		--------
+		Provide image generation and image editing functionality using
+		the xAI Images REST API.
+
+		This class models the /images/generations and /images/edits
+		endpoints exactly as exposed by xAI.
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
+		--------
+		None
+	
+	"""
+	
+	model: Optional[ str ]
+	n: Optional[ int ]
+	aspect_ratio: Optional[ str ]
+	resolution: Optional[ str ]
+	style: Optional[ str ]
+	response_format: Optional[ str ]
+	client: Optional[ Client ]
+	image_url: Optional[ str ]
+	detail: Optional[ str ]
+	size: Optional[ str ]
+	tool_choice: Optional[ str ]
+	response_format: Optional[ str ]
+	
+	def __init__( self ):
+		"""
+		
+			Purpose:
+			--------
+			Initialize the Images API client.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		
+		"""
+		super( ).__init__( )
+		self.model = None
+		self.n = None
+		self.aspect_ratio = None
+		self.resolution = None
+		self.quality = None
+		self.style = None
+		self.response_format = None
+		self.client = None
+		self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+	
+
+	@property
+	def model_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported xAI image generation models.
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ "grok-2-image-1212", 'grok-imagine-image' ]
+	
+	@property
+	def aspect_ratio_options( self ) -> List[ str ]:
+		return [ "1:1",
+		         "16:9",
+		         "9:16",
+		         "4:3",
+		         "3:4" ]
+	
+	@property
+	def resolution_options( self ) -> List[ str ]:
+		return [ "standard",
+		         "high" ]
+	
+	@property
+	def quality_options( self ) -> List[ str ]:
+		return [ "low",
+		         "medium",
+		         "high" ]
+	
+	@property
+	def style_options( self ) -> List[ str ]:
+		return [ "natural",
+		         "illustration",
+		         "photorealistic" ]
+	
+	@property
+	def response_format_options( self ) -> List[ str ]:
+		return [ "url",
+		         "b64_json" ]
+	
+	def generate( self, prompt: str, model: str='grok-2-image-1212', n: int=None,
+			aspect_ratio: str=None, resolution: str=None, quality: str=None,
+			style: str=None, response_format: str=None ):
+		"""
+		
+			Purpose:
+			--------
+			Generate one or more images from a text prompt.
+
+			Parameters:
+			-----------
+			prompt : str
+			model : str | None
+			n : int | None
+			aspect_ratio : str | None
+			resolution : str | None
+			quality : str | None
+			style : str | None
+			response_format : str | None
+
+			Returns:
+			--------
+			List[dict]
+		
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.model = model
+			self.n = n
+			self.aspect_ratio = aspect_ratio
+			self.resolution = resolution
+			self.quality = quality
+			self.style = style
+			self.response_format = response_format
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Embeddings'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def edit( self, image_path: str, prompt: str, mask_path: str=None, model: str=None,
+			n: int=None, aspect_ratio: str=None, resolution: str=None,
+			quality: str=None, style: str=None, response_format: str=None ):
+		"""
+		
+			Purpose:
+			--------
+			Edit an existing image using a text prompt and optional mask.
+
+			Parameters:
+			-----------
+			image_path : str
+			prompt : str
+			mask_path : str | None
+			model : str | None
+			n : int | None
+			aspect_ratio : str | None
+			resolution : str | None
+			quality : str | None
+			style : str | None
+			response_format : str | None
+
+			Returns:
+			--------
+			List[dict]
+		
+		"""
+		try:
+			throw_if( 'image_path', image_path )
+			throw_if( 'prompt', prompt )
+			
+			self.model = model
+			self.n = n
+			self.aspect_ratio = aspect_ratio
+			self.resolution = resolution
+			self.quality = quality
+			self.style = style
+			self.response_format = response_format
+			
+			files = {
+					'image': open( image_path, 'rb' ) }
+			if mask_path:
+				files[ 'mask' ] = open( mask_path, 'rb' )
+			
+			data = {
+					'prompt': prompt,
+					'model': self.model,
+					'n': self.n,
+					'aspect_ratio': self.aspect_ratio,
+					'resolution': self.resolution,
+					'quality': self.quality,
+					'style': self.style,
+					'response_format': self.response_format,
+			}
+			
+			url = f'{self.base_url}/images/edits'
+			response = self.client.post( url, data=data, files=files, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( ).get( 'data', [ ] )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Embeddings'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def analyze( self, prompt: str, image_url: str, model: str=None, max_output_tokens: int=None,
+			temperature: float=None, top_p: float=None, include_reasoning: bool=None,
+			reasoning_effort: str=None, store: bool=False  ):
+		"""
+		
+			Purpose:
+			--------
+			Analyze an image (image understanding) using a text prompt and an image URL.
+
+			This method uses xAI's multimodal input format via the Responses API and
+			returns a text response describing or reasoning about the image.
+
+			Parameters:
+			-----------
+			prompt : str
+			image_url : str
+			model : str | None
+			max_output_tokens : int | None
+			temperature : float | None
+			top_p : float | None
+			include_reasoning : bool | None
+			reasoning_effort : str | None
+			store : bool
+			previous_response_id : str | None
+
+			Returns:
+			--------
+			str
+		
+		"""
+		try:
+			throw_if( "prompt", prompt )
+			throw_if( "image_url", image_url )
+			self.model = model
+			self.max_output_tokens = max_output_tokens
+			self.temperature = temperature
+			self.top_p = top_p
+			self.include_reasoning = include_reasoning
+			self.reasoning_effort = reasoning_effort
+			self.previous_response_id = previous_response_id
+			if self.reasoning_effort and self.model != "grok-3-mini":
+				raise ValueError( "reasoning_effort is only supported when model == 'grok-3-mini'." )
+			
+			payload = {
+					"model": self.model,
+					"store": store,
+					"input": [ {
+							           "role": "user",
+							           "content": [ {
+									                        "type": "input_text",
+									                        "text": prompt },
+							                        {
+									                        "type": "input_image",
+									                        "image_url": image_url } ] } ],
+					"max_output_tokens": self.max_output_tokens,
+					"temperature": self.temperature,
+					"top_p": self.top_p }
+			
+			if self.previous_response_id:
+				payload[ "previous_response_id" ] = self.previous_response_id
+			
+			if self.include_reasoning:
+				payload[ "include" ] = [ "reasoning.encrypted_content" ]
+			
+			if self.reasoning_effort:
+				payload[ "reasoning_effort" ] = self.reasoning_effort
+			
+			url = f"{self.base_url}/responses"
+			response = self.client.post( url, json=payload, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			data = response.json( )
+			self.previous_response_id = data.get( "id" )
+			
+			for output in data.get( "output", [ ] ):
+				for content in output.get( "content", [ ] ):
+					if content.get( "type" ) == "output_text":
+						return content.get( "text", "" )
+			
+			return ""
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Embeddings'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+
+
+class Embeddings( Grok ):
+	"""
+	
+		Purpose:
+		--------
+		Provide text embedding generation functionality using the
+		xAI (Grok) REST API.
+	
+		Parameters:
+		-----------
+		None
+	
+		Returns:
+		--------
+		None
+	
+	"""
+	
+	model: Optional[ str ]
+	input_text: Optional[ str ]
+	encoding_format: Optional[ str ]
+	client: requests.Session
+	
+	def __init__( self ):
+		"""
+		
+			Purpose:
+			--------
+			Initialize the Embeddings capability.
+		
+			Parameters:
+			-----------
+			None
+		
+			Returns:
+			--------
+			None
+		
+		"""
+		super( ).__init__( )
+		self.model = None
+		self.input_text = None
+		self.encoding_format = None
+		self.client = requests.Session( )
+		self.client.headers.update({
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json',
+			})
+	
+	@property
+	def model_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported embedding-capable model identifiers.
+		
+			Parameters:
+			-----------
+			None
 		
 			Returns:
 			--------
 			List[str]
 		
 		"""
-		return [ 'float32',
-		         'float64',
-		         'base64' ]
+		return [ 'grok-2-embedding' ]
 	
-	def create( self, text: Union[ str, List[ str ] ], model: str='grok-embed-1',
-			encoding_format: str='float32', metadata: Dict[ str, Any ]=None,
-			output_dimension: int=None ) -> List[ float ] | None:
-			"""
-				
-				Purpose:
-				--------
-				Create embeddings for input text or list of texts.
-			
-				Parameters:
-				-----------
-				text : Union[str, List[str]]
-					Input text or list of texts.
-				model : str
-					Embedding model id.
-				encoding_format : str
-					Output encoding format.
-				metadata : Optional[Dict[str, Any]]
-					Optional metadata passed to the API.
-				output_dimension : Optional[int]
-					Desired output vector length.
-			
-				Returns:
-				--------
-				Optional[List[float]]
-			
-			"""
-			try:
-				throw_if( 'text', text )
-				throw_if( 'model', model )
-				payload: Dict[ str, Any ] = { 'model': model, 'input': text }
-				if encoding_format is not None:
-					payload[ 'encoding_format' ] = encoding_format
-				if metadata is not None:
-					payload[ 'metadata' ] = metadata
-				if output_dimension is not None:
-					payload[ 'output_dimension' ] = output_dimension
-				resp = self._post_json( '/embeddings', payload, stream=False )
-				data = resp.json( )
-				items = data.get( 'data', [ ] )
-				if not items:
-					return None
-				return items[ 0 ].get( 'embedding' )
-			except Exception as e:
-				ex = Error( e )
-				ex.module = 'grok'
-				ex.cause = 'Embedding'
-				ex.method = 'create(self, text, model)'
-				error = ErrorDialog( ex )
-				error.show( )
+	@property
+	def encoding_format_options( self ) -> List[ str ]:
+		"""
 		
-	def __dir__( self ) -> List[ str ]:
-			return [ 'model_options',
-			         'encoding_options',
-			         'create' ]
+			Purpose:
+			--------
+			Return supported embedding output formats.
+		
+			Parameters:
+			-----------
+			None
+		
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'float',
+		         'base64' ]
+
+	def create( self, text: str, model: str=None, encoding_format: str=None ):
+		"""
+		
+			Purpose:
+			--------
+			Generate an embedding vector for input text.
+		
+			Parameters:
+			-----------
+			text : str
+			model : str | None
+			encoding_format : str | None
+		
+			Returns:
+			--------
+			list[float] | str
+		
+		"""
+		try:
+			throw_if( 'text', text )
+			
+			self.input_text = text
+			self.model = model
+			self.encoding_format = encoding_format
+			
+			payload = {
+					'model': self.model,
+					'input': self.input_text,
+					'encoding_format': self.encoding_format,
+			}
+			
+			url = f'{self.base_url}/embeddings'
+			response = self.client.post( url, json=payload, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			data = response.json( )
+			return data[ 'data' ][ 0 ][ 'embedding' ]
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Embeddings'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+
 
 class Files( Grok ):
 	"""
 	
 		Purpose:
 		--------
-		File upload / list / retrieve / delete helpers for Grok-compatible file endpoints.
-		
+		Provide file upload, retrieval, listing, deletion, and
+		file-based querying functionality using the xAI (Grok) REST API.
+
+		This class manages file storage and enables file-based chat
+		via the Responses API.
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
+		--------
+		None
+	
 	"""
-	def __init__( self ) -> None:
+	
+	file_id: Optional[ str ]
+	purpose: Optional[ str ]
+	client: requests.Session
+	
+	def __init__( self ):
 		"""
-			
+		
 			Purpose:
 			--------
-			Initialize Images helper.
-	
+			Initialize the Files capability.
+
+			Parameters:
+			-----------
+			None
+
 			Returns:
 			--------
 			None
@@ -853,411 +790,539 @@ class Files( Grok ):
 		"""
 		super( ).__init__( )
 		
-	def upload( self, file_name: str, content_bytes: bytes, purpose: str ) -> Optional[
-		Dict[ str, Any ] ]:
+		self.file_id = None
+		self.purpose = None
+		self.client = requests.Session( )
+		self.client.headers.update( {'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+
+	@property
+	def purpose_options( self ) -> List[ str ]:
 		"""
 		
 			Purpose:
 			--------
-			Upload raw bytes to the file endpoint.
-	
+			Return supported file purpose identifiers.
+
 			Parameters:
 			-----------
-			file_name : str
-				Name for the uploaded file.
-			content_bytes : bytes
-				Raw file bytes.
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'vision',
+		         'image_edit',
+		         'responses',
+		         'fine_tune' ]
+	
+	def upload( self, file_path: str, purpose: str ):
+		"""
+		
+			Purpose:
+			--------
+			Upload a local file to xAI file storage.
+
+			Parameters:
+			-----------
+			file_path : str
 			purpose : str
-				Upload purpose (e.g., 'user_data').
-	
+
 			Returns:
 			--------
-			Optional[Dict[str, Any]]
+			dict
 		
 		"""
 		try:
-			throw_if( 'file_name', file_name )
-			throw_if( 'content_bytes', content_bytes )
+			throw_if( 'file_path', file_path )
 			throw_if( 'purpose', purpose )
+			
+			self.purpose = purpose
+			
+			with open( file_path, 'rb' ) as fh:
+				files = { 'file': fh }
+				data = { 'purpose': self.purpose }
+				
+				url = f'{self.base_url}/files'
+				response = self.client.post( url, files=files, data=data, timeout=self.timeout )
+				response.raise_for_status( )
+			
+			return response.json( )
+		
+		except Exception as ex:
+			raise ex
+	
+	def list( self ):
+		"""
+		
+			Purpose:
+			--------
+			List all stored files.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[dict]
+		
+		"""
+		try:
 			url = f'{self.base_url}/files'
-			files = { 'file': (file_name, content_bytes) }
-			data = { 'purpose': purpose }
-			resp = requests.post( url=url, headers={ 'Authorization': f'Bearer {self.api_key or ""}' },
-				files=files, data=data, timeout=self.timeout )
-			resp.raise_for_status( )
-			return resp.json( )
+			response = self.client.get( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( ).get( 'data', [ ] )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'upload(self, file_name, content_bytes, purpose)'
+			ex.cause = 'Embeddings'
+			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def list( self ) -> Optional[ Dict[ str, Any ] ]:
+	def retrieve( self, file_id: str ):
 		"""
-			
-			Purpose:
-			--------
-			List uploaded files.
-	
-			Returns:
-			--------
-			Optional[Dict[str, Any]]
 		
-		"""
-		try:
-			return self._get( '/files' ).json( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'list(self)'
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def retrieve( self, file_id: str ) -> Optional[ Dict[ str, Any ] ]:
-		"""
-			
 			Purpose:
 			--------
-			Retrieve file metadata by id.
-	
+			Retrieve metadata for a specific file.
+
 			Parameters:
 			-----------
 			file_id : str
-				File id.
-	
+
 			Returns:
 			--------
-			Optional[Dict[str, Any]]
-			
+			dict
+		
 		"""
 		try:
-			throw_if( 'file_id', file_id );
-			return self._get( f'/files/{file_id}' ).json( )
+			throw_if( 'file_id', file_id )
+			
+			self.file_id = file_id
+			
+			url = f'{self.base_url}/files/{self.file_id}'
+			response = self.client.get( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'retrieve(self, file_id)'
+			ex.cause = 'Embeddings'
+			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def delete( self, file_id: str ) -> Optional[ Dict[ str, Any ] ]:
+	def retrieve_content( self, file_id: str ):
 		"""
 		
 			Purpose:
 			--------
-			Delete an uploaded file.
-	
+			Retrieve raw content of a stored file.
+
 			Parameters:
 			-----------
 			file_id : str
-				File id.
-	
+
 			Returns:
 			--------
-			Optional[Dict[str, Any]]
+			bytes
 		
 		"""
 		try:
-			throw_if( 'file_id', file_id );
-			return self._delete( f'/files/{file_id}' ).json( )
+			throw_if( 'file_id', file_id )
+			
+			self.file_id = file_id
+			
+			url = f'{self.base_url}/files/{self.file_id}/content'
+			response = self.client.get( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.content
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'delete(self, file_id)'
+			ex.cause = 'Embeddings'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def delete( self, file_id: str ):
+		"""
+		
+			Purpose:
+			--------
+			Delete a file from storage.
+
+			Parameters:
+			-----------
+			file_id : str
+
+			Returns:
+			--------
+			dict
+		
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			
+			self.file_id = file_id
+			
+			url = f'{self.base_url}/files/{self.file_id}'
+			response = self.client.delete( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Embeddings'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def query( self, file_id: str, prompt: str, model: str=None, max_output_tokens: int=None,
+			temperature: float=None, top_p: float=None, store: bool=True,
+			previous_response_id: str=None ):
+		"""
+		
+			Purpose:
+			--------
+			Chat with an uploaded file by attaching it to a Responses API
+			request and asking a question about its contents.
+
+			Parameters:
+			-----------
+			file_id : str
+			prompt : str
+			model : str | None
+			max_output_tokens : int | None
+			temperature : float | None
+			top_p : float | None
+			store : bool
+			previous_response_id : str | None
+
+			Returns:
+			--------
+			str
+		
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			throw_if( 'prompt', prompt )
+			
+			payload = {
+					'model': model,
+					'store': store,
+					'input': [
+							{
+									'role': 'user',
+									'content': [
+											{
+													'type': 'input_text',
+													'text': prompt },
+											{
+													'type': 'input_file',
+													'file_id': file_id },
+									],
+							}
+					],
+					'max_output_tokens': max_output_tokens,
+					'temperature': temperature,
+					'top_p': top_p,
+			}
+			
+			if previous_response_id:
+				payload[ 'previous_response_id' ] = previous_response_id
+			
+			url = f'{self.base_url}/responses'
+			response = self.client.post( url, json=payload, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			data = response.json( )
+			
+			for output in data.get( 'output', [ ] ):
+				for content in output.get( 'content', [ ] ):
+					if content.get( 'type' ) == 'output_text':
+						return content.get( 'text', '' )
+			
+			return ''
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Embeddings'
+			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
 
-class Transcription( Grok ):
+
+class Collections( Grok ):
 	"""
-		
+	
 		Purpose:
 		--------
-		Audio transcription helper for Grok-compatible endpoints.
+		Provide access to xAI Collections for grouping uploaded documents
+		and reusing them across Responses-based interactions.
+
+		This class manages collection metadata and membership only.
+		Collections are referenced by ID in other APIs (e.g. Responses).
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
+		--------
+		None
 	
 	"""
-	def __init__( self ) -> None:
+	
+	collection_id: Optional[ str ]
+	name: Optional[ str ]
+	client: requests.Session
+	
+	def __init__( self ):
 		"""
-			
+		
 			Purpose:
 			--------
-			Initialize transcription helper.
-	
+			Initialize the Collections capability.
+
+			Parameters:
+			-----------
+			None
+
 			Returns:
 			--------
 			None
 		
 		"""
 		super( ).__init__( )
-		self.model = None
-		self.audio_file = None
+		
+		self.collection_id = None
+		self.name = None
+		
+		self.client = requests.Session( )
+		self.client.headers.update(
+			{
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json',
+			}
+		)
 	
 	@property
-	def model_options( self ) -> List[ str ]:
+	def known_collections( self ) -> Dict[ str, str ]:
 		"""
-			
+		
 			Purpose:
 			--------
-			Transcription model ids.
+			Return known, pre-existing collections visible in the xAI dashboard.
+
+			These collections already exist server-side and can be referenced
+			directly in Responses requests.
+
+			Returns:
+			--------
+			dict[str, str]
+		
+		"""
+		return {
+				'armory': 'collection_a7973fd2-a336-4ed0-0495-4ff947041c6',
+				'doa_regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e',
+				'financial_regulations': 'collection_9195847-03a1-443c-9240-294c64dd01e2',
+				'explanatory_statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+				'public_laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+		}
 	
+	@property
+	def collection_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return collection names for UI selection.
+
 			Returns:
 			--------
 			List[str]
 		
 		"""
-		return [ 'grok-transcribe-1',
-		         'whisper-1' ]
+		return list( self.known_collections.keys( ) )
 	
-	@property
-	def format_options( self ) -> List[ str ]:
-		"""
-			
-			Purpose:
-			--------
-			Output format options.
-	
-			Returns:
-			--------
-			List[str]
-		
-		"""
-		return [ 'text',
-		         'json',
-		         'srt',
-		         'vtt',
-		         'diarized_json' ]
-	
-	@property
-	def language_options( self ) -> List[ str ]:
-		"""
-			
-			Purpose:
-			--------
-			Supported language codes.
-	
-			Returns:
-			--------
-			List[str]
-		
-		"""
-		return [ 'en',
-		         'es',
-		         'fr',
-		         'de',
-		         'zh',
-		         'it',
-		         'ja' ]
-	
-	def transcribe( self, path: str, model: str='grok-transcribe-1',
-			language: str='en', format: str='text' ) -> str | None:
+	def list( self ):
 		"""
 		
 			Purpose:
 			--------
-			Transcribe an audio file and return the transcription text.
-	
-			Parameters:
-			-----------
-			path : str
-				Local path to the audio file.
-			model : str
-				Transcription model id.
-			language : Optional[str]
-				Language hint for transcription.
-			format : str
-				Output format.
-	
+			List all collections accessible to the account.
+
 			Returns:
 			--------
-			Optional[str]
+			List[dict]
 		
 		"""
 		try:
-			throw_if( 'path', path )
-			throw_if( 'model', model )
-			with open( path, 'rb' ) as fh:
-				files = { 'file': (Path( path ).name, fh) }
-				data = { 'model': model, 'language': language, 'format': format }
-				resp = requests.post( url=f'{self.base_url}/audio/transcriptions', headers={
-						'Authorization': f'Bearer {self.api_key or ""}' }, files=files, data=data, timeout=self.timeout )
-				resp.raise_for_status( )
-				return resp.json( ).get( 'text' ) or resp.json( )
+			url = f'{self.base_url}/collections'
+			response = self.client.get( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( ).get( 'data', [ ] )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'transcribe(self, path)'
+			ex.cause = ''
+			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
-
-class Translation( Grok ):
-	"""
-		
-		Purpose:
-		--------
-		Audio translation helper (speech -> text or speech-to-speech).
 	
-		Notes:
-		-----
-		Implementation delegates to /audio/translations; behavior depends on provider support.
-	
-	"""
-	def __init__( self ) -> None:
-		super( ).__init__( )
-		self.model = None
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		return [ 'grok-translate-1',
-		         'whisper-1' ]
-	
-	@property
-	def language_options( self ) -> List[ str ]:
-		return [ 'en',
-		         'es',
-		         'fr',
-		         'de',
-		         'zh',
-		         'it',
-		         'ja' ]
-	
-	def translate( self, path: str, source_lang: str=None,
-			target_lang: str='en', model: str='grok-translate-1' ) -> str | None:
+	def retrieve( self, collection_id: str ):
 		"""
-			
+		
 			Purpose:
 			--------
-			Translate audio content to a target language.
-	
+			Retrieve metadata for a specific collection.
+
 			Parameters:
 			-----------
-			path : str
-				Local audio file path.
-			source_lang : Optional[str]
-				Source language hint.
-			target_lang : Optional[str]
-				Target language code.
-			model : str
-				Translation model id.
-	
+			collection_id : str
+
 			Returns:
 			--------
-			Optional[str]
-			
+			dict
+		
 		"""
 		try:
-			throw_if( 'path', path )
-			throw_if( 'model', model )
-			with open( path, 'rb' ) as fh:
-				files = { 'file': (Path( path ).name, fh) }
-				data = { 'model': model, 'source_language': source_lang, 'target_language': target_lang }
-				resp = requests.post( url=f'{self.base_url}/audio/translations',
-					headers={ 'Authorization': f'Bearer {self.api_key or ""}' },
-					files=files, data=data, timeout=self.timeout )
-				resp.raise_for_status( )
-				return resp.json( ).get( 'text' ) or resp.json( )
+			throw_if( 'collection_id', collection_id )
+			
+			self.collection_id = collection_id
+			
+			url = f'{self.base_url}/collections/{self.collection_id}'
+			response = self.client.get( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'translate(self, path)'
+			ex.cause = ''
+			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
-
-class TTS( Grok ):
-	"""
-		
-		Purpose:
-		--------
-		Text-to-Speech (TTS) helper for Grok-compatible TTS endpoints.
 	
-	"""
-	def __init__( self ) -> None:
-		super( ).__init__( )
-		self.model = None
-		self.voice = None
-		self.speed = None
-		self.response_format = None
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		return [ 'grok-tts-1',
-		         'grok-voice-1' ]
-	
-	@property
-	def voice_options( self ) -> List[ str ]:
-		return [ 'alloy',
-		         'echo',
-		         'nova',
-		         'sage',
-		         'onyx' ]
-	
-	@property
-	def format_options( self ) -> List[ str ]:
-		return [ 'mp3',
-		         'wav',
-		         'aac',
-		         'flac',
-		         'opus' ]
-	
-	@property
-	def speed_options( self ) -> List[ float ]:
-		return [ 0.25,
-		         0.5,
-		         1.0,
-		         1.5,
-		         2.0 ]
-	
-	def create_audio( self, text: str, output_path: str, model: str='grok-tts-1',
-			voice: str='alloy', speed: float=1.0, fmt: str='mp3' ) -> str | None:
+	def create( self, name: str, file_ids: List[ str ], description: Optional[ str ] = None ):
 		"""
-			
+		
 			Purpose:
 			--------
-			Synthesize text to audio and save a returned base64 payload locally or return a URL.
-	
+			Create a new collection with an initial set of files.
+
 			Parameters:
 			-----------
-			text : str
-				Input text to synthesize.
-			output_path : str
-				Local file path to write audio when content is base64.
-			model : str
-				TTS model id.
-			voice : str
-				Voice selection.
-			speed : float
-				Speech rate multiplier.
-			fmt : str
-				Output format.
-	
+			name : str
+			file_ids : List[str]
+			description : str | None
+
 			Returns:
 			--------
-			Optional[str]
+			dict
 		
 		"""
 		try:
-			throw_if( 'text', text )
-			throw_if( 'output_path', output_path )
-			throw_if( 'model', model )
-			payload = { 'model': model, 'voice': voice, 'speed': speed, 'format': fmt, 'input': text }
-			resp = self._post_json( '/audio/speech', payload, stream=False )
-			data = resp.json( )
-			content = data.get( 'data', [ { } ] )[ 0 ]
-			if isinstance( content, dict ) and 'b64_audio' in content:
-				out = Path( output_path )
-				out.parent.mkdir( parents=True, exist_ok=True )
-				out.write_bytes( bytes( content[ 'b64_audio' ], 'utf-8' ) )
-				return str( out )
-			return content.get( 'url' ) or None
+			throw_if( 'name', name )
+			throw_if( 'file_ids', file_ids )
+			
+			payload = {
+					'name': name,
+					'file_ids': file_ids }
+			if description:
+				payload[ 'description' ] = description
+			
+			url = f'{self.base_url}/collections'
+			response = self.client.post( url, json=payload, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'create_audio(self, text, output_path)'
+			ex.cause = ''
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def update( self, collection_id: str, add_file_ids: Optional[
+		List[ str ] ] = None, remove_file_ids: Optional[ List[ str ] ] = None ):
+		"""
+		
+			Purpose:
+			--------
+			Update collection membership by adding or removing files.
+
+			Parameters:
+			-----------
+			collection_id : str
+			add_file_ids : List[str] | None
+			remove_file_ids : List[str] | None
+
+			Returns:
+			--------
+			dict
+		
+		"""
+		try:
+			throw_if( 'collection_id', collection_id )
+			
+			payload = { }
+			if add_file_ids:
+				payload[ 'add_file_ids' ] = add_file_ids
+			if remove_file_ids:
+				payload[ 'remove_file_ids' ] = remove_file_ids
+			
+			url = f'{self.base_url}/collections/{collection_id}'
+			response = self.client.patch( url, json=payload, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = ''
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def delete( self, collection_id: str ):
+		"""
+		
+			Purpose:
+			--------
+			Delete a collection.
+
+			Parameters:
+			-----------
+			collection_id : str
+
+			Returns:
+			--------
+			dict
+		
+		"""
+		try:
+			throw_if( 'collection_id', collection_id )
+			
+			url = f'{self.base_url}/collections/{collection_id}'
+			response = self.client.delete( url, timeout=self.timeout )
+			response.raise_for_status( )
+			
+			return response.json( )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = ''
+			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )

@@ -1418,7 +1418,7 @@ elif mode == "Text":
 # IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
-	st.subheader( '📷 Image Generation & Analysis')
+	st.subheader( '📷 Image API')
 	provider_module = get_provider_module( )
 	image = provider_module.Image( )
 	

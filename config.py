@@ -43,10 +43,18 @@
   '''
 import os
 
+
+#------------- CONSTANTS ---------------------
+GROK_ORGANIZATION = 'Leeroy'
+GROK_TIMEOUT = 60
+
+# -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
 GEMINI_API_KEY = os.getenv( 'GEMINI_API_KEY' )
 GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
 GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
-MISTRAL_API_KEY = os.getenv( 'MISTRAL_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
-CLAUDE_API_KEY = os.getenv( 'CLAUDE_API_KEY' )
+
+
+# ---------------- ENDPOINTS ------------------
+GROK_BASE_URL = r'https://api.x.ai/v1'
