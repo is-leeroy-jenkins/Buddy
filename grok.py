@@ -1155,8 +1155,9 @@ class Translation( Grok ):
 			with open( path, 'rb' ) as fh:
 				files = { 'file': (Path( path ).name, fh) }
 				data = { 'model': model, 'source_language': source_lang, 'target_language': target_lang }
-				resp = requests.post( url=f'{self.base_url}/audio/translations', headers={
-						'Authorization': f'Bearer {self.api_key or ""}' }, files=files, data=data, timeout=self.timeout )
+				resp = requests.post( url=f'{self.base_url}/audio/translations',
+					headers={ 'Authorization': f'Bearer {self.api_key or ""}' },
+					files=files, data=data, timeout=self.timeout )
 				resp.raise_for_status( )
 				return resp.json( ).get( 'text' ) or resp.json( )
 		except Exception as e:
@@ -1243,17 +1244,12 @@ class TTS( Grok ):
 			throw_if( 'text', text )
 			throw_if( 'output_path', output_path )
 			throw_if( 'model', model )
-			payload = {
-					'model': model,
-					'voice': voice,
-					'speed': speed,
-					'format': fmt,
-					'input': text }
+			payload = { 'model': model, 'voice': voice, 'speed': speed, 'format': fmt, 'input': text }
 			resp = self._post_json( '/audio/speech', payload, stream=False )
 			data = resp.json( )
 			content = data.get( 'data', [ { } ] )[ 0 ]
 			if isinstance( content, dict ) and 'b64_audio' in content:
-				out = Path( output_path );
+				out = Path( output_path )
 				out.parent.mkdir( parents=True, exist_ok=True )
 				out.write_bytes( bytes( content[ 'b64_audio' ], 'utf-8' ) )
 				return str( out )
