@@ -170,7 +170,7 @@ MODE_CLASS_MAP = { 'Chat': None,
 		'Embeddings': [ 'Embedding' ],
 }
 
-PROVIDER_MODE_MAP = { 'GPT': GPT_MODES, 'Gemini': GEMINI_MODES, 'Grok': GROQ_MODES,
+CLASS_MODE_MAP = { 'GPT': GPT_MODES, 'Gemini': GEMINI_MODES, 'Grok': GROQ_MODES,
                       'Mistral': MISTRAL_MODES, 'Claude': CLAUDE_MODES}
 
 MODES = [
@@ -281,6 +281,20 @@ def markdown_converter( markdown: str ) -> str:
 		return "\n".join( output )
 
 def encode_image_base64( path: str ) -> str:
+	"""
+	
+		Purpose:
+		_________
+		
+		Parametes:
+		----------
+		
+		
+		Returns:
+		--------
+		
+		
+	"""
 	data = Path( path ).read_bytes( )
 	return base64.b64encode( data ).decode( "utf-8" )
 
@@ -296,21 +310,27 @@ def cosine_sim( a: np.ndarray, b: np.ndarray ) -> float:
 	return float( np.dot( a, b ) / denom ) if denom else 0.0
 
 def sanitize_markdown( text: str ) -> str:
+	"""
+	
+		Purpose:
+		_________
+		
+		
+	"""
 	# Remove bold markers
 	text = re.sub( r"\*\*(.*?)\*\*", r"\1", text )
 	# Optional: remove italics
 	text = re.sub( r"\*(.*?)\*", r"\1", text )
 	return text
 
-def style_headings( text: str, color: str ) -> str:
-	return re.sub(
-		r"^##\s+(.*)$",
-		rf'<h2 style="color:{color};">\1</h2>',
-		text,
-		flags=re.MULTILINE
-	)
-
 def inject_response_css( ) -> None:
+	"""
+	
+		Purpose:
+		_________
+		Set the the format via css.
+		
+	"""
 	st.markdown(
 		"""
 		<style>
@@ -350,6 +370,13 @@ def inject_response_css( ) -> None:
 		""", unsafe_allow_html=True )
 
 def style_subheaders( ) -> None:
+	"""
+	
+		Purpose:
+		_________
+		Sets the style of subheaders in the main UI
+		
+	"""
 	st.markdown(
 		"""
 		<style>
@@ -365,6 +392,14 @@ def style_subheaders( ) -> None:
 	)
 	
 def init_state( ) -> None:
+	"""
+	
+		Purpose:
+		_________
+		Initializes all session state variables.
+		
+		
+	"""
 	if 'chat_history' not in st.session_state:
 		st.session_state.chat_history = [ ]
 	
@@ -385,6 +420,13 @@ def init_state( ) -> None:
 		st.session_state.execution_mode = 'Standard'
 
 def reset_state( ) -> None:
+	"""
+	
+		Purpose:
+		_________
+		Resets the session state to default values
+		
+	"""
 	st.session_state.chat_history = [ ]
 	st.session_state.last_answer = ""
 	st.session_state.last_sources = [ ]
@@ -395,6 +437,17 @@ def reset_state( ) -> None:
 	}
 
 def normalize( obj: Any ) -> Dict[ str, Any ]:
+	"""
+	
+		Purpose:
+		_________
+		Normalizes models
+		
+		Parmeters:
+		----------
+		obj : Any
+		
+	"""
 	if isinstance( obj, dict ):
 		return obj
 	if hasattr( obj, 'model_dump' ):
@@ -406,6 +459,17 @@ def normalize( obj: Any ) -> Dict[ str, Any ]:
 	}
 
 def extract_answer( response ) -> str:
+	"""
+	
+		Purpose:
+		_________
+		Parses-out answer text from a response
+		
+		Parameters:
+		------------
+		response: str
+		
+	"""
 	texts: List[ str ] = [ ]
 	if not response or not getattr( response, 'output', None ):
 		return ''
@@ -432,6 +496,13 @@ def extract_answer( response ) -> str:
 	return '\n'.join( texts ).strip( )
 
 def extract_sources( response ) -> List[ Dict[ str, Any ] ]:
+	"""
+	
+		Purpose:
+		_________
+		Parses-out sources from response text.
+		
+	"""
 	sources: List[ Dict[ str, Any ] ] = [ ]
 	if not response or not getattr( response, 'output', None ):
 		return sources
@@ -498,16 +569,26 @@ def extract_analysis( response ) -> Dict[ str, Any ]:
 	return artifacts
 
 def save_temp( upload ) -> str:
-	"""Save uploaded file to a named temporary file and return path."""
+	"""
+	
+		Purpose:
+		_________
+		Save uploaded file to a named temporary file and return path.
+		
+	"""
 	with tempfile.NamedTemporaryFile( delete=False ) as tmp:
 		tmp.write( upload.read( ) )
 		return tmp.name
 
 def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 	"""
+	
+		Purpose:
+		_________
 		Extract token usage from a response object/dict.
 		Returns dict with prompt_tokens, completion_tokens, total_tokens.
 		Defensive: returns zeros if not present.
+		
 	"""
 	usage = {
 			'prompt_tokens': 0,
@@ -555,7 +636,11 @@ def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 
 def _update_token_counters( resp: Any ) -> None:
 	"""
+	
+		Purpose:
+		_________
 		Update session_state.last_call_usage and accumulate into session_state.token_usage.
+		
 	"""
 	usage = _extract_usage_from_response( resp )
 	st.session_state.last_call_usage = usage
@@ -993,7 +1078,7 @@ with st.sidebar:
 	st.session_state[ "provider" ] = provider
 	logo_path = LOGO_MAP.get( provider )
 	
-	with st.expander( 'Keys:', expanded=False ):
+	with st.expander( '🔑 Keys:', expanded=False ):
 		openai_key = st.text_input(
 			'OpenAI API Key',
 			type='password',
@@ -1195,7 +1280,7 @@ elif mode == "Text":
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.subheader( '🔧 Text Settings' )
+		st.text( '⚙️ Text Settings' )
 		
 		# ---------------- Model ----------------
 		text_model = st.selectbox( 'Model', chat.model_options,
@@ -1333,7 +1418,7 @@ elif mode == "Text":
 # IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
-	st.subheader( '🖼️ Image Generation & Analysis')
+	st.subheader( '📷 Image Generation & Analysis')
 	provider_module = get_provider_module( )
 	image = provider_module.Image( )
 	
@@ -1341,7 +1426,7 @@ elif mode == "Images":
 	# Sidebar — Image Settings
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.header( "Image Settings" )
+		st.text( '⚙️ Image Settings' )
 		st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ---------------- Model ----------------
@@ -1532,7 +1617,7 @@ elif mode == "Audio":
 	# Provider-aware Audio instantiation
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
-	st.subheader( '🗣️ Audio API')
+	st.subheader( '🔉 Audio API')
 	
 	transcriber = None
 	translator = None
@@ -1549,7 +1634,7 @@ elif mode == "Audio":
 	# Sidebar — Audio Settings (NO functionality removed)
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.header( "Audio Settings" )
+		st.text( '⚙️ Audio Settings' )
 		
 		st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 		
