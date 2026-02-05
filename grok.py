@@ -61,77 +61,6 @@ def encode_image( image_path: str ) -> str:
 	with open( image_path, "rb" ) as image_file:
 		return base64.b64encode( image_file.read( ) ).decode( 'utf-8' )
 
-class Endpoints:
-	'''
-
-	    Purpose:
-	    ---------
-	    Encapsulates all service endpoints for Groq LPU and Hybrid Tool providers.
-
-	    Attributes:
-	    -----------
-	    base_url           : str - Groq API base
-	    chat_completions   : str - Text and Vision endpoint
-	    speech_generations : str - Hybrid TTS endpoint
-	    translations       : str - Whisper translation endpoint
-	    transcriptions     : str - Whisper transcription endpoint
-	    image_generations  : str - Hybrid Image generation
-	    image_edits        : str - Hybrid Image editing
-	    embeddings         : str - Hybrid text embeddings
-	    wolfram            : str - Wolfram Alpha computation
-	    google_search      : str - Tavily/Google search integration
-
-    '''
-	base_url: Optional[ str ]
-	chat_completions: Optional[ str ]
-	speech_generations: Optional[ str ]
-	translations: Optional[ str ]
-	transcriptions: Optional[ str ]
-	image_generations: Optional[ str ]
-	image_edits: Optional[ str ]
-	embeddings: Optional[ str ]
-	wolfram: Optional[ str ]
-	google_search: Optional[ str ]
-	
-	def __init__( self ):
-		self.base_url = f'https://api.groq.com/'
-		self.chat_completions = f'https://api.groq.com/openai/v1/chat/completions'
-		self.speech_generations = f'https://api.openai.com/v1/audio/speech'
-		self.translations = f'https://api.groq.com/openai/v1/audio/translations'
-		self.transcriptions = f'https://api.groq.com/openai/v1/audio/transcriptions'
-		self.image_generations = f'https://api.openai.com/v1/images/generations'
-		self.image_edits = f'https://api.openai.com/v1/images/edits'
-		self.embeddings = f'https://api.openai.com/v1/embeddings'
-		self.wolfram = f'https://api.wolframalpha.com/v1/result'
-		self.google_search = f'https://api.tavily.com/search'
-
-class Header:
-	'''
-
-	    Purpose:
-	    --------
-	    Manages HTTP header configurations for multi-provider API requests.
-
-	    Attributes:
-	    -----------
-	    content_type  : str - MIME type
-	    api_key       : str - Key used
-	    authorization : str - Bearer string
-
-    '''
-	content_type: Optional[ str ]
-	api_key: Optional[ str ]
-	authorization: Optional[ str ]
-	
-	def __init__( self, key: str = cfg.GROQ_API_KEY ):
-		self.content_type = 'application/json'
-		self.api_key = key
-		self.authorization = f'Bearer {key}'
-	
-	def get_header( self ) -> Dict[ str, str ] | None:
-		"""Returns the configured HTTP header dictionary."""
-		return { 'Content-Type': self.content_type, 'Authorization': self.authorization }
-
 class Grok( ):
 	"""
 	
@@ -226,8 +155,8 @@ class Chat( Grok ):
 			Optional system-level instruction.
 			
 	"""
-	model: Optional[ str ];
-	messages: Optional[ List[ Dict[ str, Any ] ] ];
+	model: Optional[ str ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	system_prompt: Optional[ str ]
 	
 	def __init__( self, number: int=1, temperature: float=0.7, top_p: float=0.9,
@@ -288,10 +217,8 @@ class Chat( Grok ):
 		         'grok-vision-1',
 		         'grok-code-1' ]
 	
-	def generate_text( self, prompt: str, model: str = 'grok-1', temperature: Optional[
-		float ] = None,
-			top_p: Optional[ float ] = None, max_tokens: Optional[ int ] = None, stream: Optional[
-				bool ] = None ) -> Optional[ str ]:
+	def generate_text( self, prompt: str, model: str='grok-1', temperature: float=None,
+			top_p: float=None, max_tokens: int=None, stream: bool=None ) -> str | None:
 		"""
 			
 			Purpose:
@@ -319,15 +246,11 @@ class Chat( Grok ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			self.prompt = prompt;
+			self.prompt = prompt
 			self.model = model
-			payload: Dict[ str, Any ] = {
-					'model': self.model,
-					'messages': [ {
-							              'role': 'user',
-							              'content': self.prompt } ],
+			payload = {'model': self.model, 'messages': [ {  'role': 'user', 'content': self.prompt } ],
 					'max_tokens': max_tokens if max_tokens is not None else self.max_completion_tokens }
 			if temperature is not None:
 				payload[ 'temperature' ] = temperature
@@ -339,7 +262,6 @@ class Chat( Grok ):
 			if not use_stream:
 				resp = self._post_json( '/chat/completions', payload, stream=False )
 				data = resp.json( )
-				# Typical structure: data['choices'][0]['message']['content'] or fallback to 'output_text'
 				if isinstance( data, dict ):
 					choices = data.get( 'choices' ) or data.get( 'outputs' ) or [ ]
 					if isinstance( choices, list ) and len( choices ) > 0:
@@ -350,7 +272,6 @@ class Chat( Grok ):
 								return msg.get( 'content' ) or msg.get( 'text' ) or None
 							return str( msg )
 				return None
-			# streaming SSE
 			resp = self._post_json( '/chat/completions', payload, stream=True )
 			
 			def _gen( ) -> Generator[ str, None, None ]:
@@ -362,18 +283,17 @@ class Chat( Grok ):
 						yield evt[ 'delta' ].get( 'content', '' )
 					elif 'content' in evt:
 						yield evt.get( 'content', '' )
-			
 			return ''.join( list( _gen( ) ) )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'grok';
-			ex.cause = 'Chat';
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Chat'
 			ex.method = 'generate_text(self, prompt)'
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def analyze_image( self, prompt: str, image_url: str, model: str = 'grok-vision-1', max_tokens: int = 1024 ) -> \
-	Optional[ str ]:
+	def analyze_image( self, prompt: str, image_url: str,
+			model: str='grok-vision-1', max_tokens: int=1024 ) -> str | None:
 		"""
 			
 			Purpose:
@@ -399,22 +319,22 @@ class Chat( Grok ):
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'image_url', image_url )
-			payload = { 'model': model, 'messages': [ {
-					    'role': 'user', 'content': prompt, 'image_url': image_url } ],
+			payload = { 'model': model,
+			            'messages': [ {'role': 'user', 'content': prompt, 'image_url': image_url } ],
 					    'max_tokens': max_tokens }
 			resp = self._post_json( '/chat/completions', payload, stream=False )
 			return (resp.json( ).get( 'output_text' ) or
 			        resp.json( ).get( 'choices', [ ] )[ 0 ].get( 'message', { } ).get( 'content' ))
 		except Exception as e:
-			ex = Error( e );
+			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Chat'
 			ex.method = 'analyze_image(self, prompt, image_url)'
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def summarize_document( self, prompt: str, pdf_path: str, model: str = 'grok-1', max_tokens: int = 1024 ) -> \
-	Optional[ str ]:
+	def summarize_document( self, prompt: str, pdf_path: str,
+			model: str='grok-1', max_tokens: int=1024 ) -> str | None:
 		"""
 		
 			Purpose:
@@ -484,7 +404,7 @@ class Chat( Grok ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
 			web_options = {'search_recency_days': recency, 'max_search_results': max_results }
 			payload = { 'model': model, 'messages': [ { 'role': 'user', 'content': prompt } ],
@@ -500,7 +420,7 @@ class Chat( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def upload_file( self, filepath: str, purpose: str = 'user_data' ) -> Optional[ str ]:
+	def upload_file( self, filepath: str, purpose: st ='user_data' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -676,15 +596,10 @@ class Images( Grok ):
 		
 		"""
 		try:
-			throw_if( 'prompt', prompt );
+			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			payload = {
-					'model': model,
-					'prompt': prompt,
-					'n': number,
-					'size': size,
-					'quality': quality,
-					'style': style }
+			payload = { 'model': model, 'prompt': prompt, 'n': number, 'size': size,
+					'quality': quality, 'style': style }
 			resp = self._post_json( '/images/generate', payload, stream=False )
 			data = resp.json( )
 			if fmt == 'url':
@@ -803,11 +718,11 @@ class Embedding( Grok ):
 		Generates vector representations using Hybrid/OpenAI compatible services.
 
     '''
-	client: Optional[ Groq ];
-	response: Optional[ Any ];
+	client: Optional[ Groq ]
+	response: Optional[ Any ]
 	embedding: Optional[ List[ float ] ]
-	encoding_format: Optional[ str ];
-	dimensions: Optional[ int ];
+	encoding_format: Optional[ str ]
+	dimensions: Optional[ int ]
 	input_text: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -994,9 +909,9 @@ class Files( Grok ):
 		try:
 			return self._get( '/files' ).json( )
 		except Exception as e:
-			ex = Error( e );
-			ex.module = 'grok';
-			ex.cause = 'Files';
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Files'
 			ex.method = 'list(self)'
 			error = ErrorDialog( ex )
 			error.show( )
@@ -1137,8 +1052,8 @@ class Transcription( Grok ):
 		         'it',
 		         'ja' ]
 	
-	def transcribe( self, path: str, model: str = 'grok-transcribe-1', language: Optional[
-		str ] = 'en', format: str = 'text' ) -> Optional[ str ]:
+	def transcribe( self, path: str, model: str='grok-transcribe-1',
+			language: str='en', format: str='text' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1210,8 +1125,8 @@ class Translation( Grok ):
 		         'it',
 		         'ja' ]
 	
-	def translate( self, path: str, source_lang: Optional[ str ] = None, target_lang: Optional[
-		str ] = 'en', model: str = 'grok-translate-1' ) -> Optional[ str ]:
+	def translate( self, path: str, source_lang: str=None,
+			target_lang: str='en', model: str='grok-translate-1' ) -> str | None:
 		"""
 			
 			Purpose:
