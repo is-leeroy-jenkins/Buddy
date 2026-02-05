@@ -384,7 +384,7 @@ class Chat( Mistral ):
 			error.show( )
 	
 	def generate_image( self, prompt: str, number: int=1, model: str='mistral-image', size: str='1024x1024',
-			quality: str='standard', fmt: str='url' ) -> Optional[ str ]:
+			quality: str='standard', fmt: str='url' ) -> str | None:
 		"""
 			
 			Purpose:
