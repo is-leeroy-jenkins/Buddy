@@ -922,8 +922,8 @@ class TTS( Mistral ):
 	def speed_options( self ) -> List[ float ]:
 		return [ 0.25,  0.5, 1.0, 1.5, 2.0 ]
 	
-	def create_audio( self, text: str, output_path: str, model: str='mistral-tts', voice: str='alloy',
-			speed: float=1.0, fmt: str='mp3' ) -> str:
+	def create_audio( self, text: str, output_path: str, model: str='mistral-tts',
+			voice: str='alloy', speed: float=1.0, fmt: str='mp3' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -964,7 +964,6 @@ class TTS( Mistral ):
 				out.parent.mkdir( parents=True, exist_ok=True )
 				out.write_bytes( bytes( content[ 'b64_audio' ], 'utf-8' ) )
 				return str( out )
-			# else try URL
 			return content.get( 'url' ) or None
 		except Exception as e:
 			ex = Error( e )
@@ -1374,10 +1373,8 @@ class Document( Mistral ):
 		return [ 'mistral-large-latest', 'mistral-large-2512', ]
 	
 	def analyze_document( self, document_text: str, prompt: str,
-			model: str = 'mistral-large-latest',
-			temperature: Optional[ float ] = None,
-			top_p: Optional[ float ] = None,
-			max_tokens: Optional[ int ] = None ) -> str | None:
+			model: str='mistral-large-latest', temperature: float=None,
+			top_p: float=None, max_tokens: int=None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1408,29 +1405,16 @@ class Document( Mistral ):
 		try:
 			throw_if( 'document_text', document_text )
 			throw_if( 'prompt', prompt )
-			
 			self.document_text = document_text
 			self.model = model
-			
-			payload: Dict[ str, Any ] = {
-					'model': self.model,
-					'messages': [
-							{
-									'role': 'user',
-									'content': f'{prompt}\n\n{self.document_text}',
-							}
-					],
+			payload = {'model': self.model,
+			           'messages': [{'role': 'user','content': f'{prompt}\n\n{self.document_text}',}],
 					'temperature': temperature if temperature is not None else self.temperature,
 					'top_p': top_p if top_p is not None else self.top_p,
-					'max_tokens': max_tokens if max_tokens is not None else self.max_tokens,
-			}
+					'max_tokens': max_tokens if max_tokens is not None else self.max_tokens,}
 			
-			response = requests.post(
-				url=f'{self.base_url}/chat/completions',
-				headers=self.headers,
-				json=payload,
-				timeout=120,
-			)
+			response = requests.post( url=f'{self.base_url}/chat/completions', headers=self.headers,
+				json=payload, timeout=120, )
 			response.raise_for_status( )
 			self.response = response.json( )
 			return self.response[ 'choices' ][ 0 ][ 'message' ][ 'content' ]
@@ -1438,9 +1422,7 @@ class Document( Mistral ):
 			exception = Error( e )
 			exception.module = 'mistral'
 			exception.cause = 'Document'
-			exception.method = (
-					'analyze_document(self, document_text, prompt, model, temperature, top_p, max_tokens)'
-			)
+			exception.method = 'analyze_document(self, text, prompt, model, temp, top_p, tokens)'
 			error = ErrorDialog( exception )
 			error.show( )
 	
