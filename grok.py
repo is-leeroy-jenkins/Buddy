@@ -47,8 +47,6 @@ import base64
 import requests
 from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
-import groq
-from groq import Groq
 from xai_sdk.aio.image import ImageResponse
 
 import config as cfg
@@ -99,7 +97,7 @@ class Grok:
 	top_percent: Optional[ float ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
-	max_completion_tokens: Optional[ int ]
+	max_output_tokens: Optional[ int ]
 	instructions: Optional[ str ]
 	prompt: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
@@ -125,7 +123,7 @@ class Grok:
 		self.prompt = None
 		self.store = None
 		self.model = None
-		self.max_tokens = None
+		self.max_output_tokens = None
 		self.temperature = None
 		self.top_percent = None
 		self.frequency_penalty = None
@@ -179,7 +177,7 @@ class Chat( Grok ):
 		"""
 		super( ).__init__( )
 		self.model = None
-		self.max_tokens = None
+		self.max_output_tokens = None
 		self.temperature = None
 		self.top_percent = None
 		self.reasoning_effort = None
@@ -364,13 +362,11 @@ class Images( Grok ):
 	model: Optional[ str ]
 	aspect_ratio: Optional[ str ]
 	resolution: Optional[ str ]
-	style: Optional[ str ]
 	response_format: Optional[ str ]
 	client: Optional[ Client ]
-	image_url: Optional[ str ]
+	image: Optional[ image ]
 	image_path: Optional[ str ]
 	detail: Optional[ str ]
-	size: Optional[ str ]
 	response_format: Optional[ str ]
 	response: Optional[ ImageResponse ]
 	
@@ -395,7 +391,7 @@ class Images( Grok ):
 		self.aspect_ratio = None
 		self.resolution = None
 		self.quality = None
-		self.style = None
+		self.detail = None
 		self.response_format = None
 		self.client = None
 	
@@ -433,8 +429,8 @@ class Images( Grok ):
 	
 	@property
 	def resolution_options( self ) -> List[ str ]:
-		return [ "standard",
-		         "high" ]
+		return [ "1K",
+		         "2K" ]
 	
 	@property
 	def quality_options( self ) -> List[ str ]:
@@ -443,18 +439,17 @@ class Images( Grok ):
 		         "high" ]
 	
 	@property
-	def style_options( self ) -> List[ str ]:
-		return [ "natural",
-		         "illustration",
-		         "photorealistic" ]
+	def detail_options( self ) -> List[ str ]:
+		return [ "auto",
+		         "low",
+		         "high" ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:
 		return [ 'base64', 'url' ]
 	
-	def create( self, prompt: str, url: str, model: str='grok-imagine-image', n: int=None,
-			aspect_ratio: str=None, resolution: str=None, quality: str=None,
-			style: str=None, format: str='base64' ) -> ImageResponse | None:
+	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str='1k',
+			aspect_ratio: str="4:3",  format: str='base64' ) -> ImageResponse | None:
 		"""
 		
 			Purpose:
@@ -479,17 +474,13 @@ class Images( Grok ):
 		"""
 		try:
 			throw_if( 'prompt', prompt )
-			throw_if( 'url', url )
-			self.image_url = url
 			self.model = model
-			self.aspect_ratio = aspect_ratio
 			self.resolution = resolution
-			self.quality = quality
-			self.style = style
+			self.aspect_ratio = aspect_ratio
 			self.response_format = format
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			self.response = self.client.image.sample( prompt=self.prompt,
+			self.response = self.client.image.sample( prompt=self.prompt, resolution=self.resolution,
 				model="grok-imagine-image", aspect_ratio=self.aspect_ratio,
 				image_format=self.response_format, image_url=self.image_url, )
 			return self.response.image
@@ -497,13 +488,13 @@ class Images( Grok ):
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Images'
-			ex.method = ''
+			ex.method = 'create( prompt: str, model: str )'
 			error = ErrorDialog( ex )
 			error.show( )
 	
 	def edit( self, image_path: str, prompt: str, model: str='grok-imagine-image',
-			aspect_ratio: str=None, resolution: str=None,
-			quality: str=None, style: str=None, response_format: str=None ):
+			aspect_ratio: str=None, resolution: str=None, quality: str=None,
+			style: str=None, response_format: str=None ):
 		"""
 		
 			Purpose:
