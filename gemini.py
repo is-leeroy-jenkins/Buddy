@@ -1058,7 +1058,9 @@ class Images( Gemini ):
 	aspect_ratio: Optional[ str ]
 	use_vertex: Optional[ bool ]
 	
-	def __init__( self ):
+	def __init__( self,  n: int=1, model: str='gemini-2.0-flash', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
+			max_tokens: int=10000, instruct: str=None ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model

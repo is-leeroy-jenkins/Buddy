@@ -1059,12 +1059,9 @@ if mode == 'Chat':
 									  'container': { 'type': 'auto', 'file_ids': FILE_IDS, },
 									},
 							],
-							include=[
-									'web_search_call.action.sources',
-									'code_interpreter_call.outputs',
-							],
-							store=True,
-						)
+							include=[ 'web_search_call.action.sources',
+							          'code_interpreter_call.outputs', ],
+							store=True, )
 					sources = st.session_state.get( "last_sources", [ ] )
 		
 					if sources:
