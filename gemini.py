@@ -1059,20 +1059,20 @@ class Images( Gemini ):
 	use_vertex: Optional[ bool ]
 	
 	def __init__( self,  n: int=1, model: str='gemini-2.0-flash', temperature: float=0.8,
-			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, ratio: str= '4:3',
 			max_tokens: int=10000, instruct: str=None ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model
 		self.temperature = temperature
 		self.top_p = top_p
+		self.aspect_ratio = ratio
 		self.frequency_penalty = frequency
 		self.presence_penalty = presence
 		self.max_tokens = max_tokens
 		self.instructions = instruct
-		self.client = genai.Client( vertexai=self.use_vertex,
-			http_options=HttpOptions( api_version=self.api_version ) )
-		self.aspect_ratio = '1:1'
+		self.client = genai.Client( api_key=self.api_key )
+		self.aspect_ratio = '4:3'
 		self.genimg_config = None
 	
 	@property
