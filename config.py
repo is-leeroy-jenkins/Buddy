@@ -158,3 +158,22 @@ LOGO_MAP = {
 		'GPT': GPT_LOGO,
 		'Gemini': GEMINI_LOGO,
 		'Grok': GROK_LOGO }
+
+
+
+#-------- PARAMETER DEFINITIONS -------------------
+TEMPERATURE = r'''A number between 0 and 2. Higher values like 0.8 will make the output more random,
+while lower values like 0.2 will make it more focused and deterministic'''
+
+TOP_PERCENT = r'''Nucleus Sampling  where the model considers the results of the tokens with
+top 'P' probability mass'''
+
+PRESENCE_PENALTY = r'''Positive values penalize new tokens increasing the model's
+likelihood to talk about new topics.'''
+
+FREQUENCY_PENALTY = r'''Positive values penalize new tokens decreasing the model's
+likelihood to repeat the same line verbatim.'''
+
+MAX_OUTPUT_TOKENS = r'''The maximum number of tokens used in generating output content'''
+
+STOP_SEQUENCE = r'''Up to 4 string sequences where the API will stop generating further tokens.'''

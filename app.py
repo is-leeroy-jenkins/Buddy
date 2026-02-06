@@ -1152,7 +1152,7 @@ elif mode == "Text":
 				'Max Tokens',
 				min_value=1,
 				max_value=100000,
-				value=int( st.session_state.get( 'max_tokens', 512 ) ),
+				value=int( st.session_state.get( 'max_tokens', 8012 ) ),
 			)
 			st.session_state[ 'max_tokens' ] = int( max_tokens )
 			
