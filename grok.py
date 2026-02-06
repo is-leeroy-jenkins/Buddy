@@ -151,7 +151,7 @@ class Chat( Grok ):
 		None
 	
 	"""
-	
+	user: Optional[ str ]
 	model: Optional[ str ]
 	reasoning_effort: Optional[ str ]
 	previous_response_id: Optional[ str ]
@@ -176,6 +176,7 @@ class Chat( Grok ):
 		
 		"""
 		super( ).__init__( )
+		self.prompt = None
 		self.model = None
 		self.max_output_tokens = None
 		self.temperature = None
@@ -313,7 +314,7 @@ class Chat( Grok ):
 			throw_if( 'prompt', prompt )
 			self.prompt = prompt
 			self.model = model
-			self.max_tokens = max_tokens
+			self.max_output_tokens = max_tokens
 			self.temperature = temperature
 			self.top_percent = top_p
 			self.instructions = instruct
@@ -325,10 +326,11 @@ class Chat( Grok ):
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
 			                              'Content-Type': 'application/json', } )
 			self.messages.append( system( self.instructions ) )
-			self.messages.append( user( self.prompt ) )
-			chat_response = self.client.chat.create( model=self.model, messages=self.messages, 
+			self.messages.append( user( self.user ) )
+			chat_response = self.client.chat.create( model=self.model, messages=self.messages,
 				store_messages=self.store, temperature=self.temperature, top_p=self.top_p, 
-				reasoning_effort=self.reasoning_effort, response_format=self.response_format)
+				reasoning_effort=self.reasoning_effort, max_tokens=self.max_output_tokens,
+				response_format=self.response_format )
 			return chat_response
 		except Exception as e:
 			ex = Error( e )
