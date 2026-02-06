@@ -1134,7 +1134,7 @@ elif mode == "Text":
 		st.session_state[ 'text_model' ] = text_model
 		
 		# ---------------- Parameters ----------------
-		with st.expander( '🔧 Parameters:', expanded=True ):
+		with st.expander( '🎚️  Parameters:', expanded=True ):
 			temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01, )
 			st.session_state[ 'temperature' ] = float( temperature )
