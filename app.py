@@ -76,88 +76,6 @@ from gemini import ( Chat, Images, Embeddings, Transcription, TTS, Translation, 
 from grok import ( Chat, Images, Files, Collections )
 
 # ==============================================================================
-# CONSTANTS
-# ==============================================================================
-BASE_DIR = os.path.dirname( os.path.abspath( __file__ ) )
-
-FAVICON = r'resources/favicon.ico'
-
-CRS = r'https://www.congress.gov/crs-appropriations-status-table'
-
-GPT_LOGO = r'resources/buddy_logo.ico'
-
-GEMINI_LOGO = r'resources/gemini_logo.png'
-
-GROQ_LOGO = r'resources/grok_logo.png'
-
-GPT_MODES = [ 'Chat',
-              'Text',
-              'Images',
-              'Audio',
-              'Embeddings',
-              'Documents',
-              'Files',
-              'VectorStore' ]
-
-GEMINI_MODES = [ 'Chat',
-                 'Text',
-                 'Images',
-                 'Audio',
-                 'Embeddings',
-                 'Documents',
-                 'Files' ]
-
-GROQ_MODES = [ 'Chat',
-               'Text',
-               'Images',
-               'Embeddings',
-               'Documents',
-               'Files',
-               'VectorStores' ]
-
-BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
-
-APP_TITLE = 'Buddy'
-
-APP_SUBTITLE = 'Budget Execution AI'
-
-PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
-
-PROMPT_VERSION = '12'
-
-GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0' ]
-
-GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt', 'file-WPmTsHFYDLGHbyERqJdyqv', 'file-DW5TuqYoEfqFfqFFsMXBvy',
-		'file-U8ExiB6aJunAeT6872HtEU', 'file-FHkNiF6Rv29eCkAWEagevT', 'file-XsjQorjtffHTWjth8EVnkL' ]
-
-GPT_WEB_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov' ]
-
-TEXT_TYPES = { 'output_text' }
-
-MARKDOWN_HEADING_PATTERN = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
-
-XML_BLOCK_PATTERN  = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>", re.DOTALL )
-
-DB_PATH = "stores/sqlite/Data.db"
-
-ANALYST = '❓'
-
-BUDDY = '🧠'
-
-PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
-
-MODE_CLASS_MAP = { 'Chat': None,
-		'Text': [ 'Chat' ],
-		'Images': [ 'Images' ],
-		'Audio': [ 'TTS', 'Translation', 'Transcription' ],
-		'Embeddings': [ 'Embeddings' ],
-}
-
-CLASS_MODE_MAP = { 'GPT': cfg.GPT_MODES, 'Gemini': cfg.GEMINI_MODES, 'Grok': cfg.GROK_MODES  }
-
-LOGO_MAP = { 'GPT': cfg.GPT_LOGO, 'Gemini': cfg.GEMINI_LOGO, 'Groq': cfg.GROQ_LOGO }
-
-# ==============================================================================
 # UTILITIES
 # ==============================================================================
 def xml_converter( text: str ) -> str:
@@ -822,25 +740,25 @@ if st.session_state.openai_api_key == '':
 		os.environ[ 'OPENAI_API_KEY' ] = default
 
 if st.session_state.gemini_api_key == '':
-	default = getattr( cfg, 'GEMINI_API_KEY', '' )
+	default = cfg.GEMINI_API_KEY
 	if default:
 		st.session_state.gemini_api_key = default
 		os.environ[ 'GEMINI_API_KEY' ] = default
 
 if st.session_state.groq_api_key == '':
-	default = getattr( cfg, 'GROQ_API_KEY', '' )
+	default = cfg.GROQ_API_KEY
 	if default:
 		st.session_state.groq_api_key = default
 		os.environ[ 'GROQ_API_KEY' ] = default
 
 if st.session_state.google_api_key == '':
-	default = getattr( cfg, 'GOOGLE_API_KEY', '' )
+	default = cfg.GOOGLE_API_KEY
 	if default:
 		st.session_state.google_api_key = default
 		os.environ[ 'GOOGLE_API_KEY' ] = default
 
 if st.session_state.xai_api_key == '':
-	default = getattr( cfg, 'XAI_API_KEY', '' )
+	default = cfg.XAI_API_KEY
 	if default:
 		st.session_state.xai_api_key = default
 		os.environ[ 'XAI_API_KEY' ] = default
@@ -906,7 +824,7 @@ if 'provider' not in st.session_state:
 
 if 'api_keys' not in st.session_state:
 	st.session_state.api_keys = { 'GPT': None,
-			'Groq': None,
+			'Grok': None,
 			'Gemini': None,}
 
 # ======================================================================================
@@ -1005,7 +923,7 @@ with st.sidebar:
 		index=list( cfg.PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
 	
 	st.session_state[ "provider" ] = provider
-	logo_path = LOGO_MAP.get( provider )
+	logo_path = cfg.LOGO_MAP.get( provider )
 	
 	with st.expander( '🔑 Keys:', expanded=False ):
 		openai_key = st.text_input(
@@ -1067,7 +985,7 @@ with st.sidebar:
 		if logo_path and os.path.exists( logo_path ):
 			col1, col2, col3 = st.columns( [ 1,  2,  1 ] )
 			with col2:
-				logo_path = LOGO_MAP.get( provider )
+				logo_path = cfg.LOGO_MAP.get( provider )
 				if logo_path and os.path.exists( logo_path ):
 					st.logo( logo_path, size='large', link=cfg.CRS )
 					

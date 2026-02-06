@@ -1056,6 +1056,7 @@ class Images( Gemini ):
 		"""
 			
 			Purpose:
+			-----------
 			Generates a new image based on a descriptive text prompt.
 			
 			Parameters:

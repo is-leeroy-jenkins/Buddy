@@ -418,7 +418,7 @@ class Images( Grok ):
 		return [ "grok-2-image-1212", 'grok-imagine-image' ]
 	
 	@property
-	def aspect_ratio_options( self ) -> List[ str ]:
+	def aspect_options( self ) -> List[ str ]:
 		return [ '1:1',
 		         '3:4',
 		         '4:3',

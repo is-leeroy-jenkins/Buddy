@@ -60,11 +60,16 @@ DB_PATH = "stores/sqlite/Data.db"
 ANALYST = '❓'
 BUDDY = '🧠'
 PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
+PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
+PROMPT_VERSION = '12'
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
 GEMINI_API_KEY = os.getenv( 'GEMINI_API_KEY' )
 GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
+GOOGLE_CLOUD_PROJECT_ID = os.getenv( 'GOOGLE_CLOUD_PROJECT' )
+GOOGLE_CLOUD_LOCATION = os.getenv( 'GOOGLE_CLOUD_LOCATION' )
+GOOGLE_GENAI_USE_VERTEXAI = os.getenv( 'GOOGLE_GENAI_USE_VERTEXAI' )
 GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 
@@ -98,8 +103,24 @@ GPT_MODES = [ 'Chat',
               'Prompt Engineering',
               'Data Export' ]
 
+GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
+                        'vs_697f86ad98888191b967685ae558bfc0' ]
+
+GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
+                 'file-WPmTsHFYDLGHbyERqJdyqv',
+                 'file-DW5TuqYoEfqFfqFFsMXBvy',
+                 'file-U8ExiB6aJunAeT6872HtEU',
+                 'file-FHkNiF6Rv29eCkAWEagevT',
+                 'file-XsjQorjtffHTWjth8EVnkL' ]
+
+GPT_WEB_DOMAINS = [ 'congress.gov',
+                    'google.com',
+                    'gao.gov',
+                    'omb.gov',
+                    'defense.gov' ]
+
 # ---------------- GROK CONFIG ------------------
-GROQ_LOGO = r'resources/grok_logo.png'
+GROK_LOGO = r'resources/grok_logo.png'
 GROK_MODES = [ 'Text',
                'Images',
                'Files',
@@ -116,3 +137,24 @@ GEMINI_MODES = [ 'Text',
                  'File Stores',
                  'Prompt Engineering',
                  'Data Export' ]
+
+#----------------- MAPS ---------------------------
+MODE_CLASS_MAP = {
+		'Chat': None,
+		'Text': [ 'Chat' ],
+		'Images': [ 'Images' ],
+		'Audio': [ 'TTS',
+		           'Translation',
+		           'Transcription' ],
+		'Embeddings': [ 'Embeddings' ],
+}
+
+CLASS_MODE_MAP = {
+		'GPT': GPT_MODES,
+		'Gemini': GEMINI_MODES,
+		'Grok': GROK_MODES }
+
+LOGO_MAP = {
+		'GPT': GPT_LOGO,
+		'Gemini': GEMINI_LOGO,
+		'Grok': GROK_LOGO }
