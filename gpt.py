@@ -79,6 +79,7 @@ class GPT:
 	max_completion_tokens: Optional[ int ]
 	modalities: Optional[ List[ str ] ]
 	stops: Optional[ List[ str ] ]
+	store: Optional[ bool ]
 	
 	def __init__( self ):
 		self.api_key = cfg.OPENAI_API_KEY
@@ -95,6 +96,7 @@ class GPT:
 		self.web_options = { }
 		self.prompt = None
 		self.client = None
+		self.store = None
 
 class Chat( GPT ):
 	"""

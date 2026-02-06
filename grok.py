@@ -118,16 +118,18 @@ class Grok:
 				Configuration object providing API credentials and options.
 			
 		"""
-		self.api_key = cfg.GROK_API_KEY
-		self.base_url = cfg.GROK_BASE_URL
+		self.api_key = cfg.GROQ_API_KEY
 		self.organization = None
 		self.timeout = None
 		self.instructions = None
 		self.prompt = None
+		self.store = None
 		self.model = None
-		self.max_output_tokens = None
+		self.max_tokens = None
 		self.temperature = None
-		self.top_p = None
+		self.top_percent = None
+		self.frequency_penalty = None
+		self.presence_penalty = None
 		self.tool_choice = None
 		self.response_format = None
 
@@ -153,12 +155,9 @@ class Chat( Grok ):
 	"""
 	
 	model: Optional[ str ]
-	max_output_tokens: Optional[ int ]
-	temperature: Optional[ float ]
-	top_p: Optional[ float ]
-	include_reasoning: Optional[ bool ]
 	reasoning_effort: Optional[ str ]
 	previous_response_id: Optional[ str ]
+	include: Optional[ List[ str ] ]
 	client: Optional[ Client ]
 	chat_response: Optional[ Any  ]
 	
@@ -180,13 +179,13 @@ class Chat( Grok ):
 		"""
 		super( ).__init__( )
 		self.model = None
-		self.max_output_tokens = None
+		self.max_tokens = None
 		self.temperature = None
-		self.top_p = None
-		self.include_reasoning = None
+		self.top_percent = None
 		self.reasoning_effort = None
 		self.previous_response_id = None
 		self.tool_choice = 'auto'
+		self.include = None
 	
 	@property
 	def format_options( self ) -> List[ str ]:
@@ -224,8 +223,27 @@ class Chat( Grok ):
 			List[str]
 		
 		"""
-		return [ 'grok-4', 'grok-4-1', 'grok-4-fast-reasoning',		 
-				 'grok-4-1-fast-reasoning', 'grok-3', 'grok-3-mini', ]
+		return [ 'grok-4',
+		         'grok-4-0709',
+		         'grok-4-latest',
+		         'grok-4-1-fast',
+		         'grok-4-1-fast-reasoning',
+		         'grok-4-1-fast-reasoning-latest',
+		         'grok-4-1-fast-non-reasoning',
+		         'grok-4-1-fast-non-reasoning-latest',
+		         'grok-4-fast',
+		         'grok-4-fast-reasoning',
+		         'grok-4-fast-reasoning-latest',
+		         'grok-4-fast-non-reasoning',
+		         'grok-4-fast-non-reasoning-latest',
+		         'grok-code-fast-1',
+		         'grok-3',
+		         'grok-3-latest',
+		         'grok-3-mini',
+		         'grok-3-fast',
+		         'grok-3-fast-latest',
+		         'grok-3-mini-fast',
+		         'grok-3-mini-fast-latest' ]
 	
 	@property
 	def reasoning_options( self ) -> List[ str ]:
@@ -250,9 +268,20 @@ class Chat( Grok ):
 		"""
 		return [ 'low', 'high' ]
 	
-	def generate_text( self, prompt: str, model: str='grok-3-mini', max_tokens: int=None,
-			temperature: float=None, top_p: float=None, include_reasoning: bool=None,
-			reasoning_effort: str=None, instruct: str=None ):
+	@property
+	def include_options( self ) -> List[ str ]:
+		return [ 'web_search_call_output',
+		         'x_search_call_output',
+		         'code_execution_call_output',
+		         'collections_search_call_output',
+		         'attachment_search_call_output',
+		         'mcp_call_output',
+		         'inline_citations',
+		         'verbose_streaming' ]
+	
+	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=None,
+			temperature: float=0.8, top_p: float=0.9, effort: str=None, format: str='text',
+			store: bool=True, include: List[ str ]=None, instruct: str=None ):
 		"""
 		
 			Purpose:
@@ -286,24 +315,28 @@ class Chat( Grok ):
 			throw_if( 'prompt', prompt )
 			self.prompt = prompt
 			self.model = model
-			self.max_output_tokens = max_tokens
+			self.max_tokens = max_tokens
 			self.temperature = temperature
-			self.top_p = top_p
+			self.top_percent = top_p
 			self.instructions = instruct
-			self.include_reasoning = include_reasoning
-			self.reasoning_effort = reasoning_effort
+			self.reasoning_effort = effort
+			self.store = store
+			self.response_format = format
+			self.include = include
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
 			                              'Content-Type': 'application/json', } )
 			self.messages.append( system( self.instructions ) )
 			self.messages.append( user( self.prompt ) )
-			chat_response = self.client.chat.create( model=self.model, messages=self.messages )
+			chat_response = self.client.chat.create( model=self.model, messages=self.messages, 
+				store_messages=self.store, temperature=self.temperature, top_p=self.top_p, 
+				reasoning_effort=self.reasoning_effort, response_format=self.response_format)
 			return chat_response
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Chat'
-			ex.method = ''
+			ex.method = 'create( prompt: str, model: str )'
 			error = ErrorDialog( ex )
 			error.show( )
 
@@ -328,9 +361,7 @@ class Images( Grok ):
 		None
 	
 	"""
-	
 	model: Optional[ str ]
-	n: Optional[ int ]
 	aspect_ratio: Optional[ str ]
 	resolution: Optional[ str ]
 	style: Optional[ str ]
@@ -340,7 +371,6 @@ class Images( Grok ):
 	image_path: Optional[ str ]
 	detail: Optional[ str ]
 	size: Optional[ str ]
-	tool_choice: Optional[ str ]
 	response_format: Optional[ str ]
 	response: Optional[ ImageResponse ]
 	
@@ -362,7 +392,6 @@ class Images( Grok ):
 		"""
 		super( ).__init__( )
 		self.model = None
-		self.n = None
 		self.aspect_ratio = None
 		self.resolution = None
 		self.quality = None
@@ -388,11 +417,19 @@ class Images( Grok ):
 	
 	@property
 	def aspect_ratio_options( self ) -> List[ str ]:
-		return [ "1:1",
-		         "16:9",
-		         "9:16",
-		         "4:3",
-		         "3:4" ]
+		return [ '1:1',
+		         '3:4',
+		         '4:3',
+		         '9:16',
+		         '16:9',
+		         '2:3',
+		         '3:2',
+		         '9:19.5',
+		         '19.5:9',
+		         '9:20',
+		         '20:9',
+		         '1:2',
+		         '2:1']
 	
 	@property
 	def resolution_options( self ) -> List[ str ]:
@@ -413,11 +450,11 @@ class Images( Grok ):
 	
 	@property
 	def format_options( self ) -> List[ str ]:
-		return [ 'jpg/jpeg', 'png' ]
+		return [ 'base64', 'url' ]
 	
 	def create( self, prompt: str, url: str, model: str='grok-imagine-image', n: int=None,
 			aspect_ratio: str=None, resolution: str=None, quality: str=None,
-			style: str=None, format: str='png' ) -> ImageResponse | None:
+			style: str=None, format: str='base64' ) -> ImageResponse | None:
 		"""
 		
 			Purpose:
@@ -445,7 +482,6 @@ class Images( Grok ):
 			throw_if( 'url', url )
 			self.image_url = url
 			self.model = model
-			self.n = n
 			self.aspect_ratio = aspect_ratio
 			self.resolution = resolution
 			self.quality = quality
@@ -460,7 +496,7 @@ class Images( Grok ):
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Embeddings'
+			ex.cause = 'Images'
 			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )

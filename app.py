@@ -1110,6 +1110,8 @@ with st.sidebar:
 # =============================================================================
 if mode == 'Chat':
 	st.subheader( "🧠 Chat Completions" )
+	st.divider( )
+	st.header( '' )
 	provider_module = get_provider_module( )
 	
 	# ------------------------------------------------------------------
@@ -1216,6 +1218,8 @@ if mode == 'Chat':
 # ======================================================================================
 elif mode == "Text":
 	st.subheader( "📝 Text Generation" )
+	st.divider( )
+	st.header( '' )
 	provider_module = get_provider_module( )
 	chat = provider_module.Chat( )
 	
@@ -1363,7 +1367,7 @@ elif mode == "Text":
 elif mode == "Images":
 	st.subheader( '📷 Image API')
 	provider_module = get_provider_module( )
-	image = provider_module.Image( )
+	image = provider_module.Images( )
 	
 	# ------------------------------------------------------------------
 	# Sidebar — Image Settings
@@ -1372,9 +1376,7 @@ elif mode == "Images":
 		st.text( '⚙️ Image Settings' )
 		
 		# ---------------- Model ----------------
-		image_model = st.selectbox(
-			"Model",
-			image.model_options,
+		image_model = st.selectbox( "Model", image.model_options,
 			index=( image.model_options.index( st.session_state[ "image_model" ] )
 					if st.session_state.get( "image_model" ) in image.model_options
 					else 0 ),
@@ -1392,162 +1394,159 @@ elif mode == "Images":
 		# ---------------- Quality ----------------
 		quality = None
 		if hasattr( image, 'quality_options' ):
-			quality = st.selectbox(
-				'Quality',
-				image.quality_options,
-			)
+			quality = st.selectbox( 'Quality', image.quality_options, )
 		
 		# ---------------- Format ----------------
 		fmt = None
 		if hasattr( image, 'format_options' ):
 			fmt = st.selectbox( 'Format', image.format_options, )
 	
-	# ------------------------------------------------------------------
-	# Main UI — Tabs
-	# ------------------------------------------------------------------
-	tab_gen, tab_analyze = st.tabs( [ 'Generate', 'Analyze' ] )
-	
-	# ============================== GENERATE ===============================
-	with tab_gen:
-		prompt = st.text_area( 'Prompt' )
-		if st.button( 'Generate Image' ):
-			with st.spinner( 'Generating…' ):
-				try:
-					kwargs: Dict[ str, Any ] = {
-							'prompt': prompt,
-							'model': image_model,
-					}
-					
-					# Provider-safe optional args
-					if size_arg is not None:
-						kwargs[ 'size' ] = size_arg
-					if quality is not None:
-						kwargs[ 'quality' ] = quality
-					if fmt is not None:
-						kwargs[ 'fmt' ] = fmt
-					
-					img_url = image.generate( **kwargs )
-					st.image( img_url )
-					
+	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
+	with center:
+		# ------------------------------------------------------------------
+		# Main UI — Tabs
+		# ------------------------------------------------------------------
+		tab_gen, tab_analyze = st.tabs( [ 'Generate', 'Analyze' ] )
+		with tab_gen:
+			prompt = st.text_area( 'Prompt' )
+			if st.button( 'Generate Image' ):
+				with st.spinner( 'Generating…' ):
 					try:
-						_update_token_counters(
-							getattr( image, 'response', None )
-						)
-					except Exception:
-						pass
-				
-				except Exception as exc:
-					st.error( f'Image generation failed: {exc}' )
-	
-	with tab_analyze:
-		st.markdown( 'Image analysis — upload an image to analyze.' )
-		
-		uploaded_img = st.file_uploader(
-			'Upload an image for analysis',
-			type=[ 'png',
-			       'jpg',
-			       'jpeg',
-			       'webp' ],
-			accept_multiple_files=False,
-			key='images_analyze_uploader',
-		)
-		
-		if uploaded_img:
-			tmp_path = save_temp( uploaded_img )
-			
-			st.image(
-				uploaded_img,
-				caption='Uploaded image preview',
-				use_column_width=True,
-			)
-			
-			# Discover available analysis methods on Image object
-			available_methods = [ ]
-			for candidate in (
-						'analyze',
-						'describe_image',
-						'describe',
-						'classify',
-						'detect_objects',
-						'caption',
-						'image_analysis',
-			):
-				if hasattr( image, candidate ):
-					available_methods.append( candidate )
-			
-			if available_methods:
-				chosen_method = st.selectbox(
-					'Method',
-					available_methods,
-					index=0,
-				)
-			else:
-				chosen_method = None
-				st.info(
-					'No dedicated image analysis method found on Image object; '
-					'attempting generic handlers.'
-				)
-			
-			chosen_model = st.selectbox(
-				"Model (analysis)",
-				[ image_model,
-				  None ],
-				index=0,
-			)
-			
-			chosen_model_arg = (
-					image_model if chosen_model is None else chosen_model
-			)
-			
-			if st.button( "Analyze Image" ):
-				with st.spinner( "Analyzing image…" ):
-					analysis_result = None
-					try:
-						if chosen_method:
-							func = getattr( image, chosen_method, None )
-							if func:
-								try:
-									analysis_result = func( tmp_path )
-								except TypeError:
-									analysis_result = func(
-										tmp_path, model=chosen_model_arg
-									)
-						else:
-							for fallback in (
-										"analyze",
-										"describe_image",
-										"describe",
-										"caption",
-							):
-								if hasattr( image, fallback ):
-									func = getattr( image, fallback )
-									try:
-										analysis_result = func( tmp_path )
-										break
-									except Exception:
-										continue
+						kwargs: Dict[ str, Any ] = {
+								'prompt': prompt,
+								'model': image_model,
+						}
 						
-						if analysis_result is None:
-							st.warning(
-								"No analysis output returned by the available methods."
+						# Provider-safe optional args
+						if size_arg is not None:
+							kwargs[ 'size' ] = size_arg
+						if quality is not None:
+							kwargs[ 'quality' ] = quality
+						if fmt is not None:
+							kwargs[ 'fmt' ] = fmt
+						
+						img_url = image.generate( **kwargs )
+						st.image( img_url )
+						
+						try:
+							_update_token_counters(
+								getattr( image, 'response', None )
 							)
-						else:
-							if isinstance( analysis_result, (dict, list) ):
-								st.json( analysis_result )
-							else:
-								st.markdown( "**Analysis result:**" )
-								st.write( analysis_result )
-							
-							try:
-								_update_token_counters(
-									getattr( image, "response", None )
-									or analysis_result
-								)
-							except Exception:
-								pass
+						except Exception:
+							pass
 					
 					except Exception as exc:
-						st.error( f"Analysis Failed: {exc}" )
+						st.error( f'Image generation failed: {exc}' )
+		
+		with tab_analyze:
+			st.markdown( 'Image analysis — upload an image to analyze.' )
+			
+			uploaded_img = st.file_uploader(
+				'Upload an image for analysis',
+				type=[ 'png',
+				       'jpg',
+				       'jpeg',
+				       'webp' ],
+				accept_multiple_files=False,
+				key='images_analyze_uploader',
+			)
+			
+			if uploaded_img:
+				tmp_path = save_temp( uploaded_img )
+				
+				st.image(
+					uploaded_img,
+					caption='Uploaded image preview',
+					use_column_width=True,
+				)
+				
+				# Discover available analysis methods on Image object
+				available_methods = [ ]
+				for candidate in (
+							'analyze',
+							'describe_image',
+							'describe',
+							'classify',
+							'detect_objects',
+							'caption',
+							'image_analysis',
+				):
+					if hasattr( image, candidate ):
+						available_methods.append( candidate )
+				
+				if available_methods:
+					chosen_method = st.selectbox(
+						'Method',
+						available_methods,
+						index=0,
+					)
+				else:
+					chosen_method = None
+					st.info(
+						'No dedicated image analysis method found on Image object; '
+						'attempting generic handlers.'
+					)
+				
+				chosen_model = st.selectbox(
+					"Model (analysis)",
+					[ image_model,
+					  None ],
+					index=0,
+				)
+				
+				chosen_model_arg = (
+						image_model if chosen_model is None else chosen_model
+				)
+				
+				if st.button( "Analyze Image" ):
+					with st.spinner( "Analyzing image…" ):
+						analysis_result = None
+						try:
+							if chosen_method:
+								func = getattr( image, chosen_method, None )
+								if func:
+									try:
+										analysis_result = func( tmp_path )
+									except TypeError:
+										analysis_result = func(
+											tmp_path, model=chosen_model_arg
+										)
+							else:
+								for fallback in (
+											"analyze",
+											"describe_image",
+											"describe",
+											"caption",
+								):
+									if hasattr( image, fallback ):
+										func = getattr( image, fallback )
+										try:
+											analysis_result = func( tmp_path )
+											break
+										except Exception:
+											continue
+							
+							if analysis_result is None:
+								st.warning(
+									"No analysis output returned by the available methods."
+								)
+							else:
+								if isinstance( analysis_result, (dict, list) ):
+									st.json( analysis_result )
+								else:
+									st.markdown( "**Analysis result:**" )
+									st.write( analysis_result )
+								
+								try:
+									_update_token_counters(
+										getattr( image, "response", None )
+										or analysis_result
+									)
+								except Exception:
+									pass
+						
+						except Exception as exc:
+							st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
 # AUDIO MODE
@@ -1558,7 +1557,7 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
 	st.subheader( '🔉 Audio API')
-	
+	st.divider( )
 	transcriber = None
 	translator = None
 	tts = None
@@ -1575,7 +1574,6 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	with st.sidebar:
 		st.text( '⚙️ Audio Settings' )
-		
 		
 		# ---------------- Task ----------------
 		available_tasks = [ ]
@@ -1721,10 +1719,11 @@ elif mode == "Audio":
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
 	st.subheader( '⛓️  Vector Embeddings')
-	if not hasattr( provider_module, 'Embedding' ):
+	st.divider( )
+	if not hasattr( provider_module, 'Embeddings' ):
 		st.info( 'Embeddings are not supported by the selected provider.' )
 	else:
-		embed = provider_module.Embedding( )
+		embed = provider_module.Embeddings( )
 		with st.sidebar:
 			st.text( '⚙️ Embedding Settings' )
 			
@@ -1755,10 +1754,7 @@ elif mode == 'Embeddings':
 								method=method,
 							)
 						else:
-							vector = embed.create(
-								text,
-								model=embed_model,
-							)
+							vector = embed.create( text, model=embed_model, )
 						
 						st.write( 'Vector length:', len( vector ) )
 						
@@ -1782,6 +1778,7 @@ elif mode == "Vector Store":
 		chat = get_provider_module( ).Chat( )
 	
 	st.subheader( '🕸️ Vector Stores')
+	st.divider( )
 	vs_map = getattr( chat, "vector_stores", None )
 	if vs_map and isinstance( vs_map, dict ):
 		st.markdown( "**Known vector stores (local mapping)**" )
@@ -1861,10 +1858,7 @@ elif mode == "Vector Store":
 							else vs
 						)
 					else:
-						st.warning(
-							'retrieve_store not available on chat object '
-							'or no store selected.'
-						)
+						st.warning('retrieve_store not available on chat object or no store selected.' )
 				except Exception as exc:
 					st.error( f'Retrieve failed: {exc}' )
 		
@@ -1891,106 +1885,103 @@ elif mode == "Vector Store":
 # ======================================================================================
 elif mode == 'Documents':
 	st.subheader( '📚 Document Q & A')
-	uploaded = st.file_uploader(
-		'Upload documents (session only)',
-		type=[ 'pdf', 'txt', 'md', 'docx' ],
-		accept_multiple_files=True, )
-	
-	if uploaded:
-		for up in uploaded:
-			st.session_state.files.append( save_temp( up ) )
-		st.success( f"Saved {len( uploaded )} file(s) to session" )
-	
-	if st.session_state.files:
-		st.markdown( "**Uploaded documents (session-only)**" )
-		idx = st.selectbox(
-			"Choose a document",
-			options=list( range( len( st.session_state.files ) ) ),
-			format_func=lambda i: st.session_state.files[ i ],
-		)
-		selected_path = st.session_state.files[ idx ]
+	st.divider( )
+	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
+	with center:
+		uploaded = st.file_uploader( 'Upload documents (session only)',
+			type=[ 'pdf', 'txt', 'md', 'docx' ], accept_multiple_files=True, )
 		
-		c1, c2 = st.columns( [ 1, 1 ] )
-		with c1:
-			if st.button( "Remove selected document" ):
-				removed = st.session_state.files.pop( idx )
-				st.success( f"Removed {removed}" )
-		with c2:
-			if st.button( "Show selected path" ):
-				st.info( f"Local temp path: {selected_path}" )
+		if uploaded:
+			for up in uploaded:
+				st.session_state.files.append( save_temp( up ) )
+			st.success( f"Saved {len( uploaded )} file(s) to session" )
 		
-		st.markdown( "---" )
-		question = st.text_area(
-			"Ask a question about the selected document"
-		)
-		if st.button( "Ask Document" ):
-			if not question:
-				st.warning(
-					"Enter a question before asking."
-				)
-			else:
-				with st.spinner( "Running document Q&A…" ):
-					try:
+		if st.session_state.files:
+			st.markdown( "**Uploaded documents (session-only)**" )
+			idx = st.selectbox( "Choose a document",
+				options=list( range( len( st.session_state.files ) ) ),
+				format_func=lambda i: st.session_state.files[ i ], )
+			selected_path = st.session_state.files[ idx ]
+			
+			c1, c2 = st.columns( [ 1, 1 ] )
+			with c1:
+				if st.button( "Remove selected document" ):
+					removed = st.session_state.files.pop( idx )
+					st.success( f"Removed {removed}" )
+			with c2:
+				if st.button( "Show selected path" ):
+					st.info( f"Local temp path: {selected_path}" )
+			
+			st.markdown( "---" )
+			question = st.text_area(
+				"Ask a question about the selected document"
+			)
+			if st.button( "Ask Document" ):
+				if not question:
+					st.warning( "Enter a question before asking." )
+				else:
+					with st.spinner( "Running document Q&A…" ):
 						try:
-							chat  # type: ignore
-						except NameError:
-							chat = get_provider_module( ).Chat( )
-						answer = None
-						if hasattr( chat, "summarize_document" ):
 							try:
-								answer = chat.summarize_document(
-									prompt=question,
-									pdf_path=selected_path,
+								chat  # type: ignore
+							except NameError:
+								chat = get_provider_module( ).Chat( )
+							answer = None
+							if hasattr( chat, "summarize_document" ):
+								try:
+									answer = chat.summarize_document(
+										prompt=question,
+										pdf_path=selected_path,
+									)
+								except TypeError:
+									answer = chat.summarize_document(
+										question, selected_path
+									)
+							elif hasattr( chat, "ask_document" ):
+								answer = chat.ask_document(
+									selected_path, question
 								)
-							except TypeError:
-								answer = chat.summarize_document(
-									question, selected_path
+							elif hasattr( chat, "document_qa" ):
+								answer = chat.document_qa(
+									selected_path, question
 								)
-						elif hasattr( chat, "ask_document" ):
-							answer = chat.ask_document(
-								selected_path, question
+							else:
+								raise RuntimeError(
+									"No document-QA method found on chat object."
+								)
+							
+							st.markdown( "**Answer:**" )
+							st.markdown( answer or "No answer returned." )
+							
+							st.session_state.messages.append(
+								{
+										"role": "user",
+										"content": f"[Document question] {question}",
+								}
 							)
-						elif hasattr( chat, "document_qa" ):
-							answer = chat.document_qa(
-								selected_path, question
+							st.session_state.messages.append(
+								{
+										"role": "assistant",
+										"content": answer or "",
+								}
 							)
-						else:
-							raise RuntimeError(
-								"No document-QA method found on chat object."
+							
+							try:
+								_update_token_counters(
+									getattr( chat, "response", None )
+									or answer
+								)
+							except Exception:
+								pass
+						except Exception as e:
+							st.error(
+								f"Document Q&A failed: {e}"
 							)
-						
-						st.markdown( "**Answer:**" )
-						st.markdown( answer or "No answer returned." )
-						
-						st.session_state.messages.append(
-							{
-									"role": "user",
-									"content": f"[Document question] {question}",
-							}
-						)
-						st.session_state.messages.append(
-							{
-									"role": "assistant",
-									"content": answer or "",
-							}
-						)
-						
-						try:
-							_update_token_counters(
-								getattr( chat, "response", None )
-								or answer
-							)
-						except Exception:
-							pass
-					except Exception as e:
-						st.error(
-							f"Document Q&A failed: {e}"
-						)
-	else:
-		st.info(
-			"No client-side documents uploaded this session. "
-			"Use the uploader in the sidebar to add files."
-		)
+		else:
+			st.info(
+				"No client-side documents uploaded this session. "
+				"Use the uploader in the sidebar to add files."
+			)
 
 # ======================================================================================
 # FILES API MODE
@@ -2002,143 +1993,146 @@ elif mode == "Files":
 		chat = Chat( )
 	
 	st.subheader( '📁 Files API' )
-	list_method = None
-	for name in (
-				'retrieve_files',
-				'retreive_files',
-				'list_files',
-				'get_files',
-	):
-		if hasattr( chat, name ):
-			list_method = getattr( chat, name )
-			break
-	
-	uploaded_file = st.file_uploader(
-		'Upload file (server-side via Files API)',
-		type=[
-				'pdf',
-				'txt',
-				'md',
-				'docx',
-				'png',
-				'jpg',
-				'jpeg',
-		],
-	)
-	if uploaded_file:
-		tmp_path = save_temp( uploaded_file )
-		upload_fn = None
-		for name in ("upload_file", "upload", "files_upload"):
+	st.divider( )
+	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
+	with center:
+		list_method = None
+		for name in (
+					'retrieve_files',
+					'retreive_files',
+					'list_files',
+					'get_files',
+		):
 			if hasattr( chat, name ):
-				upload_fn = getattr( chat, name )
+				list_method = getattr( chat, name )
 				break
-		if not upload_fn:
-			st.warning(
-				"No upload function found on chat object (upload_file)."
-			)
-		else:
-			with st.spinner( "Uploading to Files API..." ):
-				try:
-					fid = upload_fn( tmp_path )
-					st.success( f"Uploaded; file id: {fid}" )
-				except Exception as exc:
-					st.error( f"Upload failed: {exc}" )
-	
-	if st.button( "List files" ):
-		if not list_method:
-			st.warning(
-				"No file-listing method found on chat object."
-			)
-		else:
-			with st.spinner( "Listing files..." ):
-				try:
-					files_resp = list_method( )
-					files_list = [ ]
-					if files_resp is None:
-						files_list = [ ]
-					elif isinstance( files_resp, dict ):
-						files_list = (
-								files_resp.get( "data" )
-								or files_resp.get( "files" )
-								or [ ]
-						)
-					elif isinstance( files_resp, list ):
-						files_list = files_resp
-					else:
-						try:
-							files_list = getattr(
-								files_resp, "data", files_resp
-							)
-						except Exception:
-							files_list = [ files_resp ]
-					
-					rows = [ ]
-					for f in files_list:
-						try:
-							fid = (
-									f.get( "id" )
-									if isinstance( f, dict )
-									else getattr( f, "id", None )
-							)
-							name = (
-									f.get( "filename" )
-									if isinstance( f, dict )
-									else getattr(
-										f, "filename", None
-									)
-							)
-							purpose = (
-									f.get( "purpose" )
-									if isinstance( f, dict )
-									else getattr(
-										f, "purpose", None
-									)
-							)
-						except Exception:
-							fid = None
-							name = str( f )
-							purpose = None
-						rows.append(
-							{
-									"id": fid,
-									"filename": name,
-									"purpose": purpose,
-							}
-						)
-					if rows:
-						st.table( rows )
-					else:
-						st.info( "No files returned." )
-				except Exception as exc:
-					st.error( f"List files failed: {exc}" )
-	
-	if "files_list" in locals( ) and files_list:
-		file_ids = [
-				r.get( "id" )
-				if isinstance( r, dict )
-				else getattr( r, "id", None )
-				for r in files_list
-		]
-		sel = st.selectbox(
-			"Select file id to delete", options=file_ids
+		
+		uploaded_file = st.file_uploader(
+			'Upload file (server-side via Files API)',
+			type=[
+					'pdf',
+					'txt',
+					'md',
+					'docx',
+					'png',
+					'jpg',
+					'jpeg',
+			],
 		)
-		if st.button( "Delete selected file" ):
-			del_fn = None
-			for name in ("delete_file", "delete", "files_delete"):
+		if uploaded_file:
+			tmp_path = save_temp( uploaded_file )
+			upload_fn = None
+			for name in ("upload_file", "upload", "files_upload"):
 				if hasattr( chat, name ):
-					del_fn = getattr( chat, name )
+					upload_fn = getattr( chat, name )
 					break
-			if not del_fn:
+			if not upload_fn:
 				st.warning(
-					"No delete function found on chat object."
+					"No upload function found on chat object (upload_file)."
 				)
 			else:
-				with st.spinner( "Deleting file..." ):
+				with st.spinner( "Uploading to Files API..." ):
 					try:
-						res = del_fn( sel )
-						st.success( f"Delete result: {res}" )
+						fid = upload_fn( tmp_path )
+						st.success( f"Uploaded; file id: {fid}" )
 					except Exception as exc:
-						st.error( f"Delete failed: {exc}" )
+						st.error( f"Upload failed: {exc}" )
+		
+		if st.button( "List files" ):
+			if not list_method:
+				st.warning(
+					"No file-listing method found on chat object."
+				)
+			else:
+				with st.spinner( "Listing files..." ):
+					try:
+						files_resp = list_method( )
+						files_list = [ ]
+						if files_resp is None:
+							files_list = [ ]
+						elif isinstance( files_resp, dict ):
+							files_list = (
+									files_resp.get( "data" )
+									or files_resp.get( "files" )
+									or [ ]
+							)
+						elif isinstance( files_resp, list ):
+							files_list = files_resp
+						else:
+							try:
+								files_list = getattr(
+									files_resp, "data", files_resp
+								)
+							except Exception:
+								files_list = [ files_resp ]
+						
+						rows = [ ]
+						for f in files_list:
+							try:
+								fid = (
+										f.get( "id" )
+										if isinstance( f, dict )
+										else getattr( f, "id", None )
+								)
+								name = (
+										f.get( "filename" )
+										if isinstance( f, dict )
+										else getattr(
+											f, "filename", None
+										)
+								)
+								purpose = (
+										f.get( "purpose" )
+										if isinstance( f, dict )
+										else getattr(
+											f, "purpose", None
+										)
+								)
+							except Exception:
+								fid = None
+								name = str( f )
+								purpose = None
+							rows.append(
+								{
+										"id": fid,
+										"filename": name,
+										"purpose": purpose,
+								}
+							)
+						if rows:
+							st.table( rows )
+						else:
+							st.info( "No files returned." )
+					except Exception as exc:
+						st.error( f"List files failed: {exc}" )
+		
+		if "files_list" in locals( ) and files_list:
+			file_ids = [
+					r.get( "id" )
+					if isinstance( r, dict )
+					else getattr( r, "id", None )
+					for r in files_list
+			]
+			sel = st.selectbox(
+				"Select file id to delete", options=file_ids
+			)
+			if st.button( "Delete selected file" ):
+				del_fn = None
+				for name in ("delete_file", "delete", "files_delete"):
+					if hasattr( chat, name ):
+						del_fn = getattr( chat, name )
+						break
+				if not del_fn:
+					st.warning(
+						"No delete function found on chat object."
+					)
+				else:
+					with st.spinner( "Deleting file..." ):
+						try:
+							res = del_fn( sel )
+							st.success( f"Delete result: {res}" )
+						except Exception as exc:
+							st.error( f"Delete failed: {exc}" )
 
 # ======================================================================================
 # PROMPT ENGINEERING MODE
@@ -2151,6 +2145,7 @@ elif mode == "Prompt Engineering":
 	PAGE_SIZE = 10
 	
 	st.subheader( '📝 Prompt Engineering' )
+	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
 	# ------------------------------------------------------------------
 	# Session state (single source of truth)
 	# ------------------------------------------------------------------
@@ -2168,7 +2163,7 @@ elif mode == "Prompt Engineering":
 	# DB helpers
 	# ------------------------------------------------------------------
 	def get_conn( ):
-		return sqlite3.connect( DB_PATH )
+		return sqlite3.connect( cfg.DB_PATH )
 	
 	def reset_selection( ):
 		st.session_state.pe_selected_id = None
@@ -2200,23 +2195,17 @@ elif mode == "Prompt Engineering":
 	# ------------------------------------------------------------------
 	# Controls (table filters)
 	# ------------------------------------------------------------------
-	c1, c2, c3, c4 = st.columns( [ 4,
-	                               2,
-	                               2,
-	                               3 ] )
+	c1, c2, c3, c4 = st.columns( [ 4, 2, 2,  3 ] )
 	
 	with c1:
 		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 	
 	with c2:
 		st.selectbox( 'Sort by',
-			[ 'PromptsId',
-			  'Name',
-			  'Version' ], key='pe_sort_col', )
+			[ 'PromptsId', 'Name', 'Version' ], key='pe_sort_col', )
 	
 	with c3:
-		st.selectbox( 'Direction', [ 'ASC',
-		                             'DESC' ], key='pe_sort_dir', )
+		st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir', )
 	
 	with c4:
 		st.markdown(
@@ -2287,7 +2276,6 @@ elif mode == "Prompt Engineering":
 		)
 	
 	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True, )
-	
 	selected = [ r for r in edited if r.get( "Selected" ) ]
 	if len( selected ) == 1:
 		pid = selected[ 0 ][ "PromptsId" ]
@@ -2298,9 +2286,7 @@ elif mode == "Prompt Engineering":
 	# ------------------------------------------------------------------
 	# Paging
 	# ------------------------------------------------------------------
-	p1, p2, p3 = st.columns( [ 0.25,
-	                           3.5,
-	                           0.25 ] )
+	p1, p2, p3 = st.columns( [ 0.25, 3.5, 0.25 ] )
 	with p1:
 		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
 			st.session_state.pe_page -= 1
