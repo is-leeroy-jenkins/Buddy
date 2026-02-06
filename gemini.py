@@ -41,6 +41,8 @@
   </summary>
   ******************************************************************************************
 '''
+import config as cfg
+from boogr import ErrorDialog, Error
 import os
 import requests
 import PIL.Image
@@ -53,8 +55,6 @@ from google.genai.types import (Part, GenerateContentConfig, ImageConfig, Functi
                                 GeneratedImage, EmbedContentConfig, Content, ContentEmbedding,
                                 Candidate, HttpOptions, GenerateImagesResponse, Field,
                                 GenerateContentResponse, GenerateVideosResponse, Image, File)
-import config as cfg
-from boogr import ErrorDialog, Error
 
 def throw_if( name: str, value: object ):
 	if value is None:
