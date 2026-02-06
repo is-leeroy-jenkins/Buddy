@@ -99,16 +99,11 @@ GPT_MODES = [ 'Chat',
               'Data Export' ]
 
 # ---------------- GROK CONFIG ------------------
-GROK_BASE_URL = r'https://api.x.ai/v1'
-GROK_ORGANIZATION = 'Leeroy'
-GROK_TIMEOUT = 60
 GROQ_LOGO = r'resources/grok_logo.png'
 GROQ_MODES = [ 'Text',
                'Images',
-               'Embeddings',
-               'Documents',
                'Files',
-               'Vector Store',
+               'Collections',
                'Prompt Engineering',
                'Data Export' ]
 
@@ -118,8 +113,6 @@ GEMINI_MODES = [ 'Text',
                  'Images',
                  'Embeddings',
                  'Audio',
-                 'Documents',
-                 'Files',
-                 'Vector Store',
+                 'File Stores',
                  'Prompt Engineering',
                  'Data Export' ]

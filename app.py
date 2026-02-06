@@ -73,7 +73,7 @@ from gpt import (
 
 from gemini import ( Chat, Images, Embeddings, Transcription, TTS, Translation, FileStore )
 
-from grok import ( Chat, Images, Embeddings, Files, Collections )
+from grok import ( Chat, Images, Files, Collections )
 
 # ==============================================================================
 # CONSTANTS
@@ -148,9 +148,9 @@ PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Groq': 'grok', }
 
 MODE_CLASS_MAP = { 'Chat': None,
 		'Text': [ 'Chat' ],
-		'Images': [ 'Image' ],
+		'Images': [ 'Images' ],
 		'Audio': [ 'TTS', 'Translation', 'Transcription' ],
-		'Embeddings': [ 'Embedding' ],
+		'Embeddings': [ 'Embeddings' ],
 }
 
 CLASS_MODE_MAP = { 'GPT': cfg.GPT_MODES, 'Gemini': cfg.GEMINI_MODES, 'Grok': cfg.GROQ_MODES  }
@@ -1771,7 +1771,7 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode == "Vector Store":
+elif mode in [ 'Vector Store', 'Collections', 'File Stores']:
 	try:
 		chat  # type: ignore
 	except NameError:
