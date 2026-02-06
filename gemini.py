@@ -1064,8 +1064,6 @@ class Images( Gemini ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model
-		self.api_version = version
-		self.use_vertex = use_ai
 		self.temperature = temperature
 		self.top_p = top_p
 		self.frequency_penalty = frequency
