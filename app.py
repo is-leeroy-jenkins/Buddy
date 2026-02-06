@@ -2145,7 +2145,7 @@ elif mode == "Prompt Engineering":
 	PAGE_SIZE = 10
 	
 	st.subheader( '📝 Prompt Engineering' )
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
+	st.divider( )
 	# ------------------------------------------------------------------
 	# Session state (single source of truth)
 	# ------------------------------------------------------------------
