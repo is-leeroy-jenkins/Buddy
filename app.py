@@ -144,7 +144,7 @@ ANALYST = '❓'
 
 BUDDY = '🧠'
 
-PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Groq': 'grok', }
+PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
 
 MODE_CLASS_MAP = { 'Chat': None,
 		'Text': [ 'Chat' ],
@@ -153,7 +153,7 @@ MODE_CLASS_MAP = { 'Chat': None,
 		'Embeddings': [ 'Embeddings' ],
 }
 
-CLASS_MODE_MAP = { 'GPT': cfg.GPT_MODES, 'Gemini': cfg.GEMINI_MODES, 'Grok': cfg.GROQ_MODES  }
+CLASS_MODE_MAP = { 'GPT': cfg.GPT_MODES, 'Gemini': cfg.GEMINI_MODES, 'Grok': cfg.GROK_MODES  }
 
 LOGO_MAP = { 'GPT': cfg.GPT_LOGO, 'Gemini': cfg.GEMINI_LOGO, 'Groq': cfg.GROQ_LOGO }
 

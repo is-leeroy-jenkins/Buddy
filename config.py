@@ -100,7 +100,7 @@ GPT_MODES = [ 'Chat',
 
 # ---------------- GROK CONFIG ------------------
 GROQ_LOGO = r'resources/grok_logo.png'
-GROQ_MODES = [ 'Text',
+GROK_MODES = [ 'Text',
                'Images',
                'Files',
                'Collections',
