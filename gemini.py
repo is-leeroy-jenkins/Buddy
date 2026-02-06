@@ -182,26 +182,22 @@ class Chat( Gemini ):
 	file_path: Optional[ str ]
 	response_modalities: Optional[ List[ str ] ]
 	
-	def __init__( self, n: int=1, model: str = 'gemini-2.0-flash', version: str='v1alpha',
-			use_ai: bool=False, temperature: float=0.8, top_p: float=0.9,
-			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
-			instruct: str=None, contents: List[ str ]=None ):
+	def __init__( self ):
 		super( ).__init__( )
-		self.number = n
-		self.model = model
-		self.api_version = version
-		self.top_p = top_p;
-		self.temperature = temperature
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.candidate_count = n;
-		self.max_tokens = max_tokens
-		self.use_vertex = use_ai
-		self.instructions = instruct;
-		self.contents = contents
-		self.http_options = HttpOptions( api_version=self.api_version )
-		self.client = genai.Client( vertexai=self.use_vertex, api_key=self.api_key,
-			http_options=self.http_options )
+		self.number = None
+		self.model = None
+		self.api_version = None
+		self.top_p = None
+		self.temperature = None
+		self.frequency_penalty = None
+		self.presence_penalty = None
+		self.candidate_count = None
+		self.max_output_tokens = None
+		self.use_vertex = None
+		self.instructions = None
+		self.contents = None
+		self.http_options = None
+		self.client = None
 		self.response_modalities = [ 'TEXT', 'IMAGE' ]
 		self.content_config = None;
 		self.image_config = None;
@@ -244,9 +240,13 @@ class Chat( Gemini ):
 	
 	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
-			max_tokens: int=10000, stops: List[str]=None ) -> GenerateContentResponse | None:
+			max_tokens: int=10000, stops: List[str]=None ) -> str | None:
 		"""
-			Purpose: Generates a text completion based on the provided prompt and configuration.
+		
+			Purpose:
+			-----------
+			Generates a text completion based on the provided prompt and configuration.
+			
 			Parameters:
 			-----------
 			prompt: str - The text input for the model.
@@ -271,7 +271,7 @@ class Chat( Gemini ):
 				frequency_penalty=self.frequency_penalty, presence_penalty=self.presence_penalty )
 			self.content_response = self.client.models.generate_content( model=self.model,
 				contents=self.contents, config=self.content_config )
-			return self.content_response
+			return self.content_response.text
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
@@ -280,7 +280,9 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def web_search( self, prompt: str, model: str = 'gemini-2.0-flash' ) -> Optional[ str ]:
+	def web_search( self, prompt: str, model: str='gemini-2.0-flash', temperature: float = 0.8,
+			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
+			max_tokens: int = 10000, stops: List[ str ] = None ) -> Optional[ str ]:
 		"""
 		
 			Purpose:
@@ -301,6 +303,13 @@ class Chat( Gemini ):
 			throw_if( 'prompt', prompt )
 			self.contents = prompt;
 			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
 			self.tool_config = [ types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
 			self.content_config = GenerateContentConfig( temperature=self.temperature,
 				tools=self.tool_config, system_instruction=self.instructions )
@@ -315,7 +324,9 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def search_maps( self, prompt: str, model: str='gemini-2.0-flash' ) -> Optional[ str ]:
+	def search_maps( self, prompt: str, model: str='gemini-2.0-flash', temperature: float = 0.8,
+			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
+			max_tokens: int = 10000, stops: List[ str ] = None ) -> Optional[ str ]:
 		"""
 		
 			Purpose:
@@ -335,6 +346,13 @@ class Chat( Gemini ):
 			throw_if( 'prompt', prompt )
 			self.contents = f"Using Google Search and Maps data, answer: {prompt}"
 			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
 			self.tool_config = [ types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
 			self.content_config = GenerateContentConfig( temperature=self.temperature,
 				tools=self.tool_config  )
@@ -349,7 +367,9 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def analyze_image( self, prompt: str, filepath: str, model: str='gemini-2.0-flash' ) -> str | None:
+	def analyze_image( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
+			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
+			presence: float = 0.0, max_tokens: int = 10000, stops: List[ str ] = None ) -> str | None:
 		"""
 			
 			Purpose:
@@ -373,6 +393,12 @@ class Chat( Gemini ):
 			self.prompt = prompt
 			self.file_path = filepath
 			self.model = model
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
 			img = PIL.Image.open( self.file_path )
 			self.content_config = GenerateContentConfig( temperature=self.temperature,
 				top_p=self.top_p, max_output_tokens=self.max_tokens )
@@ -387,7 +413,9 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def summarize_document( self, prompt: str, filepath: str, model: str='gemini-2.0-flash' ) -> str | None:
+	def summarize_document( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
+			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
+			presence: float = 0.0, max_tokens: int = 10000, stops: List[ str ] = None ) -> str | None:
 		"""
 			
 			Purpose:
@@ -410,6 +438,12 @@ class Chat( Gemini ):
 			self.prompt = prompt
 			self.file_path = filepath
 			self.model = model
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
 			self.content_config = GenerateContentConfig( temperature=self.temperature )
 			if self.use_vertex:
 				with open( self.file_path, 'rb' ) as f:
@@ -1017,10 +1051,7 @@ class Images( Gemini ):
 	aspect_ratio: Optional[ str ]
 	use_vertex: Optional[ bool ]
 	
-	def __init__( self, n: int=1, model: str='imagen-3.0-generate-001', version: str='v1alpha',
-			use_ai: bool=False, temperature: float=0.8, top_p: float=0.9,
-			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
-			instruct: str=None ):
+	def __init__( self ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model
@@ -1040,8 +1071,8 @@ class Images( Gemini ):
 	@property
 	def model_options( self ) -> List[ str ] | None:
 		"""Returns list of image generation models."""
-		return [ 'imagen-3.0-generate-001',
-		         'imagen-3.0-fast-generate-001' ]
+		return [ 'gemini-2.5-flash-image',
+		         'gemini-3-pro-image-preview' ]
 	
 	@property
 	def aspect_options( self ) -> List[ str ] | None:
@@ -1052,7 +1083,10 @@ class Images( Gemini ):
 		         '9:16',
 		         '16:9' ]
 	
-	def generate( self, prompt: str, aspect: str='1:1' ) -> Optional[ Image ]:
+	def generate( self, prompt: str, aspect: str='4:3', n: int=1,
+			model: str='gemini-2.5-flash-image', temperature: float=0.8, top_p: float=0.9,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			instruct: str=None ) -> Optional[ Image ]:
 		"""
 			
 			Purpose:
@@ -1072,7 +1106,15 @@ class Images( Gemini ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.prompt = prompt
+			self.model = model
+			self.number = n
 			self.aspect_ratio = aspect
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.instructions = instruct
 			self.genimg_config = GenerateImagesConfig( aspect_ratio=self.aspect_ratio,
 				number_of_images=self.number )
 			response = self.client.models.generate_images( model=self.model,

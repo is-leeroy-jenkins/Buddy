@@ -455,7 +455,7 @@ class Images( Grok ):
 		return [ 'base64', 'url' ]
 	
 	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str='1k',
-			aspect_ratio: str="4:3",  format: str='base64' ) -> str | None:
+			aspect_ratio: str='4:3',  format: str='base64' ) -> str | None:
 		"""
 		
 			Purpose:
