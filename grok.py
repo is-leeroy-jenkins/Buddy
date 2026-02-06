@@ -55,7 +55,7 @@ import config as cfg
 from boogr import ErrorDialog, Error
 import config as cfg
 from xai_sdk import Client
-from xai_sdk.chat import user, system
+from xai_sdk.chat import user, system, image
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -279,8 +279,8 @@ class Chat( Grok ):
 		         'inline_citations',
 		         'verbose_streaming' ]
 	
-	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=None,
-			temperature: float=0.8, top_p: float=0.9, effort: str=None, format: str='text',
+	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=10000,
+			temperature: float=0.8, top_p: float=0.9, effort: str='high', format: str='text',
 			store: bool=True, include: List[ str ]=None, instruct: str=None ):
 		"""
 		
