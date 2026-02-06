@@ -945,12 +945,8 @@ def text_model_options( chat ):
 		return _safe( 'gpt', 'model_options', chat.model_options )
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'model_options', chat.model_options )
-	if _provider( ) == 'Groq':
+	if _provider( ) == 'Grok':
 		return _safe( 'grok', 'model_options', chat.model_options )
-	if _provider( ) == 'Mistral':
-		return _safe( 'missy', 'model_options', chat.model_options )
-	if _provider( ) == 'Claude':
-		return _safe( 'claude', 'model_options', chat.model_options )
 	return chat.model_options
 
 # ---------------- IMAGES ----------------
@@ -959,12 +955,8 @@ def image_model_options( image ):
 		return _safe( 'gpt', 'image_model_options', image.model_options )
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'image_model_options', image.model_options )
-	if _provider( ) == 'Groq':
-		return _safe( 'grok', 'image_model_options', image.model_options )
-	if _provider( ) == 'Mistral':
-		return _safe( 'missy', 'image_model_options', image.model_options )
-	if _provider( ) == 'Claude':
-		return _safe( 'claude', 'image_model_options', image.model_options )
+	if _provider( ) == 'Grok':
+		return _safe( 'grok', 'model_options', image.model_options )
 	return image.model_options
 
 def image_size_or_aspect_options( image ):
@@ -972,12 +964,8 @@ def image_size_or_aspect_options( image ):
 		return _safe( 'gpt', 'aspect_options', image.size_options )
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'aspect_options', image.size_options )
-	if _provider( ) == 'Groq':
-		return _safe( 'grok', 'aspect_options', image.size_options )
-	if _provider( ) == 'Mistral':
-		return _safe( 'missy', 'aspect_options', image.size_options )
-	if _provider( ) == 'Claude':
-		return _safe( 'claude', 'aspect_options', image.size_options )
+	if _provider( ) == 'Grok':
+		return _safe( 'grok', 'model_options', image.size_options )
 	return image.size_options
 
 # ---------------- AUDIO ----------------
@@ -986,8 +974,6 @@ def audio_model_options( transcriber ):
 		return _safe( 'gpt', 'audio_model_options', transcriber.model_options )
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'audio_model_options', transcriber.model_options )
-	if _provider( ) == 'Groq':
-		return _safe( 'grok', 'audio_model_options', transcriber.model_options )
 	return transcriber.model_options
 
 def audio_language_options( transcriber ):
@@ -995,8 +981,6 @@ def audio_language_options( transcriber ):
 		return _safe( 'gpt', 'language_options', transcriber.language_options )
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'language_options', transcriber.language_options )
-	if _provider( ) == 'Groq':
-		return _safe( 'grok', 'language_options', transcriber.language_options )
 	return transcriber.language_options
 
 # ---------------- EMBEDDINGS ----------------
@@ -1005,8 +989,6 @@ def embedding_model_options( embed ):
 		return _safe( 'gpt', 'embedding_model_options', embed.model_options )
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'embedding_model_options', embed.model_options )
-	if _provider( ) == 'Groq':
-		return _safe( 'grok', 'embedding_model_options', embed.model_options )
 	return embed.model_options
 
 # ==============================================================================
@@ -1019,7 +1001,7 @@ with st.sidebar:
 	style_subheaders( )
 	st.subheader( "" )
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	provider = st.selectbox( "API", list( PROVIDERS.keys( ) ),
+	provider = st.selectbox( "API", list( cfg.PROVIDERS.keys( ) ),
 		index=list( cfg.PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
 	
 	st.session_state[ "provider" ] = provider
@@ -1099,7 +1081,7 @@ with st.sidebar:
 		mode = st.sidebar.radio( 'Select Mode', cfg.GEMINI_MODES, index=0 )
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	elif provider == 'Grok':
-		mode = st.sidebar.radio( 'Select Mode', cfg.GROQ_MODES, index=0 )
+		mode = st.sidebar.radio( 'Select Mode', cfg.GROK_MODES, index=0 )
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	else:
 		mode = st.sidebar.radio( 'Select Mode', cfg.GPT_MODES, index=0 )

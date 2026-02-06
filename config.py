@@ -59,7 +59,7 @@ XML_BLOCK_PATTERN = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>",
 DB_PATH = "stores/sqlite/Data.db"
 ANALYST = '❓'
 BUDDY = '🧠'
-PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Groq': 'grok', }
+PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
