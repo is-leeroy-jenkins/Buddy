@@ -47,7 +47,7 @@ import base64
 import requests
 from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
-
+from google.genai.types import ListFilesResponse
 from xai_sdk.aio.image import ImageResponse
 
 import config as cfg
