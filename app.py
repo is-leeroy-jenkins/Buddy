@@ -1306,7 +1306,7 @@ elif mode == "Images":
 		# ------------------------------------------------------------------
 		# Main UI — Tabs
 		# ------------------------------------------------------------------
-		tab_gen, tab_analyze = st.tabs( [ 'Generate', 'Analyze' ] )
+		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 		with tab_gen:
 			prompt = st.text_area( 'Prompt' )
 			if st.button( 'Generate Image' ):
@@ -1430,6 +1430,92 @@ elif mode == "Images":
 								st.warning(
 									"No analysis output returned by the available methods."
 								)
+							else:
+								if isinstance( analysis_result, (dict, list) ):
+									st.json( analysis_result )
+								else:
+									st.markdown( "**Analysis result:**" )
+									st.write( analysis_result )
+								
+								try:
+									_update_token_counters(
+										getattr( image, "response", None )
+										or analysis_result
+									)
+								except Exception:
+									pass
+						
+						except Exception as exc:
+							st.error( f"Analysis Failed: {exc}" )
+		
+		with tab_edit:
+			st.markdown( 'Image Editing — upload an image to edit.' )
+			
+			uploaded_img = st.file_uploader( 'Upload Image for Edit',
+				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+				accept_multiple_files=False,
+				key='images_edit_uploader',
+			)
+			
+			if uploaded_img:
+				tmp_path = save_temp( uploaded_img )
+				
+				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
+				
+				available_methods = [ ]
+				for candidate in (
+							'edit',
+							'describe_image',
+							'describe',
+							'classify',
+							'detect_objects',
+							'caption',
+							'image_edit',
+				):
+					if hasattr( image, candidate ):
+						available_methods.append( candidate )
+				
+				if available_methods:
+					chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+				else:
+					chosen_method = None
+					st.info( 'No dedicated image editing method found on Image object;'
+					         'attempting generic handlers.')
+				
+				chosen_model = st.selectbox( "Model (edit)", [ image_model,  None ], index=0, )
+				
+				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+				
+				if st.button( "Edit Image" ):
+					with st.spinner( "Editing image…" ):
+						analysis_result = None
+						try:
+							if chosen_method:
+								func = getattr( image, chosen_method, None )
+								if func:
+									try:
+										analysis_result = func( tmp_path )
+									except TypeError:
+										analysis_result = func(
+											tmp_path, model=chosen_model_arg
+										)
+							else:
+								for fallback in (
+											"analyze",
+											"describe_image",
+											"describe",
+											"caption",
+								):
+									if hasattr( image, fallback ):
+										func = getattr( image, fallback )
+										try:
+											analysis_result = func( tmp_path )
+											break
+										except Exception:
+											continue
+							
+							if analysis_result is None:
+								st.warning( "No editing output returned by the available methods." )
 							else:
 								if isinstance( analysis_result, (dict, list) ):
 									st.json( analysis_result )
