@@ -47,13 +47,14 @@ import base64
 import requests
 from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
+
 from xai_sdk.aio.image import ImageResponse
 
 import config as cfg
 from boogr import ErrorDialog, Error
 import config as cfg
 from xai_sdk import Client
-from xai_sdk.chat import user, system, image
+from xai_sdk.chat import user, system, image, file
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -323,7 +324,7 @@ class Chat( Grok ):
 			self.response_format = format
 			self.include = include
 			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+			self.client.headers.update( { 'Authorization': f'Bearer {self.api_key}',
 			                              'Content-Type': 'application/json', } )
 			self.messages.append( system( self.instructions ) )
 			self.messages.append( user( self.user ) )
@@ -396,6 +397,9 @@ class Images( Grok ):
 		self.detail = None
 		self.response_format = None
 		self.client = None
+		self.max_output_tokens = None
+		self.temperature = None
+		self.top_percent = None
 	
 
 	@property
@@ -451,7 +455,7 @@ class Images( Grok ):
 		return [ 'base64', 'url' ]
 	
 	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str='1k',
-			aspect_ratio: str="4:3",  format: str='base64' ) -> ImageResponse | None:
+			aspect_ratio: str="4:3",  format: str='base64' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -481,11 +485,12 @@ class Images( Grok ):
 			self.aspect_ratio = aspect_ratio
 			self.response_format = format
 			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.client.headers.update({ 'Authorization': f'Bearer {self.api_key}',
+					'Content-Type': 'application/json', } )
 			self.response = self.client.image.sample( prompt=self.prompt, resolution=self.resolution,
 				model="grok-imagine-image", aspect_ratio=self.aspect_ratio,
-				image_format=self.response_format, image_url=self.image_url, )
-			return self.response.image
+				image_format=self.response_format )
+			return self.response.base64
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -495,8 +500,8 @@ class Images( Grok ):
 			error.show( )
 	
 	def edit( self, image_path: str, prompt: str, model: str='grok-imagine-image',
-			aspect_ratio: str=None, resolution: str=None, quality: str=None,
-			style: str=None, response_format: str=None ):
+			aspect_ratio: str = "4:3", resolution: str='1k', quality: str='medium',
+			response_format: str='base64' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -529,15 +534,15 @@ class Images( Grok ):
 			self.aspect_ratio = aspect_ratio
 			self.resolution = resolution
 			self.quality = quality
-			self.style = style
 			self.response_format = response_format
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 			with open( self.image_path, "rb" ) as f:
 				image_data = base64.b64encode( f.read( ) ).decode( "utf-8" )
 				self.response = self.client.image.sample( prompt=self.prompt, model=self.model,
-					aspect_ratio=self.aspect_ratio, image_url=f"data:image/jpeg;base64,{image_data}", )
-				return self.response
+					aspect_ratio=self.aspect_ratio, image_format=self.response_format,
+					image_url=f"data:image/jpeg;base64,{image_data}", )
+				return self.response.base64
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -546,9 +551,9 @@ class Images( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def analyze( self, prompt: str, image_url: str, model: str=None, max_output_tokens: int=None,
-			temperature: float=None, top_p: float=None, include_reasoning: bool=None,
-			reasoning_effort: str=None, store: bool=False  ):
+	def analyze( self, prompt: str, image_url: str, model: str='grok-4-1-fast-reasoning',
+			max_output_tokens: int=10000, temperature: float=0.9, top_p: float=0.8,
+			reasoning_effort: str='medium', detail: str='medium'  ):
 		"""
 		
 			Purpose:
@@ -580,57 +585,27 @@ class Images( Grok ):
 			throw_if( "prompt", prompt )
 			throw_if( "image_url", image_url )
 			self.model = model
+			self.prompt = prompt
+			self.image_url = image_url
 			self.max_output_tokens = max_output_tokens
 			self.temperature = temperature
-			self.top_p = top_p
-			self.include_reasoning = include_reasoning
+			self.top_percent = top_p
+			self.detail = detail
 			self.reasoning_effort = reasoning_effort
-			self.previous_response_id = previous_response_id
-			if self.reasoning_effort and self.model != "grok-3-mini":
-				raise ValueError( "reasoning_effort is only supported when model == 'grok-3-mini'." )
-			
-			payload = {
-					"model": self.model,
-					"store": store,
-					"input": [ {
-							           "role": "user",
-							           "content": [ {
-									                        "type": "input_text",
-									                        "text": prompt },
-							                        {
-									                        "type": "input_image",
-									                        "image_url": image_url } ] } ],
-					"max_output_tokens": self.max_output_tokens,
-					"temperature": self.temperature,
-					"top_p": self.top_p }
-			
-			if self.previous_response_id:
-				payload[ "previous_response_id" ] = self.previous_response_id
-			
-			if self.include_reasoning:
-				payload[ "include" ] = [ "reasoning.encrypted_content" ]
-			
-			if self.reasoning_effort:
-				payload[ "reasoning_effort" ] = self.reasoning_effort
-			
-			url = f"{self.base_url}/responses"
-			response = self.client.post( url, json=payload, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			data = response.json( )
-			self.previous_response_id = data.get( "id" )
-			
-			for output in data.get( "output", [ ] ):
-				for content in output.get( "content", [ ] ):
-					if content.get( "type" ) == "output_text":
-						return content.get( "text", "" )
-			
-			return ""
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {self.api_key}',
+					'Content-Type': 'application/json', } )
+			chat_response = self.client.chat.create( model=self.model )
+			chat_response.append( user( self.prompt,
+				image( image_url=self.image_url, detail=self.detail ) ) )
+			image_respose = chat_response.sample()
+			return image_respose.content
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Embeddings'
-			ex.method = ''
+			ex.cause = 'Images'
+			ex.method = 'analyze( prompt: str, image_url: str  )'
 			error = ErrorDialog( ex )
 			error.show( )
 
@@ -656,7 +631,7 @@ class Embeddings( Grok ):
 	model: Optional[ str ]
 	input_text: Optional[ str ]
 	encoding_format: Optional[ str ]
-	client: requests.Session
+	client: Optional[ Client ]
 	
 	def __init__( self ):
 		"""
@@ -678,11 +653,6 @@ class Embeddings( Grok ):
 		self.model = None
 		self.input_text = None
 		self.encoding_format = None
-		self.client = requests.Session( )
-		self.client.headers.update({
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
-					'Content-Type': 'application/json',
-			})
 	
 	@property
 	def model_options( self ) -> List[ str ]:
@@ -743,28 +713,19 @@ class Embeddings( Grok ):
 		"""
 		try:
 			throw_if( 'text', text )
-			
 			self.input_text = text
 			self.model = model
 			self.encoding_format = encoding_format
-			
-			payload = {
-					'model': self.model,
-					'input': self.input_text,
-					'encoding_format': self.encoding_format,
-			}
-			
-			url = f'{self.base_url}/embeddings'
-			response = self.client.post( url, json=payload, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			data = response.json( )
-			return data[ 'data' ][ 0 ][ 'embedding' ]
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json',
+			} )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Embeddings'
-			ex.method = ''
+			ex.method = 'create( text: str )'
 			error = ErrorDialog( ex )
 			error.show( )
 
@@ -791,8 +752,10 @@ class Files( Grok ):
 	"""
 	
 	file_id: Optional[ str ]
-	purpose: Optional[ str ]
-	client: requests.Session
+	file_path: Optional[ str ]
+	model: Optional[ str ]
+	client: Optional[ Client ]
+	file: Optional[ file ]
 	
 	def __init__( self ):
 		"""
@@ -811,11 +774,10 @@ class Files( Grok ):
 		
 		"""
 		super( ).__init__( )
-		
 		self.file_id = None
-		self.purpose = None
-		self.client = requests.Session( )
-		self.client.headers.update( {'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+		self.file_path = None
+		self.client = None
+		self.file = None
 
 	@property
 	def purpose_options( self ) -> List[ str ]:
@@ -839,7 +801,7 @@ class Files( Grok ):
 		         'responses',
 		         'fine_tune' ]
 	
-	def upload( self, file_path: str, purpose: str ):
+	def upload( self, file_path: str ):
 		"""
 		
 			Purpose:
@@ -858,24 +820,20 @@ class Files( Grok ):
 		"""
 		try:
 			throw_if( 'file_path', file_path )
-			throw_if( 'purpose', purpose )
-			
-			self.purpose = purpose
-			
-			with open( file_path, 'rb' ) as fh:
-				files = { 'file': fh }
-				data = { 'purpose': self.purpose }
-				
-				url = f'{self.base_url}/files'
-				response = self.client.post( url, files=files, data=data, timeout=self.timeout )
-				response.raise_for_status( )
-			
-			return response.json( )
-		
-		except Exception as ex:
-			raise ex
+			self.file_path = file_path
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+				'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.file = self.client.files.upload( file=self.file_path )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Files'
+			ex.method = 'create( text: str )'
+			error = ErrorDialog( ex )
+			error.show( )
 	
-	def list( self ):
+	def list( self ) -> ListFilesResponse:
 		"""
 		
 			Purpose:
@@ -892,11 +850,11 @@ class Files( Grok ):
 		
 		"""
 		try:
-			url = f'{self.base_url}/files'
-			response = self.client.get( url, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.json( ).get( 'data', [ ] )
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			files_response = self.client.files.list( )
+			return files_response
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -923,14 +881,12 @@ class Files( Grok ):
 		"""
 		try:
 			throw_if( 'file_id', file_id )
-			
 			self.file_id = file_id
-			
-			url = f'{self.base_url}/files/{self.file_id}'
-			response = self.client.get( url, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.json( )
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.file = self.client.files.get( file_id=self.file_id )
+			return self.file
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -939,7 +895,7 @@ class Files( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def retrieve_content( self, file_id: str ):
+	def retrieve_content( self, file_id: str ) -> bytes | None:
 		"""
 		
 			Purpose:
@@ -957,18 +913,16 @@ class Files( Grok ):
 		"""
 		try:
 			throw_if( 'file_id', file_id )
-			
 			self.file_id = file_id
-			
-			url = f'{self.base_url}/files/{self.file_id}/content'
-			response = self.client.get( url, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.content
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			_content = self.client.files.content( file_id=self.file_id )
+			return _content
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Embeddings'
+			ex.cause = 'Files'
 			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
@@ -991,14 +945,11 @@ class Files( Grok ):
 		"""
 		try:
 			throw_if( 'file_id', file_id )
-			
 			self.file_id = file_id
-			
-			url = f'{self.base_url}/files/{self.file_id}'
-			response = self.client.delete( url, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.json( )
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.file = self.client.files.delete( file_id=self.file_id )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -1007,9 +958,7 @@ class Files( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def query( self, file_id: str, prompt: str, model: str=None, max_output_tokens: int=None,
-			temperature: float=None, top_p: float=None, store: bool=True,
-			previous_response_id: str=None ):
+	def query( self, file_path: str, prompt: str, model: str='grok-4-fast' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1034,45 +983,18 @@ class Files( Grok ):
 		
 		"""
 		try:
-			throw_if( 'file_id', file_id )
+			throw_if( 'file_path', file_path )
 			throw_if( 'prompt', prompt )
-			
-			payload = {
-					'model': model,
-					'store': store,
-					'input': [
-							{
-									'role': 'user',
-									'content': [
-											{
-													'type': 'input_text',
-													'text': prompt },
-											{
-													'type': 'input_file',
-													'file_id': file_id },
-									],
-							}
-					],
-					'max_output_tokens': max_output_tokens,
-					'temperature': temperature,
-					'top_p': top_p,
-			}
-			
-			if previous_response_id:
-				payload[ 'previous_response_id' ] = previous_response_id
-			
-			url = f'{self.base_url}/responses'
-			response = self.client.post( url, json=payload, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			data = response.json( )
-			
-			for output in data.get( 'output', [ ] ):
-				for content in output.get( 'content', [ ] ):
-					if content.get( 'type' ) == 'output_text':
-						return content.get( 'text', '' )
-			
-			return ''
+			self.model = model
+			self.prompt = prompt
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.file = self.client.files.upload( file=self.file_path )
+			chat_response = self.client.chat.create( model=self.model )
+			chat_response.append( user( self.prompt, file( self.file.id ) ) )
+			_response = chat_response.sample()
+			return _response.content
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
