@@ -280,9 +280,9 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def web_search( self, prompt: str, model: str='gemini-2.0-flash', temperature: float = 0.8,
-			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
-			max_tokens: int = 10000, stops: List[ str ] = None ) -> Optional[ str ]:
+	def web_search( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
+			max_tokens: int=10000, stops: List[ str ]=None ) -> Optional[ str ]:
 		"""
 		
 			Purpose:
@@ -324,9 +324,9 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def search_maps( self, prompt: str, model: str='gemini-2.0-flash', temperature: float = 0.8,
-			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
-			max_tokens: int = 10000, stops: List[ str ] = None ) -> Optional[ str ]:
+	def search_maps( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
+			max_tokens: int=10000, stops: List[ str ]=None ) -> Optional[ str ]:
 		"""
 		
 			Purpose:
@@ -368,8 +368,8 @@ class Chat( Gemini ):
 			error.show( )
 	
 	def analyze_image( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
-			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, stops: List[ str ] = None ) -> str | None:
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ) -> str | None:
 		"""
 			
 			Purpose:
@@ -414,8 +414,8 @@ class Chat( Gemini ):
 			error.show( )
 	
 	def summarize_document( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
-			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, stops: List[ str ] = None ) -> str | None:
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ) -> str | None:
 		"""
 			
 			Purpose:
@@ -498,13 +498,20 @@ class FileStore( Gemini ):
 	response: Optional[ Any ]
 	use_vertex: Optional[ bool ]
 	
-	def __init__( self, use_ai: bool = False, version: str = 'v1alpha' ):
+	def __init__( self, filepath: str, model: str='gemini-2.0-flash',
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ):
 		super( ).__init__( )
-		self.use_vertex = use_ai
-		self.api_version = version
+		self.file_path = filepath
+		self.model = model
+		self.top_p = top_p;
+		self.temperature = temperature
+		self.frequency_penalty = frequency
+		self.presence_penalty = presence
+		self.max_tokens = max_tokens
+		self.stops = stops
 		self.http_options = HttpOptions( api_version=self.api_version )
-		self.client = genai.Client( vertexai=self.use_vertex, api_key=self.api_key,
-			http_options=self.http_options )
+		self.client = genai.Client( api_key=self.api_key )
 		self.file_id = None;
 		self.display_name = None;
 		self.mime_type = None
