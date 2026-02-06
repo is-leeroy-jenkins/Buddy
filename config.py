@@ -128,13 +128,20 @@ GROK_MODES = [ 'Text',
                'Prompt Engineering',
                'Data Export' ]
 
+GROK_COLLECTIONS = [ { 'DOD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6'},
+                     { 'DOA Regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e'},
+                     { 'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2'},
+                     { 'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93' },
+                     { 'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee' }, ]
+
+
 # ---------------- GEMINI CONFIG ------------------
 GEMINI_LOGO = r'resources/gemini_logo.png'
 GEMINI_MODES = [ 'Text',
                  'Images',
                  'Embeddings',
                  'Audio',
-                 'File Stores',
+                 'File Search',
                  'Prompt Engineering',
                  'Data Export' ]
 
@@ -161,7 +168,7 @@ LOGO_MAP = {
 
 
 
-#-------- PARAMETER DEFINITIONS -------------------
+#-------- DEFINITIONS -------------------
 TEMPERATURE = r'''A number between 0 and 2. Higher values like 0.8 will make the output more random,
 while lower values like 0.2 will make it more focused and deterministic'''
 

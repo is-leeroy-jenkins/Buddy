@@ -913,17 +913,19 @@ def embedding_model_options( embed ):
 # Sidebar
 # ==============================================================================
 with st.sidebar:
-	logo_slot = st.empty( )
 	provider = st.session_state.get( "provider", "GPT" )
 
 	style_subheaders( )
 	st.subheader( "" )
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	provider = st.selectbox( "API", list( cfg.PROVIDERS.keys( ) ),
+	provider = st.selectbox( "Select API", list( cfg.PROVIDERS.keys( ) ),
 		index=list( cfg.PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
 	
 	st.session_state[ "provider" ] = provider
 	logo_path = cfg.LOGO_MAP.get( provider )
+	if logo_path and os.path.exists( logo_path ):
+		logo_path = cfg.LOGO_MAP.get( provider )
+		st.logo( logo_path, size='large', link=cfg.CRS )
 	
 	with st.expander( '🔑 Keys:', expanded=False ):
 		openai_key = st.text_input(
@@ -980,14 +982,7 @@ with st.sidebar:
 		if xai_key:
 			st.session_state.xai_api_key = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
-	
-	with logo_slot:
-		if logo_path and os.path.exists( logo_path ):
-			col1, col2, col3 = st.columns( [ 1,  2,  1 ] )
-			with col2:
-				logo_path = cfg.LOGO_MAP.get( provider )
-				if logo_path and os.path.exists( logo_path ):
-					st.logo( logo_path, size='large', link=cfg.CRS )
+
 					
 	
 	if st.button( 'Clear Chat' ):
@@ -1127,7 +1122,7 @@ elif mode == "Text":
 		st.text( '⚙️ Text Settings' )
 		
 		# ---------------- Model ----------------
-		text_model = st.selectbox( 'Model', chat.model_options,
+		text_model = st.selectbox( 'Select Model', chat.model_options,
 			index=(chat.model_options.index( st.session_state[ 'text_model' ] )
 			       if st.session_state.get( 'text_model' ) in chat.model_options
 			       else 0), )
@@ -1136,52 +1131,43 @@ elif mode == "Text":
 		# ---------------- Parameters ----------------
 		with st.expander( '🎚️  Parameters:', expanded=False ):
 			temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
-				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01, )
+				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01,
+				help = cfg.TEMPERATURE )
+			
 			st.session_state[ 'temperature' ] = float( temperature )
+			st.divider( )
 			
-			top_p = st.slider(
-				'Top-P',
-				min_value=0.0,
-				max_value=1.0,
+			top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'top_p', 1.0 ) ),
-				step=0.01,
-			)
+				step=0.01, help=cfg.TOP_PERCENT )
+			
 			st.session_state[ 'top_p' ] = float( top_p )
+			st.divider( )
 			
-			max_tokens = st.number_input(
-				'Max Tokens',
-				min_value=1,
-				max_value=100000,
-				value=int( st.session_state.get( 'max_tokens', 8012 ) ),
-			)
+			max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+				value=6048, help=cfg.MAX_OUTPUT_TOKENS )
 			st.session_state[ 'max_tokens' ] = int( max_tokens )
+			st.divider( )
 			
-			freq_penalty = st.slider(
-				'Frequency Penalty',
-				min_value=-2.0,
-				max_value=2.0,
+			freq_penalty = st.slider( 'Frequency Penalty', min_value=-2.0, max_value=2.0,
 				value=float( st.session_state.get( 'freq_penalty', 0.0 ) ),
-				step=0.01,
-			)
+				step=0.01, help=cfg.FREQUENCY_PENALTY )
+			
 			st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+			st.divider( )
 			
-			pres_penalty = st.slider(
-				'Presence Penalty',
-				min_value=-2.0,
-				max_value=2.0,
+			pres_penalty = st.slider( 'Presence Penalty', min_value=-2.0, max_value=2.0,
 				value=float( st.session_state.get( 'pres_penalty', 0.0 ) ),
-				step=0.01,
-			)
-			st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+				step=0.01, help=cfg.PRESENCE_PENALTY )
 			
-			stop_text = st.text_area(
-				'Stop Sequences (one per line)',
+			st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+			st.divider( )
+			
+			stop_text = st.text_area( 'Stop Sequences',
 				value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
-				height=80,
-			)
+				height=80, help=cfg.STOP_SEQUENCE )
 			st.session_state[ 'stop_sequences' ] = [
-					s for s in stop_text.splitlines( ) if s.strip( )
-			]
+					s for s in stop_text.splitlines( ) if s.strip( ) ]
 		
 		# ---------------- Include options ----------------
 		if mode == 'GPT':
@@ -1198,7 +1184,7 @@ elif mode == "Text":
 			with st.chat_message( msg[ 'role' ] ):
 				st.markdown( msg[ 'content' ] )
 		
-		prompt = st.chat_input( 'Ask Boo…' )
+		prompt = st.chat_input( 'Ask AI…' )
 		if prompt is not None:
 			st.session_state.messages.append( {
 					'role': 'user',
@@ -1754,124 +1740,340 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode in [ 'Vector Store', 'Collections', 'File Stores']:
+elif mode in [ 'Vector Store', 'Collections', 'File Search']:
 	try:
 		chat  # type: ignore
 	except NameError:
 		chat = get_provider_module( ).Chat( )
 	
-	st.subheader( '🕸️ Vector Stores')
-	st.divider( )
-	vs_map = getattr( chat, "vector_stores", None )
-	if vs_map and isinstance( vs_map, dict ):
-		st.markdown( "**Known vector stores (local mapping)**" )
-		for name, vid in vs_map.items( ):
-			st.write( f"- **{name}** — `{vid}`" )
-		st.markdown( "---" )
-	
-	with st.expander( "Create Vector Store", expanded=False ):
-		new_store_name = st.text_input( "New store name" )
-		if st.button( "Create store" ):
-			if not new_store_name:
-				st.warning( "Enter a store name." )
-			else:
-				try:
-					if hasattr( chat, "create_store" ):
-						res = chat.create_store( new_store_name )
-						st.success( f"Create call submitted for '{new_store_name}'." )
-					else:
-						st.warning( "create_store method not found on chat object." )
-				except Exception as exc:
-					st.error( f"Create store failed: {exc}" )
-	
-	st.markdown( "**Manage Stores**" )
-	options: List[ tuple ] = [ ]
-	if vs_map and isinstance( vs_map, dict ):
-		options = list( vs_map.items( ) )
-	
-	if not options:
-		try:
-			client = getattr( chat, 'client', None )
-			if (
-					client
-					and hasattr( client, 'vector_stores' )
-					and hasattr( client.vector_stores, 'list' )
-			):
-				api_list = client.vector_stores.list( )
-				temp: List[ tuple ] = [ ]
-				for item in getattr( api_list, 'data', [ ] ) or api_list:
-					nm = getattr( item, 'name', None ) or (
-							item.get( 'name' )
-							if isinstance( item, dict )
-							else None
-					)
-					vid = getattr( item, 'id', None ) or (
-							item.get( 'id' )
-							if isinstance( item, dict )
-							else None
-					)
-					if nm and vid:
-						temp.append( (nm, vid) )
-				if temp:
-					options = temp
-		except Exception:
-			options = [ ]
-	
-	if options:
-		names = [ f"{n} — {i}" for n, i in options ]
-		sel = st.selectbox( "Select a vector store", options=names )
-		sel_id: Optional[ str ] = None
-		sel_name: Optional[ str ] = None
-		for n, i in options:
-			label = f"{n} — {i}"
-			if label == sel:
-				sel_id = i
-				sel_name = n
-				break
+	if mode == 'Collections':
+		st.subheader( '📚 Collections' )
 		
-		c1, c2 = st.columns( [ 1, 1 ] )
-		with c1:
-			if st.button( "Retrieve store" ):
-				try:
-					if sel_id and hasattr( chat, "retrieve_store" ):
-						vs = chat.retrieve_store( sel_id )
-						st.json(
-							vs.__dict__
-							if hasattr( vs, "__dict__" )
-							else vs
-						)
-					else:
-						st.warning('retrieve_store not available on chat object or no store selected.' )
-				except Exception as exc:
-					st.error( f'Retrieve failed: {exc}' )
+		st.divider( )
 		
-		with c2:
-			if st.button( 'Delete store' ):
-				try:
-					if sel_id and hasattr( chat, 'delete_store' ):
-						res = chat.delete_store( sel_id )
-						st.success( f'Delete returned: {res}' )
-					else:
-						st.warning(
-							'delete_store not available on chat object '
-							'or no store selected.'
+		vs_map = getattr( chat, "vector_stores", None )
+		if vs_map and isinstance( vs_map, dict ):
+			st.markdown( "**Known Collections (local mapping)**" )
+			for name, vid in vs_map.items( ):
+				st.write( f"- **{name}** — `{vid}`" )
+			st.markdown( "---" )
+		
+		with st.expander( "Create Collection", expanded=False ):
+			new_store_name = st.text_input( "New store name" )
+			if st.button( "➕ Create Collection" ):
+				if not new_store_name:
+					st.warning( "Enter a store name." )
+				else:
+					try:
+						if hasattr( chat, "create_store" ):
+							res = chat.create_store( new_store_name )
+							st.success( f"Create call submitted for '{new_store_name}'." )
+						else:
+							st.warning( "create_store method not found on chat object." )
+					except Exception as exc:
+						st.error( f"Create store failed: {exc}" )
+		
+		st.markdown( "**Manage Collections**" )
+		options: List[ tuple ] = [ ]
+		if vs_map and isinstance( vs_map, dict ):
+			options = list( vs_map.items( ) )
+		
+		if not options:
+			try:
+				client = getattr( chat, 'client', None )
+				if (
+						client
+						and hasattr( client, 'vector_stores' )
+						and hasattr( client.vector_stores, 'list' )
+				):
+					api_list = client.vector_stores.list( )
+					temp: List[ tuple ] = [ ]
+					for item in getattr( api_list, 'data', [ ] ) or api_list:
+						nm = getattr( item, 'name', None ) or (
+								item.get( 'name' )
+								if isinstance( item, dict )
+								else None
 						)
-				except Exception as exc:
-					st.error( f"Delete failed: {exc}" )
+						vid = getattr( item, 'id', None ) or (
+								item.get( 'id' )
+								if isinstance( item, dict )
+								else None
+						)
+						if nm and vid:
+							temp.append( (nm, vid) )
+					if temp:
+						options = temp
+			except Exception:
+				options = [ ]
+		
+		if options:
+			names = [ f"{n} — {i}" for n, i in options ]
+			sel = st.selectbox( "Select a Collection", options=names )
+			sel_id: Optional[ str ] = None
+			sel_name: Optional[ str ] = None
+			for n, i in options:
+				label = f"{n} — {i}"
+				if label == sel:
+					sel_id = i
+					sel_name = n
+					break
+			
+			c1, c2 = st.columns( [ 1,  1 ] )
+			with c1:
+				if st.button( "Retrieve Collection" ):
+					try:
+						if sel_id and hasattr( chat, "retrieve_store" ):
+							vs = chat.retrieve_store( sel_id )
+							st.json(
+								vs.__dict__
+								if hasattr( vs, "__dict__" )
+								else vs
+							)
+						else:
+							st.warning( 'retrieve_store not available on chat object or no store selected.' )
+					except Exception as exc:
+						st.error( f'Retrieve failed: {exc}' )
+			
+			with c2:
+				if st.button( '❌ Delete Collection' ):
+					try:
+						if sel_id and hasattr( chat, 'delete_store' ):
+							res = chat.delete_store( sel_id )
+							st.success( f'Delete returned: {res}' )
+						else:
+							st.warning(
+								'delete_store not available on chat object '
+								'or no store selected.'
+							)
+					except Exception as exc:
+						st.error( f"Delete failed: {exc}" )
+		else:
+			st.info(
+				"No vector stores discovered. Create one or confirm "
+				"`chat.vector_stores` mapping exists." )
+			
+	elif mode == 'File Search':
+		st.subheader( '🔍 File Search' )
+		
+		st.divider( )
+		
+		vs_map = getattr( chat, "vector_stores", None )
+		if vs_map and isinstance( vs_map, dict ):
+			st.markdown( "**Known Files (local mapping)**" )
+			for name, vid in vs_map.items( ):
+				st.write( f"- **{name}** — `{vid}`" )
+			st.markdown( "---" )
+		
+		with st.expander( "Create File Store", expanded=False ):
+			new_store_name = st.text_input( "New store name" )
+			if st.button( "➕ Create Store" ):
+				if not new_store_name:
+					st.warning( "Enter a File Name." )
+				else:
+					try:
+						if hasattr( chat, "create_store" ):
+							res = chat.create_store( new_store_name )
+							st.success( f"Create call submitted for '{new_store_name}'." )
+						else:
+							st.warning( "create_store method not found on chat object." )
+					except Exception as exc:
+						st.error( f"Create store failed: {exc}" )
+		
+		st.markdown( "**Manage Files**" )
+		options: List[ tuple ] = [ ]
+		if vs_map and isinstance( vs_map, dict ):
+			options = list( vs_map.items( ) )
+		
+		if not options:
+			try:
+				client = getattr( chat, 'client', None )
+				if (
+						client
+						and hasattr( client, 'vector_stores' )
+						and hasattr( client.vector_stores, 'list' )
+				):
+					api_list = client.vector_stores.list( )
+					temp: List[ tuple ] = [ ]
+					for item in getattr( api_list, 'data', [ ] ) or api_list:
+						nm = getattr( item, 'name', None ) or (
+								item.get( 'name' )
+								if isinstance( item, dict )
+								else None
+						)
+						vid = getattr( item, 'id', None ) or (
+								item.get( 'id' )
+								if isinstance( item, dict )
+								else None
+						)
+						if nm and vid:
+							temp.append( (nm, vid) )
+					if temp:
+						options = temp
+			except Exception:
+				options = [ ]
+		
+		if options:
+			names = [ f"{n} — {i}" for n, i in options ]
+			sel = st.selectbox( "Select a File Store", options=names )
+			sel_id: Optional[ str ] = None
+			sel_name: Optional[ str ] = None
+			for n, i in options:
+				label = f"{n} — {i}"
+				if label == sel:
+					sel_id = i
+					sel_name = n
+					break
+			
+			c1, c2 = st.columns( [ 1,
+			                       1 ] )
+			with c1:
+				if st.button( "Retrieve Store" ):
+					try:
+						if sel_id and hasattr( chat, "retrieve_store" ):
+							vs = chat.retrieve_store( sel_id )
+							st.json(
+								vs.__dict__
+								if hasattr( vs, "__dict__" )
+								else vs
+							)
+						else:
+							st.warning( 'retrieve_store not available on chat object or no store selected.' )
+					except Exception as exc:
+						st.error( f'Retrieve failed: {exc}' )
+			
+			with c2:
+				if st.button( '❌ Delete Store' ):
+					try:
+						if sel_id and hasattr( chat, 'delete_store' ):
+							res = chat.delete_store( sel_id )
+							st.success( f'Delete returned: {res}' )
+						else:
+							st.warning(
+								'delete_store not available on chat object '
+								'or no store selected.'
+							)
+					except Exception as exc:
+						st.error( f"Delete failed: {exc}" )
+		else:
+			st.info(
+				"No vector stores discovered. Create one or confirm "
+				"`chat.vector_stores` mapping exists." )
+			
 	else:
-		st.info(
-			"No vector stores discovered. Create one or confirm "
-			"`chat.vector_stores` mapping exists." )
+		st.subheader( '⚡ Vector Stores')
+		
+		st.divider( )
+		
+		vs_map = getattr( chat, "vector_stores", None )
+		if vs_map and isinstance( vs_map, dict ):
+			st.markdown( "**Known Vector Stores (local mapping)**" )
+			for name, vid in vs_map.items( ):
+				st.write( f"- **{name}** — `{vid}`" )
+			st.markdown( "---" )
+	
+		with st.expander( "Create Vector Store", expanded=False ):
+			new_store_name = st.text_input( "New store name" )
+			if st.button( "➕ Create Store" ):
+				if not new_store_name:
+					st.warning( "Enter a Store Name." )
+				else:
+					try:
+						if hasattr( chat, "create_store" ):
+							res = chat.create_store( new_store_name )
+							st.success( f"Create call submitted for '{new_store_name}'." )
+						else:
+							st.warning( "create_store method not found on chat object." )
+					except Exception as exc:
+						st.error( f"Create store failed: {exc}" )
+		
+		st.markdown( "**Manage Stores**" )
+		options: List[ tuple ] = [ ]
+		if vs_map and isinstance( vs_map, dict ):
+			options = list( vs_map.items( ) )
+		
+		if not options:
+			try:
+				client = getattr( chat, 'client', None )
+				if (
+						client
+						and hasattr( client, 'vector_stores' )
+						and hasattr( client.vector_stores, 'list' )
+				):
+					api_list = client.vector_stores.list( )
+					temp: List[ tuple ] = [ ]
+					for item in getattr( api_list, 'data', [ ] ) or api_list:
+						nm = getattr( item, 'name', None ) or (
+								item.get( 'name' )
+								if isinstance( item, dict )
+								else None
+						)
+						vid = getattr( item, 'id', None ) or (
+								item.get( 'id' )
+								if isinstance( item, dict )
+								else None
+						)
+						if nm and vid:
+							temp.append( (nm, vid) )
+					if temp:
+						options = temp
+			except Exception:
+				options = [ ]
+		
+		if options:
+			names = [ f"{n} — {i}" for n, i in options ]
+			sel = st.selectbox( "Select a vector store", options=names )
+			sel_id: Optional[ str ] = None
+			sel_name: Optional[ str ] = None
+			for n, i in options:
+				label = f"{n} — {i}"
+				if label == sel:
+					sel_id = i
+					sel_name = n
+					break
+			
+			c1, c2 = st.columns( [ 1, 1 ] )
+			with c1:
+				if st.button( "Retrieve store" ):
+					try:
+						if sel_id and hasattr( chat, "retrieve_store" ):
+							vs = chat.retrieve_store( sel_id )
+							st.json(
+								vs.__dict__
+								if hasattr( vs, "__dict__" )
+								else vs
+							)
+						else:
+							st.warning('retrieve_store not available on chat object or no store selected.' )
+					except Exception as exc:
+						st.error( f'Retrieve failed: {exc}' )
+			
+			with c2:
+				if st.button( '❌ Delete Store' ):
+					try:
+						if sel_id and hasattr( chat, 'delete_store' ):
+							res = chat.delete_store( sel_id )
+							st.success( f'Delete returned: {res}' )
+						else:
+							st.warning(
+								'delete_store not available on chat object '
+								'or no store selected.'
+							)
+					except Exception as exc:
+						st.error( f"Delete failed: {exc}" )
+		else:
+			st.info(
+				"No vector stores discovered. Create one or confirm "
+				"`chat.vector_stores` mapping exists." )
 
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Documents':
-	st.subheader( '📚 Document Q & A')
+	st.subheader( '📄 Document Q & A')
 	st.divider( )
 	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with center:
-		uploaded = st.file_uploader( 'Upload documents (session only)',
+		uploaded = st.file_uploader( 'Upload Documents (session only)',
 			type=[ 'pdf', 'txt', 'md', 'docx' ], accept_multiple_files=True, )
 		
 		if uploaded:
@@ -1899,7 +2101,7 @@ elif mode == 'Documents':
 			question = st.text_area(
 				"Ask a question about the selected document"
 			)
-			if st.button( "Ask Document" ):
+			if st.button( "❓ Ask Document" ):
 				if not question:
 					st.warning( "Enter a question before asking." )
 				else:
@@ -2195,16 +2397,9 @@ elif mode == "Prompt Engineering":
 			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
 			unsafe_allow_html=True,
 		)
-		a1, a2, a3 = st.columns( [ 2,
-		                           1,
-		                           1 ] )
+		a1, a2, a3 = st.columns( [ 2, 1, 1 ] )
 		with a1:
-			jump_id = st.number_input(
-				"Go to ID",
-				min_value=1,
-				step=1,
-				label_visibility="collapsed",
-			)
+			jump_id = st.number_input( "Go to ID", min_value=1, step=1, label_visibility="collapsed", )
 		with a2:
 			if st.button( "Go" ):
 				st.session_state.pe_selected_id = int( jump_id )
@@ -2222,8 +2417,7 @@ elif mode == "Prompt Engineering":
 	if st.session_state.pe_search:
 		where = "WHERE Name LIKE ? OR Text LIKE ?"
 		s = f"%{st.session_state.pe_search}%"
-		params.extend( [ s,
-		                 s ] )
+		params.extend( [ s, s ] )
 	
 	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
 	
@@ -2279,7 +2473,7 @@ elif mode == "Prompt Engineering":
 		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
 			st.session_state.pe_page += 1
 	
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	
 	# ------------------------------------------------------------------
 	# Converter controls
@@ -2294,7 +2488,7 @@ elif mode == "Prompt Engineering":
 	# ------------------------------------------------------------------
 	# Create / Edit Prompt
 	# ------------------------------------------------------------------
-	with st.expander( 'Create / Edit Prompt', expanded=True ):
+	with st.expander( '🖊️ Edit Prompt', expanded=True ):
 		st.text_input(
 			'PromptsId',
 			value=st.session_state.pe_selected_id or "",
@@ -2307,7 +2501,7 @@ elif mode == "Prompt Engineering":
 		c1, c2, c3 = st.columns( 3 )
 		
 		with c1:
-			if st.button( "Save Changes" if st.session_state.pe_selected_id else "Create Prompt" ):
+			if st.button( "💾 Save Changes" if st.session_state.pe_selected_id else "➕ Create Prompt" ):
 				with get_conn( ) as conn:
 					if st.session_state.pe_selected_id:
 						conn.execute(
@@ -2351,15 +2545,15 @@ elif mode == "Prompt Engineering":
 				st.success( 'Deleted.' )
 		
 		with c3:
-			if st.button( 'Clear Selection' ):
+			if st.button( '🧹 Clear Selection' ):
 				reset_selection( )
 
 # ==============================================================================
 # DATA MODE
 # ==============================================================================
 elif mode == 'Data Export':
-	st.subheader( '🚀  Export' )
-	st.markdown( '' )
+	st.subheader( '📭  Export' )
+	st.divider( )
 	
 	# -----------------------------------
 	# Prompt export (System Instructions)
@@ -2381,17 +2575,12 @@ elif mode == 'Data Export':
 		export_text = prompt_text
 		export_filename = 'Buddy_System_Instructions.xml'
 	
-	st.download_button(
-		label='Download System Instructions',
-		data=export_text,
-		file_name=export_filename,
-		mime='text/plain',
-		disabled=not bool( export_text.strip( ) )
-	)
+	st.download_button( label='Download System Instructions', data=export_text,
+		file_name=export_filename, mime='text/plain', disabled=not bool( export_text.strip( ) ) )
 	
 	# -----------------------------
 	# Existing chat history export
-	st.markdown( BLUE_DIVIDER, unsafe_allow_html=True )
+	st.divider( )
 	st.markdown( '###### Chat History' )
 	
 	hist = load_history( )
@@ -2417,7 +2606,8 @@ elif mode == 'Data Export':
 	
 	st.download_button( 'Download Chat History (PDF)', buf.getvalue( ),
 		'buddy_chat.pdf', mime='application/pdf' )
-
+	
+	
 # ======================================================================================
 # Footer — Fixed Bottom Status Bar (Desktop-style)
 # ======================================================================================
@@ -2445,7 +2635,7 @@ st.markdown(
 		border-top: 1px solid #2a2a2a;
 		padding: 6px 16px;
 		font-size: 0.85rem;
-		color: #9aa0a6;
+		color: #3e9cfa;
 		z-index: 1000;
 	}
 	.boo-status-inner {
