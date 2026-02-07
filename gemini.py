@@ -523,7 +523,7 @@ class Files( Gemini ):
 	use_vertex: Optional[ bool ]
 	files: Optional[ List[ str ] ]
 	
-	def __init__( self, filepath: str, model: str='gemini-2.0-flash',
+	def __init__( self, model: str='gemini-2.0-flash',
 			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ):
 		super( ).__init__( )
@@ -546,7 +546,7 @@ class Files( Gemini ):
 		self.file_path = None;
 		self.file_list = [ ];
 		self.response = None
-		self.files = None
+		self.files = [ ]
 	
 	@property
 	def file_options( self ) -> List[ str ] | None:
@@ -586,7 +586,7 @@ class Files( Gemini ):
 			self.max_tokens = max_tokens
 			self.stops = stops
 			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			self.storage_client = storage.Client( api_key=self.api_key )
+			self.storage_client = storage.Client( api_key=self.google_api_key )
 			bucket_name = "jeni-financial"
 			prefix = "regulations/"
 			bucket = self.storage_client.bucket( bucket_name )

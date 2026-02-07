@@ -1878,7 +1878,118 @@ elif mode in [ 'Vector Store', 'Files', 'Collections', 'File Search Store' ]:
 			st.info(
 				"No vector stores discovered. Create one or confirm "
 				"`chat.vector_stores` mapping exists." )
+	
+	elif mode == 'Files':
+		try:
+			files  # type: ignore
+		except NameError:
+			files = get_provider_module( ).Files( )
+		st.subheader( '🔍 Files API' )
+		
+		st.divider( )
+		
+		vs_map = getattr( files, "file_options", None )
+		if vs_map and isinstance( vs_map, dict ):
+			st.markdown( "**Known Files (local mapping)**" )
+			for name, vid in vs_map.items( ):
+				st.write( f"- **{name}** — `{vid}`" )
+			st.markdown( "---" )
+		
+		with st.expander( "Create File", expanded=False ):
+			new_store_name = st.text_input( "New store name" )
+			if st.button( "➕ Create Store" ):
+				if not new_store_name:
+					st.warning( "Enter a File Name." )
+				else:
+					try:
+						if hasattr( chat, "create_store" ):
+							res = chat.create_store( new_store_name )
+							st.success( f"Create call submitted for '{new_store_name}'." )
+						else:
+							st.warning( "create_store method not found on chat object." )
+					except Exception as exc:
+						st.error( f"Create store failed: {exc}" )
+		
+		st.markdown( "**Manage Files**" )
+		options: List[ tuple ] = [ ]
+		if vs_map and isinstance( vs_map, dict ):
+			options = list( vs_map.items( ) )
+		
+		if not options:
+			try:
+				client = getattr( chat, 'client', None )
+				if (
+						client
+						and hasattr( client, 'vector_stores' )
+						and hasattr( client.vector_stores, 'list' )
+				):
+					api_list = client.vector_stores.list( )
+					temp: List[ tuple ] = [ ]
+					for item in getattr( api_list, 'data', [ ] ) or api_list:
+						nm = getattr( item, 'name', None ) or (
+								item.get( 'name' )
+								if isinstance( item, dict )
+								else None
+						)
+						vid = getattr( item, 'id', None ) or (
+								item.get( 'id' )
+								if isinstance( item, dict )
+								else None
+						)
+						if nm and vid:
+							temp.append( (nm, vid) )
+					if temp:
+						options = temp
+			except Exception:
+				options = [ ]
+		
+		if options:
+			names = [ f"{n} — {i}" for n, i in options ]
+			sel = st.selectbox( "Select a File Store", options=names )
+			sel_id: Optional[ str ] = None
+			sel_name: Optional[ str ] = None
+			for n, i in options:
+				label = f"{n} — {i}"
+				if label == sel:
+					sel_id = i
+					sel_name = n
+					break
 			
+			c1, c2 = st.columns( [ 1,
+			                       1 ] )
+			with c1:
+				if st.button( "Retrieve Store" ):
+					try:
+						if sel_id and hasattr( chat, "retrieve_store" ):
+							vs = chat.retrieve_store( sel_id )
+							st.json(
+								vs.__dict__
+								if hasattr( vs, "__dict__" )
+								else vs
+							)
+						else:
+							st.warning( 'retrieve_store not available on chat object or no store selected.' )
+					except Exception as exc:
+						st.error( f'Retrieve failed: {exc}' )
+			
+			with c2:
+				if st.button( '❌ Delete Store' ):
+					try:
+						if sel_id and hasattr( chat, 'delete_store' ):
+							res = chat.delete_store( sel_id )
+							st.success( f'Delete returned: {res}' )
+						else:
+							st.warning(
+								'delete_store not available on chat object '
+								'or no store selected.'
+							)
+					except Exception as exc:
+						st.error( f"Delete failed: {exc}" )
+		else:
+			st.info(
+				"No vector stores discovered. Create one or confirm "
+				"`chat.vector_stores` mapping exists." )
+	
 	elif mode == 'File Search':
 		try:
 			filesearch  # type: ignore
