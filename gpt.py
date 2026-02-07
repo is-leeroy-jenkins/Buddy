@@ -171,6 +171,7 @@ class Chat( GPT ):
 	max_search_results: Optional[ int ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	vector_stores: Optional[ Dict[ str, str ] ]
+	fildes: Optional[ Dict[ str, str ] ]
 	content: Optional[ List[ Dict[ str, Any ] ] ]
 	vector_store_ids: Optional[ List[ str ] ]
 	file_ids: Optional[ List[ str ] ]
@@ -200,7 +201,6 @@ class Chat( GPT ):
 		self.response = None
 		self.file = None
 		self.file_path = None
-		self.file_ids = [ ]
 		self.input = None
 		self.messages = None
 		self.image_url = None
@@ -214,8 +214,13 @@ class Chat( GPT ):
 		{
 			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
 			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
-			'Code': 'vs_67e83bdf8abc81918bda0d6b39a19372',
-			'Hawaii': 'vs_67a777291d548191b9fa42956a7f6cb9',
+		}
+		self.files = \
+		{
+			'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
+			'SF133.csv': 'file-WT2h2F5SNxqK2CxyAMSDg6',
+			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
+			'Outlays': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
 	
 	@property

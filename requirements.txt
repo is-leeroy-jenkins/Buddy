@@ -7,6 +7,7 @@ openai
 groq
 google
 google-genai
+google-cloud-storage
 pydantic
 tiktoken
 xai-sdk

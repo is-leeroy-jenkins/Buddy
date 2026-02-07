@@ -1740,18 +1740,22 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode in [ 'Vector Store', 'Collections', 'File Search']:
+elif mode in [ 'Vector Store', 'Collections', 'File Search' ]:
 	try:
 		chat  # type: ignore
 	except NameError:
 		chat = get_provider_module( ).Chat( )
 	
 	if mode == 'Collections':
+		try:
+			chat  # type: ignore
+		except NameError:
+			chat = get_provider_module( ).Chat( )
 		st.subheader( '📚 Collections' )
 		
 		st.divider( )
 		
-		vs_map = getattr( chat, "vector_stores", None )
+		vs_map = getattr( chat, "collections", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Collections (local mapping)**" )
 			for name, vid in vs_map.items( ):
@@ -1830,7 +1834,7 @@ elif mode in [ 'Vector Store', 'Collections', 'File Search']:
 								else vs
 							)
 						else:
-							st.warning( 'retrieve_store not available on chat object or no store selected.' )
+							st.warning( 'retrieve_store not available or not selected.' )
 					except Exception as exc:
 						st.error( f'Retrieve failed: {exc}' )
 			
@@ -1853,11 +1857,15 @@ elif mode in [ 'Vector Store', 'Collections', 'File Search']:
 				"`chat.vector_stores` mapping exists." )
 			
 	elif mode == 'File Search':
+		try:
+			chat  # type: ignore
+		except NameError:
+			chat = get_provider_module( ).Chat( )
 		st.subheader( '🔍 File Search' )
 		
 		st.divider( )
 		
-		vs_map = getattr( chat, "vector_stores", None )
+		vs_map = getattr( chat, "files", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Files (local mapping)**" )
 			for name, vid in vs_map.items( ):
@@ -2182,12 +2190,7 @@ elif mode == "Files":
 	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
 	with center:
 		list_method = None
-		for name in (
-					'retrieve_files',
-					'retreive_files',
-					'list_files',
-					'get_files',
-		):
+		for name in ( 'retrieve_files', 'list_files', 'get_files', ):
 			if hasattr( chat, name ):
 				list_method = getattr( chat, name )
 				break
@@ -2606,7 +2609,6 @@ elif mode == 'Data Export':
 	
 	st.download_button( 'Download Chat History (PDF)', buf.getvalue( ),
 		'buddy_chat.pdf', mime='application/pdf' )
-	
 	
 # ======================================================================================
 # Footer — Fixed Bottom Status Bar (Desktop-style)

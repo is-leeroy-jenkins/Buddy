@@ -103,6 +103,8 @@ class Grok:
 	prompt: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	tool_choice: Optional[ str ]
+	collections: Optional[ Dict[ str, str ] ]
+	files: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self ):
 		"""
@@ -131,6 +133,8 @@ class Grok:
 		self.presence_penalty = None
 		self.tool_choice = None
 		self.response_format = None
+		self.collections = None
+		self.files = None
 
 class Chat( Grok ):
 	"""
@@ -186,6 +190,20 @@ class Chat( Grok ):
 		self.previous_response_id = None
 		self.tool_choice = 'auto'
 		self.include = None
+		self.collections = \
+		{
+				'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+				'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e'
+		}
+		self.files = \
+		{
+				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5',
+				'Authority.csv': 'file_b2b0139f-ceb1-491e-90e6-65d16152c521',
+				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
+				'Account Balances.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2'
+		}
 	
 	@property
 	def format_options( self ) -> List[ str ]:
