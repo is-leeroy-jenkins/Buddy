@@ -194,6 +194,10 @@ FREQUENCY_PENALTY = r'''Optional. Frequency penalty applied to the next token's 
 		the more difficult it is for the model to use that token again increasing
 		the vocabulary of responses.'''
 
+LOG_PROBS = r'''Optional. Only valid if responseLogprobs=True. This sets the number of top logprobs to
+		return at each decoding step in the Candidate.logprobs_result.
+		The number must be in the range of [0, 20].'''
+
 MAX_OUTPUT_TOKENS = r'''The maximum number of tokens used in generating output content'''
 
 STOP_SEQUENCE = r'''Up to 4 string sequences where the API will stop generating further tokens.'''

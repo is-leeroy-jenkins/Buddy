@@ -71,7 +71,7 @@ from gpt import (
 	VectorStore,
 )
 
-from gemini import ( Chat, Images, Embeddings, Transcription, TTS, Translation, FileStore )
+from gemini import ( Chat, Images, Files, Embeddings, Transcription, TTS, Translation, FileSearchStore )
 
 from grok import ( Chat, Images, Files, Collections )
 
@@ -806,16 +806,22 @@ if 'temperature' not in st.session_state:
 	
 if 'top_p' not in st.session_state:
 	st.session_state[ 'top_p' ] = 1.0
-	
+
+if 'top_k' not in st.session_state:
+	st.session_state[ 'top_k' ] = 0
+
 if 'max_tokens' not in st.session_state:
-	st.session_state[ 'max_tokens' ] = 512
+	st.session_state[ 'max_tokens' ] = 8064
 	
 if 'freq_penalty' not in st.session_state:
 	st.session_state[ 'freq_penalty' ] = 0.0
 	
 if 'pres_penalty' not in st.session_state:
 	st.session_state[ 'pres_penalty' ] = 0.0
-	
+
+if 'logprobs' not in st.session_state:
+	st.session_state[ 'logprobs' ] = 0
+
 if 'stop_sequences' not in st.session_state:
 	st.session_state[ 'stop_sequences' ] = [ ]
 
@@ -1139,7 +1145,20 @@ elif mode == "Text":
 			
 			top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'top_p', 1.0 ) ),
-				step=0.01, help=cfg.TOP_PERCENT )
+				step=0.01, help=cfg.TOP_P )
+			
+			st.session_state[ 'top_p' ] = float( top_p )
+			st.divider( )
+			
+			logprobs = st.number_input( 'Log-Probs', min_value=0, max_value=20,
+				value=0, help=cfg.LOG_PROBS )
+			
+			st.session_state[ 'logprobs' ] = int( logprobs )
+			st.divider( )
+			
+			top_k = st.slider( 'Top-K', min_value=0, max_value=50,
+				value=int( st.session_state.get( 'top_k', 0 ) ),
+				step=1, help=cfg.TOP_K )
 			
 			st.session_state[ 'top_p' ] = float( top_p )
 			st.divider( )
@@ -1166,6 +1185,7 @@ elif mode == "Text":
 			stop_text = st.text_area( 'Stop Sequences',
 				value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
 				height=80, help=cfg.STOP_SEQUENCE )
+			
 			st.session_state[ 'stop_sequences' ] = [
 					s for s in stop_text.splitlines( ) if s.strip( ) ]
 		
