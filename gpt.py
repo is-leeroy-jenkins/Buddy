@@ -212,7 +212,6 @@ class Chat( GPT ):
 		self.file_ids = [ ]
 		self.vector_stores = \
 		{
-			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
 			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
 		}
 		self.files = \
@@ -220,7 +219,7 @@ class Chat( GPT ):
 			'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
 			'SF133.csv': 'file-WT2h2F5SNxqK2CxyAMSDg6',
 			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
-			'Outlays': 'file-GHEwSWR7ezMvHrQ3X648wn'
+			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
 	
 	@property

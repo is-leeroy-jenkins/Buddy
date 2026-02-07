@@ -77,8 +77,7 @@ XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 #----------------- GPT CONFIG -------------------
 GPT_LOGO = r'resources/buddy_logo.ico'
 
-GPT_VECTOR_STORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
-                      'vs_697f86ad98888191b967685ae558bfc0' ]
+GPT_VECTOR_STORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK',]
 
 GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
               'file-WPmTsHFYDLGHbyERqJdyqv',

@@ -55,7 +55,7 @@ from pathlib import Path
 import multiprocessing
 import os
 import sqlite3
-from typing import Any, Dict, List, Tuple, Optional, get_origin
+from typing import Any, Dict, List, Tuple, Optional
 import tempfile
 import re
 from reportlab.lib.pagesizes import LETTER
@@ -1045,13 +1045,13 @@ if mode == 'Chat':
 							prompt={ 'id': cfg.PROMPT_ID, 'version': cfg.PROMPT_VERSION, },
 							input=[ { 'role': 'user', 'content': [ { 'type': 'input_text',
 							                                         'text': user_input, } ], } ],
-							tools=[ { 'type': 'file_search', 'vector_store_ids': cfg.VECTOR_STORES, },
+							tools=[ { 'type': 'file_search', 'vector_store_ids': cfg.GPT_VECTORSTORE_IDS, },
 									{ 'type': 'web_search', 'filters': { 'allowed_domains': cfg.GPT_WEB_DOMAINS, },
 											'search_context_size': 'medium',
 											'user_location': { 'type': 'approximate' },
 									},
 									{ 'type': 'code_interpreter',
-									  'container': { 'type': 'auto', 'file_ids': cfg.FILE_IDS, },
+									  'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILE_IDS, },
 									},
 							],
 							include=[ 'web_search_call.action.sources',
