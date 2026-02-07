@@ -213,15 +213,13 @@ class Chat( Gemini ):
 		self.image_uri = None;
 		self.audio_uri = None;
 		self.file_path = None
-		self.files = [ ]
+		self.files = None
 	
 	@property
 	def file_options( self ) -> List[ str ] | None:
 		"""Returns list of available chat models."""
-		return [ 'gemini-2.0-flash',
-		         'gemini-2.0-flash-lite',
-		         'gemini-1.5-pro',
-		         'gemini-1.5-flash' ]
+		self.files = self.get_files( )
+		return self.files
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
@@ -513,11 +511,11 @@ class Chat( Gemini ):
 			self.max_tokens = max_tokens
 			self.stops = stops
 			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			_client = storage.Client( api_key=self.api_key )
+			self.storage_client = storage.Client( api_key=self.api_key )
 			bucket_name = "jeni-financial"
 			prefix = "regulations/"
-			bucket = _client.bucket( bucket_name )
-			for blob in _client.list_blobs( bucket_name, prefix=prefix ):
+			bucket = self.storage_client.bucket( bucket_name )
+			for blob in bucket.list_blobs( prefix=prefix ):
 				url = f"https://storage.googleapis.com/{bucket_name}/{blob.name}"
 				self.files.append( url )
 			return self.files
