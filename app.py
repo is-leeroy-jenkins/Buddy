@@ -1150,8 +1150,9 @@ elif mode == "Text":
 			st.session_state[ 'top_p' ] = float( top_p )
 			st.divider( )
 			
-			logprobs = st.number_input( 'Log-Probs', min_value=0, max_value=20,
-				value=0, help=cfg.LOG_PROBS )
+			logprobs = st.slider( 'Log-Probs', min_value=0, max_value=20,
+				value=int( st.session_state.get( 'logprobs', 0 ) ),
+				step=1, help=cfg.LOG_PROBS )
 			
 			st.session_state[ 'logprobs' ] = int( logprobs )
 			st.divider( )
@@ -1216,6 +1217,8 @@ elif mode == "Text":
 			with st.spinner( 'Thinking…' ):
 				gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
 				gen_kwargs[ 'top_p' ] = st.session_state[ 'top_p' ]
+				gen_kwargs[ 'top_k' ] = st.session_state[ 'top_k' ]
+				gen_kwargs[ 'logprobs' ] = st.session_state[ 'logprobs' ]
 				gen_kwargs[ 'max_tokens' ] = st.session_state[ 'max_tokens' ]
 				gen_kwargs[ 'frequency' ] = st.session_state[ 'freq_penalty' ]
 				gen_kwargs[ 'presence' ] = st.session_state[ 'pres_penalty' ]
@@ -1760,7 +1763,7 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode in [ 'Vector Store', 'Collections', 'File Search' ]:
+elif mode in [ 'Vector Store', 'Files', 'Collections', 'File Search Store' ]:
 	try:
 		chat  # type: ignore
 	except NameError:
@@ -1878,10 +1881,10 @@ elif mode in [ 'Vector Store', 'Collections', 'File Search' ]:
 			
 	elif mode == 'File Search':
 		try:
-			chat  # type: ignore
+			filesearch  # type: ignore
 		except NameError:
-			chat = get_provider_module( ).Chat( )
-		st.subheader( '🔍 File Search' )
+			filesearch = get_provider_module( ).FileSearchStore
+		st.subheader( '🔍 File Search Store' )
 		
 		st.divider( )
 		

@@ -139,9 +139,11 @@ GROK_COLLECTIONS = [ { 'DOD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4f
 GEMINI_LOGO = r'resources/gemini_logo.png'
 GEMINI_MODES = [ 'Text',
                  'Images',
+                 'Files',
+                 'Documents',
                  'Embeddings',
                  'Audio',
-                 'File Search',
+                 'File Search Store',
                  'Prompt Engineering',
                  'Data Export' ]
 
@@ -154,6 +156,9 @@ MODE_CLASS_MAP = {
 		           'Translation',
 		           'Transcription' ],
 		'Embeddings': [ 'Embeddings' ],
+		'Documents': [ 'Chat', 'Files', 'FileSearchStore' ],
+		'Files': [ 'Chat', 'Files',  'FileSearchStore' ],
+		'Vector Store': [ 'Chat', 'Files', 'FileSearchStore' ],
 }
 
 CLASS_MODE_MAP = {

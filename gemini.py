@@ -481,54 +481,6 @@ class Chat( Gemini ):
 			exception.method = 'summarize_document( self, prompt, filepath, model ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def get_files( self, model: str='gemini-2.0-flash', temperature: float = 0.8,
-			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
-			max_tokens: int = 10000, stops: List[ str ]=None ) -> List[ str ] | None:
-		"""
-			
-			Purpose:
-			-------
-			Uploads and summarizes a PDF or text document.
-			
-			Parameters:
-			-----------
-			prompt: str - Summarization instructions.
-			filepath: str - Path to the document file.
-			model: str - The model identifier for processing.
-			Returns:
-			--------
-			Optional[ str ] - The document summary or None on failure.
-			
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'filepath', filepath )
-			self.prompt = prompt
-			self.file_path = filepath
-			self.model = model
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			self.storage_client = storage.Client( api_key=self.api_key )
-			bucket_name = "jeni-financial"
-			prefix = "regulations/"
-			bucket = self.storage_client.bucket( bucket_name )
-			for blob in bucket.list_blobs( prefix=prefix ):
-				url = f"https://storage.googleapis.com/{bucket_name}/{blob.name}"
-				self.files.append( url )
-			return self.files
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gemini'
-			exception.cause = 'Chat'
-			exception.method = 'get_files( self, prompt, filepath, model ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
 
 class Files( Gemini ):
 	'''
@@ -569,6 +521,7 @@ class Files( Gemini ):
 	file_list: Optional[ List[ File ] ]
 	response: Optional[ Any ]
 	use_vertex: Optional[ bool ]
+	files: Optional[ List[ str ] ]
 	
 	def __init__( self, filepath: str, model: str='gemini-2.0-flash',
 			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
@@ -593,7 +546,62 @@ class Files( Gemini ):
 		self.file_path = None;
 		self.file_list = [ ];
 		self.response = None
+		self.files = None
 	
+	@property
+	def file_options( self ) -> List[ str ] | None:
+		"""Returns list of available chat models."""
+		self.files = self.get_all( )
+		return self.files
+	
+	def get_all( self, model: str = 'gemini-2.0-flash', temperature: float = 0.8,
+			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
+			max_tokens: int = 10000, stops: List[ str ] = None ) -> List[ str ] | None:
+		"""
+			
+			Purpose:
+			-------
+			Uploads and summarizes a PDF or text document.
+			
+			Parameters:
+			-----------
+			prompt: str - Summarization instructions.
+			filepath: str - Path to the document file.
+			model: str - The model identifier for processing.
+			Returns:
+			--------
+			Optional[ str ] - The document summary or None on failure.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'filepath', filepath )
+			self.prompt = prompt
+			self.file_path = filepath
+			self.model = model
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.content_config = GenerateContentConfig( temperature=self.temperature )
+			self.storage_client = storage.Client( api_key=self.api_key )
+			bucket_name = "jeni-financial"
+			prefix = "regulations/"
+			bucket = self.storage_client.bucket( bucket_name )
+			for blob in bucket.list_blobs( prefix=prefix ):
+				url = f"https://storage.googleapis.com/{bucket_name}/{blob.name}"
+				self.files.append( url )
+			return self.files
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Files'
+			exception.method = 'get_all( self  ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+			
 	def upload( self, path: str, name: str = None ) -> File | None:
 		"""
 		
