@@ -42,6 +42,7 @@
 	</summary>
 	******************************************************************************************
 '''
+from __future__ import annotations
 import os
 
 import openai.types.responses
@@ -52,8 +53,6 @@ import tiktoken
 from openai import OpenAI
 from boogr import ErrorDialog, Error
 import config as cfg
-
-OPENAI_API_KEY = cfg.OPENAI_API_KEY
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -210,6 +209,7 @@ class Chat( GPT ):
 		self.search_recency = None
 		self.max_search_results = None
 		self.purpose = None
+		self.file_ids = [ ]
 		self.vector_stores = \
 		{
 			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
@@ -740,25 +740,20 @@ class Chat( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def retrieve_files( self, purpose: str='user_data' ) -> List[ str ] | None:
-		'''
-			
-			Returns:
-			--------
-			A List[ str ] of file_ids
-
-		'''
-		try:
-			self.purpose = purpose
-			_files = self.client.files.list( purpose=self.purpose )
-			return _files
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'retrieve_files( self, purpose: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+	def retrieve_files( self, purpose: str = "user_data" ):
+		self.purpose = purpose
+		page = self.client.files.list( )  # no purpose arg
+		files = getattr( page, "data", None ) or page
+		out = [ ]
+		for f in files:
+			if purpose and getattr( f, "purpose", None ) != purpose:
+				continue
+			out.append( {
+					"id": str( getattr( f, "id", "" ) ),
+					"filename": str( getattr( f, "filename", "" ) ),
+					"purpose": str( getattr( f, "purpose", "" ) ),
+			} )
+		return out
 	
 	def retrieve_content( self, id: str ) -> str | None:
 		'''
@@ -906,9 +901,9 @@ class Chat( GPT ):
 		         'summarize_document',
 		         'search_web',
 		         'search_files',
-		         'retreive_file',
-		         'retreive_files',
-		         'retreive_content',
+		         'retrieve_file',
+		         'retrieve_files',
+		         'retrieve_content',
 		         'delete_file',
 		         'upload_file', ]
 	

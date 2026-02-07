@@ -55,7 +55,7 @@ from pathlib import Path
 import multiprocessing
 import os
 import sqlite3
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, get_origin
 import tempfile
 import re
 from reportlab.lib.pagesizes import LETTER
@@ -320,27 +320,21 @@ def reset_state( ) -> None:
 			'text': [ ],
 	}
 
-def normalize( obj: Any ) -> Dict[ str, Any ]:
-	"""
-	
-		Purpose:
-		_________
-		Normalizes models
-		
-		Parmeters:
-		----------
-		obj : Any
-		
-	"""
-	if isinstance( obj, dict ):
+def normalize( obj ):
+	if obj is None or isinstance( obj, (str, int, float, bool) ):
 		return obj
-	if hasattr( obj, 'model_dump' ):
-		return obj.model_dump( )
-	return {
-			k: getattr( obj, k )
-			for k in dir( obj )
-			if not k.startswith( "_" ) and not callable( getattr( obj, k ) )
-	}
+	
+	if isinstance( obj, dict ):
+		return { k: normalize( v ) for k, v in obj.items( ) }
+	
+	if isinstance( obj, (list, tuple, set) ):
+		return [ normalize( v ) for v in obj ]
+	if hasattr( obj, "model_dump" ):
+		try:
+			return obj.model_dump( )
+		except Exception:
+			return str( obj )
+	return str( obj )
 
 def extract_answer( response ) -> str:
 	"""
@@ -1038,26 +1032,26 @@ if mode == 'Chat':
 			# -------------------------------
 			# Render user message
 			# -------------------------------
-			with st.chat_message( "user", avatar=ANALYST ):
+			with st.chat_message( "user", avatar=cfg.ANALYST ):
 				st.markdown( user_input )
 			
 			# -------------------------------
 			# Run prompt
 			# -------------------------------
-			with st.chat_message( 'assistant', avatar=BUDDY ):
+			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
 				try:
 					with st.spinner( 'Running prompt...' ):
 						response = client.responses.create(
-							prompt={ 'id': PROMPT_ID, 'version': PROMPT_VERSION, },
+							prompt={ 'id': cfg.PROMPT_ID, 'version': cfg.PROMPT_VERSION, },
 							input=[ { 'role': 'user', 'content': [ { 'type': 'input_text',
 							                                         'text': user_input, } ], } ],
-							tools=[ { 'type': 'file_search', 'vector_store_ids': VECTOR_STORE_IDS, },
-									{ 'type': 'web_search', 'filters': { 'allowed_domains': WEB_DOMAINS, },
+							tools=[ { 'type': 'file_search', 'vector_store_ids': cfg.VECTOR_STORES, },
+									{ 'type': 'web_search', 'filters': { 'allowed_domains': cfg.GPT_WEB_DOMAINS, },
 											'search_context_size': 'medium',
 											'user_location': { 'type': 'approximate' },
 									},
 									{ 'type': 'code_interpreter',
-									  'container': { 'type': 'auto', 'file_ids': FILE_IDS, },
+									  'container': { 'type': 'auto', 'file_ids': cfg.FILE_IDS, },
 									},
 							],
 							include=[ 'web_search_call.action.sources',
@@ -1763,7 +1757,7 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode in [ 'Vector Store', 'Files', 'Collections', 'File Search Store' ]:
+elif mode in [ 'Vector Store', 'Collections', 'File Search Store' ]:
 	try:
 		chat  # type: ignore
 	except NameError:
@@ -1878,118 +1872,7 @@ elif mode in [ 'Vector Store', 'Files', 'Collections', 'File Search Store' ]:
 			st.info(
 				"No vector stores discovered. Create one or confirm "
 				"`chat.vector_stores` mapping exists." )
-	
-	elif mode == 'Files':
-		try:
-			files  # type: ignore
-		except NameError:
-			files = get_provider_module( ).Files( )
-		st.subheader( '🔍 Files API' )
-		
-		st.divider( )
-		
-		vs_map = getattr( files, "file_options", None )
-		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( "**Known Files (local mapping)**" )
-			for name, vid in vs_map.items( ):
-				st.write( f"- **{name}** — `{vid}`" )
-			st.markdown( "---" )
-		
-		with st.expander( "Create File", expanded=False ):
-			new_store_name = st.text_input( "New store name" )
-			if st.button( "➕ Create Store" ):
-				if not new_store_name:
-					st.warning( "Enter a File Name." )
-				else:
-					try:
-						if hasattr( chat, "create_store" ):
-							res = chat.create_store( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
-						else:
-							st.warning( "create_store method not found on chat object." )
-					except Exception as exc:
-						st.error( f"Create store failed: {exc}" )
-		
-		st.markdown( "**Manage Files**" )
-		options: List[ tuple ] = [ ]
-		if vs_map and isinstance( vs_map, dict ):
-			options = list( vs_map.items( ) )
-		
-		if not options:
-			try:
-				client = getattr( chat, 'client', None )
-				if (
-						client
-						and hasattr( client, 'vector_stores' )
-						and hasattr( client.vector_stores, 'list' )
-				):
-					api_list = client.vector_stores.list( )
-					temp: List[ tuple ] = [ ]
-					for item in getattr( api_list, 'data', [ ] ) or api_list:
-						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' )
-								if isinstance( item, dict )
-								else None
-						)
-						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' )
-								if isinstance( item, dict )
-								else None
-						)
-						if nm and vid:
-							temp.append( (nm, vid) )
-					if temp:
-						options = temp
-			except Exception:
-				options = [ ]
-		
-		if options:
-			names = [ f"{n} — {i}" for n, i in options ]
-			sel = st.selectbox( "Select a File Store", options=names )
-			sel_id: Optional[ str ] = None
-			sel_name: Optional[ str ] = None
-			for n, i in options:
-				label = f"{n} — {i}"
-				if label == sel:
-					sel_id = i
-					sel_name = n
-					break
-			
-			c1, c2 = st.columns( [ 1,
-			                       1 ] )
-			with c1:
-				if st.button( "Retrieve Store" ):
-					try:
-						if sel_id and hasattr( chat, "retrieve_store" ):
-							vs = chat.retrieve_store( sel_id )
-							st.json(
-								vs.__dict__
-								if hasattr( vs, "__dict__" )
-								else vs
-							)
-						else:
-							st.warning( 'retrieve_store not available on chat object or no store selected.' )
-					except Exception as exc:
-						st.error( f'Retrieve failed: {exc}' )
-			
-			with c2:
-				if st.button( '❌ Delete Store' ):
-					try:
-						if sel_id and hasattr( chat, 'delete_store' ):
-							res = chat.delete_store( sel_id )
-							st.success( f'Delete returned: {res}' )
-						else:
-							st.warning(
-								'delete_store not available on chat object '
-								'or no store selected.'
-							)
-					except Exception as exc:
-						st.error( f"Delete failed: {exc}" )
-		else:
-			st.info(
-				"No vector stores discovered. Create one or confirm "
-				"`chat.vector_stores` mapping exists." )
-	
+
 	elif mode == 'File Search':
 		try:
 			filesearch  # type: ignore
@@ -2317,14 +2200,20 @@ elif mode == "Files":
 	try:
 		chat  # type: ignore
 	except NameError:
-		chat = Chat( )
+		chat = get_provider_module( ).Chat( )
 	
 	st.subheader( '📁 Files API' )
 	st.divider( )
-	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
+	left, center, right = st.columns( [ 0.25,
+	                                    3.5,
+	                                    0.25 ] )
 	with center:
 		list_method = None
-		for name in ( 'retrieve_files', 'list_files', 'get_files', ):
+		for name in (
+					'retrieve_files',
+					'list_files',
+					'get_files',
+		):
 			if hasattr( chat, name ):
 				list_method = getattr( chat, name )
 				break
@@ -2359,102 +2248,61 @@ elif mode == "Files":
 						st.success( f"Uploaded; file id: {fid}" )
 					except Exception as exc:
 						st.error( f"Upload failed: {exc}" )
-		
-		if st.button( "List files" ):
-			if not list_method:
-				st.warning(
-					"No file-listing method found on chat object."
-				)
-			else:
-				with st.spinner( "Listing files..." ):
-					try:
-						files_resp = list_method( )
-						files_list = [ ]
-						if files_resp is None:
-							files_list = [ ]
-						elif isinstance( files_resp, dict ):
-							files_list = (
-									files_resp.get( "data" )
-									or files_resp.get( "files" )
-									or [ ]
-							)
-						elif isinstance( files_resp, list ):
-							files_list = files_resp
-						else:
-							try:
-								files_list = getattr(
-									files_resp, "data", files_resp
-								)
-							except Exception:
-								files_list = [ files_resp ]
-						
-						rows = [ ]
-						for f in files_list:
-							try:
-								fid = (
-										f.get( "id" )
-										if isinstance( f, dict )
-										else getattr( f, "id", None )
-								)
-								name = (
-										f.get( "filename" )
-										if isinstance( f, dict )
-										else getattr(
-											f, "filename", None
-										)
-								)
-								purpose = (
-										f.get( "purpose" )
-										if isinstance( f, dict )
-										else getattr(
-											f, "purpose", None
-										)
-								)
-							except Exception:
-								fid = None
-								name = str( f )
-								purpose = None
-							rows.append(
-								{
-										"id": fid,
-										"filename": name,
-										"purpose": purpose,
-								}
-							)
-						if rows:
-							st.table( rows )
-						else:
-							st.info( "No files returned." )
-					except Exception as exc:
-						st.error( f"List files failed: {exc}" )
-		
-		if "files_list" in locals( ) and files_list:
-			file_ids = [
-					r.get( "id" )
-					if isinstance( r, dict )
-					else getattr( r, "id", None )
-					for r in files_list
-			]
-			sel = st.selectbox(
-				"Select file id to delete", options=file_ids
+	
+	if st.button( "List files" ):
+		try:
+			files_resp = list_method( )
+			rows = [ ]
+			
+			files_list = (
+					files_resp.data
+					if hasattr( files_resp, "data" )
+					else files_resp
+					if isinstance( files_resp, list )
+					else [ ]
 			)
-			if st.button( "Delete selected file" ):
-				del_fn = None
-				for name in ("delete_file", "delete", "files_delete"):
-					if hasattr( chat, name ):
-						del_fn = getattr( chat, name )
-						break
-				if not del_fn:
-					st.warning(
-						"No delete function found on chat object."
-					)
-				else:
-					with st.spinner( "Deleting file..." ):
-						try:
-							res = del_fn( sel )
-							st.success( f"Delete result: {res}" )
-						except Exception as exc:
-							st.error( f"Delete failed: {exc}" )
+			
+			for f in files_list:
+				rows.append( {
+						"id": str( getattr( f, "id", "" ) ),
+						"filename": str( getattr( f, "filename", "" ) ),
+						"purpose": str( getattr( f, "purpose", "" ) ),
+				} )
+			
+			st.session_state.files_table = rows
+		
+		except Exception as exc:
+			st.session_state.files_table = None
+			st.error( f"List files failed: {exc}" )
+	
+		if "files_list" in locals( ) and files_list:
+				file_ids = [
+						r.get( "id" )
+						if isinstance( r, dict )
+						else getattr( r, "id", None )
+						for r in files_list
+				]
+				sel = st.selectbox(
+					"Select file id to delete", options=file_ids
+				)
+				if st.button( "Delete selected file" ):
+					del_fn = None
+					for name in ("delete_file", "delete", "files_delete"):
+						if hasattr( chat, name ):
+							del_fn = getattr( chat, name )
+							break
+					if not del_fn:
+						st.warning(
+							"No delete function found on chat object."
+						)
+					else:
+						with st.spinner( "Deleting file..." ):
+							try:
+								res = del_fn( sel )
+								st.success( f"Delete result: {res}" )
+							except Exception as exc:
+								st.error( f"Delete failed: {exc}" )
+
 
 # ======================================================================================
 # PROMPT ENGINEERING MODE

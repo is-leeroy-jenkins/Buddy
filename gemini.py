@@ -530,7 +530,6 @@ class Files( Gemini ):
 		self.google_api_key = cfg.GOOGLE_API_KEY
 		self.project_id = cfg.GOOGLE_CLOUD_PROJECT_ID
 		self.project_location = cfg.GOOGLE_CLOUD_LOCATION
-		self.file_path = filepath
 		self.model = model
 		self.top_p = top_p;
 		self.temperature = temperature
@@ -538,7 +537,7 @@ class Files( Gemini ):
 		self.presence_penalty = presence
 		self.max_tokens = max_tokens
 		self.stops = stops
-		self.client = genai.Client( api_key=self.api_key )
+		self.storage_client = None
 		self.bucket_id = None
 		self.file_id = None;
 		self.display_name = None;
@@ -551,57 +550,8 @@ class Files( Gemini ):
 	@property
 	def file_options( self ) -> List[ str ] | None:
 		"""Returns list of available chat models."""
-		self.files = self.get_all( )
 		return self.files
-	
-	def get_all( self, model: str = 'gemini-2.0-flash', temperature: float = 0.8,
-			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
-			max_tokens: int = 10000, stops: List[ str ] = None ) -> List[ str ] | None:
-		"""
-			
-			Purpose:
-			-------
-			Uploads and summarizes a PDF or text document.
-			
-			Parameters:
-			-----------
-			prompt: str - Summarization instructions.
-			filepath: str - Path to the document file.
-			model: str - The model identifier for processing.
-			Returns:
-			--------
-			Optional[ str ] - The document summary or None on failure.
-			
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'filepath', filepath )
-			self.prompt = prompt
-			self.file_path = filepath
-			self.model = model
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			self.storage_client = storage.Client( api_key=self.google_api_key )
-			bucket_name = "jeni-financial"
-			prefix = "regulations/"
-			bucket = self.storage_client.bucket( bucket_name )
-			for blob in bucket.list_blobs( prefix=prefix ):
-				url = f"https://storage.googleapis.com/{bucket_name}/{blob.name}"
-				self.files.append( url )
-			return self.files
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gemini'
-			exception.cause = 'Files'
-			exception.method = 'get_all( self  ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
-			
+
 	def upload( self, path: str, name: str = None ) -> File | None:
 		"""
 		
@@ -663,25 +613,44 @@ class Files( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def list_files( self ) -> List[ File ] | None:
+	def list_files( self, model: str = 'gemini-2.0-flash', temperature: float = 0.8,
+			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
+			max_tokens: int = 10000, stops: List[ str ] = None ) -> List[ str ]:
 		"""
-		
-			Purpose:
-			---------
-			Returns a list of all files currently stored in the user's remote project.
 			
+			Purpose:
+			-------
+			Uploads and summarizes a PDF or text document.
+			
+			Parameters:
+			-----------
+			prompt: str - Summarization instructions.
+			filepath: str - Path to the document file.
+			model: str - The model identifier for processing.
 			Returns:
 			--------
-			Optional[ List[ File ] ] - List of File metadata objects.
+			Optional[ str ] - The document summary or None on failure.
 			
 		"""
 		try:
-			self.file_list = list( self.client.files.list( ) )
-			return self.file_list
+			self.model = model
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.storage_client = storage.Client( api_key=cfg.GOOGLE_API_KEY )
+			name = "jeni-financial"
+			prefix = "regulations"
+			bucket = self.storage_client.bucket( bucket_name=name  )
+			for blob in bucket.list_blobs( prefix=prefix ):
+				self.files.append( blob.name )
+			return self.files
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'FileStore'
+			exception.cause = 'Files'
 			exception.method = 'list_files( self ) -> Optional[ List[ File ] ]'
 			error = ErrorDialog( exception )
 			error.show( )
