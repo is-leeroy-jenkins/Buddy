@@ -2611,7 +2611,7 @@ elif mode == 'Data Export':
 		'buddy_chat.pdf', mime='application/pdf' )
 	
 # ======================================================================================
-# Footer — Fixed Bottom Status Bar (Desktop-style)
+# Footer — Fixed Bottom Status Bar
 # ======================================================================================
 st.markdown(
 	"""

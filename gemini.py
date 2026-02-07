@@ -224,9 +224,12 @@ class Chat( Gemini ):
 	@property
 	def model_options( self ) -> List[ str ] | None:
 		"""Returns list of available chat models."""
-		return [ 'gemini-2.0-flash',
+		return [ 'gemini-2.5-flash',
+		         'gemini-2.5 flash image',
+		         'gemini-2.5 flash-tts',
+		         'gemini-2.5 flash-lite',
+				 'gemini-2.0-flash',
 		         'gemini-2.0-flash-lite',
-		         'gemini-1.5-pro',
 		         'gemini-1.5-flash' ]
 	
 	@property
@@ -245,8 +248,8 @@ class Chat( Gemini ):
 			A List[ str ] of mime types
 			
 		'''
-		return [ 'application/json',
-		         'text/plain',
+		return [ 'text/plain',
+		         'application/json',
 		         'text/x.enum' ]
 	
 	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=0.8,
