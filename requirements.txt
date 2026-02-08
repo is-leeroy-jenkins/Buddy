@@ -3,11 +3,11 @@ typing_extensions
 sentence-transformers>=2.6.1
 numpy>=1.26.0
 reportlab>=4.0.8
-openai
+openai>=1.40
 groq
 google
 google-genai
 google-cloud-storage
-pydantic
+pydantic>=2.7
 tiktoken
 xai-sdk

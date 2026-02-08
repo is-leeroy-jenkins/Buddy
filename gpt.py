@@ -44,7 +44,6 @@
 '''
 from __future__ import annotations
 import os
-
 import openai.types.responses
 from openai.types import CreateEmbeddingResponse, VectorStore
 from pathlib import Path
@@ -183,7 +182,7 @@ class Chat( GPT ):
 			store: bool=True, stream: bool=True, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
-		self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+		self.client = None
 		self.number = number
 		self.temperature = temperature
 		self.top_percent = top_p
@@ -383,6 +382,7 @@ class Chat( GPT ):
 			self.store = store
 			self.stream = stream
 			self.instructions = instruct
+			self.client = OpenAI( api_key=self.api_key )
 			if self.model.startswith( 'gpt-5' ):
 				self.response = self.client.responses.create( model=self.model, input=self.prompt,
 					max_output_tokens=self.max_completion_tokens, instructions=self.instructions  )
@@ -676,6 +676,7 @@ class Chat( GPT ):
 			throw_if( 'prompt', prompt )
 			self.prompt = prompt
 			self.model = model
+			self.client = OpenAI( api_key=self.api_key )
 			self.vector_store_ids = list( self.vector_stores.values( ) )
 			self.tools = [
 			{
@@ -707,6 +708,7 @@ class Chat( GPT ):
 			throw_if( 'filepath', filepath )
 			self.filepath = filepath
 			self.purpose = purpose
+			self.client = OpenAI( api_key=self.api_key )
 			self.file = self.client.files.create( file=open( file=filepath, mode='rb' ), 
 				purpose=self.purpose )
 			return self.file.id
@@ -728,7 +730,7 @@ class Chat( GPT ):
 		'''
 		try:
 			throw_if( 'id', id )
-			self.file_ids.append( id )
+			self.client = OpenAI( api_key=self.api_key )
 			_files = self.client.files.retrieve( file_id=id )
 			return _files
 		except Exception as e:
@@ -741,6 +743,7 @@ class Chat( GPT ):
 	
 	def retrieve_files( self, purpose: str = "user_data" ):
 		self.purpose = purpose
+		self.client = OpenAI( api_key=self.api_key )
 		page = self.client.files.list( )  # no purpose arg
 		files = getattr( page, "data", None ) or page
 		out = [ ]
@@ -764,7 +767,7 @@ class Chat( GPT ):
 		'''
 		try:
 			throw_if( 'id', id )
-			self.file_ids.append( id )
+			self.client = OpenAI( api_key=self.api_key )
 			_files = self.client.files.content( file_id=id )
 			return _files
 		except Exception as e:
@@ -785,7 +788,7 @@ class Chat( GPT ):
 		'''
 		try:
 			throw_if( 'id', id )
-			self.file_ids.append( id )
+			self.client = OpenAI( api_key=self.api_key )
 			_deleted = self.client.files.delete( file_id=id )
 			return bool( _deleted )
 		except Exception as e:
@@ -806,6 +809,7 @@ class Chat( GPT ):
 		'''
 		try:
 			throw_if( 'store_name', store_name )
+			self.client = OpenAI( api_key=self.api_key )
 			_store = self.client.vector_stores.create( name=store_name )
 			return _store
 		except Exception as e:
@@ -826,6 +830,7 @@ class Chat( GPT ):
 		'''
 		try:
 			throw_if( 'id', id )
+			self.client = OpenAI( api_key=self.api_key )
 			vector_store = self.client.vector_stores.retrieve( vector_store_id=id )
 			return vector_store
 		except Exception as e:
@@ -846,6 +851,7 @@ class Chat( GPT ):
 		'''
 		try:
 			throw_if( 'id', id )
+			self.client = OpenAI( api_key=self.api_key )
 			_deleted = self.client.vector_stores.delete( vector_store_id=id )
 			return bool( _deleted )
 		except Exception as e:
@@ -905,7 +911,261 @@ class Chat( GPT ):
 		         'retrieve_content',
 		         'delete_file',
 		         'upload_file', ]
+
+class Files( GPT ):
+	'''
+		
+		Purpose:
+		--------
+		
+		Attributes:
+		----------
+		
+	'''
+	client: Optional[ OpenAI ]
+	prompt: Optional[ str ]
+	name: Optional[ str ]
+	response_format: Optional[ str ]
+	instructions: Optional[ str ]
+	file_path: Optional[ str ]
+	file_id: Optional[ str ]
+	purpose: Optional[ str ]
+	content: Optional[ List[ Dict[ str, Any ] ] ]
+	file_ids: Optional[ List[ str ] ]
+	documents: Optional[ Dict[ str, Any ] ]
 	
+	def __init__( self ):
+		super( ).__init__( )
+		self.api_key = cfg.OPENAI_API_KEY
+		self.client = None
+		self.model = None
+		self.content = None
+		self.prompt = None
+		self.response = None
+		self.file_id = None
+		self.file_path = None
+		self.input = None
+		self.purpose = None
+		self.documents = \
+		{
+				'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
+				'SF133.csv': 'file-WT2h2F5SNxqK2CxyAMSDg6',
+				'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
+				'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
+		}
+	
+	@property
+	def purpose_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported file purpose identifiers.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'vision',
+		         'image_edit',
+		         'responses',
+		         'fine_tune' ]
+	
+	def upload( self, filepath: str, purpose: str = 'user_data' ) -> str | None:
+		"""
+	
+	        Purpose
+	        _______
+	        Method that summarizes a document given a
+	        path prompt, and a path
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	        path: str
+	
+	        Returns
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'filepath', filepath )
+			self.filepath = filepath
+			self.purpose = purpose
+			self.client = OpenAI( api_key=self.api_key )
+			self.file = self.client.files.create( file=open( file=filepath, mode='rb' ),
+				purpose=self.purpose )
+			return self.file.id
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'upload_file( self, filepath: str, purpose: str=user_data ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def retrieve( self, id: str ) -> List[ str ] | None:
+		"""
+	
+	        Purpose
+	        _______
+	        Method that summarizes a document given a
+	        path prompt, and a path
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	        path: str
+	
+	        Returns
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'id', id )
+			self.client = OpenAI( api_key=self.api_key )
+			_files = self.client.files.retrieve( file_id=id )
+			return _files
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'retrieve_file( self, id: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def summarize( self, prompt: str, pdf_path: str ) -> str | None:
+		"""
+	
+	        Purpose
+	        _______
+	        Method that summarizes a document given a
+	        path prompt, and a path
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	        path: str
+	
+	        Returns
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'pdf_path', pdf_path )
+			self.prompt = prompt
+			self.file_path = pdf_path
+			self.file = self.client.files.create( file=open( file=self.file_path, mode='rb' ),
+				purpose='user_data' )
+			self.messages = [
+					{
+							'role': 'user',
+							'content': [
+									{
+											'type': 'file',
+											'file':
+												{
+														'file_id': self.file.id,
+												},
+									},
+									{
+											'type': 'text',
+											'text': self.prompt,
+									}, ],
+					} ]
+			
+			self.response = self.client.responses.create( model=self.model, input=self.messages )
+			return self.response.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def list( self, purpose: str = "user_data" ):
+		self.purpose = purpose
+		self.client = OpenAI( api_key=self.api_key )
+		page = self.client.files.list( )  # no purpose arg
+		files = getattr( page, "data", None ) or page
+		out = [ ]
+		for f in files:
+			if purpose and getattr( f, "purpose", None ) != purpose:
+				continue
+			out.append( {
+					"id": str( getattr( f, "id", "" ) ),
+					"filename": str( getattr( f, "filename", "" ) ),
+					"purpose": str( getattr( f, "purpose", "" ) ),
+			} )
+		return out
+	
+	def extract( self, id: str ) -> str | None:
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of file_ids
+
+		'''
+		try:
+			throw_if( 'id', id )
+			self.client = OpenAI( api_key=self.api_key )
+			_files = self.client.files.content( file_id=id )
+			return _files
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'retrieve_file( self, id: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def delete( self, id: str ) -> bool | None:
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of file_ids
+
+		'''
+		try:
+			throw_if( 'id', id )
+			self.client = OpenAI( api_key=self.api_key )
+			_deleted = self.client.files.delete( file_id=id )
+			return bool( _deleted )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'delete_file( self, id: str ) -> FileDeleted '
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		return [ 'client',
+		         'file_path',
+		         'response_format',
+		         'name',
+		         'purpose',
+		         'content',
+		         'file_id',
+		         'documents',
+		         'retrieve',
+		         'list',
+		         'extract',
+		         'delete',
+		         'upload', ]
+
 class Embeddings( GPT ):
 	"""
 	
@@ -1130,7 +1390,6 @@ class TTS( GPT ):
         '''
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
-		self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 		self.model = 'gpt-4o-mini-tts'
 		self.number = number
 		self.temperature = temperature
@@ -1239,6 +1498,7 @@ class TTS( GPT ):
 			out_path = Path( filepath )
 			if not out_path.parent.exists( ):
 				out_path.parent.mkdir( parents=True, exist_ok=True )
+			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			with self.client.audio.speech.with_streaming_response.create( model=self.model, speed=self.speed,
 					voice=self.voice, response_format=self.response_format, input=self.input_text ) as resp:
 				resp.stream_to_file( str( out_path ) )
@@ -1438,6 +1698,7 @@ class Transcription( GPT ):
 			throw_if( 'path', path )
 			self.model = model
 			self.language = language
+			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			with open( path, 'rb' ) as self.audio_file:
 				resp = self.client.audio.transcriptions.create( model=self.model,
 					file=self.audio_file, language=self.language )
@@ -1526,7 +1787,6 @@ class Translation( GPT ):
 			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
-		self.client = OpenAI( api_key=self.api_key )
 		self.model = 'whisper-1'
 		self.number = number
 		self.temperature = temperature
@@ -1615,7 +1875,10 @@ class Translation( GPT ):
 		try:
 			throw_if( 'text', text )
 			throw_if( 'path', path )
-			with open( path, 'rb' ) as audio_file:
+			self.prompt = text
+			self.audio_file = path
+			self.client = OpenAI( api_key=self.api_key )
+			with open( self.audio_file, 'rb' ) as audio_file:
 				resp = self.client.audio.translations.create( model='whisper-1',
 					file=audio_file, prompt=text )
 			return resp.text
@@ -2021,3 +2284,166 @@ class Images( GPT ):
 		         'generate',
 		         'analyze',
 		         'edit', ]
+
+class VectorStores( GPT ):
+	'''
+		
+		Purpose:
+		--------
+		
+		Attributes:
+		----------
+		
+	'''
+	client: Optional[ OpenAI ]
+	prompt: Optional[ str ]
+	response_format: Optional[ str ]
+	number: Optional[ int ]
+	name: Optional[ str ]
+	store_ids: Optional[ List[ str ] ]
+	file_path: Optional[ str ]
+	file_id: Optional[ str ]
+	collections: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self  ):
+		super( ).__init__( )
+		self.api_key = cfg.OPENAI_API_KEY
+		self.client = None
+		self.model = None
+		self.name = None
+		self.content = None
+		self.response = None
+		self.file_id = None
+		self.file_path = None
+		self.collections = \
+		{
+			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
+		}
+
+	def create( self, store_name: str ) -> VectorStore | None:
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of file_ids
+
+		'''
+		try:
+			throw_if( 'store_name', store_name )
+			self.client = OpenAI( api_key=self.api_key )
+			_store = self.client.vector_stores.create( name=store_name )
+			return _store
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'create( self, id: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def list( self ) -> List[ str ]:
+		client = OpenAI( )
+		vector_stores = client.vector_stores.list( )
+		return vector_stores
+	
+	def retrieve( self, id: str ) -> VectorStore | None:
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of file_ids
+
+		'''
+		try:
+			throw_if( 'id', id )
+			self.client = OpenAI( api_key=self.api_key )
+			vector_store = self.client.vector_stores.retrieve( vector_store_id=id )
+			return vector_store
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'retrieve_store( self, purpose: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
+		"""
+
+	        Purpose:
+	        _______
+	        Method that analyzeses an image given a prompt,
+
+	        Parameters:
+	        ----------
+	        prompt: str
+	        url: str
+
+	        Returns:
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'store_id', store_id )
+			self.prompt = prompt
+			self.model = model
+			self.vector_store_ids = [ store_id ]
+			self.tools = [
+					{
+							'text': 'file_search',
+							'vector_store_ids': self.vector_store_ids,
+							'max_num_results': self.max_search_results,
+					} ]
+			self.response = self.client.responses.create( model=self.model, tools=self.tools,
+				input=self.prompt )
+			return self.response.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'search( self, prompt: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def update( self, store_id: str, filename: str ):
+		client = OpenAI( )
+		vector_store = client.vector_stores.update( vector_store_id=store_id,
+			name=filename )
+	
+	def delete( self, store_id: str ) -> bool | None:
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of file_ids
+
+		'''
+		try:
+			throw_if( 'store_id', store_id )
+			self.client = OpenAI( api_key=self.api_key )
+			_deleted = self.client.vector_stores.delete( vector_store_id=id )
+			return bool( _deleted )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'delete( self, purpose: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		return [ 'client',
+		         'file_path',
+		         'response_format',
+		         'name',
+		         'content',
+		         'file_id',
+		         'collections',
+		         'retrieve',
+		         'list',
+		         'extract',
+		         'delete',
+		         'update', ]
+		

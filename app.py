@@ -55,6 +55,7 @@ from pathlib import Path
 import multiprocessing
 import os
 import sqlite3
+import typing_extensions
 from typing import Any, Dict, List, Tuple, Optional
 import tempfile
 import re
@@ -2249,59 +2250,59 @@ elif mode == "Files":
 					except Exception as exc:
 						st.error( f"Upload failed: {exc}" )
 	
-	if st.button( "List files" ):
-		try:
-			files_resp = list_method( )
-			rows = [ ]
-			
-			files_list = (
-					files_resp.data
-					if hasattr( files_resp, "data" )
-					else files_resp
-					if isinstance( files_resp, list )
-					else [ ]
-			)
-			
-			for f in files_list:
-				rows.append( {
-						"id": str( getattr( f, "id", "" ) ),
-						"filename": str( getattr( f, "filename", "" ) ),
-						"purpose": str( getattr( f, "purpose", "" ) ),
-				} )
-			
-			st.session_state.files_table = rows
-		
-		except Exception as exc:
-			st.session_state.files_table = None
-			st.error( f"List files failed: {exc}" )
-	
-		if "files_list" in locals( ) and files_list:
-				file_ids = [
-						r.get( "id" )
-						if isinstance( r, dict )
-						else getattr( r, "id", None )
-						for r in files_list
-				]
-				sel = st.selectbox(
-					"Select file id to delete", options=file_ids
+		if st.button( "List files" ):
+			try:
+				files_resp = list_method( )
+				rows = [ ]
+				
+				files_list = (
+						files_resp.data
+						if hasattr( files_resp, "data" )
+						else files_resp
+						if isinstance( files_resp, list )
+						else [ ]
 				)
-				if st.button( "Delete selected file" ):
-					del_fn = None
-					for name in ("delete_file", "delete", "files_delete"):
-						if hasattr( chat, name ):
-							del_fn = getattr( chat, name )
-							break
-					if not del_fn:
-						st.warning(
-							"No delete function found on chat object."
-						)
-					else:
-						with st.spinner( "Deleting file..." ):
-							try:
-								res = del_fn( sel )
-								st.success( f"Delete result: {res}" )
-							except Exception as exc:
-								st.error( f"Delete failed: {exc}" )
+				
+				for f in files_list:
+					rows.append( {
+							"id": str( getattr( f, "id", "" ) ),
+							"filename": str( getattr( f, "filename", "" ) ),
+							"purpose": str( getattr( f, "purpose", "" ) ),
+					} )
+				
+				st.session_state.files_table = rows
+			
+			except Exception as exc:
+				st.session_state.files_table = None
+				st.error( f"List files failed: {exc}" )
+		
+			if "files_list" in locals( ) and files_list:
+					file_ids = [
+							r.get( "id" )
+							if isinstance( r, dict )
+							else getattr( r, "id", None )
+							for r in files_list
+					]
+					sel = st.selectbox(
+						"Select file id to delete", options=file_ids
+					)
+					if st.button( "Delete selected file" ):
+						del_fn = None
+						for name in ("delete_file", "delete", "files_delete"):
+							if hasattr( chat, name ):
+								del_fn = getattr( chat, name )
+								break
+						if not del_fn:
+							st.warning(
+								"No delete function found on chat object."
+							)
+						else:
+							with st.spinner( "Deleting file..." ):
+								try:
+									res = del_fn( sel )
+									st.success( f"Delete result: {res}" )
+								except Exception as exc:
+									st.error( f"Delete failed: {exc}" )
 
 
 # ======================================================================================

@@ -103,7 +103,7 @@ class Grok:
 	prompt: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	tool_choice: Optional[ str ]
-	collections: Optional[ Dict[ str, str ] ]
+	stores: Optional[ Dict[ str, str ] ]
 	files: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self ):
@@ -119,7 +119,7 @@ class Grok:
 				Configuration object providing API credentials and options.
 			
 		"""
-		self.api_key = cfg.GROQ_API_KEY
+		self.api_key = cfg.XAI_API_KEY
 		self.organization = None
 		self.timeout = None
 		self.instructions = None
@@ -181,6 +181,7 @@ class Chat( Grok ):
 		
 		"""
 		super( ).__init__( )
+		self.client = None
 		self.prompt = None
 		self.model = None
 		self.max_output_tokens = None
@@ -359,7 +360,6 @@ class Chat( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 
-
 class Images( Grok ):
 	"""
 	
@@ -408,6 +408,7 @@ class Images( Grok ):
 		
 		"""
 		super( ).__init__( )
+		self.client = None
 		self.model = None
 		self.aspect_ratio = None
 		self.resolution = None
@@ -419,7 +420,6 @@ class Images( Grok ):
 		self.temperature = None
 		self.top_percent = None
 	
-
 	@property
 	def model_options( self ) -> List[ str ]:
 		"""
@@ -647,12 +647,17 @@ class Files( Grok ):
 		None
 	
 	"""
-	
-	file_id: Optional[ str ]
-	file_path: Optional[ str ]
-	model: Optional[ str ]
 	client: Optional[ Client ]
-	file: Optional[ file ]
+	prompt: Optional[ str ]
+	file_name: Optional[ str ]
+	response_format: Optional[ str ]
+	instructions: Optional[ str ]
+	file_path: Optional[ str ]
+	file_id: Optional[ str ]
+	purpose: Optional[ str ]
+	content: Optional[ List[ Dict[ str, Any ] ] ]
+	file_ids: Optional[ List[ str ] ]
+	documents: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ):
 		"""
@@ -671,18 +676,31 @@ class Files( Grok ):
 		
 		"""
 		super( ).__init__( )
+		self.client = None
+		self.model = None
+		self.content = None
+		self.prompt = None
+		self.response = None
 		self.file_id = None
 		self.file_path = None
-		self.client = None
-		self.file = None
+		self.file_Name = None
+		self.input = None
+		self.purpose = None
+		self.documents = \
+		{
+				'Account Balances.csv': 'file_9e0d8f9e-06c7-4495-9576-cdd83c433be6',
+				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
+				'Authority.csv': '',
+				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
+		}
 
 	@property
-	def purpose_options( self ) -> List[ str ]:
+	def model_options( self ) -> List[ str ]:
 		"""
 		
 			Purpose:
 			--------
-			Return supported file purpose identifiers.
+			Return list of efficient file interaction models.
 
 			Parameters:
 			-----------
@@ -693,12 +711,9 @@ class Files( Grok ):
 			List[str]
 		
 		"""
-		return [ 'vision',
-		         'image_edit',
-		         'responses',
-		         'fine_tune' ]
+		return [ 'grok-4-fast', 'grok-4' ]
 	
-	def upload( self, file_path: str ):
+	def upload( self, filepath: str, filename: str ):
 		"""
 		
 			Purpose:
@@ -716,12 +731,15 @@ class Files( Grok ):
 		
 		"""
 		try:
-			throw_if( 'file_path', file_path )
-			self.file_path = file_path
+			throw_if( 'filepath', filepath )
+			throw_if( 'filename', filename )
+			self.file_path = filepath
+			self.file_name = filename
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( {
 				'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			self.file = self.client.files.upload( file=self.file_path )
+			self.file = self.client.files.upload( open( self.file_path, mode='rb' ),
+				filename=self.file_name )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -748,15 +766,14 @@ class Files( Grok ):
 		"""
 		try:
 			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( {
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 			files_response = self.client.files.list( )
 			return files_response
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Embeddings'
-			ex.method = ''
+			ex.cause = 'Files'
+			ex.method = 'list()'
 			error = ErrorDialog( ex )
 			error.show( )
 	
@@ -792,7 +809,7 @@ class Files( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def retrieve_content( self, file_id: str ) -> bytes | None:
+	def extract( self, file_id: str ) -> bytes | None:
 		"""
 		
 			Purpose:
@@ -855,7 +872,7 @@ class Files( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def query( self, file_path: str, prompt: str, model: str='grok-4-fast' ) -> str | None:
+	def search( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -880,14 +897,18 @@ class Files( Grok ):
 		
 		"""
 		try:
-			throw_if( 'file_path', file_path )
+			throw_if( 'filepath', filepath )
+			throw_if( 'filename', filename )
 			throw_if( 'prompt', prompt )
 			self.model = model
 			self.prompt = prompt
+			self.file_path = filepath
+			self.filename = filename
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( {
 					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			self.file = self.client.files.upload( file=self.file_path )
+			self.file = self.client.files.upload( open( self.file_path, 'rb' ),
+				filename=self.file_name )
 			chat_response = self.client.chat.create( model=self.model )
 			chat_response.append( user( self.prompt, file( self.file.id ) ) )
 			_response = chat_response.sample()
@@ -899,9 +920,22 @@ class Files( Grok ):
 			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		return [ 'client',
+		         'file_path',
+		         'documents',
+		         'response',
+		         'name',
+		         'model',
+		         'file_id',
+		         'list',
+		         'retrieve',
+		         'search',
+		         'delete',
+		         'upload', ]
 
-
-class Collections( Grok ):
+class VectorStores( Grok ):
 	"""
 	
 		Purpose:
@@ -921,78 +955,42 @@ class Collections( Grok ):
 		None
 	
 	"""
-	
-	collection_id: Optional[ str ]
+	client: Optional[ Client ]
+	prompt: Optional[ str ]
+	response_format: Optional[ str ]
+	number: Optional[ int ]
+	content: Optional[ str ]
 	name: Optional[ str ]
-	client: requests.Session
+	file_path: Optional[ str ]
+	file_id: Optional[ str ]
+	store_id: Optional[ str ]
+	document: Optional[ str ]
+	collections: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self ):
-		"""
-		
-			Purpose:
-			--------
-			Initialize the Collections capability.
-
-			Parameters:
-			-----------
-			None
-
-			Returns:
-			--------
-			None
-		
-		"""
 		super( ).__init__( )
-		
-		self.collection_id = None
-		self.name = None
-		
-		self.client = requests.Session( )
-		self.client.headers.update(
-			{
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
-					'Content-Type': 'application/json',
-			}
-		)
-	
-	@property
-	def known_collections( self ) -> Dict[ str, str ]:
-		"""
-		
-			Purpose:
-			--------
-			Return known, pre-existing collections visible in the xAI dashboard.
-
-			These collections already exist server-side and can be referenced
-			directly in Responses requests.
-
-			Returns:
-			--------
-			dict[str, str]
-		
-		"""
-		return {
-				'armory': 'collection_a7973fd2-a336-4ed0-0495-4ff947041c6',
-				'doa_regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e',
-				'financial_regulations': 'collection_9195847-03a1-443c-9240-294c64dd01e2',
-				'explanatory_statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
-				'public_laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+		self.api_key = cfg.XAI_API_KEY
+		self.client = None
+		self.model = None
+		self.content = None
+		self.response = None
+		self.file_id = None
+		self.file_path = None
+		self.file_name = None
+		self.store_id = None
+		self.document = None
+		self.client.headers.update( {'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+		                             'Content-Type': 'application/json', } )
+		self.collections = \
+		{
+				'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e',
+				'DoD Data': 'collection_137a5ed3-2f20-4082-bf44-73df43a356a4',
+				'DoD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6',
+				'DoA Regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e',
+				'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
 		}
-	
-	@property
-	def collection_options( self ) -> List[ str ]:
-		"""
-		
-			Purpose:
-			--------
-			Return collection names for UI selection.
-
-			Returns:
-			--------
-			List[str]
-		
-		"""
-		return list( self.known_collections.keys( ) )
 	
 	def list( self ):
 		"""
@@ -1007,11 +1005,8 @@ class Collections( Grok ):
 		
 		"""
 		try:
-			url = f'{self.base_url}/collections'
-			response = self.client.get( url, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.json( ).get( 'data', [ ] )
+			self.client = Client( api_key=self.api_key )
+			self.collections = client.collections.list( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -1095,8 +1090,48 @@ class Collections( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def update( self, collection_id: str, add_file_ids: Optional[
-		List[ str ] ] = None, remove_file_ids: Optional[ List[ str ] ] = None ):
+	def search( self, prompt: str, store_id: str, model: str = 'grok-4-fast' ) -> str | None:
+		"""
+
+	        Purpose:
+	        _______
+	        Method that analyzeses an image given a prompt,
+
+	        Parameters:
+	        ----------
+	        prompt: str
+	        url: str
+
+	        Returns:
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'store_id', store_id )
+			self.prompt = prompt
+			self.model = model
+			self.store_id = store_id
+			self.vector_store_ids = [ store_id ]
+			self.tools = [
+					{
+							'text': 'file_search',
+							'vector_store_ids': self.vector_store_ids,
+							'max_num_results': self.max_search_results,
+					} ]
+			self.response = client.collections.search( query=self.prompt,
+				collection_ids=[ self.store_id ],)
+			return self.response.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'search( self, prompt: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def update( self, collection_id: str, filepath: str, filename: stre ):
 		"""
 		
 			Purpose:
@@ -1116,17 +1151,15 @@ class Collections( Grok ):
 		"""
 		try:
 			throw_if( 'collection_id', collection_id )
-			
-			payload = { }
-			if add_file_ids:
-				payload[ 'add_file_ids' ] = add_file_ids
-			if remove_file_ids:
-				payload[ 'remove_file_ids' ] = remove_file_ids
-			
-			url = f'{self.base_url}/collections/{collection_id}'
-			response = self.client.patch( url, json=payload, timeout=self.timeout )
-			response.raise_for_status( )
-			
+			throw_if( 'filename', filename )
+			throw_if( 'filepath', filepath )
+			self.file_path = filepath
+			self.file_name = filename
+			self.store_id = collection_id
+			with open( self.file_path, 'rb' ) as file:
+				file_data = file.read( )
+				self.document = client.collections.upload_document( collection_id=self.store_id,
+					name=self.file_name, data=file_data, content_type="text/html", )
 			return response.json( )
 		except Exception as e:
 			ex = Error( e )
@@ -1135,7 +1168,7 @@ class Collections( Grok ):
 			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
-	
+			
 	def delete( self, collection_id: str ):
 		"""
 		
@@ -1167,3 +1200,18 @@ class Collections( Grok ):
 			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		return [ 'client',
+		         'file_path',
+		         'response',
+		         'name',
+		         'model',
+		         'file_id',
+		         'store_id',
+		         'create',
+		         'retrieve',
+		         'search',
+		         'delete',
+		         'update', ]
+	

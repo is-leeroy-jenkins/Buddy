@@ -43,9 +43,11 @@
 '''
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+def throw_if( name: str, value: object ):
+	if value is None:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
-class Prompt( BaseModel ):
+class Prompt( ):
 	'''
 
 		Purpose:
@@ -84,21 +86,54 @@ class Prompt( BaseModel ):
 			Optional question or user query associated with the prompt.
 
 	'''
-	instructions: Optional[ str ]=None
-	context: Optional[ str ]=None
-	output_indicator: Optional[ str ]=None
-	input_data: Optional[ str ]=None
-	id: Optional[ str ]=None
-	version: Optional[ str ]=None
-	format: Optional[ str ]=None
-	variables: Optional[ List[ str ] ]=None
-	question: Optional[ str ]=None
+	instructions: Optional[ str ]
+	content: Optional[ str ]
+	variables: Optional[ List[ str ] ]
+	data: Optional[ Dict[ str, Any ] ]
+	id: Optional[ str ]
+	version: Optional[ str ]
 	
-	class Config:
-		arbitrary_types_allowed = True
-		extra = 'ignore'
+	def __init__( self, instructions: str=None, content: str=None, variables: List[ str ]=None,
+			data: Dict[ str, Any ]=None, id: int=None, version: str=None ):
+		self.instructions = instructions
+		self.content = content
+		self.variables = variables
+		self.data = data
+		self.id = id
+		self.version = version
+		
+	def __dir__( self ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			--------
+			Provides a list of public class members
+			
+			Returns:
+			--------
+			List[ str ]
+			
+		
+		'''
+		return [ 'instructions', 'content', 'variables', 'data', 'id', 'version' ]
 
-class Message( BaseModel ):
+	def __str__( self ):
+		'''
+		
+			Purpose:
+			---------
+			Returns a string representation of the model
+			
+		'''
+		if self.content is not None:
+			return self.content
+		elif self.instructions is not None:
+			return self.instructions
+		else:
+			return None
+			
+	
+class Message( ):
 	'''
 
 		Purpose:
@@ -127,14 +162,37 @@ class Message( BaseModel ):
 	content: Optional[ str ]
 	role: Optional[ str ]
 	type: Optional[ str ]
-	instructions: Optional[ str ]
-	data: Optional[ Dict ]
 	
-	class Config:
-		arbitrary_types_allowed = True
-		extra = 'ignore'
+	def __init__( self, role: str=None, content: str=None,  type: str=None  ):
+		self.role = role
+		self.content = content
+		self.type = type
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			
+			Purpose:
+			--------
+			Provides a list of public class members.
 
-class Payload( BaseModel ):
+			Returns:
+			--------
+			List[ str ]
+		
+		'''
+		return[ 'content', 'role', 'type' ]
+
+	def __str__( self ):
+		'''
+		
+			Purpose:
+			--------
+			Provides a string representation of this message.
+			
+		'''
+		return self.content
+		
+class Payload( ):
 	'''
 
 		Purpose:
@@ -198,17 +256,42 @@ class Payload( BaseModel ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	response_format: Optional[ text ]
 	temperature: Optional[ float ]
 	top_p: Optional[ float ]
 	top_k: Optional[ int ]
 	logprobs: Optional[ int ]
-	max_output_tokens: Optional[ int ]
+	max_tokens: Optional[ int ]
 	presence_penalty: Optional[ float ]
 	fequency_penalty: Optional[ float ]
 	store: Optional[ bool ]
 	stream: Optional[ bool ]
+	stop_sequence: Optional[ List[ str ] ]
+	response_format: Optional[ str ]
 	
-	class Config:
-		arbitrary_types_allowed = True
-		extra = 'ignore'
+	def __init__( self, temperature: float=None, top_p: float=None, top_k: int=None,
+			logprobs: int=None, presense: float=None, store: bool=None,
+			stream: bool=None, stops: List[ str ]=None, format: str=None ):
+		self.temperature = temperature
+		self.top_p = top_p
+		self.top_k = top_k
+		self.logprobs = logprobs
+		self.presense = presense
+		self.store = store
+		self.stream = stream
+		self.stop_sequence = stops
+		self.response_format = format
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			
+			Purpose:
+			--------
+			Provides a list of public members of the class.
+			
+			Returns:
+			--------
+			List[ str ]
+		
+		'''
+		return [ 'temperature', 'top_p', 'top_k', 'logprobs', 'presense',
+		         'store', 'stream', 'stop_sequence', 'response_format' ]

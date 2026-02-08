@@ -77,14 +77,16 @@ XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 #----------------- GPT CONFIG -------------------
 GPT_LOGO = r'resources/buddy_logo.ico'
 
-GPT_VECTOR_STORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK',]
+GPT_VECTOR_STORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
+                      'vs_697f86ad98888191b967685ae558bfc0']
 
 GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
               'file-WPmTsHFYDLGHbyERqJdyqv',
               'file-DW5TuqYoEfqFfqFFsMXBvy',
               'file-U8ExiB6aJunAeT6872HtEU',
               'file-FHkNiF6Rv29eCkAWEagevT',
-              'file-XsjQorjtffHTWjth8EVnkL' ]
+              'file-XsjQorjtffHTWjth8EVnkL'
+              'file-32s641QK1Xb5QUatY3zfWF' ]
 
 GPT_DOMAINS = [ 'congress.gov',
                 'google.com',
@@ -111,7 +113,8 @@ GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
                  'file-DW5TuqYoEfqFfqFFsMXBvy',
                  'file-U8ExiB6aJunAeT6872HtEU',
                  'file-FHkNiF6Rv29eCkAWEagevT',
-                 'file-XsjQorjtffHTWjth8EVnkL' ]
+                 'file-XsjQorjtffHTWjth8EVnkL',
+                 'file-32s641QK1Xb5QUatY3zfWF' ]
 
 GPT_WEB_DOMAINS = [ 'congress.gov',
                     'google.com',
@@ -123,8 +126,9 @@ GPT_WEB_DOMAINS = [ 'congress.gov',
 GROK_LOGO = r'resources/grok_logo.png'
 GROK_MODES = [ 'Text',
                'Images',
+               'Documents',
                'Files',
-               'Collections',
+               'Vector Stores',
                'Prompt Engineering',
                'Data Export' ]
 
@@ -143,7 +147,7 @@ GEMINI_MODES = [ 'Text',
                  'Documents',
                  'Embeddings',
                  'Audio',
-                 'File Search Store',
+                 'Vector Stores',
                  'Prompt Engineering',
                  'Data Export' ]
 
@@ -156,9 +160,9 @@ MODE_CLASS_MAP = {
 		           'Translation',
 		           'Transcription' ],
 		'Embeddings': [ 'Embeddings' ],
-		'Documents': [ 'Chat', 'Files', 'FileSearchStore' ],
-		'Files': [ 'Chat', 'Files',  'FileSearchStore' ],
-		'Vector Store': [ 'Chat', 'Files', 'FileSearchStore' ],
+		'Documents': [ 'Files'  ],
+		'Files': [ 'Files'  ],
+		'Vector Store': [ 'Files', 'VectorStores' ],
 }
 
 CLASS_MODE_MAP = {
