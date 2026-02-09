@@ -2076,7 +2076,7 @@ elif mode == 'Vector Stores':
 				client = getattr( vector, 'client', None )
 				if (
 						client
-						and hasattr( client, 'vector_stores' )
+						and hasattr( client, 'collection' )
 						and hasattr( client.vector_stores, 'list' )
 				):
 					api_list = client.vector_stores.list( )

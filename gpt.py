@@ -2366,9 +2366,9 @@ class VectorStores( GPT ):
 			error.show( )
 	
 	def list( self ) -> List[ str ]:
-		client = OpenAI( )
-		vector_stores = client.vector_stores.list( )
-		return vector_stores
+		self.client = OpenAI( api_key=self.api_key )
+		self.collections = self.client.vector_stores.list( )
+		return self.collections
 	
 	def retrieve( self, id: str ) -> VectorStore | None:
 		'''
