@@ -350,7 +350,7 @@ class Chat( Grok ):
 			self.chat = self.client.chat.create( model=self.model, messages=self.messages,
 				store_messages=self.store, temperature=self.temperature, top_p=self.top_p, 
 				reasoning_effort=self.reasoning_effort, max_tokens=self.max_output_tokens,
-				response_format=self.response_format )
+				response_format=self.response_format  )
 			return self.chat
 		except Exception as e:
 			ex = Error( e )
@@ -433,17 +433,43 @@ class TTS( Grok ):
 		self.voice = None
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		'''
-	
-	        Purpose:
-	        --------
-	        Methods that returns a list of tts model names
+	def model_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported xAI text-capable models.
 
-        '''
-		return [ 'gpt-4o-mini-tts',
-		         'tts-1',
-		         'tts-1-hd' ]
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'grok-4',
+		         'grok-4-0709',
+		         'grok-4-latest',
+		         'grok-4-1-fast',
+		         'grok-4-1-fast-reasoning',
+		         'grok-4-1-fast-reasoning-latest',
+		         'grok-4-1-fast-non-reasoning',
+		         'grok-4-1-fast-non-reasoning-latest',
+		         'grok-4-fast',
+		         'grok-4-fast-reasoning',
+		         'grok-4-fast-reasoning-latest',
+		         'grok-4-fast-non-reasoning',
+		         'grok-4-fast-non-reasoning-latest',
+		         'grok-code-fast-1',
+		         'grok-3',
+		         'grok-3-latest',
+		         'grok-3-mini',
+		         'grok-3-fast',
+		         'grok-3-fast-latest',
+		         'grok-3-mini-fast',
+		         'grok-3-mini-fast-latest' ]
 	
 	@property
 	def voice_options( self ) -> List[ str ] | None:
@@ -673,18 +699,43 @@ class Transcription( Grok ):
 		self.chat = None
 	
 	@property
-	def model_options( self ) -> str:
-		'''
+	def model_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported xAI text-capable models.
 
-	        Purpose:
-	        --------
-	        Methods that returns a list of small_model names
+			Parameters:
+			-----------
+			None
 
-        '''
-		return [ 'whisper-1',
-		         'gpt-4o-mini-transcribe',
-		         'gpt-4o-transcribe',
-		         'gpt-4o-transcribe-diarize' ]
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'grok-4',
+		         'grok-4-0709',
+		         'grok-4-latest',
+		         'grok-4-1-fast',
+		         'grok-4-1-fast-reasoning',
+		         'grok-4-1-fast-reasoning-latest',
+		         'grok-4-1-fast-non-reasoning',
+		         'grok-4-1-fast-non-reasoning-latest',
+		         'grok-4-fast',
+		         'grok-4-fast-reasoning',
+		         'grok-4-fast-reasoning-latest',
+		         'grok-4-fast-non-reasoning',
+		         'grok-4-fast-non-reasoning-latest',
+		         'grok-code-fast-1',
+		         'grok-3',
+		         'grok-3-latest',
+		         'grok-3-mini',
+		         'grok-3-fast',
+		         'grok-3-fast-latest',
+		         'grok-3-mini-fast',
+		         'grok-3-mini-fast-latest' ]
 	
 	@property
 	def file_options( self ) -> List[ str ] | None:
@@ -874,19 +925,43 @@ class Translation( Grok ):
 		self.voice = None
 	
 	@property
-	def model_options( self ) -> str:
-		'''
-	
-	        Purpose:
-	        --------
-	        Methods that returns a list of small_model names
+	def model_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported xAI text-capable models.
 
-        '''
-		return [ 'whisper-1',
-		         'text-davinci-003',
-		         'gpt-4-0613',
-		         'gpt-4-0314',
-		         'gpt-4-turbo-2024-04-09', ]
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'grok-4',
+		         'grok-4-0709',
+		         'grok-4-latest',
+		         'grok-4-1-fast',
+		         'grok-4-1-fast-reasoning',
+		         'grok-4-1-fast-reasoning-latest',
+		         'grok-4-1-fast-non-reasoning',
+		         'grok-4-1-fast-non-reasoning-latest',
+		         'grok-4-fast',
+		         'grok-4-fast-reasoning',
+		         'grok-4-fast-reasoning-latest',
+		         'grok-4-fast-non-reasoning',
+		         'grok-4-fast-non-reasoning-latest',
+		         'grok-code-fast-1',
+		         'grok-3',
+		         'grok-3-latest',
+		         'grok-3-mini',
+		         'grok-3-fast',
+		         'grok-3-fast-latest',
+		         'grok-3-mini-fast',
+		         'grok-3-mini-fast-latest' ]
 	
 	@property
 	def language_options( self ):
@@ -1682,7 +1757,7 @@ class VectorStores( Grok ):
 		"""
 		try:
 			self.client = Client( api_key=self.api_key )
-			self.collections = client.collections.list( )
+			self.collections = self.client.collections.list( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'

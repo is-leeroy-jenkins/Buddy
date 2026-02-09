@@ -41,6 +41,8 @@
   </summary>
   ******************************************************************************************
 '''
+from google.genai.file_search_stores import FileSearchStores
+
 import config as cfg
 from boogr import ErrorDialog, Error
 import os
@@ -51,11 +53,12 @@ from typing import Any, List, Optional, Dict, Union
 from google import genai
 from google.cloud import storage
 from google.genai import types
+from google.genai.pagers import Pager
 from google.genai.types import (Part, GenerateContentConfig, ImageConfig, FunctionCallingConfig,
                                 GenerateImagesConfig, GenerateVideosConfig, ThinkingConfig,
                                 GeneratedImage, EmbedContentConfig, Content, ContentEmbedding,
-                                Candidate, HttpOptions, GenerateImagesResponse, Field,
-                                GenerateContentResponse, GenerateVideosResponse, Image, File)
+                                Candidate, HttpOptions, GenerateImagesResponse, Field, FileSearchStore,
+                                GenerateContentResponse, GenerateVideosResponse, Image, File )
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -841,7 +844,6 @@ class TTS( Gemini ):
 	audio_path: Optional[ str ]
 	response_format: Optional[ str ]
 	input_text: Optional[ str ]
-	use_vertex: Optional[ bool ]
 	
 	def __init__( self, n: int=1, model: str='gemini-2.0-flash',
 			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
@@ -849,8 +851,6 @@ class TTS( Gemini ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model
-		self.api_version = version
-		self.use_vertex = use_ai
 		self.temperature = temperature
 		self.top_p = top_p
 		self.frequency_penalty = frequency
@@ -952,16 +952,13 @@ class Transcription( Gemini ):
 	client: Optional[ genai.Client ]
 	transcript: Optional[ str ]
 	file_path: Optional[ str ]
-	use_vertex: Optional[ bool ]
 	
-	def __init__( self, n: int=1, model: str='gemini-2.0-flash', version: str='v1alpha',
-			use_ai: bool=False, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, instruct: str=None ):
+	def __init__( self, n: int=1, model: str='gemini-2.0-flash', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
+			max_tokens: int=10000, instruct: str=None ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model
-		self.api_version = version
-		self.use_vertex = use_ai
 		self.temperature = temperature
 		self.top_p = top_p
 		self.frequency_penalty = frequency
@@ -1053,7 +1050,6 @@ class Translation( Gemini ):
 	client: Optional[ genai.Client ]
 	target_language: Optional[ str ]
 	source_language: Optional[ str ]
-	use_vertex: Optional[ bool ]
 	
 	def __init__( self, n: int=1, model: str='gemini-2.0-flash', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
@@ -1061,8 +1057,6 @@ class Translation( Gemini ):
 		super( ).__init__( )
 		self.number = n
 		self.model = model
-		self.api_version = version
-		self.use_vertex = use_ai
 		self.temperature = temperature
 		self.top_p = top_p
 		self.frequency_penalty = frequency
@@ -1275,7 +1269,7 @@ class VectorStores( Gemini ):
 		self.presence_penalty = presence
 		self.max_tokens = max_tokens
 		self.stops = stops
-		self.client = genai.Client( api_key=self.gemini_api_key )
+		self.client = None
 		self.file_id = None;
 		self.display_name = None;
 		self.mime_type = None
@@ -1283,7 +1277,7 @@ class VectorStores( Gemini ):
 		self.response = None
 		self.file_list = [ ];
 	
-	def upload( self, path: str, name: str = None ) -> File | None:
+	def upload( self, path: str, name: str = None ):
 		"""
 		
 			Purpose:
@@ -1303,19 +1297,18 @@ class VectorStores( Gemini ):
 			throw_if( 'path', path )
 			self.file_path = path;
 			self.display_name = name
-			self.response = self.client.files.upload( path=self.file_path,
-				config={
-						'display_name': self.display_name } )
-			return self.response
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			self.response = self.client.file_search_stores.upload_to_file_search_store(
+				file_search_store_name=self.display_name, file=self.file_path  )
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'FileStore'
+			exception.cause = 'VectorStore'
 			exception.method = 'upload( self, path: str, name: str ) -> Optional[ File ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def retrieve( self, file_id: str ) -> Optional[ File ]:
+	def retrieve( self, file_id: str ) -> FileSearchStore | None:
 		"""
 			
 			Purpose:
@@ -1334,17 +1327,18 @@ class VectorStores( Gemini ):
 		try:
 			throw_if( 'file_id', file_id )
 			self.file_id = file_id
-			self.response = self.client.files.get( name=self.file_id )
-			return self.response
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			_filestore = self.client.file_search_stores.get( name=self.display_name)
+			return _filestore
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'FileStore'
+			exception.cause = 'VectorStore'
 			exception.method = 'retrieve( self, file_id: str ) -> Optional[ File ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def list( self ) -> List[ File ] | None:
+	def list( self ) -> Pager[ FileSearchStore ] | None:
 		"""
 		
 			Purpose:
@@ -1357,17 +1351,18 @@ class VectorStores( Gemini ):
 			
 		"""
 		try:
-			self.file_list = list( self.client.files.list( ) )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			self.file_list = self.client.file_search_stores.list( )
 			return self.file_list
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'FileStore'
-			exception.method = 'list_files( self ) -> Optional[ List[ File ] ]'
+			exception.cause = 'VectorStores'
+			exception.method = 'list( self ) -> Optional[ List[ File ] ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def delete( self, file_id: str ) -> bool | None:
+	def delete( self, file_id: str ):
 		"""
 		
 			Purpose:
@@ -1386,8 +1381,8 @@ class VectorStores( Gemini ):
 		try:
 			throw_if( 'file_id', file_id )
 			self.file_id = file_id
-			self.client.files.delete( name=self.file_id )
-			return True
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			self.client.file_search_stores.delete( name=self.display_name )
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
