@@ -1936,7 +1936,7 @@ elif mode == 'Vector Stores':
 			st.info( "No vector stores discovered. Create one or confirm "
 				"`stores.collections` mapping exists." )
 
-	elif provider_module == 'Gemini':
+	elif provider_module == 'gemini':
 		searcher = provider_module.VectorStores( )
 		st.subheader( '🔍 File Search Store' )
 		st.divider( )
@@ -2039,13 +2039,13 @@ elif mode == 'Vector Stores':
 				"No vector stores discovered. Create one or confirm "
 				"`chat.vector_stores` mapping exists." )
 			
-	else:
+	elif provider_model == 'gpt':
 		vector = provider_module.VectorStores( )
 		st.subheader( '⚡ Vector Stores' )
 		st.divider( )
 		
-		vs_map = getattr( vector, "VectorStores", None )
-		if vs_map and isinstance( vs_map, dict ):
+		vs_map = getattr( vector, "collections", None )
+		if vs_map and hasattr( vs_map, dict ):
 			st.markdown( "**Known Vector Stores (local mapping)**" )
 			for name, vid in vs_map.items( ):
 				st.write( f"- **{name}** — `{vid}`" )
