@@ -128,6 +128,7 @@ GROK_MODES = [ 'Text',
                'Images',
                'Documents',
                'Files',
+               'Audio',
                'Vector Stores',
                'Prompt Engineering',
                'Data Export' ]
