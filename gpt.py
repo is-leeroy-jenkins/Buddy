@@ -46,6 +46,7 @@ from __future__ import annotations
 import os
 import openai.types.responses
 from openai.types import CreateEmbeddingResponse, VectorStore
+from openai.pagination import SyncCursorPage
 from pathlib import Path
 from typing import Any, List, Optional, Dict
 import tiktoken
@@ -2365,10 +2366,10 @@ class VectorStores( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def list( self ) -> List[ str ]:
+	def list( self ) -> SyncCursorPage[ VectorStore ]:
 		self.client = OpenAI( api_key=self.api_key )
-		self.collections = self.client.vector_stores.list( )
-		return self.collections
+		_stores = self.client.vector_stores.list( )
+		return _stores
 	
 	def retrieve( self, id: str ) -> VectorStore | None:
 		'''

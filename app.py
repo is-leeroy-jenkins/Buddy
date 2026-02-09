@@ -2074,11 +2074,8 @@ elif mode == 'Vector Stores':
 		if not options:
 			try:
 				client = getattr( vector, 'client', None )
-				if (
-						client
-						and hasattr( client, 'collection' )
-						and hasattr( client.vector_stores, 'list' )
-				):
+				if ( client and hasattr( client, 'vector_stores' )
+						and hasattr( client.vector_stores, 'list' ) ):
 					api_list = client.vector_stores.list( )
 					temp: List[ tuple ] = [ ]
 					for item in getattr( api_list, 'data', [ ] ) or api_list:
