@@ -101,7 +101,7 @@ GPT_MODES = [ 'Chat',
               'Embeddings',
               'Documents',
               'Files',
-              'Vector Store',
+              'Vector Stores',
               'Prompt Engineering',
               'Data Export' ]
 
@@ -163,7 +163,7 @@ MODE_CLASS_MAP = {
 		'Embeddings': [ 'Embeddings' ],
 		'Documents': [ 'Files'  ],
 		'Files': [ 'Files'  ],
-		'Vector Store': [ 'Files', 'VectorStores' ],
+		'Vector Stores': [ 'VectorStores' ],
 }
 
 CLASS_MODE_MAP = {

@@ -1822,14 +1822,14 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode == 'VectorStores':
+elif mode == 'Vector Stores':
 	# ------------------------------------------------------------------
 	# Provider-aware VectorStore instantiation
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
 	vector = None
 	collector  = None
-	store = None
+	searcher = None
 	
 	if provider_module == 'grok':
 		collection = provider_module.VectorStores( )
@@ -1937,11 +1937,11 @@ elif mode == 'VectorStores':
 				"`stores.collections` mapping exists." )
 
 	elif provider_module == 'Gemini':
-		store = provider_module.VectorStores( )
+		searcher = provider_module.VectorStores( )
 		st.subheader( '🔍 File Search Store' )
 		st.divider( )
 		
-		vs_map = getattr( store, "documents", None )
+		vs_map = getattr( searcher, "documents", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Files (local mapping)**" )
 			for name, vid in vs_map.items( ):
@@ -1955,8 +1955,8 @@ elif mode == 'VectorStores':
 					st.warning( "Enter a File Search Store Name." )
 				else:
 					try:
-						if hasattr( store, "create" ):
-							res = store.create( new_store_name )
+						if hasattr( searcher, "create" ):
+							res = searcher.create( new_store_name )
 							st.success( f"create() call submitted for '{new_store_name}'." )
 						else:
 							st.warning( "create method not found on chat object." )
@@ -1970,7 +1970,7 @@ elif mode == 'VectorStores':
 		
 		if not options:
 			try:
-				client = getattr( store, 'client', None )
+				client = getattr( searcher, 'client', None )
 				if ( client and hasattr( client, 'file_search_stores' )
 						and hasattr( client.file_search_stores, 'list' )
 				):
@@ -2011,22 +2011,21 @@ elif mode == 'VectorStores':
 				if st.button( "Retrieve File Search Stores" ):
 					try:
 						if sel_id and hasattr( store, "retrieve" ):
-							vs = store.retrieve_store( sel_id )
-							st.json(
-								vs.__dict__
+							vs = store.retrieve( sel_id )
+							st.json( vs.__dict__
 								if hasattr( vs, "__dict__" )
 								else vs
 							)
 						else:
-							st.warning( 'retrieve_store not available on chat object or no store selected.' )
+							st.warning( 'retrieve( ) not available on chat object or no store selected.' )
 					except Exception as exc:
 						st.error( f'Retrieve failed: {exc}' )
 			
 			with c2:
 				if st.button( '❌ Delete Store' ):
 					try:
-						if sel_id and hasattr( filesearch, 'delete' ):
-							res = filesearch.delete( sel_id )
+						if sel_id and hasattr( searcher, 'delete' ):
+							res = store.delete( sel_id )
 							st.success( f'Delete returned: {res}' )
 						else:
 							st.warning(
@@ -2041,11 +2040,11 @@ elif mode == 'VectorStores':
 				"`chat.vector_stores` mapping exists." )
 			
 	else:
-		st.subheader( '⚡ Vector Stores')
-		
+		vector = provider_module.VectorStores( )
+		st.subheader( '⚡ Vector Stores' )
 		st.divider( )
 		
-		vs_map = getattr( stores, "collections", None )
+		vs_map = getattr( vector, "VectorStores", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Vector Stores (local mapping)**" )
 			for name, vid in vs_map.items( ):
@@ -2059,8 +2058,8 @@ elif mode == 'VectorStores':
 					st.warning( "Enter a Vector Store Name." )
 				else:
 					try:
-						if hasattr( stores, "create" ):
-							res = stores.create_store( new_store_name )
+						if hasattr( vector, "create" ):
+							res = vector.create( new_store_name )
 							st.success( f"Create call submitted for '{new_store_name}'." )
 						else:
 							st.warning( "create_store method not found on chat object." )
@@ -2074,7 +2073,7 @@ elif mode == 'VectorStores':
 		
 		if not options:
 			try:
-				client = getattr( stores, 'client', None )
+				client = getattr( vector, 'client', None )
 				if (
 						client
 						and hasattr( client, 'vector_stores' )
@@ -2116,7 +2115,7 @@ elif mode == 'VectorStores':
 			with c1:
 				if st.button( "Retrieve Vector Store" ):
 					try:
-						if sel_id and hasattr( stores, "retrieve" ):
+						if sel_id and hasattr( vector, "retrieve" ):
 							vs = chat.retrieve_store( sel_id )
 							st.json(
 								vs.__dict__
@@ -2131,7 +2130,7 @@ elif mode == 'VectorStores':
 			with c2:
 				if st.button( '❌ Delete Vector Store' ):
 					try:
-						if sel_id and hasattr( stores, 'delete' ):
+						if sel_id and hasattr( vector, 'delete' ):
 							res = chat.delete_store( sel_id )
 							st.success( f'Delete returned: {res}' )
 						else:
