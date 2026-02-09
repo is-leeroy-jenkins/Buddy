@@ -400,11 +400,10 @@ class TTS( Grok ):
 	voice: Optional[ str ]
 	language: Optional[ str ]
 	prompt: Optional[ str ]
-	response: Optional[ openai.types.responses.Response ]
 	
 	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
 			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
-			model: str='grok-3-mini-fast', store: bool=True, stream: bool=True, instruct: st =None ):
+			model: str='grok-3-mini-fast', store: bool=True, stream: bool=True, instruct: str =None ):
 		'''
 
 	        Purpose:

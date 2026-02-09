@@ -74,7 +74,7 @@ from gpt import (
 
 from gemini import ( Chat, Images, Files, Embeddings, Transcription, TTS, Translation, VectorStores )
 
-from grok import ( Chat, Images, Files, VectorStores )
+from grok import ( Chat, Images, Files, Transcription, TTS, Translation, VectorStores )
 
 # ==============================================================================
 # UTILITIES
