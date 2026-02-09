@@ -214,6 +214,7 @@ class Chat( GPT ):
 		self.vector_stores = \
 		{
 			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
+			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
 		}
 		self.files = \
 		{
@@ -1379,13 +1380,15 @@ class TTS( GPT ):
 	    create_small_embedding( self, prompt: str, path: str )
 
     """
+	client: Optional[ OpenAI ]
 	speed: Optional[ float ]
 	voice: Optional[ str ]
 	language: Optional[ str ]
 	response: Optional[ openai.types.responses.Response ]
 	
-	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, top_k: int=0, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True, instruct: str=None ):
+	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, stream: bool=True, instruct: str=None ):
 		'''
 
 	        Purpose:
@@ -1395,6 +1398,7 @@ class TTS( GPT ):
         '''
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
+		self.client = None
 		self.model = 'gpt-4o-mini-tts'
 		self.number = number
 		self.temperature = temperature
@@ -1604,6 +1608,7 @@ class Transcription( GPT ):
 
 
     """
+	client: Optional[ OpenAI ]
 	speed: Optional[ float ]
 	voice: Optional[ str ]
 	language: Optional[ str ]
@@ -1622,6 +1627,7 @@ class Transcription( GPT ):
 		self.max_completion_tokens = max_tokens
 		self.store = store
 		self.stream = stream
+		self.language = language
 		self.instructions = instruct
 		self.model = None
 		self.input_text = None
@@ -1696,6 +1702,8 @@ class Transcription( GPT ):
 	def transcribe( self, path: str, model: str='whisper-1', language: str='en' ) -> str:
 		"""
 		
+			Purpose:
+			----------
             Transcribe audio with Whisper.
         
         """
@@ -1786,12 +1794,14 @@ class Translation( GPT ):
 	    create_small_embedding( self, prompt: str, path: str )
 
     """
+	client: Optional[ OpenAI ]
 	target_language: Optional[ str ]
 	
 	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
+		self.client = None
 		self.model = 'whisper-1'
 		self.number = number
 		self.temperature = temperature
@@ -1801,6 +1811,7 @@ class Translation( GPT ):
 		self.max_completion_tokens = max_tokens
 		self.store = store
 		self.stream = stream
+		self.instructions = instruct
 		self.audio_file = None
 		self.response = None
 		self.voice = None
@@ -1942,7 +1953,6 @@ class Translation( GPT ):
 		         'stops',
 		         'prompt',
 		         'response',
-		         'completion',
 		         'audio_path',
 		         'path',
 		         'messages',
@@ -2308,6 +2318,7 @@ class VectorStores( GPT ):
 	store_ids: Optional[ List[ str ] ]
 	file_path: Optional[ str ]
 	file_id: Optional[ str ]
+	documents: Optional[ Dict[ str, Any ] ]
 	collections: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self  ):
@@ -2323,6 +2334,14 @@ class VectorStores( GPT ):
 		self.collections = \
 		{
 			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
+			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
+		}
+		self.documents = \
+		{
+			'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
+			'SF133.csv': 'file-32s641QK1Xb5QUatY3zfWF',
+			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
+			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
 
 	def create( self, store_name: str ) -> VectorStore | None:

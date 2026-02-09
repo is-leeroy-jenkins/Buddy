@@ -162,7 +162,7 @@ class Chat( Grok ):
 	previous_response_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
 	client: Optional[ Client ]
-	chat_response: Optional[ Any  ]
+	chat: Optional[ Any  ]
 	
 	def __init__( self ):
 		"""
@@ -347,11 +347,11 @@ class Chat( Grok ):
 			                              'Content-Type': 'application/json', } )
 			self.messages.append( system( self.instructions ) )
 			self.messages.append( user( self.user ) )
-			chat_response = self.client.chat.create( model=self.model, messages=self.messages,
+			self.chat = self.client.chat.create( model=self.model, messages=self.messages,
 				store_messages=self.store, temperature=self.temperature, top_p=self.top_p, 
 				reasoning_effort=self.reasoning_effort, max_tokens=self.max_output_tokens,
 				response_format=self.response_format )
-			return chat_response
+			return self.chat
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -359,6 +359,663 @@ class Chat( Grok ):
 			ex.method = 'create( prompt: str, model: str )'
 			error = ErrorDialog( ex )
 			error.show( )
+
+class TTS( Grok ):
+	"""
+	
+	    Purpose
+	    ___________
+	    Class used for interacting with OpenAI's TTS API (TTS)
+	
+	
+	    Parameters
+	    ------------
+	    num: int=1
+	    temp: float=0.8
+	    top: float=0.9
+	    freq: float=0.0
+	    pres: float=0.0
+	    max: int=10000
+	    store: bool=True
+	    stream: bool=True
+	
+	    Attributes
+	    -----------
+	    self.api_key, self.system_instructions, self.client, self.small_model, self.reasoning_effort,
+	    self.response, self.num, self.temperature, self.top_percent,
+	    self.frequency_penalty, self.presence_penalty, self.max_completion_tokens,
+	    self.store, self.stream, self.modalities, self.stops, self.content,
+	    self.input_text, self.response, self.completion, self.file, self.path,
+	    self.messages, self.image_url, self.response_format,
+	    self.tools, self.vector_store_ids, self.descriptions, self.assistants
+	
+	    Methods
+	    ------------
+	    get_model_options( self ) -> str
+	    create_small_embedding( self, prompt: str, path: str )
+
+    """
+	client: Optional[ Client ]
+	speed: Optional[ float ]
+	voice: Optional[ str ]
+	language: Optional[ str ]
+	prompt: Optional[ str ]
+	response: Optional[ openai.types.responses.Response ]
+	
+	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			model: str='grok-3-mini-fast', store: bool=True, stream: bool=True, instruct: st =None ):
+		'''
+
+	        Purpose:
+	        --------
+	        Constructor to  create_small_embedding TTS objects
+
+        '''
+		super( ).__init__( )
+		self.api_key = cfg.XAI_API_KEY
+		self.client = None
+		self.model = model
+		self.number = number
+		self.prompt = None
+		self.temperature = temperature
+		self.top_percent = top_p
+		self.frequency_penalty = frequency
+		self.presence_penalty = presence
+		self.max_completion_tokens = max_tokens
+		self.store = store
+		self.stream = stream
+		self.instructions = instruct
+		self.messages = []
+		self.audio_path = None
+		self.response = None
+		self.response_format = None
+		self.speed = None
+		self.voice = None
+	
+	@property
+	def model_options( self ) -> List[ str ] | None:
+		'''
+	
+	        Purpose:
+	        --------
+	        Methods that returns a list of tts model names
+
+        '''
+		return [ 'gpt-4o-mini-tts',
+		         'tts-1',
+		         'tts-1-hd' ]
+	
+	@property
+	def voice_options( self ) -> List[ str ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Method that returns a list of voice names
+
+        '''
+		return [ 'alloy',
+		         'ash',
+		         'ballad',
+		         'coral',
+		         'echo',
+		         'fable',
+		         'onyx',
+		         'nova',
+		         'sage',
+		         'shiver', ]
+	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Method that returns a list of image formats
+
+        '''
+		return [ 'mp3',
+		         'wav',
+		         'aac',
+		         'flac',
+		         'opus',
+		         'pcm' ]
+	
+	@property
+	def speed_options( self ) -> List[ float ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Method that returns a list of floats
+	        representing different audio speeds
+
+        '''
+		return [ 0.25,
+		         1.0,
+		         4.0 ]
+	
+	def generate( self, prompt: str, model: str='grok-3-mini', max_tokens: int=10000,
+			temperature: float=0.8, top_p: float=0.9, effort: str='high', format: str='text',
+			store: bool=True, include: List[ str ]=None, instruct: str=None ):
+		"""
+		
+			Purpose:
+			--------
+			Generate text using the xAI Responses API.
+
+			If previous_response_id is set, the conversation will be
+			continued server-side.
+
+			Parameters:
+			-----------
+			prompt : str
+				User input prompt.
+			model : str | None
+				Model identifier.
+			max_output_tokens : int | None
+				Maximum number of tokens in the response.
+			temperature : float | None
+			top_p : float | None
+			include_reasoning : bool | None
+				Whether to include encrypted reasoning content.
+			reasoning_effort : str | None
+				Reasoning effort level (grok-3-mini only).
+
+			Returns:
+			--------
+			str
+		
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.model = model
+			self.max_output_tokens = max_tokens
+			self.temperature = temperature
+			self.top_percent = top_p
+			self.instructions = instruct
+			self.reasoning_effort = effort
+			self.store = store
+			self.response_format = format
+			self.include = include
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {self.api_key}',
+					'Content-Type': 'application/json', } )
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.user ) )
+			self.chat = self.client.chat.create( model=self.model, messages=self.messages,
+				store_messages=self.store, temperature=self.temperature, top_p=self.top_p,
+				reasoning_effort=self.reasoning_effort, max_tokens=self.max_output_tokens,
+				response_format=self.response_format )
+			return self.chat
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'TTS'
+			exception.method = 'generate( self, prompt: str, path: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Method returns a list of strings representing members
+	
+	        Parameters:
+	        ----------
+	        self
+	
+	        Returns:
+	        ---------
+	        List[ str ] | None
+
+        '''
+		return [ 'num',
+		         'temperature',
+		         'top_percent',
+		         'frequency_penalty',
+		         'presence_penalty',
+		         'max_completion_tokens',
+		         'system_instructions',
+		         'store',
+		         'stream',
+		         'modalities',
+		         'stops',
+		         'content',
+		         'prompt',
+		         'response',
+		         'completion',
+		         'file',
+		         'path',
+		         'messages',
+		         'image_url',
+		         'response_format',
+		         'tools',
+		         'name',
+		         'id',
+		         'description',
+		         'generate_text',
+		         'format_options',
+		         'model_options',
+		         'reasoning_effort',
+		         'effort_options',
+		         'speed_options',
+		         'input_text', ]
+
+class Transcription( Grok ):
+	"""
+	
+	    Purpose
+	    ___________
+	    Class used for interacting with OpenAI's TTS API (whisper-1)
+	
+	
+	    Parameters
+	    ------------
+	    num: int=1
+	    temp: float=0.8
+	    top: float=0.9
+	    freq: float=0.0
+	    pres: float=0.0
+	    max: int=10000
+	    store: bool=True
+	    stream: bool=True
+	
+	    Attributes
+	    -----------
+	    self.api_key, self.system_instructions, self.client, self.small_model, self.reasoning_effort,
+	    self.response, self.num, self.temperature, self.top_percent,
+	    self.frequency_penalty, self.presence_penalty, self.max_completion_tokens,
+	    self.store, self.stream, self.modalities, self.stops, self.content,
+	    self.input_text, self.response, self.completion, self.audio_file, self.transcript
+	
+	
+	    Methods
+	    ------------
+	    get_model_options( self ) -> str
+	    create_small_embedding( self, path: str  ) -> str
+
+
+    """
+	client: Optional[ Client ]
+	speed: Optional[ float ]
+	voice: Optional[ str ]
+	language: Optional[ str ]
+	prompt: Optional[ str ]
+	chat: Optional[ Any ]
+	
+	def __init__( self, prompt: str, number: int=1, temperature: float=0.8, top_p: float=0.9,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int =10000, store: bool=True,
+			stream: bool=True, language: str='en', instruct: str=None ):
+		super( ).__init__( )
+		self.api_key = cfg.XAI_API_KEY
+		self.client = None
+		self.number = number
+		self.temperature = temperature
+		self.top_percent = top_p
+		self.frequency_penalty = frequency
+		self.presence_penalty = presence
+		self.max_completion_tokens = max_tokens
+		self.store = store
+		self.stream = stream
+		self.language = language
+		self.instructions = instruct
+		self.prompt = prompt
+		self.messages = [ ]
+		self.model = None
+		self.input_text = None
+		self.audio_file = None
+		self.transcript = None
+		self.response = None
+		self.chat = None
+	
+	@property
+	def model_options( self ) -> str:
+		'''
+
+	        Purpose:
+	        --------
+	        Methods that returns a list of small_model names
+
+        '''
+		return [ 'whisper-1',
+		         'gpt-4o-mini-transcribe',
+		         'gpt-4o-transcribe',
+		         'gpt-4o-transcribe-diarize' ]
+	
+	@property
+	def file_options( self ) -> List[ str ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Method that returns a list of image formats
+
+        '''
+		return [ 'mp3',
+		         'wav',
+		         'aac',
+		         'flac',
+		         'opus',
+		         'pcm' ]
+	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+			
+			Returns:
+			-------
+			List[ str ] output  format options
+			
+		'''
+		return [ 'json',
+		         'text',
+		         'srt',
+		         'verbose_json',
+		         'vtt',
+		         'diarized_json' ]
+	
+	@property
+	def language_options( self ):
+		'''
+	
+	        Purpose:
+	        --------
+	        Method that returns a list of voice names
+
+        '''
+		return [ 'English',
+		         'Spanish',
+		         'Tagalog',
+		         'French',
+		         'Japanese',
+		         'German',
+		         'Italian',
+		         'Chinese' ]
+	
+	def transcribe( self, prompt: str, path: str, model: str='grok-3-mini-fast', language: str='en',
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True,
+			instruct: str=None ) -> str:
+		"""
+		
+			Purpose:
+			----------
+            Transcribe audio with Grok.
+        
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'path', path )
+			self.model = model
+			self.prompt = prompt
+			self.language = language
+			self.instructions = instruct
+			self.temperature = temperature
+			self.top_p = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.user ) )
+			self.client = Client( api_key=cfg.XAI_API_KEY )
+			with open( path, 'rb' ) as self.audio_file:
+				self.chat = self.client.chat.create( model=self.model,
+					file=self.audio_file, language=self.language )
+			return resp.text
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Transcription'
+			ex.method = 'transcribe(self, path)'
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		'''
+	
+	        Purpose:
+	        --------
+	        Method returns a list of strings representing members
+	
+	        Parameters:
+	        ----------
+	        self
+	
+	        Returns:
+	        ---------
+	        List[ str ] | None
+
+        '''
+		return [ 'num',
+		         'temperature',
+		         'top_percent',
+		         'frequency_penalty',
+		         'presence_penalty',
+		         'max_completion_tokens',
+		         'store',
+		         'stream',
+		         'modalities',
+		         'stops',
+		         'prompt',
+		         'response',
+		         'audio_file',
+		         'messages',
+		         'response_format',
+		         'api_key',
+		         'client',
+		         'input_text',
+		         'transcript', ]
+
+class Translation( Grok ):
+	"""
+
+	    Purpose
+	    ___________
+	    Class used for interacting with OpenAI's TTS API (whisper-1)
+	
+	
+	    Parameters
+	    ------------
+	    num: int=1
+	    temp: float=0.8
+	    top: float=0.9
+	    freq: float=0.0
+	    pres: float=0.0
+	    max: int=10000
+	    store: bool=True
+	    stream: bool=True
+	
+	    Attributes
+	    -----------
+	    self.api_key, self.system_instructions, self.client, self.small_model,  self.reasoning_effort,
+	    self.response, self.num, self.temperature, self.top_percent,
+	    self.frequency_penalty, self.presence_penalty, self.max_completion_tokens,
+	    self.store, self.stream, self.modalities, self.stops, self.content,
+	    self.input_text, self.response, self.completion, self.file, self.path,
+	    self.messages, self.image_url, self.response_format,
+	    self.tools, self.vector_store_ids, self.descriptions, self.assistants
+	
+	    Methods
+	    ------------
+	    create_small_embedding( self, prompt: str, path: str )
+
+    """
+	client: Optional[ Client ]
+	target_language: Optional[ str ]
+	prompt: Optional[ str ]
+	chat: Optional[ Any ]
+	messages = Optional[ List[ Dict[ str, Any ] ] ]
+	
+	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, stream: bool=True, instruct: str =None ):
+		super( ).__init__( )
+		self.api_key = cfg.OPENAI_API_KEY
+		self.client = None
+		self.model = 'grok-3-fast'
+		self.number = number
+		self.temperature = temperature
+		self.top_percent = top_p
+		self.frequency_penalty = frequency
+		self.presence_penalty = presence
+		self.max_completion_tokens = max_tokens
+		self.store = store
+		self.stream = stream
+		self.instructions = instruct
+		self.prompt = None
+		self.audio_file = None
+		self.response = None
+		self.voice = None
+	
+	@property
+	def model_options( self ) -> str:
+		'''
+	
+	        Purpose:
+	        --------
+	        Methods that returns a list of small_model names
+
+        '''
+		return [ 'whisper-1',
+		         'text-davinci-003',
+		         'gpt-4-0613',
+		         'gpt-4-0314',
+		         'gpt-4-turbo-2024-04-09', ]
+	
+	@property
+	def language_options( self ):
+		'''
+	
+	        Purpose:
+	        --------
+	        Method that returns a list of voice names
+
+        '''
+		return [ 'English',
+		         'Spanish',
+		         'Tagalog',
+		         'French',
+		         'Japanese',
+		         'German',
+		         'Italian',
+		         'Chinese' ]
+	
+	@property
+	def voice_options( self ):
+		'''
+
+	        Purpose:
+	        --------
+	        Method that returns a list of voice names
+
+        '''
+		return [ 'alloy',
+		         'ash',
+		         'ballad',
+		         'coral',
+		         'echo',
+		         'fable',
+		         'onyx',
+		         'nova',
+		         'sage',
+		         'shiver', ]
+	
+	def translate( self, text: str, path: str, number: int=1, temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, stream: bool=True, instruct: str=None ) -> str | None:
+		"""
+
+	        Purpose
+	        _______
+	        Generates a translation given a string to an audio file
+	
+	
+	        Parameters
+	        ----------
+	        text: str
+	        path: str
+	
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'text', text )
+			throw_if( 'path', path )
+			self.number = number
+			self.prompt = text
+			self.audio_file = path
+			self.temperature = temperature
+			self.top_percent = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_completion_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.instructions = instruct
+			self.prompt = prompt
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.user ) )
+			self.client = Client( api_key=cfg.XAI_API_KEY )
+			with open( self.audio_file, 'rb' ) as self.audio_file:
+				self.chat = self.client.chat.create( model=self.model,
+					file=self.audio_file, prompt=self.prompt )
+			return self.chat
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Translation'
+			exception.method = 'translate( self, text: str )'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def __dir__( self ) -> List[ str ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Method returns a list of strings representing members
+	
+	        Parameters:
+	        ----------
+	        self
+	
+	        Returns:
+	        ---------
+	        List[ str ] | None
+
+        '''
+		return [ 'num',
+		         'temperature',
+		         'top_percent',
+		         'frequency_penalty',
+		         'presence_penalty',
+		         'max_completion_tokens',
+		         'store',
+		         'stream',
+		         'modalities',
+		         'stops',
+		         'prompt',
+		         'response',
+		         'audio_path',
+		         'path',
+		         'messages',
+		         'response_format',
+		         'tools',
+		         'api_key',
+		         'client',
+		         'model',
+		         'translate',
+		         'model_options', ]
 
 class Images( Grok ):
 	"""
@@ -872,7 +1529,10 @@ class Files( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def search( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast' ) -> str | None:
+	def search( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast',
+			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
+			presence: float = 0.0, max_tokens: int = 10000, store: bool = True, stream: bool = True,
+			instruct: str = None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -902,6 +1562,16 @@ class Files( Grok ):
 			throw_if( 'prompt', prompt )
 			self.model = model
 			self.prompt = prompt
+			self.instructions = instruct
+			self.temperature = temperature
+			self.top_p = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.user ) )
 			self.file_path = filepath
 			self.filename = filename
 			self.client = Client( api_key=self.api_key )
@@ -909,9 +1579,9 @@ class Files( Grok ):
 					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 			self.file = self.client.files.upload( open( self.file_path, 'rb' ),
 				filename=self.file_name )
-			chat_response = self.client.chat.create( model=self.model )
-			chat_response.append( user( self.prompt, file( self.file.id ) ) )
-			_response = chat_response.sample()
+			self.chat = self.client.chat.create( model=self.model )
+			self.chat.append( user( self.prompt, file( self.file.id ) ) )
+			_response = self.chat.sample()
 			return _response.content
 		except Exception as e:
 			ex = Error( e )
@@ -964,7 +1634,7 @@ class VectorStores( Grok ):
 	file_path: Optional[ str ]
 	file_id: Optional[ str ]
 	store_id: Optional[ str ]
-	document: Optional[ str ]
+	documents: Optional[ Dict[ str, str ] ]
 	collections: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self ):
@@ -978,7 +1648,7 @@ class VectorStores( Grok ):
 		self.file_path = None
 		self.file_name = None
 		self.store_id = None
-		self.document = None
+		self.documents = None
 		self.client.headers.update( {'Authorization': f'Bearer {cfg.GROK_API_KEY}',
 		                             'Content-Type': 'application/json', } )
 		self.collections = \
@@ -990,6 +1660,13 @@ class VectorStores( Grok ):
 				'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
 				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
 				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+		}
+		self.documents = \
+		{
+				'Account Balances.csv': 'file_9e0d8f9e-06c7-4495-9576-cdd83c433be6',
+				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
+				'Authority.csv': '',
+				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
 		}
 	
 	def list( self ):
@@ -1213,5 +1890,7 @@ class VectorStores( Grok ):
 		         'retrieve',
 		         'search',
 		         'delete',
-		         'update', ]
+		         'update',
+		         'collections',
+		         'documents' ]
 	

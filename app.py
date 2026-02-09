@@ -1418,10 +1418,7 @@ elif mode == "Images":
 			
 			uploaded_img = st.file_uploader(
 				'Upload an image for analysis',
-				type=[ 'png',
-				       'jpg',
-				       'jpeg',
-				       'webp' ],
+				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 				accept_multiple_files=False,
 				key='images_analyze_uploader',
 			)
@@ -1809,20 +1806,14 @@ elif mode == 'Embeddings':
 				with st.spinner( 'Embedding…' ):
 					try:
 						if method:
-							vector = embed.create(
-								text,
-								model=embed_model,
-								method=method,
-							)
+							vector = embed.create( text, model=embed_model, method=method, )
 						else:
 							vector = embed.create( text, model=embed_model, )
 						
 						st.write( 'Vector length:', len( vector ) )
 						
 						try:
-							_update_token_counters(
-								getattr( embed, 'response', None )
-							)
+							_update_token_counters( getattr( embed, 'response', None ) )
 						except Exception:
 							pass
 					
@@ -1834,20 +1825,20 @@ elif mode == 'Embeddings':
 # ======================================================================================
 elif mode in [ 'VectorStores' ]:
 	try:
-		chat  # type: ignore
+		stores  # type: ignore
 	except NameError:
-		chat = get_provider_module( ).Chat( )
+		stores = get_provider_module( ).VectorStores( )
 	
 	if provider == 'grok':
 		try:
-			chat  # type: ignore
+			stores  # type: ignore
 		except NameError:
-			chat = get_provider_module( ).VectorStores
+			stores = get_provider_module( ).VectorStores( )
 		st.subheader( '📚 Collections' )
 		
 		st.divider( )
 		
-		vs_map = getattr( chat, "collections", None )
+		vs_map = getattr( stores, "collections", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Collections (local mapping)**" )
 			for name, vid in vs_map.items( ):
@@ -1855,14 +1846,14 @@ elif mode in [ 'VectorStores' ]:
 			st.markdown( "---" )
 		
 		with st.expander( "Create Collection", expanded=False ):
-			new_store_name = st.text_input( "New store name" )
+			new_store_name = st.text_input( "New Collection Name" )
 			if st.button( "➕ Create Collection" ):
 				if not new_store_name:
-					st.warning( "Enter a store name." )
+					st.warning( "Enter a Collenction Name." )
 				else:
 					try:
-						if hasattr( chat, "create_store" ):
-							res = chat.create_store( new_store_name )
+						if hasattr( stores, "create" ):
+							res = stores.create( new_store_name )
 							st.success( f"Create call submitted for '{new_store_name}'." )
 						else:
 							st.warning( "create_store method not found on chat object." )
@@ -1876,13 +1867,13 @@ elif mode in [ 'VectorStores' ]:
 		
 		if not options:
 			try:
-				client = getattr( chat, 'client', None )
+				client = getattr( stores, 'client', None )
 				if (
 						client
-						and hasattr( client, 'vector_stores' )
-						and hasattr( client.vector_stores, 'list' )
+						and hasattr( client, 'collections' )
+						and hasattr( client.collections, 'list' )
 				):
-					api_list = client.vector_stores.list( )
+					api_list = client.collections.list( )
 					temp: List[ tuple ] = [ ]
 					for item in getattr( api_list, 'data', [ ] ) or api_list:
 						nm = getattr( item, 'name', None ) or (
@@ -1918,8 +1909,8 @@ elif mode in [ 'VectorStores' ]:
 			with c1:
 				if st.button( "Retrieve Collection" ):
 					try:
-						if sel_id and hasattr( chat, "retrieve_store" ):
-							vs = chat.retrieve_store( sel_id )
+						if sel_id and hasattr( stores, "retrieve" ):
+							vs = stores.retrieve( sel_id )
 							st.json(
 								vs.__dict__
 								if hasattr( vs, "__dict__" )
@@ -1933,12 +1924,12 @@ elif mode in [ 'VectorStores' ]:
 			with c2:
 				if st.button( '❌ Delete Collection' ):
 					try:
-						if sel_id and hasattr( chat, 'delete_store' ):
+						if sel_id and hasattr( stores, 'delete' ):
 							res = chat.delete_store( sel_id )
 							st.success( f'Delete returned: {res}' )
 						else:
 							st.warning(
-								'delete_store not available on chat object '
+								'delete() not available on chat object '
 								'or no store selected.'
 							)
 					except Exception as exc:
@@ -1946,36 +1937,36 @@ elif mode in [ 'VectorStores' ]:
 		else:
 			st.info(
 				"No vector stores discovered. Create one or confirm "
-				"`chat.vector_stores` mapping exists." )
+				"`stores.collections` mapping exists." )
 
-	elif mode == 'File Search':
+	elif provider == 'Gemini':
 		try:
 			filesearch  # type: ignore
 		except NameError:
-			filesearch = get_provider_module( ).FileSearchStore
+			filesearch = get_provider_module( ).VectorStores( )
 		st.subheader( '🔍 File Search Store' )
 		
 		st.divider( )
 		
-		vs_map = getattr( chat, "files", None )
+		vs_map = getattr( filesearch, "file_list", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Files (local mapping)**" )
 			for name, vid in vs_map.items( ):
 				st.write( f"- **{name}** — `{vid}`" )
 			st.markdown( "---" )
 		
-		with st.expander( "Create File Store", expanded=False ):
-			new_store_name = st.text_input( "New store name" )
-			if st.button( "➕ Create Store" ):
+		with st.expander( "Create File Search Store", expanded=False ):
+			new_store_name = st.text_input( "New File Search Store name" )
+			if st.button( "➕ Create File Search Store" ):
 				if not new_store_name:
-					st.warning( "Enter a File Name." )
+					st.warning( "Enter a File Search Store Name." )
 				else:
 					try:
-						if hasattr( chat, "create_store" ):
-							res = chat.create_store( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
+						if hasattr( filesearch, "create" ):
+							res = filesearch.create( new_store_name )
+							st.success( f"create() call submitted for '{new_store_name}'." )
 						else:
-							st.warning( "create_store method not found on chat object." )
+							st.warning( "create method not found on chat object." )
 					except Exception as exc:
 						st.error( f"Create store failed: {exc}" )
 		
@@ -1986,13 +1977,13 @@ elif mode in [ 'VectorStores' ]:
 		
 		if not options:
 			try:
-				client = getattr( chat, 'client', None )
+				client = getattr( filesearch, 'client', None )
 				if (
 						client
-						and hasattr( client, 'vector_stores' )
-						and hasattr( client.vector_stores, 'list' )
+						and hasattr( client, 'file_search_stores' )
+						and hasattr( client.file_search_stores, 'list' )
 				):
-					api_list = client.vector_stores.list( )
+					api_list = client.file_search_stores.list( )
 					temp: List[ tuple ] = [ ]
 					for item in getattr( api_list, 'data', [ ] ) or api_list:
 						nm = getattr( item, 'name', None ) or (
@@ -2014,7 +2005,7 @@ elif mode in [ 'VectorStores' ]:
 		
 		if options:
 			names = [ f"{n} — {i}" for n, i in options ]
-			sel = st.selectbox( "Select a File Store", options=names )
+			sel = st.selectbox( "Select a File Search Store", options=names )
 			sel_id: Optional[ str ] = None
 			sel_name: Optional[ str ] = None
 			for n, i in options:
@@ -2024,13 +2015,12 @@ elif mode in [ 'VectorStores' ]:
 					sel_name = n
 					break
 			
-			c1, c2 = st.columns( [ 1,
-			                       1 ] )
+			c1, c2 = st.columns( [ 1, 1 ] )
 			with c1:
-				if st.button( "Retrieve Store" ):
+				if st.button( "Retrieve File Search Store" ):
 					try:
-						if sel_id and hasattr( chat, "retrieve_store" ):
-							vs = chat.retrieve_store( sel_id )
+						if sel_id and hasattr( filesearch, "retrieve" ):
+							vs = filesearch.retrieve_store( sel_id )
 							st.json(
 								vs.__dict__
 								if hasattr( vs, "__dict__" )
@@ -2044,8 +2034,8 @@ elif mode in [ 'VectorStores' ]:
 			with c2:
 				if st.button( '❌ Delete Store' ):
 					try:
-						if sel_id and hasattr( chat, 'delete_store' ):
-							res = chat.delete_store( sel_id )
+						if sel_id and hasattr( filesearch, 'delete' ):
+							res = filesearch.delete( sel_id )
 							st.success( f'Delete returned: {res}' )
 						else:
 							st.warning(
@@ -2064,7 +2054,7 @@ elif mode in [ 'VectorStores' ]:
 		
 		st.divider( )
 		
-		vs_map = getattr( chat, "vector_stores", None )
+		vs_map = getattr( stores, "collections", None )
 		if vs_map and isinstance( vs_map, dict ):
 			st.markdown( "**Known Vector Stores (local mapping)**" )
 			for name, vid in vs_map.items( ):
@@ -2072,14 +2062,14 @@ elif mode in [ 'VectorStores' ]:
 			st.markdown( "---" )
 	
 		with st.expander( "Create Vector Store", expanded=False ):
-			new_store_name = st.text_input( "New store name" )
-			if st.button( "➕ Create Store" ):
+			new_store_name = st.text_input( "New Vector Store name" )
+			if st.button( "➕ Create Vector Store" ):
 				if not new_store_name:
-					st.warning( "Enter a Store Name." )
+					st.warning( "Enter a Vector Store Name." )
 				else:
 					try:
-						if hasattr( chat, "create_store" ):
-							res = chat.create_store( new_store_name )
+						if hasattr( stores, "create" ):
+							res = stores.create_store( new_store_name )
 							st.success( f"Create call submitted for '{new_store_name}'." )
 						else:
 							st.warning( "create_store method not found on chat object." )
@@ -2093,7 +2083,7 @@ elif mode in [ 'VectorStores' ]:
 		
 		if not options:
 			try:
-				client = getattr( chat, 'client', None )
+				client = getattr( stores, 'client', None )
 				if (
 						client
 						and hasattr( client, 'vector_stores' )
@@ -2133,9 +2123,9 @@ elif mode in [ 'VectorStores' ]:
 			
 			c1, c2 = st.columns( [ 1, 1 ] )
 			with c1:
-				if st.button( "Retrieve store" ):
+				if st.button( "Retrieve Vector Store" ):
 					try:
-						if sel_id and hasattr( chat, "retrieve_store" ):
+						if sel_id and hasattr( stores, "retrieve" ):
 							vs = chat.retrieve_store( sel_id )
 							st.json(
 								vs.__dict__
@@ -2143,19 +2133,19 @@ elif mode in [ 'VectorStores' ]:
 								else vs
 							)
 						else:
-							st.warning('retrieve_store not available on chat object or no store selected.' )
+							st.warning('retrieve() not available on chat object or no store selected.' )
 					except Exception as exc:
-						st.error( f'Retrieve failed: {exc}' )
+						st.error( f'retrieve( ) failed: {exc}' )
 			
 			with c2:
-				if st.button( '❌ Delete Store' ):
+				if st.button( '❌ Delete Vector Store' ):
 					try:
-						if sel_id and hasattr( chat, 'delete_store' ):
+						if sel_id and hasattr( stores, 'delete' ):
 							res = chat.delete_store( sel_id )
 							st.success( f'Delete returned: {res}' )
 						else:
 							st.warning(
-								'delete_store not available on chat object '
+								'delete( ) not available on chat object '
 								'or no store selected.'
 							)
 					except Exception as exc:
@@ -2182,51 +2172,45 @@ elif mode == 'Documents':
 			st.success( f"Saved {len( uploaded )} file(s) to session" )
 		
 		if st.session_state.files:
-			st.markdown( "**Uploaded documents (session-only)**" )
-			idx = st.selectbox( "Choose a document",
+			st.markdown( "**Uploaded Documents (session-only)**" )
+			idx = st.selectbox( "Choose a Document",
 				options=list( range( len( st.session_state.files ) ) ),
 				format_func=lambda i: st.session_state.files[ i ], )
 			selected_path = st.session_state.files[ idx ]
 			
 			c1, c2 = st.columns( [ 1, 1 ] )
 			with c1:
-				if st.button( "Remove selected document" ):
+				if st.button( "Remove Selected Document" ):
 					removed = st.session_state.files.pop( idx )
 					st.success( f"Removed {removed}" )
 			with c2:
-				if st.button( "Show selected path" ):
+				if st.button( "Show Selected Path" ):
 					st.info( f"Local temp path: {selected_path}" )
 			
 			st.markdown( "---" )
-			question = st.text_area(
-				"Ask a question about the selected document"
-			)
+			question = st.text_area( "Ask a question about the selected document" )
 			if st.button( "❓ Ask Document" ):
 				if not question:
 					st.warning( "Enter a question before asking." )
 				else:
-					with st.spinner( "Running document Q&A…" ):
+					with st.spinner( "Running Document Q&A…" ):
 						try:
 							try:
-								chat  # type: ignore
+								doc_qa  # type: ignore
 							except NameError:
-								chat = get_provider_module( ).Chat( )
+								doc_qa = get_provider_module( ).Files( )
 							answer = None
-							if hasattr( chat, "summarize_document" ):
+							if hasattr( doc_qa, "summarize" ):
 								try:
-									answer = chat.summarize_document(
-										prompt=question,
-										pdf_path=selected_path,
-									)
+									answer = doc_qa.summarize( prompt=question,
+										pdf_path=selected_path, )
 								except TypeError:
-									answer = chat.summarize_document(
-										question, selected_path
-									)
-							elif hasattr( chat, "ask_document" ):
-								answer = chat.ask_document(
+									answer = doc_qa.summarize( question, selected_path )
+							elif hasattr( doc_qa, "ask_document" ):
+								answer = doc_qa.ask_document(
 									selected_path, question
 								)
-							elif hasattr( chat, "document_qa" ):
+							elif hasattr( doc_qa, "document_qa" ):
 								answer = chat.document_qa(
 									selected_path, question
 								)

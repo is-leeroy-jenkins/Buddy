@@ -486,7 +486,8 @@ class Files( Gemini ):
 	file_list: Optional[ List[ File ] ]
 	response: Optional[ Any ]
 	use_vertex: Optional[ bool ]
-	files: Optional[ List[ str ] ]
+	collections: Optional[ Dict[ str, str ] ]
+	documents: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self, model: str='gemini-2.0-flash', temperature: float=0.8, top_p: float=0.9,
 			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ):
@@ -509,7 +510,8 @@ class Files( Gemini ):
 		self.file_path = None;
 		self.file_list = [ ];
 		self.response = None
-		self.files = [ ]
+		self.collections = { }
+		self.documents = { }
 	
 	@property
 	def file_options( self ) -> List[ str ] | None:
@@ -1257,6 +1259,8 @@ class VectorStores( Gemini ):
 	file_list: Optional[ List[ File ] ]
 	response: Optional[ Any ]
 	use_vertex: Optional[ bool ]
+	collections: Optional[ Dict[ str, str ] ]
+	documents: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self, filepath: str, model: str='gemini-2.0-flash',
 			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
@@ -1276,8 +1280,8 @@ class VectorStores( Gemini ):
 		self.display_name = None;
 		self.mime_type = None
 		self.file_path = None;
-		self.file_list = [ ];
 		self.response = None
+		self.file_list = [ ];
 	
 	def upload( self, path: str, name: str = None ) -> File | None:
 		"""
@@ -1340,7 +1344,7 @@ class VectorStores( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def list_files( self ) -> List[ File ] | None:
+	def list( self ) -> List[ File ] | None:
 		"""
 		
 			Purpose:
