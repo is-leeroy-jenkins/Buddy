@@ -647,7 +647,7 @@ class Transcription( Grok ):
 	prompt: Optional[ str ]
 	chat: Optional[ Any ]
 	
-	def __init__( self, prompt: str, number: int=1, temperature: float=0.8, top_p: float=0.9,
+	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
 			frequency: float=0.0, presence: float=0.0, max_tokens: int =10000, store: bool=True,
 			stream: bool=True, language: str='en', instruct: str=None ):
 		super( ).__init__( )
@@ -663,7 +663,7 @@ class Transcription( Grok ):
 		self.stream = stream
 		self.language = language
 		self.instructions = instruct
-		self.prompt = prompt
+		self.prompt = None
 		self.messages = [ ]
 		self.model = None
 		self.input_text = None
@@ -762,7 +762,7 @@ class Transcription( Grok ):
 			self.store = store
 			self.stream = stream
 			self.messages.append( system( self.instructions ) )
-			self.messages.append( user( self.user ) )
+			self.messages.append( user( self.prompt ) )
 			self.client = Client( api_key=cfg.XAI_API_KEY )
 			with open( path, 'rb' ) as self.audio_file:
 				self.chat = self.client.chat.create( model=self.model,
