@@ -1067,9 +1067,7 @@ with st.sidebar:
 		if xai_key:
 			st.session_state.xai_api_key = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
-
-					
-	
+			
 	if st.button( 'Clear Chat' ):
 		reset_state( )
 		st.rerun( )
@@ -1235,14 +1233,7 @@ elif mode == "Text":
 			
 			st.session_state[ 'logprobs' ] = int( logprobs )
 			st.divider( )
-			
-			top_k = st.slider( 'Top-K', min_value=0, max_value=50,
-				value=int( st.session_state.get( 'top_k', 0 ) ),
-				step=1, help=cfg.TOP_K )
-			
-			st.session_state[ 'top_p' ] = float( top_p )
-			st.divider( )
-			
+
 			max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 				value=6048, help=cfg.MAX_OUTPUT_TOKENS )
 			st.session_state[ 'max_tokens' ] = int( max_tokens )
@@ -1270,7 +1261,7 @@ elif mode == "Text":
 					s for s in stop_text.splitlines( ) if s.strip( ) ]
 		
 		# ---------------- Include options ----------------
-		if mode == 'GPT':
+		if mode in [ 'GPT', 'Grok' ]:
 			include = st.multiselect( 'Include:', chat.include_options )
 			chat.include = include
 	
@@ -1296,7 +1287,6 @@ elif mode == "Text":
 			with st.spinner( 'Thinking…' ):
 				gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
 				gen_kwargs[ 'top_p' ] = st.session_state[ 'top_p' ]
-				gen_kwargs[ 'top_k' ] = st.session_state[ 'top_k' ]
 				gen_kwargs[ 'logprobs' ] = st.session_state[ 'logprobs' ]
 				gen_kwargs[ 'max_tokens' ] = st.session_state[ 'max_tokens' ]
 				gen_kwargs[ 'frequency' ] = st.session_state[ 'freq_penalty' ]
@@ -1801,8 +1791,8 @@ elif mode == 'Embeddings':
 			embed_model = st.selectbox( 'Model', embed.model_options,
 				index=( embed.model_options.index( st.session_state[ 'embed_model' ] )
 						if st.session_state.get( 'embed_model' ) in embed.model_options
-						else 0 ),
-			)
+						else 0 ), )
+			
 			st.session_state[ 'embed_model' ] = embed_model
 			method = None
 			if hasattr( embed, "methods" ):
@@ -1842,17 +1832,17 @@ elif mode == 'Embeddings':
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
-elif mode in [ 'Vector Store', 'Collections', 'File Search Store' ]:
+elif mode in [ 'VectorStores' ]:
 	try:
 		chat  # type: ignore
 	except NameError:
 		chat = get_provider_module( ).Chat( )
 	
-	if mode == 'Collections':
+	if provider == 'grok':
 		try:
 			chat  # type: ignore
 		except NameError:
-			chat = get_provider_module( ).Chat( )
+			chat = get_provider_module( ).VectorStores
 		st.subheader( '📚 Collections' )
 		
 		st.divider( )
