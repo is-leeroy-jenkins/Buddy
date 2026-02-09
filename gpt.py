@@ -65,6 +65,7 @@ class GPT:
 	    Base class for OpenAI functionality.
 
     '''
+	api_key: Optional[ str ]
 	web_options: Optional[ List[ str ] ]
 	client: Optional[ OpenAI ]
 	prompt: Optional[ str ]
@@ -72,6 +73,7 @@ class GPT:
 	number: Optional[ int ]
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
+	top_k: Optional[ float ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
 	max_completion_tokens: Optional[ int ]
@@ -346,7 +348,10 @@ class Chat( GPT ):
 		'''
 		return [ 'low',
 		         'medium',
-		         'high', ]
+		         'high',
+		         'none',
+		         'minimal',
+		         'xhigh' ]
 	
 	def generate_text( self, prompt: str, model: str='gpt-5-nano', number: int=1,
 			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
@@ -976,7 +981,7 @@ class Files( GPT ):
 		         'responses',
 		         'fine_tune' ]
 	
-	def upload( self, filepath: str, purpose: str = 'user_data' ) -> str | None:
+	def upload( self, filepath: str, purpose: str='user_data' ) -> str | None:
 		"""
 	
 	        Purpose
@@ -1379,7 +1384,7 @@ class TTS( GPT ):
 	language: Optional[ str ]
 	response: Optional[ openai.types.responses.Response ]
 	
-	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, top_k: int=0, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True, instruct: str=None ):
 		'''
 

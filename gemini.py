@@ -254,6 +254,20 @@ class Chat( Gemini ):
 		         'application/json',
 		         'text/x.enum' ]
 	
+	@property
+	def include_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of the includeable options
+
+		'''
+		return [ 'file_search_call.results',
+		         'message.input_image.image_url',
+		         'message.output_text.logprobs',
+		         'reasoning.encrypted_content' ]
+	
 	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
 			max_tokens: int=10000, stops: List[str]=None ) -> str | None:

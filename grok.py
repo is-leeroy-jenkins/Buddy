@@ -1131,7 +1131,7 @@ class VectorStores( Grok ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def update( self, collection_id: str, filepath: str, filename: stre ):
+	def update( self, collection_id: str, filepath: str, filename: str ):
 		"""
 		
 			Purpose:

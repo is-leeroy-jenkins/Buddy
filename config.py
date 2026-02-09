@@ -53,7 +53,7 @@ BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 
 APP_TITLE = 'Buddy'
 APP_SUBTITLE = 'Budget Execution AI'
 OPEN_TAG = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
-CLSOE_TAG = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
+CLOSE_TAG = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
 MARKDOWN_HEADING_PATTERN = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
 XML_BLOCK_PATTERN = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>", re.DOTALL )
 DB_PATH = "stores/sqlite/Data.db"
@@ -85,7 +85,7 @@ GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
               'file-DW5TuqYoEfqFfqFFsMXBvy',
               'file-U8ExiB6aJunAeT6872HtEU',
               'file-FHkNiF6Rv29eCkAWEagevT',
-              'file-XsjQorjtffHTWjth8EVnkL'
+              'file-XsjQorjtffHTWjth8EVnkL',
               'file-32s641QK1Xb5QUatY3zfWF' ]
 
 GPT_DOMAINS = [ 'congress.gov',
@@ -187,10 +187,6 @@ TOP_P = r'''Optional. The maximum cumulative probability of tokens to consider w
 		Top-k sampling directly limits the maximum number of tokens to consider,
 		while Nucleus sampling limits the number of tokens based on the cumulative probability.'''
 
-TOP_K = r''''Optional. The maximum number of tokens to consider when sampling.
-		Gemini models use Top-p (nucleus) sampling or a combination of Top-k and nucleus sampling.
-		Top-k sampling considers the set of topK most probable tokens. Models running with nucleus
-		sampling don't allow topK setting. '''
 
 PRESENCE_PENALTY = r'''Optional. Presence penalty applied to the next token's logprobs
 		if the token has already been seen in the response. This penalty is binary on/off

@@ -69,12 +69,12 @@ from gpt import (
 	TTS,
 	Transcription,
 	Translation,
-	VectorStore,
+	VectorStores,
 )
 
-from gemini import ( Chat, Images, Files, Embeddings, Transcription, TTS, Translation, FileSearchStore )
+from gemini import ( Chat, Images, Files, Embeddings, Transcription, TTS, Translation, VectorStores )
 
-from grok import ( Chat, Images, Files, Collections )
+from grok import ( Chat, Images, Files, VectorStores )
 
 # ==============================================================================
 # UTILITIES
@@ -762,7 +762,7 @@ if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 	st.session_state[ 'provider' ] = 'GPT'
 
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
-	st.session_state[ 'mode' ] = 'Text'
+	st.session_state[ 'mode' ] = 'Chat'
 
 if 'messages' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
@@ -795,15 +795,15 @@ if 'audio_model' not in st.session_state:
 	
 if 'embed_model' not in st.session_state:
 	st.session_state[ 'embed_model' ] = None
-	
+
+if 'tts_model' not in st.session_state:
+	st.session_state[ 'ttx_model' ] = None
+
 if 'temperature' not in st.session_state:
 	st.session_state[ 'temperature' ] = 0.7
 	
 if 'top_p' not in st.session_state:
 	st.session_state[ 'top_p' ] = 1.0
-
-if 'top_k' not in st.session_state:
-	st.session_state[ 'top_k' ] = 0
 
 if 'max_tokens' not in st.session_state:
 	st.session_state[ 'max_tokens' ] = 8064
@@ -847,6 +847,90 @@ def get_chat_instance( ):
 	"""
 	provider_module = get_provider_module( )
 	return provider_module.Chat( )
+
+def get_tts_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Text to Speech instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.TTS( )
+
+def get_images_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns an Images instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Images( )
+
+def get_embeddings_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns an Embeddings instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Embeddings( )
+
+def get_translation_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Translation instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Translation( )
+
+def get_transcription_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Transcription instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Transcription( )
+
+def get_files_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Files instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Files( )
+
+def get_vectorstores_instance( ):
+	"""
+
+		Purpose:
+		-------
+		Returns an Images instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.VectorStores()
 
 def _provider( ):
 	return st.session_state.get( 'provider', 'GPT' )
