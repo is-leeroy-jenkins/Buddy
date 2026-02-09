@@ -2263,31 +2263,17 @@ elif mode == "Files":
 	
 	st.subheader( '📁 Files API' )
 	st.divider( )
-	left, center, right = st.columns( [ 0.25,
-	                                    3.5,
-	                                    0.25 ] )
+	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with center:
 		list_method = None
-		for name in (
-					'retrieve_files',
-					'list_files',
-					'get_files',
-		):
+		for name in ( 'retrieve_files', 'list_files', 'get_files', ):
 			if hasattr( chat, name ):
 				list_method = getattr( chat, name )
 				break
 		
 		uploaded_file = st.file_uploader(
 			'Upload file (server-side via Files API)',
-			type=[
-					'pdf',
-					'txt',
-					'md',
-					'docx',
-					'png',
-					'jpg',
-					'jpeg',
-			],
+			type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ],
 		)
 		if uploaded_file:
 			tmp_path = save_temp( uploaded_file )
