@@ -766,7 +766,7 @@ class Transcription( Grok ):
 			self.client = Client( api_key=cfg.XAI_API_KEY )
 			with open( path, 'rb' ) as self.audio_file:
 				self.chat = self.client.chat.create( model=self.model,
-					file=self.audio_file, language=self.language )
+					file=self.audio_file, messages=self.messages )
 			return resp.text
 		except Exception as e:
 			ex = Error( e )
@@ -963,11 +963,11 @@ class Translation( Grok ):
 			self.instructions = instruct
 			self.prompt = prompt
 			self.messages.append( system( self.instructions ) )
-			self.messages.append( user( self.user ) )
+			self.messages.append( user( self.prompt ) )
 			self.client = Client( api_key=cfg.XAI_API_KEY )
 			with open( self.audio_file, 'rb' ) as self.audio_file:
 				self.chat = self.client.chat.create( model=self.model,
-					file=self.audio_file, prompt=self.prompt )
+					file=self.audio_file, messages=self.messages )
 			return self.chat
 		except Exception as e:
 			exception = Error( e )
