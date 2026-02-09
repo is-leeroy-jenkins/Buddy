@@ -2039,7 +2039,7 @@ elif mode == 'Vector Stores':
 				"No vector stores discovered. Create one or confirm "
 				"`chat.vector_stores` mapping exists." )
 			
-	elif provider_model == 'gpt':
+	elif provider_module == 'gpt':
 		vector = provider_module.VectorStores( )
 		st.subheader( '⚡ Vector Stores' )
 		st.divider( )
