@@ -169,6 +169,7 @@ class Chat( GPT ):
 	input: Optional[ List[ str ] ]
 	instructions: Optional[ str ]
 	tools: Optional[ List[ Dict[ str, Any ] ] ]
+	reasoning: Optional[ str ]
 	image_url: Optional[ str ]
 	search_recency: Optional[ int ]
 	max_search_results: Optional[ int ]
@@ -198,6 +199,8 @@ class Chat( GPT ):
 		self.instructions = instruct
 		self.stream = stream
 		self.tool_choice = 'auto'
+		self.tools = None
+		self.reasoning = None
 		self.model = None
 		self.content = None
 		self.prompt = None
@@ -207,9 +210,7 @@ class Chat( GPT ):
 		self.input = None
 		self.messages = None
 		self.image_url = None
-		self.tools = None
 		self.include = None
-		self.response = None
 		self.search_recency = None
 		self.max_search_results = None
 		self.purpose = None
@@ -338,7 +339,8 @@ class Chat( GPT ):
 		return [ 'web_search',
 		         'image_generation',
 		         'file_search',
-		         'code_interpreter' ]
+		         'code_interpreter',
+		         'computer_use_preview' ]
 	
 	@property
 	def purpose_options( self ) -> List[ str ] | None:

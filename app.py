@@ -1259,21 +1259,38 @@ elif mode == "Text":
 			
 			st.session_state[ 'stop_sequences' ] = [
 					s for s in stop_text.splitlines( ) if s.strip( ) ]
+			
+			store = st.toggle( label='Store:', key='chat_store' )
+			st.session_state[ 'store' ] = store
+			st.divider( )
+			
+			stream = st.toggle( label='Stream:', key='chat_stream' )
+			st.session_state[ 'stream' ] = stream
+			st.divider( )
 		
-		# ---------------- Include Options ----------------
-		if mode in [ 'GPT', 'Grok' ]:
-			include = st.multiselect( 'Include:', chat.include_options )
-			chat.include = include
-		
-		# ---------------- Tool Options ----------------
-		if mode in [ 'GPT', 'Grok', 'Gemini' ]:
-			tools = st.multiselect( 'Tools:', chat.tool_opions )
-			chat.tools = tools
-		
-		# ---------------- Reasoning Options ----------------
-		if mode in [ 'GPT', 'Grok', 'Gemini' ]:
-			reasoning = st.multiselect( 'Reasoning:', chat.reasoning_opions )
-			chat.tools = tools
+			# ---------------- Include Options ----------------
+			if mode in [ 'GPT', 'Grok' ]:
+				include = st.multiselect( 'Include:', chat.include_options )
+				chat.include = include
+			
+			st.session_state[ 'include' ] = include
+			st.divider( )
+			
+			# ---------------- Tool Options ----------------
+			if mode in [ 'GPT', 'Grok', 'Gemini' ]:
+				tools = st.multiselect( 'Tools:', chat.tool_opions )
+				chat.tools = tools
+			
+			st.session_state[ 'tools' ] = tools
+			st.divider( )
+			
+			# ---------------- Reasoning Options ----------------
+			if mode in [ 'GPT', 'Grok', 'Gemini' ]:
+				reasoning = st.multiselect( 'Reasoning:', chat.reasoning_opions )
+				chat.reasoning = reasoning
+			
+			st.session_state[ 'reasoning' ] = reasoning
+			st.divider( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
