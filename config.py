@@ -231,3 +231,5 @@ SYSTEM_INSTRUCTIONS = r'''Foundational, pre-prompt guidelines that define an Lar
 					(LLM) persona, behavior, tone, and constraints throughout a conversation.
 					Acting as a "preamble" or system message, these instructions take precedence
 					over user prompts, ensuring consistent, tailored, and safe interactions.'''
+
+SAMPLE_RATES = [ 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000 ]

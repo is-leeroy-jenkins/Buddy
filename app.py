@@ -839,6 +839,36 @@ if 'store' not in st.session_state:
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
+if 'audio_recording' not in st.session_state:
+	st.session_state[ 'audio_recording' ] = None
+
+if 'sample_rate' not in st.session_state:
+	st.session_state[ 'sample_rate' ] = 16000
+
+if 'language' not in st.session_state:
+	st.session_state[ 'language' ] = None
+
+if 'voice' not in st.session_state:
+	st.session_state[ 'voice' ] = None
+
+if 'audio_start' not in st.session_state:
+	st.session_state[ 'audio_start' ] = 0.0
+
+if 'audio_end' not in st.session_state:
+	st.session_state[ 'audio_end' ] = 0.0
+
+if 'audio_start' not in st.session_state:
+	st.session_state[ 'audio_Start' ] = 0.0
+
+if 'audio_loop' not in st.session_state:
+	st.session_state[ 'audio_loop' ] = False
+	
+if 'auto_play' not in st.session_state:
+	st.session_state[ 'auto_play' ] = False
+
+if 'audio_format' not in st.session_state:
+	st.session_state[ 'audio_format' ] = None
+	
 if 'provider' not in st.session_state:
 	st.session_state[ 'provider' ] = 'GPT'
 
@@ -1723,6 +1753,14 @@ elif mode == "Audio":
 	# Provider-aware Audio instantiation
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
+	audio_recording = st.session_state.get( 'audio_recording', None )
+	sample_rate = st.session_state.get( 'sample_rate', 16000 )
+	audio_start = st.session_state.get( 'audio_start', 0.0 )
+	audio_end = st.session_state.get( 'audio_end', 0.0 )
+	audio_loop = st.session_state.get( 'audio_loop', False )
+	auto_play = st.session_state.get( 'auto_play', False )
+	voice = st.session_state.get( 'voice', None )
 	st.subheader( '🔉 Audio API')
 	st.divider( )
 	transcriber = None
@@ -1775,6 +1813,7 @@ elif mode == "Audio":
 						else 0 ), )
 			st.session_state[ 'audio_model' ] = audio_model
 		
+		
 		# ---------------- Language / Voice Options ----------------
 		language = None
 		voice = None
@@ -1787,7 +1826,27 @@ elif mode == "Audio":
 		if task == 'Text-to-Speech' and tts:
 			if hasattr( tts, 'voice_options' ):
 				voice = st.selectbox( 'Voice', tts.voice_options, )
+		
+		with st.expander( '🎧 Sound Settings:', expanded=False ):
+			audio_start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
+			
+			st.divider( )
+			
+			audio_end = st.number_input( label='End Time:', min_value=0.0, value=0.0 )
+			
+			st.divider( )
 	
+			audio_format = st.selectbox( label='Format',
+				options=[ 'mp3', 'wav', 'aac', 'flac', 'opus', 'pcm' ] )
+			
+			st.divider( )
+			
+			audio_loop = st.toggle( label='Loop', value=False )
+			
+			st.divider( )
+			
+			auto_play = st.toggle( label='Auto Play', value=Fale )
+			
 	# ------------------------------------------------------------------
 	# Main UI — Audio Input / Output
 	# ------------------------------------------------------------------
@@ -1797,8 +1856,7 @@ elif mode == "Audio":
 			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
 	
 	with right_ins:
-		set_col, clear_col = st.columns( [ 0.5,
-		                                   0.5 ] )
+		set_col, clear_col = st.columns( [ 0.5,  0.5 ] )
 		with set_col:
 			set_button = st.button( '💾 Save' )
 		
@@ -1812,15 +1870,10 @@ elif mode == "Audio":
 			instructions = ''
 			st.session_state[ 'instructions' ] = None
 
-	left, center, right = st.columns( [ 0.05,  0.85, 0.05 ] )
-	with center:
+	left_col,  right_col = st.columns( [ 0.5, 0.5 ] )
+	with left_col:
 		if task in ('Transcribe', 'Translate'):
-			uploaded = st.file_uploader( 'Upload audio file',
-				type=[ 'wav',
-				       'mp3',
-				       'm4a',
-				       'flac' ],
-			)
+			uploaded = st.file_uploader( 'Upload Audio Lile',type=[ 'wav', 'mp3','m4a', 'flac' ],)
 			
 			if uploaded:
 				tmp_path = save_temp( uploaded )
@@ -1887,7 +1940,10 @@ elif mode == "Audio":
 					
 					except Exception as exc:
 						st.error( f"Text-to-speech failed: {exc}" )
-
+	
+	with right_col:
+		recording = st.audio( label='Make Audio Recording:', width='stretch' )
+		
 # ======================================================================================
 # EMBEDDINGS MODE
 # ======================================================================================
