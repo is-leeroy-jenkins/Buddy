@@ -555,7 +555,15 @@ class Files( Gemini ):
 	def file_options( self ) -> List[ str ] | None:
 		"""Returns list of available chat models."""
 		return self.files
-
+	
+	@property
+	def model_options( self ) -> List[ str ] | None:
+		"""Returns list of available chat models."""
+		return [ 'gemini-3.5-flash',
+		         'gemini-3.5 flash-lite',
+		         'gemini-3.0-flash',
+		         'gemini-3.0-flash-lite' ]
+	
 	def upload( self, path: str, name: str=None ) -> File | None:
 		"""
 		
