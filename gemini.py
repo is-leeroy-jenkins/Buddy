@@ -1253,7 +1253,7 @@ class Images( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class VectorStores:
+class VectorStores( Gemini ):
 	'''
 
 		Purpose:

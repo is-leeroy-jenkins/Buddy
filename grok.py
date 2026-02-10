@@ -314,6 +314,17 @@ class Chat( Grok ):
 		         'collections_search',
 		         'code_interpreter' ]
 	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'none', ]
+	
 	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=10000,
 			temperature: float=0.8, top_p: float=0.9, effort: str='high', format: str='text',
 			store: bool=True, include: List[ str ]=None, instruct: str=None ):
