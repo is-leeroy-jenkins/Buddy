@@ -1212,9 +1212,10 @@ if mode == 'Chat':
 # ======================================================================================
 elif mode == "Text":
 	st.subheader( "📝 Text Generation" )
-	st.divider( )
 	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
 	chat = provider_module.Chat( )
+	st.divider( )
 	
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
@@ -1328,10 +1329,10 @@ elif mode == "Text":
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
+	left, center, right = st.columns( [ 0.15, 5.5, 0.15 ] )
 	instructions = st.session_state[ 'instructions' ]
 	with center:
-		left_ins, right_ins = st.columns( [ 0.75, 0.25 ] )
+		left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
 		with left_ins:
 			with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 				instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
@@ -1350,15 +1351,19 @@ elif mode == "Text":
 			if clear_button:
 				instructions = ''
 				st.session_state[ 'instructions' ] = None
-		
-		st.divider( )
-		
+	
+		st.text( '' )
 		#----------- MESSAGES-----------------------
 		for msg in st.session_state.messages:
 			with st.chat_message( msg[ 'role' ] ):
 				st.markdown( msg[ 'content' ] )
-		
-		prompt = st.chat_input( 'Ask AI…' )
+		if provider_name == 'GPT':
+			prompt = st.chat_input( 'Ask ChatGPT…' )
+		elif provider_name == 'Grok':
+			prompt = st.chat_input( 'Ask Grok…' )
+		elif provider_name == 'Gemini':
+			prompt = st.chat_input( 'Ask Gemini…' )
+			
 		if prompt is not None:
 			st.session_state.messages.append( {
 					'role': 'user',
@@ -1458,12 +1463,11 @@ elif mode == "Images":
 		fmt = None
 		if hasattr( image, 'format_options' ):
 			fmt = st.selectbox( 'Format', image.format_options, )
-	
-	st.divider( )
+
 	instructions = st.session_state[ 'instructions' ]
 	left_ins, right_ins = st.columns( [ 0.80,  0.20 ] )
 	with left_ins:
-		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
 			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
 	
 	with right_ins:
@@ -1482,235 +1486,234 @@ elif mode == "Images":
 			instructions = ''
 			st.session_state[ 'instructions' ] = None
 
-	left, center, right = st.columns( [ 0.15, 0.50, 0.15 ] )
-	with center:
-		# ------------------------------------------------------------------
-		# Main UI — Tabs
-		# ------------------------------------------------------------------
-		tab_gen, tab_analyze, tab_edit = st.tabs( [ '📷 Generate', '‍🔬 Analyze', '🎨 Edit' ] )
-		with tab_gen:
-			prompt = st.text_area( 'Prompt' )
-			if st.button( 'Generate Image' ):
-				with st.spinner( 'Generating…' ):
-					try:
-						kwargs: Dict[ str, Any ] = {
-								'prompt': prompt,
-								'model': image_model,
-						}
-						
-						# Provider-safe optional args
-						if size_arg is not None:
-							kwargs[ 'size' ] = size_arg
-						if quality is not None:
-							kwargs[ 'quality' ] = quality
-						if fmt is not None:
-							kwargs[ 'fmt' ] = fmt
-						
-						img_url = image.generate( **kwargs )
-						st.image( img_url )
-						
-						try:
-							_update_token_counters(
-								getattr( image, 'response', None )
-							)
-						except Exception:
-							pass
+	
+	# ------------------------------------------------------------------
+	# Main UI — Tabs
+	# ------------------------------------------------------------------
+	tab_gen, tab_analyze, tab_edit = st.tabs( [ '📷 Generate', '‍🔬 Analyze', '🎨 Edit' ] )
+	with tab_gen:
+		prompt = st.text_area( 'Prompt' )
+		if st.button( 'Generate Image' ):
+			with st.spinner( 'Generating…' ):
+				try:
+					kwargs: Dict[ str, Any ] = {
+							'prompt': prompt,
+							'model': image_model,
+					}
 					
-					except Exception as exc:
-						st.error( f'Image generation failed: {exc}' )
+					# Provider-safe optional args
+					if size_arg is not None:
+						kwargs[ 'size' ] = size_arg
+					if quality is not None:
+						kwargs[ 'quality' ] = quality
+					if fmt is not None:
+						kwargs[ 'fmt' ] = fmt
+					
+					img_url = image.generate( **kwargs )
+					st.image( img_url )
+					
+					try:
+						_update_token_counters(
+							getattr( image, 'response', None )
+						)
+					except Exception:
+						pass
+				
+				except Exception as exc:
+					st.error( f'Image generation failed: {exc}' )
+	
+	with tab_analyze:
+		st.markdown( 'Image analysis — upload an image to analyze.' )
 		
-		with tab_analyze:
-			st.markdown( 'Image analysis — upload an image to analyze.' )
+		uploaded_img = st.file_uploader(
+			'Upload an image for analysis',
+			type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+			accept_multiple_files=False,
+			key='images_analyze_uploader',
+		)
+		
+		if uploaded_img:
+			tmp_path = save_temp( uploaded_img )
 			
-			uploaded_img = st.file_uploader(
-				'Upload an image for analysis',
-				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-				accept_multiple_files=False,
-				key='images_analyze_uploader',
+			st.image(
+				uploaded_img,
+				caption='Uploaded image preview',
+				use_column_width=True,
 			)
 			
-			if uploaded_img:
-				tmp_path = save_temp( uploaded_img )
-				
-				st.image(
-					uploaded_img,
-					caption='Uploaded image preview',
-					use_column_width=True,
-				)
-				
-				# Discover available analysis methods on Image object
-				available_methods = [ ]
-				for candidate in (
-							'analyze',
-							'describe_image',
-							'describe',
-							'classify',
-							'detect_objects',
-							'caption',
-							'image_analysis',
-				):
-					if hasattr( image, candidate ):
-						available_methods.append( candidate )
-				
-				if available_methods:
-					chosen_method = st.selectbox(
-						'Method',
-						available_methods,
-						index=0,
-					)
-				else:
-					chosen_method = None
-					st.info(
-						'No dedicated image analysis method found on Image object; '
-						'attempting generic handlers.'
-					)
-				
-				chosen_model = st.selectbox(
-					"Model (analysis)",
-					[ image_model,
-					  None ],
+			# Discover available analysis methods on Image object
+			available_methods = [ ]
+			for candidate in (
+						'analyze',
+						'describe_image',
+						'describe',
+						'classify',
+						'detect_objects',
+						'caption',
+						'image_analysis',
+			):
+				if hasattr( image, candidate ):
+					available_methods.append( candidate )
+			
+			if available_methods:
+				chosen_method = st.selectbox(
+					'Method',
+					available_methods,
 					index=0,
 				)
-				
-				chosen_model_arg = (
-						image_model if chosen_model is None else chosen_model
+			else:
+				chosen_method = None
+				st.info(
+					'No dedicated image analysis method found on Image object; '
+					'attempting generic handlers.'
 				)
-				
-				if st.button( "Analyze Image" ):
-					with st.spinner( "Analyzing image…" ):
-						analysis_result = None
-						try:
-							if chosen_method:
-								func = getattr( image, chosen_method, None )
-								if func:
-									try:
-										analysis_result = func( tmp_path )
-									except TypeError:
-										analysis_result = func(
-											tmp_path, model=chosen_model_arg
-										)
-							else:
-								for fallback in (
-											"analyze",
-											"describe_image",
-											"describe",
-											"caption",
-								):
-									if hasattr( image, fallback ):
-										func = getattr( image, fallback )
-										try:
-											analysis_result = func( tmp_path )
-											break
-										except Exception:
-											continue
-							
-							if analysis_result is None:
-								st.warning(
-									"No analysis output returned by the available methods."
-								)
-							else:
-								if isinstance( analysis_result, (dict, list) ):
-									st.json( analysis_result )
-								else:
-									st.markdown( "**Analysis result:**" )
-									st.write( analysis_result )
-								
-								try:
-									_update_token_counters(
-										getattr( image, "response", None )
-										or analysis_result
-									)
-								except Exception:
-									pass
-						
-						except Exception as exc:
-							st.error( f"Analysis Failed: {exc}" )
-		
-		with tab_edit:
-			st.markdown( 'Image Editing — upload an image to edit.' )
 			
-			uploaded_img = st.file_uploader( 'Upload Image for Edit',
-				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-				accept_multiple_files=False,
-				key='images_edit_uploader',
+			chosen_model = st.selectbox(
+				"Model (analysis)",
+				[ image_model,
+				  None ],
+				index=0,
 			)
 			
-			if uploaded_img:
-				tmp_path = save_temp( uploaded_img )
-				
-				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-				
-				available_methods = [ ]
-				for candidate in (
-							'edit',
-							'describe_image',
-							'describe',
-							'classify',
-							'detect_objects',
-							'caption',
-							'image_edit',
-				):
-					if hasattr( image, candidate ):
-						available_methods.append( candidate )
-				
-				if available_methods:
-					chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-				else:
-					chosen_method = None
-					st.info( 'No dedicated image editing method found on Image object;'
-					         'attempting generic handlers.')
-				
-				chosen_model = st.selectbox( "Model (edit)", [ image_model,  None ], index=0, )
-				
-				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
-				
-				if st.button( "Edit Image" ):
-					with st.spinner( "Editing image…" ):
-						analysis_result = None
-						try:
-							if chosen_method:
-								func = getattr( image, chosen_method, None )
-								if func:
+			chosen_model_arg = (
+					image_model if chosen_model is None else chosen_model
+			)
+			
+			if st.button( "Analyze Image" ):
+				with st.spinner( "Analyzing image…" ):
+					analysis_result = None
+					try:
+						if chosen_method:
+							func = getattr( image, chosen_method, None )
+							if func:
+								try:
+									analysis_result = func( tmp_path )
+								except TypeError:
+									analysis_result = func(
+										tmp_path, model=chosen_model_arg
+									)
+						else:
+							for fallback in (
+										"analyze",
+										"describe_image",
+										"describe",
+										"caption",
+							):
+								if hasattr( image, fallback ):
+									func = getattr( image, fallback )
 									try:
 										analysis_result = func( tmp_path )
-									except TypeError:
-										analysis_result = func(
-											tmp_path, model=chosen_model_arg
-										)
-							else:
-								for fallback in (
-											"analyze",
-											"describe_image",
-											"describe",
-											"caption",
-								):
-									if hasattr( image, fallback ):
-										func = getattr( image, fallback )
-										try:
-											analysis_result = func( tmp_path )
-											break
-										except Exception:
-											continue
-							
-							if analysis_result is None:
-								st.warning( "No editing output returned by the available methods." )
-							else:
-								if isinstance( analysis_result, (dict, list) ):
-									st.json( analysis_result )
-								else:
-									st.markdown( "**Analysis result:**" )
-									st.write( analysis_result )
-								
-								try:
-									_update_token_counters(
-										getattr( image, "response", None )
-										or analysis_result
-									)
-								except Exception:
-									pass
+										break
+									except Exception:
+										continue
 						
-						except Exception as exc:
-							st.error( f"Analysis Failed: {exc}" )
+						if analysis_result is None:
+							st.warning(
+								"No analysis output returned by the available methods."
+							)
+						else:
+							if isinstance( analysis_result, (dict, list) ):
+								st.json( analysis_result )
+							else:
+								st.markdown( "**Analysis result:**" )
+								st.write( analysis_result )
+							
+							try:
+								_update_token_counters(
+									getattr( image, "response", None )
+									or analysis_result
+								)
+							except Exception:
+								pass
+					
+					except Exception as exc:
+						st.error( f"Analysis Failed: {exc}" )
+	
+	with tab_edit:
+		st.markdown( 'Image Editing — upload an image to edit.' )
+		
+		uploaded_img = st.file_uploader( 'Upload Image for Edit',
+			type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+			accept_multiple_files=False,
+			key='images_edit_uploader',
+		)
+		
+		if uploaded_img:
+			tmp_path = save_temp( uploaded_img )
+			
+			st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
+			
+			available_methods = [ ]
+			for candidate in (
+						'edit',
+						'describe_image',
+						'describe',
+						'classify',
+						'detect_objects',
+						'caption',
+						'image_edit',
+			):
+				if hasattr( image, candidate ):
+					available_methods.append( candidate )
+			
+			if available_methods:
+				chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+			else:
+				chosen_method = None
+				st.info( 'No dedicated image editing method found on Image object;'
+				         'attempting generic handlers.')
+			
+			chosen_model = st.selectbox( "Model (edit)", [ image_model,  None ], index=0, )
+			
+			chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+			
+			if st.button( "Edit Image" ):
+				with st.spinner( "Editing image…" ):
+					analysis_result = None
+					try:
+						if chosen_method:
+							func = getattr( image, chosen_method, None )
+							if func:
+								try:
+									analysis_result = func( tmp_path )
+								except TypeError:
+									analysis_result = func(
+										tmp_path, model=chosen_model_arg
+									)
+						else:
+							for fallback in (
+										"analyze",
+										"describe_image",
+										"describe",
+										"caption",
+							):
+								if hasattr( image, fallback ):
+									func = getattr( image, fallback )
+									try:
+										analysis_result = func( tmp_path )
+										break
+									except Exception:
+										continue
+						
+						if analysis_result is None:
+							st.warning( "No editing output returned by the available methods." )
+						else:
+							if isinstance( analysis_result, (dict, list) ):
+								st.json( analysis_result )
+							else:
+								st.markdown( "**Analysis result:**" )
+								st.write( analysis_result )
+							
+							try:
+								_update_token_counters(
+									getattr( image, "response", None )
+									or analysis_result
+								)
+							except Exception:
+								pass
+					
+					except Exception as exc:
+						st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
 # AUDIO MODE
@@ -1726,11 +1729,11 @@ elif mode == "Audio":
 	translator = None
 	tts = None
 	
-	if hasattr( provider_module, "Transcription" ):
+	if hasattr( provider_module, 'Transcription' ):
 		transcriber = provider_module.Transcription( )
-	if hasattr( provider_module, "Translation" ):
+	if hasattr( provider_module, 'Translation' ):
 		translator = provider_module.Translation( )
-	if hasattr( provider_module, "TTS" ):
+	if hasattr( provider_module, 'TTS' ):
 		tts = provider_module.TTS( )
 	
 	# ------------------------------------------------------------------
@@ -1742,69 +1745,77 @@ elif mode == "Audio":
 		# ---------------- Task ----------------
 		available_tasks = [ ]
 		if transcriber is not None:
-			available_tasks.append( "Transcribe" )
+			available_tasks.append( 'Transcribe' )
 		if translator is not None:
-			available_tasks.append( "Translate" )
+			available_tasks.append( 'Translate' )
 		if tts is not None:
-			available_tasks.append( "Text-to-Speech" )
+			available_tasks.append( 'Text-to-Speech' )
 		
 		if not available_tasks:
-			st.info( "Audio is not supported by the selected provider." )
+			st.info( 'Audio is not supported by the selected provider.' )
 			task = None
 		else:
-			task = st.selectbox( "Task", available_tasks )
+			task = st.selectbox( 'Task', available_tasks )
 		
 		# ---------------- Model (provider-correct) ----------------
 		audio_model = None
 		model_options = [ ]
 		
-		if task == "Transcribe" and transcriber and hasattr( transcriber, "model_options" ):
+		if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
 			model_options = transcriber.model_options
-		elif task == "Translate" and translator and hasattr( translator, "model_options" ):
+		elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
 			model_options = translator.model_options
-		elif task == "Text-to-Speech" and tts and hasattr( tts, "model_options" ):
+		elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
 			model_options = tts.model_options
 		
 		if model_options:
-			audio_model = st.selectbox(
-				"Model",
-				model_options,
-				index=(
-						model_options.index( st.session_state.get( "audio_model" ) )
-						if st.session_state.get( "audio_model" ) in model_options
-						else 0
-				),
-			)
-			st.session_state[ "audio_model" ] = audio_model
+			audio_model = st.selectbox( 'Model', model_options,
+				index=( model_options.index( st.session_state.get( 'audio_model' ) )
+						if st.session_state.get( 'audio_model' ) in model_options
+						else 0 ), )
+			st.session_state[ 'audio_model' ] = audio_model
 		
 		# ---------------- Language / Voice Options ----------------
 		language = None
 		voice = None
 		
-		if task in ("Transcribe", "Translate"):
-			obj = transcriber if task == "Transcribe" else translator
-			if obj and hasattr( obj, "language_options" ):
-				language = st.selectbox(
-					"Language",
-					obj.language_options,
-				)
+		if task in ('Transcribe', 'Translate'):
+			obj = transcriber if task == 'Transcribe' else translator
+			if obj and hasattr( obj, 'language_options' ):
+				language = st.selectbox( 'Language', obj.language_options, )
 		
-		if task == "Text-to-Speech" and tts:
-			if hasattr( tts, "voice_options" ):
-				voice = st.selectbox(
-					"Voice",
-					tts.voice_options,
-				)
+		if task == 'Text-to-Speech' and tts:
+			if hasattr( tts, 'voice_options' ):
+				voice = st.selectbox( 'Voice', tts.voice_options, )
 	
 	# ------------------------------------------------------------------
 	# Main UI — Audio Input / Output
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
+	left_ins, right_ins = st.columns( [ 0.8,  0.2 ] )
+	with left_ins:
+		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
+			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
 	
+	with right_ins:
+		set_col, clear_col = st.columns( [ 0.5,
+		                                   0.5 ] )
+		with set_col:
+			set_button = st.button( '💾 Save' )
+		
+		with clear_col:
+			clear_button = st.button( '🧹 Clear' )
+		
+		if set_button:
+			st.session_state[ 'instructions' ] = instructions
+		
+		if clear_button:
+			instructions = ''
+			st.session_state[ 'instructions' ] = None
+
+	left, center, right = st.columns( [ 0.05,  0.85, 0.05 ] )
 	with center:
 		if task in ('Transcribe', 'Translate'):
-			uploaded = st.file_uploader(
-				'Upload audio file',
+			uploaded = st.file_uploader( 'Upload audio file',
 				type=[ 'wav',
 				       'mp3',
 				       'm4a',
@@ -2310,9 +2321,31 @@ elif mode == 'Vector Stores':
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
-elif mode == 'Documents':
+elif mode == 'Document Q & A':
 	st.subheader( '📄 Document Q & A')
 	st.divider( )
+	
+	left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
+	with left_ins:
+		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
+			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
+	
+	with right_ins:
+		set_col, clear_col = st.columns( [ 0.5,
+		                                   0.5 ] )
+		with set_col:
+			set_button = st.button( '💾 Save' )
+		
+		with clear_col:
+			clear_button = st.button( '🧹 Clear' )
+		
+		if set_button:
+			st.session_state[ 'instructions' ] = instructions
+		
+		if clear_button:
+			instructions = ''
+			st.session_state[ 'instructions' ] = None
+	
 	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with center:
 		uploaded = st.file_uploader( 'Upload Documents (session only)',
