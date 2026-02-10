@@ -270,17 +270,16 @@ class Chat( Gemini ):
 	def reasoning_options( self ) -> List[ str ] | None:
 		'''
 
-		Returns:
-		--------
-		A List[ str ] of reasoning effort options
+			Returns:
+			--------
+			A List[ str ] of thinking effort options
 
 		'''
-		return [ 'low',
-		         'medium',
+		return [ 'minimal',
+		         'low',
 		         'high',
-		         'none',
-		         'minimal',
-		         'xhigh' ]
+		         'medium',
+		         'high' ]
 	
 	@property
 	def include_options( self ) -> List[ str ] | None:
