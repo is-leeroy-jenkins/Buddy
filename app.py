@@ -1752,7 +1752,7 @@ elif mode == "Audio":
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	audio_file = st.session_state.get( 'audio_file', None )
-	sample_rate = st.session_state.get( 'sample_rate', 16000 )
+	audio_rate = st.session_state.get( 'audio_rate', 16000 )
 	audio_start = st.session_state.get( 'audio_start', 0.0 )
 	audio_end = st.session_state.get( 'audio_end', 0.0 )
 	audio_loop = st.session_state.get( 'audio_loop', False )
@@ -1774,7 +1774,7 @@ elif mode == "Audio":
 	# Sidebar — Audio Settings (NO functionality removed)
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.caption( 'Audio Settings' )
+		st.text( '⚙️ Audio Settings' )
 		
 		# ---------------- Task ----------------
 		available_tasks = [ ]
@@ -1792,7 +1792,7 @@ elif mode == "Audio":
 			
 		# ---------------- Model (provider-correct) ----------------
 		
-		with st.expander( label='🧠 LLM Options:', expanded=False ):
+		with st.expander( label='Model Options:', expanded=False ):
 			if not available_tasks:
 				st.info( 'Audio is not supported by the selected provider.' )
 				task = None
@@ -1823,13 +1823,16 @@ elif mode == "Audio":
 				if obj and hasattr( obj, 'language_options' ):
 					language = st.selectbox( 'Language', obj.language_options, )
 			
-			st.divider( )
 			
 			if task == 'Text-to-Speech' and tts:
 				if hasattr( tts, 'voice_options' ):
 					voice = st.selectbox( 'Voice', tts.voice_options, )
 	
-		with st.expander( label='🎧 Sound Option:', expanded=False ):
+		with st.expander( label='Sound Options:', expanded=False ):
+			audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES )
+			
+			st.divider( )
+			
 			audio_start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
 			
 			st.divider( )
@@ -1874,11 +1877,13 @@ elif mode == "Audio":
 			instructions = ''
 			st.session_state[ 'instructions' ] = None
 
-	left_col,  right_col = st.columns( [ 0.5, 0.5 ], border=True )
+	left_col, center_col, right_col = st.columns( [ 0.3, 0.3, 0.3 ], border=True )
 	with left_col:
+		uploaded = st.audio_input( label='Record Audio', sample_rate=audio_rate)
+	
+	with center_col:
 		if task in ('Transcribe', 'Translate'):
-			uploaded = st.file_uploader( 'Upload Audio Lile',type=[ 'wav', 'mp3','m4a', 'flac' ],)
-			
+			uploaded = st.file_uploader( 'Upload Audio Lile', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
 			if uploaded:
 				tmp_path = save_temp( uploaded )
 				
@@ -1946,7 +1951,7 @@ elif mode == "Audio":
 						st.error( f"Text-to-speech failed: {exc}" )
 	
 	with right_col:
-		audio_recording = st.audio( data=audio_file, sample_rate=16000, start_time=audio_start,
+		audio_recording = st.audio( data=audio_file, sample_rate=audio_rate, start_time=audio_start,
 			end_time=audio_end, format=audio_format, width='stretch',
 			loop=audio_loop, autoplay=auto_play  )
 		
