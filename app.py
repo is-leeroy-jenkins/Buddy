@@ -1292,7 +1292,7 @@ elif mode == "Text":
 				key='chat_include', help=cfg.INCLUDE )
 			chat.include = include
 			st.session_state[ 'include' ] = include
-			
+		
 			st.divider( )
 			
 			# ---------------- Choice Options ----------------
@@ -1300,7 +1300,7 @@ elif mode == "Text":
 				key='chat_tool_choic', help=cfg.CHOICE )
 			chat.tool_choice = tool_choice
 			st.session_state[ 'tool_choice' ] = tool_choice
-			
+		
 			st.divider( )
 			
 			# ---------------- Tools Options ----------------
@@ -1318,7 +1318,7 @@ elif mode == "Text":
 			st.session_state[ 'reasoning' ] = reasoning
 			
 			st.divider( )
-			
+		
 			stop_text = st.text_area( 'Stop Sequences',
 				value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
 				height=80, help=cfg.STOP_SEQUENCE )
@@ -1337,12 +1337,19 @@ elif mode == "Text":
 				instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
 		
 		with right_ins:
-			set_col, clear_col = st.columns( [ 0.50, 0.50 ])
+			set_col, clear_col = st.columns( [ 0.5, 0.5 ] )
 			with set_col:
 				set_button = st.button( '💾 Save' )
-				st.session_state[ 'instructions' ] = instructions
+				
 			with clear_col:
-				clear_button = st.button( '🧹 Clear')
+				clear_button = st.button( '🧹 Clear' )
+			
+			if set_button:
+				st.session_state[ 'instructions' ] = instructions
+			
+			if clear_button:
+				instructions = ''
+				st.session_state[ 'instructions' ] = None
 		
 		st.divider( )
 		

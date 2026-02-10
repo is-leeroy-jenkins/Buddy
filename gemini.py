@@ -222,12 +222,6 @@ class Chat( Gemini ):
 		self.files = None
 	
 	@property
-	def file_options( self ) -> List[ str ] | None:
-		"""Returns list of available chat models."""
-		self.files = self.get_files( )
-		return self.files
-	
-	@property
 	def model_options( self ) -> List[ str ] | None:
 		"""Returns list of available chat models."""
 		return [ 'gemini-2.5-flash',
@@ -258,6 +252,37 @@ class Chat( Gemini ):
 		         'text/x.enum' ]
 	
 	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'google_search',
+		         'google_maps',
+		         'file_search',
+		         'code_execution',
+		         'computer_use' ]
+	
+	@property
+	def reasoning_options( self ) -> List[ str ] | None:
+		'''
+
+		Returns:
+		--------
+		A List[ str ] of reasoning effort options
+
+		'''
+		return [ 'low',
+		         'medium',
+		         'high',
+		         'none',
+		         'minimal',
+		         'xhigh' ]
+	
+	@property
 	def include_options( self ) -> List[ str ] | None:
 		'''
 
@@ -270,6 +295,17 @@ class Chat( Gemini ):
 		         'message.input_image.image_url',
 		         'message.output_text.logprobs',
 		         'reasoning.encrypted_content' ]
+	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'none', ]
 	
 	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
