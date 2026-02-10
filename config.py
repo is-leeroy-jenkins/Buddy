@@ -61,7 +61,7 @@ ANALYST = '❓'
 BUDDY = '🧠'
 PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
-PROMPT_VERSION = '12'
+PROMPT_VERSION = '13'
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
