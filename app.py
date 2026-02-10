@@ -839,8 +839,8 @@ if 'store' not in st.session_state:
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
-if 'audio_recording' not in st.session_state:
-	st.session_state[ 'audio_recording' ] = None
+if 'audio_file' not in st.session_state:
+	st.session_state[ 'audio_file' ] = None
 
 if 'sample_rate' not in st.session_state:
 	st.session_state[ 'sample_rate' ] = 16000
@@ -857,9 +857,6 @@ if 'audio_start' not in st.session_state:
 if 'audio_end' not in st.session_state:
 	st.session_state[ 'audio_end' ] = 0.0
 
-if 'audio_start' not in st.session_state:
-	st.session_state[ 'audio_Start' ] = 0.0
-
 if 'audio_loop' not in st.session_state:
 	st.session_state[ 'audio_loop' ] = False
 	
@@ -867,7 +864,7 @@ if 'auto_play' not in st.session_state:
 	st.session_state[ 'auto_play' ] = False
 
 if 'audio_format' not in st.session_state:
-	st.session_state[ 'audio_format' ] = None
+	st.session_state[ 'audio_format' ] = 'audio/wav'
 	
 if 'provider' not in st.session_state:
 	st.session_state[ 'provider' ] = 'GPT'
@@ -1754,7 +1751,7 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	audio_recording = st.session_state.get( 'audio_recording', None )
+	audio_file = st.session_state.get( 'audio_file', None )
 	sample_rate = st.session_state.get( 'sample_rate', 16000 )
 	audio_start = st.session_state.get( 'audio_start', 0.0 )
 	audio_end = st.session_state.get( 'audio_end', 0.0 )
@@ -1782,6 +1779,11 @@ elif mode == "Audio":
 		
 		# ---------------- Task ----------------
 		available_tasks = [ ]
+		language = None
+		voice = None
+		audio_model = None
+		model_options = [ ]
+		
 		if transcriber is not None:
 			available_tasks.append( 'Transcribe' )
 		if translator is not None:
@@ -1789,45 +1791,47 @@ elif mode == "Audio":
 		if tts is not None:
 			available_tasks.append( 'Text-to-Speech' )
 		
-		if not available_tasks:
-			st.info( 'Audio is not supported by the selected provider.' )
-			task = None
-		else:
-			task = st.selectbox( 'Task', available_tasks )
-		
-		# ---------------- Model (provider-correct) ----------------
-		audio_model = None
-		model_options = [ ]
-		
-		if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
-			model_options = transcriber.model_options
-		elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
-			model_options = translator.model_options
-		elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
-			model_options = tts.model_options
-		
-		if model_options:
-			audio_model = st.selectbox( 'Model', model_options,
-				index=( model_options.index( st.session_state.get( 'audio_model' ) )
-						if st.session_state.get( 'audio_model' ) in model_options
-						else 0 ), )
-			st.session_state[ 'audio_model' ] = audio_model
-		
-		
-		# ---------------- Language / Voice Options ----------------
-		language = None
-		voice = None
-		
-		if task in ('Transcribe', 'Translate'):
-			obj = transcriber if task == 'Transcribe' else translator
-			if obj and hasattr( obj, 'language_options' ):
-				language = st.selectbox( 'Language', obj.language_options, )
-		
-		if task == 'Text-to-Speech' and tts:
-			if hasattr( tts, 'voice_options' ):
-				voice = st.selectbox( 'Voice', tts.voice_options, )
-		
-		with st.expander( '🎧 Sound Settings:', expanded=False ):
+		with st.expander( 'Model Settings:', expanded=False ):
+			# ---------------- Model (provider-correct) ----------------
+			if not available_tasks:
+				st.info( 'Audio is not supported by the selected provider.' )
+				task = None
+			else:
+				task = st.selectbox( 'Task', available_tasks )
+				
+			if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
+				model_options = transcriber.model_options
+			elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
+				model_options = translator.model_options
+			elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
+				model_options = tts.model_options
+			
+			st.divider( )
+			
+			if model_options:
+				audio_model = st.selectbox( 'Model', model_options,
+					index=( model_options.index( st.session_state.get( 'audio_model' ) )
+							if st.session_state.get( 'audio_model' ) in model_options
+							else 0 ), )
+				st.session_state[ 'audio_model' ] = audio_model
+			
+			st.divider( )
+			
+			# ---------------- Language / Voice Options ----------------
+			if task in ('Transcribe', 'Translate'):
+				obj = transcriber if task == 'Transcribe' else translator
+				if obj and hasattr( obj, 'language_options' ):
+					language = st.selectbox( 'Language', obj.language_options, )
+			
+			st.divider( )
+			
+			if task == 'Text-to-Speech' and tts:
+				if hasattr( tts, 'voice_options' ):
+					voice = st.selectbox( 'Voice', tts.voice_options, )
+	
+		st.divider( )
+	
+		with st.expander( 'Sound Settings:', expanded=False ):
 			audio_start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
 			
 			st.divider( )
@@ -1837,7 +1841,8 @@ elif mode == "Audio":
 			st.divider( )
 	
 			audio_format = st.selectbox( label='Format',
-				options=[ 'mp3', 'wav', 'aac', 'flac', 'opus', 'pcm' ] )
+				options=[ 'audio/mp3', 'audio/wav', 'audio/aac', 'audio/flac',
+				          'audio/opus', 'audio/pcm' ] )
 			
 			st.divider( )
 			
@@ -1845,8 +1850,8 @@ elif mode == "Audio":
 			
 			st.divider( )
 			
-			auto_play = st.toggle( label='Auto Play', value=Fale )
-			
+			auto_play = st.toggle( label='Auto Play', value=False )
+	
 	# ------------------------------------------------------------------
 	# Main UI — Audio Input / Output
 	# ------------------------------------------------------------------
@@ -1870,7 +1875,7 @@ elif mode == "Audio":
 			instructions = ''
 			st.session_state[ 'instructions' ] = None
 
-	left_col,  right_col = st.columns( [ 0.5, 0.5 ] )
+	left_col,  right_col = st.columns( [ 0.5, 0.5 ], border=True )
 	with left_col:
 		if task in ('Transcribe', 'Translate'):
 			uploaded = st.file_uploader( 'Upload Audio Lile',type=[ 'wav', 'mp3','m4a', 'flac' ],)
@@ -1942,7 +1947,9 @@ elif mode == "Audio":
 						st.error( f"Text-to-speech failed: {exc}" )
 	
 	with right_col:
-		recording = st.audio( label='Make Audio Recording:', width='stretch' )
+		audio_recording = st.audio( data=audio_file, sample_rate=16000, start_time=audio_start,
+			end_time=audio_end, format=audio_format, width='stretch',
+			loop=audio_loop, autoplay=auto_play  )
 		
 # ======================================================================================
 # EMBEDDINGS MODE
