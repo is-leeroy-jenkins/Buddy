@@ -1423,7 +1423,7 @@ elif mode == "Text":
 # IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
-	st.subheader( '📷 Image API')
+	st.subheader( 'Image API')
 	provider_module = get_provider_module( )
 	image = provider_module.Images( )
 	
@@ -1459,12 +1459,35 @@ elif mode == "Images":
 		if hasattr( image, 'format_options' ):
 			fmt = st.selectbox( 'Format', image.format_options, )
 	
-	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
+	st.divider( )
+	instructions = st.session_state[ 'instructions' ]
+	left_ins, right_ins = st.columns( [ 0.80,  0.20 ] )
+	with left_ins:
+		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
+	
+	with right_ins:
+		set_col, clear_col = st.columns( [ 0.5,
+		                                   0.5 ] )
+		with set_col:
+			set_button = st.button( '💾 Save' )
+		
+		with clear_col:
+			clear_button = st.button( '🧹 Clear' )
+		
+		if set_button:
+			st.session_state[ 'instructions' ] = instructions
+		
+		if clear_button:
+			instructions = ''
+			st.session_state[ 'instructions' ] = None
+
+	left, center, right = st.columns( [ 0.15, 0.50, 0.15 ] )
 	with center:
 		# ------------------------------------------------------------------
 		# Main UI — Tabs
 		# ------------------------------------------------------------------
-		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
+		tab_gen, tab_analyze, tab_edit = st.tabs( [ '📷 Generate', '‍🔬 Analyze', '🎨 Edit' ] )
 		with tab_gen:
 			prompt = st.text_area( 'Prompt' )
 			if st.button( 'Generate Image' ):
