@@ -1278,7 +1278,10 @@ elif mode == "Text":
 				step=0.01, help=cfg.PRESENCE_PENALTY )
 			st.session_state[ 'pres_penalty' ] = float( pres_penalty )
 			
-			st.divider( )
+		st.divider( )
+		
+		# ---------------- Tools ----------------
+		with st.expander( '🛠️ Tools:', expanded=False ):
 			
 			# ---------------- Include Options ----------------
 			include = st.multiselect( label='Include:', options=chat.include_options,

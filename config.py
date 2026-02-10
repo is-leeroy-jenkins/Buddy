@@ -224,3 +224,5 @@ REASONING = r'''Reasoning models introduce reasoning tokens in addition to input
 				considering multiple approaches to generating a response. After generating reasoning tokens,
 				the model produces an answer as visible completion tokens and discards
 				the reasoning tokens from its context. '''
+
+CHOICE = r''' Determines how tools are chosen when using reasoning models'''
