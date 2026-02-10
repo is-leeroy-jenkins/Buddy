@@ -1723,8 +1723,6 @@ class VectorStores( Grok ):
 		self.file_name = None
 		self.store_id = None
 		self.documents = None
-		self.client.headers.update( {'Authorization': f'Bearer {cfg.GROK_API_KEY}',
-		                             'Content-Type': 'application/json', } )
 		self.collections = \
 		{
 				'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e',
@@ -1757,6 +1755,8 @@ class VectorStores( Grok ):
 		"""
 		try:
 			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
 			self.collections = self.client.collections.list( )
 		except Exception as e:
 			ex = Error( e )
@@ -1784,9 +1784,10 @@ class VectorStores( Grok ):
 		"""
 		try:
 			throw_if( 'collection_id', collection_id )
-			
 			self.collection_id = collection_id
-			
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
 			url = f'{self.base_url}/collections/{self.collection_id}'
 			response = self.client.get( url, timeout=self.timeout )
 			response.raise_for_status( )
@@ -1821,10 +1822,10 @@ class VectorStores( Grok ):
 		try:
 			throw_if( 'name', name )
 			throw_if( 'file_ids', file_ids )
-			
-			payload = {
-					'name': name,
-					'file_ids': file_ids }
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
+			payload = { 'name': name, 'file_ids': file_ids }
 			if description:
 				payload[ 'description' ] = description
 			
@@ -1871,6 +1872,10 @@ class VectorStores( Grok ):
 							'vector_store_ids': self.vector_store_ids,
 							'max_num_results': self.max_search_results,
 					} ]
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
 			self.response = client.collections.search( query=self.prompt,
 				collection_ids=[ self.store_id ],)
 			return self.response.output_text
@@ -1907,9 +1912,13 @@ class VectorStores( Grok ):
 			self.file_path = filepath
 			self.file_name = filename
 			self.store_id = collection_id
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
 			with open( self.file_path, 'rb' ) as file:
 				file_data = file.read( )
-				self.document = client.collections.upload_document( collection_id=self.store_id,
+				self.document = self.client.collections.upload_document( collection_id=self.store_id,
 					name=self.file_name, data=file_data, content_type="text/html", )
 			return response.json( )
 		except Exception as e:
@@ -1938,8 +1947,11 @@ class VectorStores( Grok ):
 		"""
 		try:
 			throw_if( 'collection_id', collection_id )
-			
 			url = f'{self.base_url}/collections/{collection_id}'
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
 			response = self.client.delete( url, timeout=self.timeout )
 			response.raise_for_status( )
 			

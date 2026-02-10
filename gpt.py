@@ -44,13 +44,15 @@
 '''
 from __future__ import annotations
 import os
-import openai.types.responses
-from openai.types import CreateEmbeddingResponse, VectorStore
 from openai.pagination import SyncCursorPage
 from pathlib import Path
-from typing import Any, List, Optional, Dict
 import tiktoken
 from openai import OpenAI
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+	import openai.types.responses
+	from openai.types import CreateEmbeddingResponse, VectorStore
+	
 from boogr import ErrorDialog, Error
 import config as cfg
 
@@ -2345,7 +2347,7 @@ class VectorStores( GPT ):
 			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
 
-	def create( self, store_name: str ) -> VectorStore | None:
+	def create( self, store_name: str ) -> Any | None:
 		'''
 			
 			Returns:
@@ -2359,19 +2361,14 @@ class VectorStores( GPT ):
 			_store = self.client.vector_stores.create( name=store_name )
 			return _store
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'create( self, id: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise
 	
-	def list( self ) -> SyncCursorPage[ VectorStore ]:
+	def list( self ) -> Any | None:
 		self.client = OpenAI( api_key=self.api_key )
 		_stores = self.client.vector_stores.list( )
 		return _stores
 	
-	def retrieve( self, id: str ) -> VectorStore | None:
+	def retrieve( self, id: str ) -> Any | None:
 		'''
 			
 			Returns:
@@ -2385,12 +2382,7 @@ class VectorStores( GPT ):
 			vector_store = self.client.vector_stores.retrieve( vector_store_id=id )
 			return vector_store
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'retrieve_store( self, purpose: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise
 	
 	def search( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
@@ -2425,17 +2417,15 @@ class VectorStores( GPT ):
 				input=self.prompt )
 			return self.response.output_text
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'search( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise
 	
 	def update( self, store_id: str, filename: str ):
-		client = OpenAI( )
-		vector_store = client.vector_stores.update( vector_store_id=store_id,
-			name=filename )
+		try:
+			self.client = OpenAI( api_key=self.api_key )
+			vector_store = self.client.vector_stores.update( vector_store_id=store_id, name=filename )
+			return vector_store
+		except Exception as e:
+			return None
 	
 	def delete( self, store_id: str ) -> bool | None:
 		'''
@@ -2451,12 +2441,7 @@ class VectorStores( GPT ):
 			_deleted = self.client.vector_stores.delete( vector_store_id=id )
 			return bool( _deleted )
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'delete( self, purpose: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			return None
 	
 	def __dir__( self ) -> List[ str ] | None:
 		return [ 'client',

@@ -1256,12 +1256,10 @@ class VectorStores( Gemini ):
 	collections: Optional[ Dict[ str, str ] ]
 	documents: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, filepath: str, model: str='gemini-2.0-flash',
-			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+	def __init__( self, model: str='gemini-2.0-flash', temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ):
 		super( ).__init__( )
 		self.gemini_api_key = cfg.GEMINI_API_KEY
-		self.file_path = filepath
 		self.model = model
 		self.top_p = top_p;
 		self.temperature = temperature
@@ -1269,13 +1267,16 @@ class VectorStores( Gemini ):
 		self.presence_penalty = presence
 		self.max_tokens = max_tokens
 		self.stops = stops
+		self.file_path = None
 		self.client = None
-		self.file_id = None;
-		self.display_name = None;
+		self.file_id = None
+		self.display_name = None
 		self.mime_type = None
-		self.file_path = None;
+		self.file_path = None
 		self.response = None
-		self.file_list = [ ];
+		self.file_list = [ ]
+		self.documents = None
+		self.collections = None
 	
 	def upload( self, path: str, name: str = None ):
 		"""
@@ -1328,7 +1329,7 @@ class VectorStores( Gemini ):
 			throw_if( 'file_id', file_id )
 			self.file_id = file_id
 			self.client = genai.Client( api_key=self.gemini_api_key )
-			_filestore = self.client.file_search_stores.get( name=self.display_name)
+			_filestore = self.client.file_search_stores.get( name=file_id )
 			return _filestore
 		except Exception as e:
 			exception = Error( e );
@@ -1352,8 +1353,11 @@ class VectorStores( Gemini ):
 		"""
 		try:
 			self.client = genai.Client( api_key=self.gemini_api_key )
-			self.file_list = self.client.file_search_stores.list( )
-			return self.file_list
+			stores = self.client.file_search_stores.list( )
+			self.collections = { }
+			for store in stores:
+				self.collections[ store.display_name ] = store.name
+			return stores
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
@@ -1382,7 +1386,7 @@ class VectorStores( Gemini ):
 			throw_if( 'file_id', file_id )
 			self.file_id = file_id
 			self.client = genai.Client( api_key=self.gemini_api_key )
-			self.client.file_search_stores.delete( name=self.display_name )
+			self.client.file_search_stores.delete( name=self.file_id )
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
