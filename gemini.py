@@ -1304,7 +1304,7 @@ class VectorStores( Gemini ):
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'VectorStore'
+			exception.cause = 'VectorStores'
 			exception.method = 'upload( self, path: str, name: str ) -> Optional[ File ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1334,7 +1334,7 @@ class VectorStores( Gemini ):
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'VectorStore'
+			exception.cause = 'VectorStores'
 			exception.method = 'retrieve( self, file_id: str ) -> Optional[ File ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1390,7 +1390,7 @@ class VectorStores( Gemini ):
 		except Exception as e:
 			exception = Error( e );
 			exception.module = 'gemini'
-			exception.cause = 'FileStore'
+			exception.cause = 'VectorStores'
 			exception.method = 'delete( self, file_id: str ) -> bool'
 			error = ErrorDialog( exception )
 			error.show( )

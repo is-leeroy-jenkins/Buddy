@@ -1260,10 +1260,20 @@ elif mode == "Text":
 			st.session_state[ 'stop_sequences' ] = [
 					s for s in stop_text.splitlines( ) if s.strip( ) ]
 		
-		# ---------------- Include options ----------------
+		# ---------------- Include Options ----------------
 		if mode in [ 'GPT', 'Grok' ]:
 			include = st.multiselect( 'Include:', chat.include_options )
 			chat.include = include
+		
+		# ---------------- Tool Options ----------------
+		if mode in [ 'GPT', 'Grok', 'Gemini' ]:
+			tools = st.multiselect( 'Tools:', chat.tool_opions )
+			chat.tools = tools
+		
+		# ---------------- Reasoning Options ----------------
+		if mode in [ 'GPT', 'Grok', 'Gemini' ]:
+			reasoning = st.multiselect( 'Reasoning:', chat.reasoning_opions )
+			chat.tools = tools
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -2201,7 +2211,6 @@ elif mode == 'Vector Stores':
 		else:
 			st.info( 'No vector stores discovered' )
 
-
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
@@ -2330,9 +2339,7 @@ elif mode == "Files":
 					upload_fn = getattr( chat, name )
 					break
 			if not upload_fn:
-				st.warning(
-					"No upload function found on chat object (upload_file)."
-				)
+				st.warning( "No upload function found on chat object (upload_file)." )
 			else:
 				with st.spinner( "Uploading to Files API..." ):
 					try:
@@ -2394,7 +2401,6 @@ elif mode == "Files":
 									st.success( f"Delete result: {res}" )
 								except Exception as exc:
 									st.error( f"Delete failed: {exc}" )
-
 
 # ======================================================================================
 # PROMPT ENGINEERING MODE

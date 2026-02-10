@@ -161,6 +161,7 @@ class Chat( Grok ):
 	reasoning_effort: Optional[ str ]
 	previous_response_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
+	tools: Optional[ List[ str ] ]
 	client: Optional[ Client ]
 	chat: Optional[ Any  ]
 	
@@ -191,6 +192,7 @@ class Chat( Grok ):
 		self.previous_response_id = None
 		self.tool_choice = 'auto'
 		self.include = None
+		self.tools = None
 		self.collections = \
 		{
 				'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
@@ -297,6 +299,20 @@ class Chat( Grok ):
 		         'mcp_call_output',
 		         'inline_citations',
 		         'verbose_streaming' ]
+	
+	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'web_search',
+		         'x_search',
+		         'collections_search',
+		         'code_interpreter' ]
 	
 	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=10000,
 			temperature: float=0.8, top_p: float=0.9, effort: str='high', format: str='text',
@@ -1443,6 +1459,25 @@ class Files( Grok ):
 		
 		"""
 		return [ 'grok-4-fast', 'grok-4' ]
+	
+	@property
+	def tool_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return list of efficient file interaction models.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'code_execution()' ]
 	
 	def upload( self, filepath: str, filename: str ):
 		"""

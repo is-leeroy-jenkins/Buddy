@@ -327,6 +327,20 @@ class Chat( GPT ):
 		         'reasoning.encrypted_content' ]
 	
 	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'web_search',
+		         'image_generation',
+		         'file_search',
+		         'code_interpreter' ]
+	
+	@property
 	def purpose_options( self ) -> List[ str ] | None:
 		'''
 		
@@ -339,7 +353,8 @@ class Chat( GPT ):
 		         'batch',
 		         'fine-tune',
 		         'vision',
-		         'user_data', ]
+		         'user_data',
+		         'evals' ]
 	
 	@property
 	def reasoning_options( self ) -> List[ str ] | None:
@@ -980,10 +995,12 @@ class Files( GPT ):
 			List[str]
 		
 		"""
-		return [ 'vision',
-		         'image_edit',
-		         'responses',
-		         'fine_tune' ]
+		return [ 'assistants',
+		         'batch',
+		         'fine-tune',
+		         'vision',
+		         'user_data',
+		         'evals' ]
 	
 	def upload( self, filepath: str, purpose: str='user_data' ) -> str | None:
 		"""
