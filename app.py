@@ -800,6 +800,9 @@ if 'embedding_model' not in st.session_state:
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
 
+if 'instructions' not in st.session_state:
+	st.session_state[ 'instructions' ] = None
+
 if 'temperature' not in st.session_state:
 	st.session_state[ 'temperature' ] = 0.7
 	
@@ -1210,7 +1213,6 @@ if mode == 'Chat':
 elif mode == "Text":
 	st.subheader( "📝 Text Generation" )
 	st.divider( )
-	st.header( '' )
 	provider_module = get_provider_module( )
 	chat = provider_module.Chat( )
 	
@@ -1229,7 +1231,7 @@ elif mode == "Text":
 		st.divider( )
 		
 		# ---------------- Parameters ----------------
-		st.text( 'Generation Controls' )
+		st.caption( 'Generation Controls' )
 		with st.expander( '🎚️  Parameters:', expanded=False ):
 			temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01,
@@ -1282,7 +1284,7 @@ elif mode == "Text":
 		st.divider( )
 		
 		# ---------------- Tools ----------------
-		st.text( 'Specialized Options' )
+		st.caption( 'Specialized Options' )
 		with st.expander( '🛠️ Tools:', expanded=False ):
 			
 			# ---------------- Include Options ----------------
@@ -1327,8 +1329,24 @@ elif mode == "Text":
 	# Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
-	
+	instructions = st.session_state[ 'instructions' ]
 	with center:
+		left_ins, right_ins = st.columns( [ 0.75, 0.25 ] )
+		with left_ins:
+			with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+				instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
+		
+		with right_ins:
+			set_col, clear_col = st.columns( [ 0.50, 0.50 ])
+			with set_col:
+				set_button = st.button( '💾 Save' )
+				st.session_state[ 'instructions' ] = instructions
+			with clear_col:
+				clear_button = st.button( '🧹 Clear')
+		
+		st.divider( )
+		
+		#----------- MESSAGES-----------------------
 		for msg in st.session_state.messages:
 			with st.chat_message( msg[ 'role' ] ):
 				st.markdown( msg[ 'content' ] )
