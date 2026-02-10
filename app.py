@@ -1759,7 +1759,6 @@ elif mode == "Audio":
 	auto_play = st.session_state.get( 'auto_play', False )
 	voice = st.session_state.get( 'voice', None )
 	st.subheader( '🔉 Audio API')
-	st.divider( )
 	transcriber = None
 	translator = None
 	tts = None
@@ -1790,9 +1789,10 @@ elif mode == "Audio":
 			available_tasks.append( 'Translate' )
 		if tts is not None:
 			available_tasks.append( 'Text-to-Speech' )
+			
+		# ---------------- Model (provider-correct) ----------------
 		
 		with st.expander( 'Model Settings:', expanded=False ):
-			# ---------------- Model (provider-correct) ----------------
 			if not available_tasks:
 				st.info( 'Audio is not supported by the selected provider.' )
 				task = None
@@ -1846,11 +1846,12 @@ elif mode == "Audio":
 			
 			st.divider( )
 			
-			audio_loop = st.toggle( label='Loop', value=False )
+			set_left, set_right = st.columns( [ 0.5, 0.5 ] )
+			with set_left:
+				audio_loop = st.toggle( label='Loop', value=False )
 			
-			st.divider( )
-			
-			auto_play = st.toggle( label='Auto Play', value=False )
+			with set_right:
+				auto_play = st.toggle( label='Auto', value=False )
 	
 	# ------------------------------------------------------------------
 	# Main UI — Audio Input / Output
