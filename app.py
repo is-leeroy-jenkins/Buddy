@@ -794,8 +794,8 @@ if 'image_model' not in st.session_state:
 if 'audio_model' not in st.session_state:
 	st.session_state[ 'audio_model' ] = None
 	
-if 'embed_model' not in st.session_state:
-	st.session_state[ 'embed_model' ] = None
+if 'embedding_model' not in st.session_state:
+	st.session_state[ 'embedding_model' ] = None
 
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
@@ -821,6 +821,18 @@ if 'logprobs' not in st.session_state:
 if 'stop_sequences' not in st.session_state:
 	st.session_state[ 'stop_sequences' ] = [ ]
 
+if 'include' not in st.session_state:
+	st.session_state[ 'include' ] = [ ]
+
+if 'reasoning' not in st.session_state:
+	st.session_state[ 'reasoning' ] = 'high'
+
+if 'store' not in st.session_state:
+	st.session_state[ 'store' ] = True
+
+if 'stream' not in st.session_state:
+	st.session_state[ 'stream' ] = False
+
 if 'provider' not in st.session_state:
 	st.session_state[ 'provider' ] = 'GPT'
 
@@ -837,7 +849,7 @@ def get_provider_module( ):
 	module_name = cfg.PROVIDERS.get( provider  )
 	return __import__( module_name )
 
-def get_chat_instance( ):
+def get_chat_module( ):
 	"""
 
 		Purpose:
@@ -849,7 +861,7 @@ def get_chat_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.Chat( )
 
-def get_tts_instance( ):
+def get_tts_module( ):
 	"""
 
 		Purpose:
@@ -861,7 +873,7 @@ def get_tts_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.TTS( )
 
-def get_images_instance( ):
+def get_images_module( ):
 	"""
 
 		Purpose:
@@ -873,7 +885,7 @@ def get_images_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.Images( )
 
-def get_embeddings_instance( ):
+def get_embeddings_module( ):
 	"""
 
 		Purpose:
@@ -885,7 +897,7 @@ def get_embeddings_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.Embeddings( )
 
-def get_translation_instance( ):
+def get_translation_module( ):
 	"""
 
 		Purpose:
@@ -897,7 +909,7 @@ def get_translation_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.Translation( )
 
-def get_transcription_instance( ):
+def get_transcription_module( ):
 	"""
 
 		Purpose:
@@ -909,7 +921,7 @@ def get_transcription_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.Transcription( )
 
-def get_files_instance( ):
+def get_files_module( ):
 	"""
 
 		Purpose:
@@ -921,7 +933,7 @@ def get_files_instance( ):
 	provider_module = get_provider_module( )
 	return provider_module.Files( )
 
-def get_vectorstores_instance( ):
+def get_vectorstores_module( ):
 	"""
 
 		Purpose:
@@ -1273,24 +1285,24 @@ elif mode == "Text":
 				include = st.multiselect( 'Include:', chat.include_options )
 				chat.include = include
 			
-			st.session_state[ 'include' ] = include
-			st.divider( )
+				st.session_state[ 'include' ] = include
+				st.divider( )
 			
 			# ---------------- Tool Options ----------------
 			if mode in [ 'GPT', 'Grok', 'Gemini' ]:
 				tools = st.multiselect( 'Tools:', chat.tool_opions )
 				chat.tools = tools
 			
-			st.session_state[ 'tools' ] = tools
-			st.divider( )
+				st.session_state[ 'tools' ] = tools
+				st.divider( )
 			
 			# ---------------- Reasoning Options ----------------
 			if mode in [ 'GPT', 'Grok', 'Gemini' ]:
 				reasoning = st.multiselect( 'Reasoning:', chat.reasoning_opions )
 				chat.reasoning = reasoning
 			
-			st.session_state[ 'reasoning' ] = reasoning
-			st.divider( )
+				st.session_state[ 'reasoning' ] = reasoning
+				st.divider( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
