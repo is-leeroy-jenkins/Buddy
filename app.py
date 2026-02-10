@@ -1841,7 +1841,7 @@ elif mode == "Audio":
 			
 			st.divider( )
 	
-			audio_format = st.selectbox( label='Format',
+			audio_format = st.selectbox( label='Audio Format',
 				options=[ 'audio/mp3', 'audio/wav', 'audio/aac', 'audio/flac',
 				          'audio/opus', 'audio/pcm' ] )
 			
@@ -1879,22 +1879,18 @@ elif mode == "Audio":
 
 	left_col, center_col, right_col = st.columns( [ 0.3, 0.3, 0.3 ], border=True )
 	with left_col:
-		uploaded = st.audio_input( label='Record Audio', sample_rate=audio_rate)
+		recording = st.audio_input( label='Record Audio File', sample_rate=audio_rate)
 	
 	with center_col:
 		if task in ('Transcribe', 'Translate'):
-			uploaded = st.file_uploader( 'Upload Audio Lile', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
+			uploaded = st.file_uploader( 'Upload Audio File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
 			if uploaded:
 				tmp_path = save_temp( uploaded )
-				
 				if task == 'Transcribe' and transcriber:
 					with st.spinner( 'Transcribing…' ):
 						try:
-							text = transcriber.transcribe(
-								tmp_path,
-								model=audio_model,
-								language=language,
-							)
+							text = transcriber.transcribe( tmp_path, model=audio_model,
+								language=language, )
 							st.text_area( 'Transcript', value=text, height=300 )
 							
 							try:
@@ -1910,17 +1906,12 @@ elif mode == "Audio":
 				elif task == 'Translate' and translator:
 					with st.spinner( 'Translating…' ):
 						try:
-							text = translator.translate(
-								tmp_path,
-								model=audio_model,
-								language=language,
-							)
+							text = translator.translate( tmp_path, model=audio_model,
+								language=language, )
 							st.text_area( 'Translation', value=text, height=300 )
 							
 							try:
-								_update_token_counters(
-									getattr( translator, 'response', None )
-								)
+								_update_token_counters( getattr( translator, 'response', None ) )
 							except Exception:
 								pass
 						
@@ -1933,17 +1924,11 @@ elif mode == "Audio":
 			if text and st.button( 'Generate Audio' ):
 				with st.spinner( 'Synthesizing speech…' ):
 					try:
-						audio_bytes = tts.speak(
-							text,
-							model=audio_model,
-							voice=voice,
-						)
+						audio_bytes = tts.speak( text, model=audio_model, voice=voice, )
 						st.audio( audio_bytes )
 						
 						try:
-							_update_token_counters(
-								getattr( tts, "response", None )
-							)
+							_update_token_counters( getattr( tts, "response", None ) )
 						except Exception:
 							pass
 					
@@ -1951,6 +1936,10 @@ elif mode == "Audio":
 						st.error( f"Text-to-speech failed: {exc}" )
 	
 	with right_col:
+		if audio_file is not None:
+			array = np.ndarray( audio_file )
+		else:
+			array = None
 		audio_recording = st.audio( data=audio_file, sample_rate=audio_rate, start_time=audio_start,
 			end_time=audio_end, format=audio_format, width='stretch',
 			loop=audio_loop, autoplay=auto_play  )
