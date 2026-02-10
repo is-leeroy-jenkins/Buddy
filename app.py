@@ -1774,7 +1774,7 @@ elif mode == "Audio":
 	# Sidebar — Audio Settings (NO functionality removed)
 	# ------------------------------------------------------------------
 	with st.sidebar:
-		st.text( 'LLM Settings' )
+		st.caption( 'Audio Settings' )
 		
 		# ---------------- Task ----------------
 		available_tasks = [ ]
@@ -1792,7 +1792,7 @@ elif mode == "Audio":
 			
 		# ---------------- Model (provider-correct) ----------------
 		
-		with st.expander( expanded=False ):
+		with st.expander( label='🧠 LLM Options:', expanded=False ):
 			if not available_tasks:
 				st.info( 'Audio is not supported by the selected provider.' )
 				task = None
@@ -1829,11 +1829,7 @@ elif mode == "Audio":
 				if hasattr( tts, 'voice_options' ):
 					voice = st.selectbox( 'Voice', tts.voice_options, )
 	
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-		
-		st.text( 'Sound Settings' )
-	
-		with st.expander( expanded=False ):
+		with st.expander( label='🎧 Sound Option:', expanded=False ):
 			audio_start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
 			
 			st.divider( )
