@@ -824,6 +824,9 @@ if 'stop_sequences' not in st.session_state:
 if 'include' not in st.session_state:
 	st.session_state[ 'include' ] = [ ]
 
+if 'tool_choice' not in st.session_state:
+	st.session_state[ 'tool_choice' ] = 'auto'
+
 if 'reasoning' not in st.session_state:
 	st.session_state[ 'reasoning' ] = 'high'
 
@@ -1223,86 +1226,97 @@ elif mode == "Text":
 			       if st.session_state.get( 'text_model' ) in chat.model_options  else 0), )
 		st.session_state[ 'text_model' ] = text_model
 		
+		st.divider( )
+		
 		# ---------------- Parameters ----------------
 		with st.expander( '🎚️  Parameters:', expanded=False ):
 			temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01,
 				help = cfg.TEMPERATURE )
-			
 			st.session_state[ 'temperature' ] = float( temperature )
+			st.divider( )
+			
+			store = st.toggle( label='Store:', key='chat_store', value=True, help=cfg.STORE )
+			st.session_state[ 'store' ] = store
+			
+			st.divider( )
+			
+			stream = st.toggle( label='Stream:', key='chat_stream', value=False, help=cfg.STREAM )
+			st.session_state[ 'stream' ] = stream
+			
 			st.divider( )
 			
 			top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0,
 				value=float( st.session_state.get( 'top_p', 1.0 ) ),
 				step=0.01, help=cfg.TOP_P )
-			
 			st.session_state[ 'top_p' ] = float( top_p )
+			
 			st.divider( )
 			
 			logprobs = st.slider( 'Log-Probs', min_value=0, max_value=20,
 				value=int( st.session_state.get( 'logprobs', 0 ) ),
 				step=1, help=cfg.LOG_PROBS )
-			
 			st.session_state[ 'logprobs' ] = int( logprobs )
+			
 			st.divider( )
 
 			max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 				value=6048, help=cfg.MAX_OUTPUT_TOKENS )
 			st.session_state[ 'max_tokens' ] = int( max_tokens )
+			
 			st.divider( )
 			
 			freq_penalty = st.slider( 'Frequency Penalty', min_value=-2.0, max_value=2.0,
 				value=float( st.session_state.get( 'freq_penalty', 0.0 ) ),
 				step=0.01, help=cfg.FREQUENCY_PENALTY )
-			
 			st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+			
 			st.divider( )
 			
 			pres_penalty = st.slider( 'Presence Penalty', min_value=-2.0, max_value=2.0,
 				value=float( st.session_state.get( 'pres_penalty', 0.0 ) ),
 				step=0.01, help=cfg.PRESENCE_PENALTY )
-			
 			st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+			
+			st.divider( )
+			
+			# ---------------- Include Options ----------------
+			include = st.multiselect( label='Include:', options=chat.include_options,
+				key='chat_include', help=cfg.INCLUDE )
+			chat.include = include
+			st.session_state[ 'include' ] = include
+			
+			st.divider( )
+			
+			# ---------------- Choice Options ----------------
+			tool_choice = st.multiselect( label='Tool Choice:', options=chat.choice_options,
+				key='chat_tool_choic', help=cfg.CHOICE )
+			chat.tool_choice = tool_choice
+			st.session_state[ 'tool_choice' ] = tool_choice
+			
+			st.divider( )
+			
+			# ---------------- Tools Options ----------------
+			tools = st.multiselect( label='Tools:', options=chat.tool_options,
+				key='chat_tools', help=cfg.TOOLS  )
+			chat.tools = tools
+			st.session_state[ 'tools' ] = tools
+			
+			st.divider( )
+			
+			# ---------------- Reasoning Options ----------------
+			reasoning = st.multiselect( label='Reasoning:', options=chat.reasoning_options,
+			key='chat_reasoning', help=cfg.REASONING )
+			chat.reasoning = reasoning
+			st.session_state[ 'reasoning' ] = reasoning
+			
 			st.divider( )
 			
 			stop_text = st.text_area( 'Stop Sequences',
 				value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
 				height=80, help=cfg.STOP_SEQUENCE )
-			
 			st.session_state[ 'stop_sequences' ] = [
 					s for s in stop_text.splitlines( ) if s.strip( ) ]
-			
-			store = st.toggle( label='Store:', key='chat_store' )
-			st.session_state[ 'store' ] = store
-			st.divider( )
-			
-			stream = st.toggle( label='Stream:', key='chat_stream' )
-			st.session_state[ 'stream' ] = stream
-			st.divider( )
-		
-			# ---------------- Include Options ----------------
-			if mode in [ 'GPT', 'Grok' ]:
-				include = st.multiselect( 'Include:', chat.include_options )
-				chat.include = include
-			
-				st.session_state[ 'include' ] = include
-				st.divider( )
-			
-			# ---------------- Tool Options ----------------
-			if mode in [ 'GPT', 'Grok', 'Gemini' ]:
-				tools = st.multiselect( 'Tools:', chat.tool_opions )
-				chat.tools = tools
-			
-				st.session_state[ 'tools' ] = tools
-				st.divider( )
-			
-			# ---------------- Reasoning Options ----------------
-			if mode in [ 'GPT', 'Grok', 'Gemini' ]:
-				reasoning = st.multiselect( 'Reasoning:', chat.reasoning_opions )
-				chat.reasoning = reasoning
-			
-				st.session_state[ 'reasoning' ] = reasoning
-				st.divider( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI

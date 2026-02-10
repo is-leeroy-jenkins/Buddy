@@ -343,6 +343,17 @@ class Chat( GPT ):
 		         'computer_use_preview' ]
 	
 	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'auto', 'required', 'none' ]
+	
+	@property
 	def purpose_options( self ) -> List[ str ] | None:
 		'''
 		

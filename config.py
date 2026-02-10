@@ -207,3 +207,20 @@ LOG_PROBS = r'''Optional. Only valid if responseLogprobs=True. This sets the num
 MAX_OUTPUT_TOKENS = r'''The maximum number of tokens used in generating output content'''
 
 STOP_SEQUENCE = r'''Up to 4 string sequences where the API will stop generating further tokens.'''
+
+STORE = 'Whether to maintain state from turn to turn, preserving reasoning and tool context '
+
+STREAM = 'Whether to return the generated respose in asynchronous chunks'
+
+TOOLS = '''An array of tools the model may call while generating a response. You can specify which
+		tool to use by setting the tool_choice parameter.'''
+
+INCLUDE = r'''Specify additional output data to include in the model response enabling reasoning
+			items to be used in multi-turn conversations when using the Responses API statelessly
+			'''
+
+REASONING = r'''Reasoning models introduce reasoning tokens in addition to input and output tokens.
+				The models use these reasoning tokens to “think,” breaking down the prompt and
+				considering multiple approaches to generating a response. After generating reasoning tokens,
+				the model produces an answer as visible completion tokens and discards
+				the reasoning tokens from its context. '''
