@@ -2387,7 +2387,7 @@ elif mode == 'Document Q & A':
 	left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
 	with left_ins:
 		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
-			instructions = st.text_area( 'Text', height=500, help=cfg.SYSTEM_INSTRUCTIONS )
+			instructions = st.text_area( 'Text', height=300, help=cfg.SYSTEM_INSTRUCTIONS )
 	
 	with right_ins:
 		set_col, clear_col = st.columns( [ 0.5, 0.5 ] )
@@ -2446,17 +2446,16 @@ elif mode == 'Document Q & A':
 				st.markdown( answer or "No answer returned." )
 				
 				st.session_state.messages.append(
-					{
-						"role": "user",
-						"content": f"[Document question] {question}",
-					}
-				)
+				{
+					"role": "user",
+					"content": f"[Document question] {question}",
+				} )
+				
 				st.session_state.messages.append(
-					{
-						"role": "assistant",
-						"content": answer or "",
-					}
-				)
+				{
+					"role": "assistant",
+					"content": answer or "",
+				} )
 				
 				try:
 					_update_token_counters(
