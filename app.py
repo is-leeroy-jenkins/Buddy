@@ -456,7 +456,7 @@ def save_temp( upload ) -> str:
 		
 	"""
 	with tempfile.NamedTemporaryFile( delete=False ) as tmp:
-		tmp.write( upload.read( ) )
+		tmp.write( tmp.read( ) )
 		return tmp.name
 
 def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
@@ -727,7 +727,6 @@ if 'google_api_key' not in st.session_state:
 
 if 'xai_api_key' not in st.session_state:
 	st.session_state.xai_api_key = ''
-
 
 if st.session_state.openai_api_key == '':
 	default = cfg.OPENAI_API_KEY
@@ -1858,6 +1857,8 @@ elif mode == "Audio":
 	# Main UI — Audio Input / Output
 	# ------------------------------------------------------------------
 	left_ins, right_ins = st.columns( [ 0.8,  0.2 ] )
+	
+	# ---------SYSTEM ISTRUCTIONS----------------
 	with left_ins:
 		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
 			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
@@ -1877,13 +1878,12 @@ elif mode == "Audio":
 			instructions = ''
 			st.session_state[ 'instructions' ] = None
 
-	left_col, center_col, right_col = st.columns( [ 0.3, 0.3, 0.3 ], border=True )
-	with left_col:
-		recording = st.audio_input( label='Record Audio File', sample_rate=audio_rate)
+	left_col, center_col, right_col = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
 	
-	with center_col:
+	# -----------UPLOAD AUDIO----------------------
+	with left_col:
 		if task in ('Transcribe', 'Translate'):
-			uploaded = st.file_uploader( 'Upload Audio File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
+			uploaded = st.file_uploader( 'Upload File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
 			if uploaded:
 				tmp_path = save_temp( uploaded )
 				if task == 'Transcribe' and transcriber:
@@ -1934,14 +1934,19 @@ elif mode == "Audio":
 					
 					except Exception as exc:
 						st.error( f"Text-to-speech failed: {exc}" )
-	
+						
+	#-----------RECORD AUDIO----------------------
+	with center_col:
+		recording = st.audio_input( label='Record Audio', sample_rate=audio_rate)
+		
+	# -----------PLAY AUDIO----------------------
 	with right_col:
 		if audio_file is not None:
 			array = np.ndarray( audio_file )
 		else:
 			array = None
-		audio_recording = st.audio( data=audio_file, sample_rate=audio_rate, start_time=audio_start,
-			end_time=audio_end, format=audio_format, width='stretch',
+		audio_recording = st.audio( data=audio_file, sample_rate=audio_rate,
+			start_time=audio_start, end_time=audio_end, format=audio_format, width='stretch',
 			loop=audio_loop, autoplay=auto_play  )
 		
 # ======================================================================================
@@ -2379,16 +2384,13 @@ elif mode == 'Vector Stores':
 # ======================================================================================
 elif mode == 'Document Q & A':
 	st.subheader( '📄 Document Q & A')
-	st.divider( )
-	
 	left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
 	with left_ins:
 		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
-			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
+			instructions = st.text_area( 'Text', height=500, help=cfg.SYSTEM_INSTRUCTIONS )
 	
 	with right_ins:
-		set_col, clear_col = st.columns( [ 0.5,
-		                                   0.5 ] )
+		set_col, clear_col = st.columns( [ 0.5, 0.5 ] )
 		with set_col:
 			set_button = st.button( '💾 Save' )
 		
@@ -2401,97 +2403,72 @@ elif mode == 'Document Q & A':
 		if clear_button:
 			instructions = ''
 			st.session_state[ 'instructions' ] = None
+			
+		uploaded = st.file_uploader( 'Upload Document',
+			type=[ 'pdf', 'txt', 'md', 'docx' ], accept_multiple_files=False, )
 	
-	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
-	with center:
-		uploaded = st.file_uploader( 'Upload Documents (session only)',
-			type=[ 'pdf', 'txt', 'md', 'docx' ], accept_multiple_files=True, )
+	left, right = st.columns( [ 0.7, 0.3 ], border=True )
+	uploaded = None
+	with left:
+		pdf_viewer = st.empty( )
+		
+	with right:
 		
 		if uploaded:
-			for up in uploaded:
-				st.session_state.files.append( save_temp( up ) )
+			pdf_viewer = st.pdf( uploaded )
 			st.success( f"Saved {len( uploaded )} file(s) to session" )
 		
-		if st.session_state.files:
-			st.markdown( "**Uploaded Documents (session-only)**" )
-			idx = st.selectbox( "Choose a Document",
-				options=list( range( len( st.session_state.files ) ) ),
-				format_func=lambda i: st.session_state.files[ i ], )
-			selected_path = st.session_state.files[ idx ]
+		c1, c2 = st.columns( [ 1, 1 ] )
+		with c1:
+			if st.button( "Remove" ):
+				uploaded = None
+				st.success( f"Removed!" )
+		with c2:
+			if st.button( "Show Selected" ):
+				st.info( f"Local temp path: {uploaded}" )
 			
-			c1, c2 = st.columns( [ 1, 1 ] )
-			with c1:
-				if st.button( "Remove Selected Document" ):
-					removed = st.session_state.files.pop( idx )
-					st.success( f"Removed {removed}" )
-			with c2:
-				if st.button( "Show Selected Path" ):
-					st.info( f"Local temp path: {selected_path}" )
-			
-			st.markdown( "---" )
-			question = st.text_area( "Ask a question about the selected document" )
-			if st.button( "❓ Ask Document" ):
-				if not question:
-					st.warning( "Enter a question before asking." )
+	question = st.chat_input( "Ask a question about the selected document" )
+	if question is not None:
+		with st.spinner( "Running Document Q&A…" ):
+			try:
+				doc_qa = get_provider_module( ).Files( )
+				answer = None
+				if hasattr( doc_qa, "summarize" ):
+					try:
+						answer = doc_qa.summarize( prompt=question,
+							pdf_path=selected_path, )
+					except TypeError:
+						answer = doc_qa.summarize( question, uploaded )
 				else:
-					with st.spinner( "Running Document Q&A…" ):
-						try:
-							try:
-								doc_qa  # type: ignore
-							except NameError:
-								doc_qa = get_provider_module( ).Files( )
-							answer = None
-							if hasattr( doc_qa, "summarize" ):
-								try:
-									answer = doc_qa.summarize( prompt=question,
-										pdf_path=selected_path, )
-								except TypeError:
-									answer = doc_qa.summarize( question, selected_path )
-							elif hasattr( doc_qa, "ask_document" ):
-								answer = doc_qa.ask_document(
-									selected_path, question
-								)
-							elif hasattr( doc_qa, "document_qa" ):
-								answer = chat.document_qa(
-									selected_path, question
-								)
-							else:
-								raise RuntimeError(
-									"No document-QA method found on chat object."
-								)
-							
-							st.markdown( "**Answer:**" )
-							st.markdown( answer or "No answer returned." )
-							
-							st.session_state.messages.append(
-								{
-										"role": "user",
-										"content": f"[Document question] {question}",
-								}
-							)
-							st.session_state.messages.append(
-								{
-										"role": "assistant",
-										"content": answer or "",
-								}
-							)
-							
-							try:
-								_update_token_counters(
-									getattr( chat, "response", None )
-									or answer
-								)
-							except Exception:
-								pass
-						except Exception as e:
-							st.error(
-								f"Document Q&A failed: {e}"
-							)
-		else:
-			st.info(
-				"No client-side documents uploaded this session. "
-				"Use the uploader in the sidebar to add files."
-			)
+					raise RuntimeError( "No document-QA method found on chat object.")
+				
+				st.markdown( "Answer:" )
+				st.markdown( answer or "No answer returned." )
+				
+				st.session_state.messages.append(
+					{
+						"role": "user",
+						"content": f"[Document question] {question}",
+					}
+				)
+				st.session_state.messages.append(
+					{
+						"role": "assistant",
+						"content": answer or "",
+					}
+				)
+				
+				try:
+					_update_token_counters(
+						getattr( chat, "response", None )
+						or answer
+					)
+				except Exception:
+					pass
+			except Exception as e:
+				st.error(
+					f"Document Q&A failed: {e}"
+				)
 
 # ======================================================================================
 # FILES API MODE
