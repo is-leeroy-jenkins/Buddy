@@ -1672,12 +1672,12 @@ elif mode == "Images":
 			fmt = st.selectbox( 'Format', image.format_options, )
 
 	instructions = st.session_state[ 'instructions' ]
-	with st.expander( 'System Instructions', expanded=False, width='stretch' ):
-		left_ins, mid_ins, right_ins = st.columns( [ 0.6,  0.2, 0.2 ],
+	with st.expander( 'System Instructions', expanded=True, width='stretch' ):
+		left_ins, right_ins = st.columns( [ 0.7,  0.3 ],
 			vertical_alignment='center' )
 		
 		with left_ins:
-			instructions = st.text_area( 'System Instructions', height=80, width=750,
+			instructions = st.text_area( 'Enter Text', height=80, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS )
 			st.session_state.doc_instructions = instructions
 		
@@ -1694,7 +1694,7 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	tab_gen, tab_analyze, tab_edit = st.tabs( [ '📷 Generate', '‍🔬 Analyze', '🎨 Edit' ] )
 	with tab_gen:
-		prompt = st.text_area( 'Prompt' )
+		prompt = st.chat_input( 'Prompt' )
 		if st.button( 'Generate Image' ):
 			with st.spinner( 'Generating…' ):
 				try:
