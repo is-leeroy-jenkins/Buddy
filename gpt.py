@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 	import openai.types.responses
 	from openai.types import CreateEmbeddingResponse, VectorStore
 	
-from boogr import ErrorDialog, Error
+from boogr import Error
 import config as cfg
 
 def throw_if( name: str, value: object ):
@@ -69,34 +69,29 @@ class GPT:
 
     '''
 	api_key: Optional[ str ]
-	web_options: Optional[ List[ str ] ]
 	client: Optional[ OpenAI ]
 	prompt: Optional[ str ]
 	response_format: Optional[ str ]
-	number: Optional[ int ]
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
-	top_k: Optional[ float ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
-	max_completion_tokens: Optional[ int ]
+	max_output_tokens: Optional[ int ]
 	modalities: Optional[ List[ str ] ]
 	stops: Optional[ List[ str ] ]
 	store: Optional[ bool ]
 	
 	def __init__( self ):
 		self.api_key = cfg.OPENAI_API_KEY
-		self.modalities = [ 'text', 'audio' ]
-		self.stops = [ '#', ';' ]
-		self.response_format = 'auto'
+		self.modalities = [  ]
+		self.stops = [  ]
 		self.response_format = None
 		self.number = None
 		self.temperature = None
 		self.top_percent = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
-		self.max_completion_tokens = None
-		self.web_options = { }
+		self.max_output_tokens = None
 		self.prompt = None
 		self.client = None
 		self.store = None
@@ -171,26 +166,26 @@ class Chat( GPT ):
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	image_url: Optional[ str ]
-	search_recency: Optional[ int ]
+	file_url: Optional[ str ]
+	allowed_domains: Optional[ List[ str ] ]
+	stops: Optional[ List[ str ] ]
 	max_search_results: Optional[ int ]
-	messages: Optional[ List[ Dict[ str, Any ] ] ]
+	output_text: Optional[ List[ Dict[ str, Any ] ] ]
 	vector_stores: Optional[ Dict[ str, str ] ]
 	files: Optional[ Dict[ str, str ] ]
 	content: Optional[ List[ Dict[ str, Any ] ] ]
 	vector_store_ids: Optional[ List[ str ] ]
 	file_ids: Optional[ List[ str ] ]
-	include: Optional[ List[ str ] ]
 	response: Optional[ openai.types.responses.Response ]
 	file: Optional[ openai.types.file_object.FileObject ]
 	purpose: Optional[ str ]
 	
-	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
+	def __init__( self, model: str='gpt-5-nano', temperature: float=0.8, top_p: float=0.9,
 			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
-			store: bool=True, stream: bool=True, instruct: str=None ):
+			store: bool=True, stops: List[str]=None, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
-		self.number = number
 		self.temperature = temperature
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
@@ -198,21 +193,20 @@ class Chat( GPT ):
 		self.max_completion_tokens = max_tokens
 		self.store = store
 		self.instructions = instruct
-		self.stream = stream
+		self.stops = stops
+		self.model = model
 		self.tool_choice = 'auto'
+		self.response_format = 'auto'
 		self.tools = [ ]
 		self.reasoning = [ ]
-		self.model = None
-		self.content = None
 		self.prompt = None
 		self.response = None
 		self.file = None
-		self.file_path = None
-		self.input = [ ]
-		self.messages = None
+		self.file_url = None
 		self.image_url = None
-		self.include = None
-		self.search_recency = None
+		self.input = [ ]
+		self.output_text = None
+		self.include = [ ]
 		self.max_search_results = None
 		self.purpose = None
 		self.file_ids = [ ]
@@ -240,79 +234,17 @@ class Chat( GPT ):
 	        Methods that returns a list of small_model names
 
         '''
-		return [ 'gpt-5',
-		         'gpt-5-mini',
-		         'gpt-5-nano',
-		         'gpt-5-2025-08-07',
-		         'gpt-5-mini-2025-08-07',
-		         'gpt-5-nano-2025-08-07',
-		         'gpt-5-chat-latest',
+		return [
+				 'gpt-5',
+				 'gpt-5.2',
+				 'gpt-5-mini',
+				 'gpt-5-nano',
+				 'gpt-5-turbo',
 		         'gpt-4.1',
 		         'gpt-4.1-mini',
 		         'gpt-4.1-nano',
-		         'gpt-4.1-2025-04-14',
-		         'gpt-4.1-mini-2025-04-14',
-		         'gpt-4.1-nano-2025-04-14',
-		         'o4-mini',
-		         'o4-mini-2025-04-16',
-		         'o3',
-		         'o3-2025-04-16',
-		         'o3-mini',
-		         'o3-mini-2025-01-31',
-		         'o1',
-		         'o1-2024-12-17',
-		         'o1-preview',
-		         'o1-preview-2024-09-12',
-		         'o1-mini',
-		         'o1-mini-2024-09-12',
 		         'gpt-4o',
-		         'gpt-4o-2024-11-20',
-		         'gpt-4o-2024-08-06',
-		         'gpt-4o-2024-05-13',
-		         'gpt-4o-audio-preview',
-		         'gpt-4o-audio-preview-2024-10-01',
-		         'gpt-4o-audio-preview-2024-12-17',
-		         'gpt-4o-audio-preview-2025-06-03',
-		         'gpt-4o-mini-audio-preview',
-		         'gpt-4o-mini-audio-preview-2024-12-17',
-		         'gpt-4o-search-preview',
-		         'gpt-4o-mini-search-preview',
-		         'gpt-4o-search-preview-2025-03-11',
-		         'gpt-4o-mini-search-preview-2025-03-11',
-		         'chatgpt-4o-latest',
-		         'codex-mini-latest',
-		         'gpt-4o-mini',
-		         'gpt-4o-mini-2024-07-18',
-		         'gpt-4-turbo',
-		         'gpt-4-turbo-2024-04-09',
-		         'gpt-4-0125-preview',
-		         'gpt-4-turbo-preview',
-		         'gpt-4-1106-preview',
-		         'gpt-4-vision-preview',
-		         'gpt-4',
-		         'gpt-4-0314',
-		         'gpt-4-0613',
-		         'gpt-4-32k',
-		         'gpt-4-32k-0314',
-		         'gpt-4-32k-0613',
-		         'gpt-3.5-turbo',
-		         'gpt-3.5-turbo-16k',
-		         'gpt-3.5-turbo-0301',
-		         'gpt-3.5-turbo-0613',
-		         'gpt-3.5-turbo-1106',
-		         'gpt-3.5-turbo-0125',
-		         'gpt-3.5-turbo-16k-0613',
-		         'o1-pro',
-		         'o1-pro-2025-03-19',
-		         'o3-pro',
-		         'o3-pro-2025-06-10',
-		         'o3-deep-research',
-		         'o3-deep-research-2025-06-26',
-		         'o4-mini-deep-research',
-		         'o4-mini-deep-research-2025-06-26',
-		         'computer-use-preview',
-		         'computer-use-preview-2025-03-11',
-		         'gpt-5-codex' ]
+		         'gpt-4o-mini' ]
 	
 	@property
 	def include_options( self ) -> List[ str ] | None:
@@ -362,9 +294,9 @@ class Chat( GPT ):
 	def purpose_options( self ) -> List[ str ] | None:
 		'''
 		
-		Returns:
-		--------
-		A List[ str ] of file purposes
+			Returns:
+			--------
+			A List[ str ] of file purposes
 
 		'''
 		return [ 'assistants',
@@ -378,9 +310,9 @@ class Chat( GPT ):
 	def reasoning_options( self ) -> List[ str ] | None:
 		'''
 
-		Returns:
-		--------
-		A List[ str ] of reasoning effort options
+			Returns:
+			--------
+			A List[ str ] of reasoning effort options
 
 		'''
 		return [ 'low',
@@ -390,10 +322,10 @@ class Chat( GPT ):
 		         'minimal',
 		         'xhigh' ]
 	
-	def generate_text( self, prompt: str, model: str='gpt-5-nano', number: int=1,
-			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True,
-			instruct: str=None, reasoning: str='high', include: str=None  ) -> str | None:
+	def generate_text( self, prompt: str, model: str='gpt-5-nano', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, stream: bool=True, instruct: str=None,
+			reasoning: str='low', include: str=None  ) -> str | None:
 		"""
 	
 	        Purpose
@@ -414,7 +346,6 @@ class Chat( GPT ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.model = model
-			self.number = number
 			self.prompt = prompt
 			self.temperature = temperature
 			self.reasoning = reasoning
@@ -442,7 +373,7 @@ class Chat( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Chat'
 			exception.method = 'generate_text( self, prompt: str )'
-			raise  e
+			raise  exception
 	
 	def generate_image( self, prompt: str, number: int=1, model: str='dall-e-3',
 			size: str='1024x1024', quality: str='standard', fmt: str='.png'  ) -> str | None:
@@ -479,10 +410,8 @@ class Chat( GPT ):
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Chat'
-			exception.method = ('generate_image( self, prompt: str, number, model: str, '
-			                    'size: str, quality: str ) -> str | None')
-			error = ErrorDialog( exception )
-			error.show( )
+			exception.method = ('generate_image( self, prompt: str ) -> str | None')
+			raise exception
 	
 	def analyze_image( self, prompt: str, url: str ) -> str | None:
 		"""
@@ -889,7 +818,12 @@ class Files( GPT ):
 	prompt: Optional[ str ]
 	name: Optional[ str ]
 	response_format: Optional[ str ]
+	include: Optional[ List[ str ] ]
+	tool_choice: Optional[ str ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
 	instructions: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	file_path: Optional[ str ]
 	file_id: Optional[ str ]
 	purpose: Optional[ str ]
@@ -1141,7 +1075,7 @@ class Files( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def list( self, purpose: str = "user_data" ):
+	def list( self, purpose: str="user_data" ):
 		self.purpose = purpose
 		self.client = OpenAI( api_key=self.api_key )
 		page = self.client.files.list( )  # no purpose arg
@@ -1266,14 +1200,13 @@ class Embeddings( GPT ):
 	def model_options( self ) -> List[ str ]:
 		'''
 		
-		Returns:
-		--------
-		List[ str ] of embedding models
+			Returns:
+			--------
+			List[ str ] of embedding models
 
 		'''
 		return [ 'text-embedding-3-small',
-		         'text-embedding-3-large',
-		         'text-embedding-ada-002' ]
+		         'text-embedding-3-large' ]
 	
 	@property
 	def encoding_options( self ) -> List[ str ]:
@@ -1426,6 +1359,12 @@ class TTS( GPT ):
 	speed: Optional[ float ]
 	voice: Optional[ str ]
 	language: Optional[ str ]
+	include: Optional[ List[ str ] ]
+	tool_choice: Optional[ str ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
+	instructions: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	response: Optional[ openai.types.responses.Response ]
 	
 	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
@@ -1480,15 +1419,13 @@ class TTS( GPT ):
 
         '''
 		return [ 'alloy',
-		         'ash',
+		         'verse',
 		         'ballad',
-		         'coral',
-		         'echo',
-		         'fable',
-		         'onyx',
+		         'aria',
+		         'sol',
+		         'luna',
 		         'nova',
-		         'sage',
-		         'shiver', ]
+		         'sage', ]
 		
 	@property
 	def format_options( self ) -> List[ str ] | None:
@@ -1501,10 +1438,8 @@ class TTS( GPT ):
         '''
 		return [ 'mp3',
 		         'wav',
-		         'aac',
-		         'flac',
-		         'opus',
-		         'pcm' ]
+		         'ogg',
+		         'flac']
 	
 	@property
 	def speed_options( self ) -> List[ float ] | None:
@@ -1519,7 +1454,7 @@ class TTS( GPT ):
 		return [ 0.25, 1.0, 4.0 ]
 	
 	def create_audio( self, text: str, filepath: str, format: str='mp3',
-			speed: float=1.0, voice: str='alloy' ) -> str:
+			speed: float=1.0, voice: str='aria' ) -> str:
 		"""
 	
 	        Purpose
@@ -1654,24 +1589,28 @@ class Transcription( GPT ):
 	speed: Optional[ float ]
 	voice: Optional[ str ]
 	language: Optional[ str ]
+	include: Optional[ List[ str ] ]
+	tool_choice: Optional[ str ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
+	instructions: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True,
-			language: str='en', instruct: str=None ):
+	def __init__( self, model: str='gpt-4o-mini-transcribe', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, language: str='en', instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=self.api_key )
-		self.number = number
 		self.temperature = temperature
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
 		self.presence_penalty = presence
 		self.max_completion_tokens = max_tokens
 		self.store = store
-		self.stream = stream
 		self.language = language
 		self.instructions = instruct
-		self.model = None
+		self.model = model
 		self.input_text = None
 		self.audio_file = None
 		self.transcript = None
@@ -1686,13 +1625,10 @@ class Transcription( GPT ):
 	        Methods that returns a list of small_model names
 
         '''
-		return [ 'whisper-1',
-		         'gpt-4o-mini-transcribe',
-		         'gpt-4o-transcribe',
-		         'gpt-4o-transcribe-diarize' ]
+		return [ 'gpt-4o-mini-transcribe'  ]
 		
 	@property
-	def file_options( self ) -> List[ str ] | None:
+	def format_options( self ) -> List[ str ] | None:
 		'''
 
 	        Purpose:
@@ -1708,7 +1644,7 @@ class Transcription( GPT ):
 		         'pcm' ]
 	
 	@property
-	def format_options( self ) -> List[ str ] | None:
+	def output_options( self ) -> List[ str ] | None:
 		'''
 			
 			Returns:
@@ -1732,16 +1668,15 @@ class Transcription( GPT ):
 	        Method that returns a list of voice names
 
         '''
-		return [ 'English',
-		         'Spanish',
-		         'Tagalog',
-		         'French',
-		         'Japanese',
-		         'German',
-		         'Italian',
-		         'Chinese' ]
+		return [ 'en',
+		         'sp',
+		         'fr',
+		         'jp',
+		         'de',
+		         'it',
+		         'zh', 'pt', 'ru', 'uk', 'el', 'he', 'ar', 'hi', 'ko', 'vi', 'th' ]
 	
-	def transcribe( self, path: str, model: str='whisper-1', language: str='en' ) -> str:
+	def transcribe( self, path: str, model: str='gpt-4o-mini-transcribe', language: str='en' ) -> str:
 		"""
 		
 			Purpose:
@@ -1838,14 +1773,19 @@ class Translation( GPT ):
     """
 	client: Optional[ OpenAI ]
 	target_language: Optional[ str ]
+	include: Optional[ List[ str ] ]
+	tool_choice: Optional[ str ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
+	instructions: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+	def __init__( self, model: str='gpt-5-mini', temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
-		self.model = 'whisper-1'
-		self.number = number
+		self.model = model
 		self.temperature = temperature
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
@@ -1867,11 +1807,15 @@ class Translation( GPT ):
 	        Methods that returns a list of small_model names
 
         '''
-		return [ 'whisper-1',
-		         'text-davinci-003',
-		         'gpt-4-0613',
-		         'gpt-4-0314',
-		         'gpt-4-turbo-2024-04-09', ]
+		return [ 'gpt-5',
+		         'gpt-5-mini',
+		         'gpt-5-turbo',
+		         'gpt-4o',
+		         'gpt-4.1',
+		         'gpt-4.1-mini',
+		         'gpt-4.1-turbo',
+		         'gpt-4o',
+		         'gpt-4o-mini',]
 	
 	@property
 	def language_options( self ):
@@ -1879,18 +1823,27 @@ class Translation( GPT ):
 	
 	        Purpose:
 	        --------
-	        Method that returns a list of voice names
+	        Method that returns a list of translatable languages
 
         '''
-		return [ 'English',
-		         'Spanish',
-		         'Tagalog',
-		         'French',
-		         'Japanese',
-		         'German',
-		         'Italian',
-		         'Chinese' ]
-		
+		return [ 'english'
+				'spanish'
+				'french'
+				'german'
+				'italian'
+				'portuguese'
+				'russian'
+				'ukrainian'
+				'greek'
+				'hebrew'
+				'arabic'
+				'hindi'
+				'chinese'
+				'japanese'
+				'korean'
+				'vietnamese'
+				'thai' ]
+	
 	@property
 	def voice_options( self ):
 		'''
@@ -1911,44 +1864,11 @@ class Translation( GPT ):
 		         'sage',
 		         'shiver', ]
 	
-	def create( self, text: str, path: str ) -> str | None:
-		"""
-
-	        Purpose
-	        _______
-	        Generates a translation given a string to an audio file
 	
-	
-	        Parameters
-	        ----------
-	        text: str
-	        path: str
-	
-	
-	        Returns
-	        -------
-	        str
-
-        """
-		try:
-			throw_if( 'text', text )
-			throw_if( 'path', path )
-			self.prompt = text
-			self.audio_file = path
-			self.client = OpenAI( api_key=self.api_key )
-			with open( self.audio_file, 'rb' ) as audio_file:
-				resp = self.client.audio.translations.create( model='whisper-1',
-					file=audio_file, prompt=text )
-			return resp.text
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Translation'
-			exception.method = 'create( self, text: str )'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def translate( self, path: str ) -> str | None:
+	def translate( self, prompt: str, path: str, model: str = 'gpt-5-mini',
+			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
+			presence: float = 0.0, max_tokens: int = 10000,
+			store: bool = True, stream: bool = True, instruct: str = None ) -> str | None:
 		"""
 		
             Translate non-English speech to English with Whisper.
@@ -1956,8 +1876,19 @@ class Translation( GPT ):
         """
 		try:
 			throw_if( 'path', path )
+			throw_if( 'prompt', prompt )
+			self.model = model
+			self.temperature = temperature
+			self.top_percent = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_completion_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.instruct = instruct
 			with open( path, 'rb' ) as audio_file:
-				resp = self.client.audio.translations.create( model=self.model, file=audio_file )
+				self.response = self.client.audio.translations.create( model=self.model,
+					file=audio_file )
 			return resp.text
 		except Exception as e:
 			ex = Error( e )
@@ -2048,16 +1979,23 @@ class Images( GPT ):
 	    analyze( self, path: str, text: str ) -> str
 
     """
-	image_url: Optional[ str ]
 	quality: Optional[ str ]
 	detail: Optional[ str ]
 	size: Optional[ str ]
+	include: Optional[ List[ str ] ]
 	tool_choice: Optional[ str ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
+	instructions: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
+	image_url: Optional[ str ]
+	file_url: Optional[ str ]
 	style: Optional[ str ]
 	response_format: Optional[ str ]
 	
-	def __init__( self, n: int=1, temperture: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=False, stream: bool=False, ):
+	def __init__( self, temperture: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool=False, stream: bool=False,
+			instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=self.api_key )
@@ -2069,6 +2007,8 @@ class Images( GPT ):
 		self.max_completion_tokens = max_tokens
 		self.store = store
 		self.stream = stream
+		self.instruct = instruct
+		self.tools = [ ]
 		self.tool_choice = 'auto'
 		self.input = [ ]
 		self.input_text = None
@@ -2094,21 +2034,26 @@ class Images( GPT ):
 		         'natural', ]
 	
 	@property
-	def model_options( self ) -> List[ str ]:
+	def model_options( self ) -> List[ str ] | None:
 		'''
 
 	        Purpose:
-	        ________
+	        --------
 	        Methods that returns a list of small_model names
 
         '''
-		return [ 'dall-e-2',
-		         'dall-e-3',
-		         'gpt-4o-mini',
-		         'gpt-4o',
-		         'gpt-image-1',
+		return [ 'gpt-image-1',
 		         'gpt-image-1-mini',
-		         'gpt-image-1.5', ]
+		         'gpt-image-1.5',
+		         'gpt-5',
+		         'gpt-5.2',
+		         'gpt-5-mini',
+		         'gpt-5-nano',
+		         'gpt-5-turbo',
+		         'gpt-4.1',
+		         'gpt-4.1-mini',
+		         'gpt-4o',
+		         'gpt-4o-mini' ]
 		
 	@property
 	def size_options( self ) -> List[ str ]:
@@ -2126,13 +2071,9 @@ class Images( GPT ):
 	        - For dall-e-3, the sie must be one of '1024x1024', '1792x1024', or '1024x1792'
 
         '''
-		return [ 'auto',
-		         '256x256',
+		return [ '256x256',
 		         '512x512',
-		         '1024x1024',
-		         '1536x1024',
-		         '1024x1792',
-		         '1792x1024' ]
+		         '1024x1024' ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:
@@ -2143,10 +2084,11 @@ class Images( GPT ):
 	        Method that returns a  list of format options
 
         '''
-		return [ '.png',
-		         '.jpeg',
-		         '.webp',
-		         '.gif' ]
+		return [ 'png',
+		         'jpeg',
+		         'jpg',
+		         'webp',
+		         'gif' ]
 		
 	@property
 	def quality_options( self ) -> List[ str ]:
@@ -2157,9 +2099,7 @@ class Images( GPT ):
 	        Method that returns a  list of quality options
 
         '''
-		return [ 'low',
-		         'medium',
-		         'hi', ]
+		return [ 'standard', 'hd' ]
 	
 	@property
 	def detail_options( self ) -> List[ str ]:
@@ -2175,7 +2115,7 @@ class Images( GPT ):
 		         'high' ]
 	
 	def generate( self, prompt: str, model: str, quality: str, size: str,
-			style: str='natural', format: str='url' ) -> str:
+			style: str='natural', format: str='png', instruct: str=None ) -> str:
 		"""
 
                 Purpose
@@ -2204,17 +2144,18 @@ class Images( GPT ):
 			self.size = size
 			self.style = style
 			self.response_format = format
-			self.response = self.client.images.generate( model=self.model, prompt=self.input_text,
+			self.tools.append({'type':'image_generation'})
+			self.instruct = instruct
+			self.response = self.client.responses.create( model=self.model, input=self.input_text,
 				size=self.size, style=self.style, response_format=self.response_format,
-				quality=self.quality, n=self.number )
+				tools=self.tools, quality=self.quality  )
 			return self.response.data[ 0 ].url
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Image'
+			exception.cause = 'Images'
 			exception.method = 'generate( self, path: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def analyze( self, text: str, path: str, model: str='gpt-4o-mini', ) -> str:
 		'''
@@ -2360,6 +2301,12 @@ class VectorStores( GPT ):
 	store_ids: Optional[ List[ str ] ]
 	file_path: Optional[ str ]
 	file_id: Optional[ str ]
+	include: Optional[ List[ str ] ]
+	tool_choice: Optional[ str ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
+	instructions: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	documents: Optional[ Dict[ str, Any ] ]
 	collections: Optional[ Dict[ str, Any ] ]
 	
