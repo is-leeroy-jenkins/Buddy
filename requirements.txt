@@ -10,3 +10,4 @@ google-cloud-storage
 pydantic>=2.7
 tiktoken
 xai-sdk
+pymupdf

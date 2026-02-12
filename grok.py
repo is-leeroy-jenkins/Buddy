@@ -1411,6 +1411,8 @@ class Files( Grok ):
 	response_format: Optional[ str ]
 	instructions: Optional[ str ]
 	file_path: Optional[ str ]
+	file_paths: Optional[ List[ str ] ]
+	file_names: Optional[ List[ str ] ]
 	file_id: Optional[ str ]
 	purpose: Optional[ str ]
 	content: Optional[ List[ Dict[ str, Any ] ] ]
@@ -1650,9 +1652,9 @@ class Files( Grok ):
 			error.show( )
 	
 	def search( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast',
-			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, store: bool = True, stream: bool = True,
-			instruct: str = None ) -> str | None:
+			temperature: float=0.8, top_p: float=0.9, frequency: float = 0.0,
+			presence: float= .0, max_tokens: int=10000, store: bool=True, stream: bool=True,
+			instruct: str=None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1706,7 +1708,69 @@ class Files( Grok ):
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = 'Embeddings'
+			ex.cause = 'Files'
+			ex.method = ''
+			error = ErrorDialog( ex )
+			error.show( )
+	
+	def survey( self, filepaths: List[ str ], filenames: List[ str ], prompt: str,
+			model: str='grok-4-fast', temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True,
+			instruct: str=None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Chat with an uploaded file by attaching it to a Responses API
+			request and asking a question about its contents.
+
+			Parameters:
+			-----------
+			file_id : str
+			prompt : str
+			model : str | None
+			max_output_tokens : int | None
+			temperature : float | None
+			top_p : float | None
+			store : bool
+			previous_response_id : str | None
+
+			Returns:
+			--------
+			str
+		
+		"""
+		try:
+			throw_if( 'filepath', filepaths )
+			throw_if( 'filename', filenames )
+			throw_if( 'prompt', prompt )
+			self.model = model
+			self.prompt = prompt
+			self.instructions = instruct
+			self.temperature = temperature
+			self.top_p = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.user ) )
+			self.file_paths = filepaths
+			self.filenames = filenames
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.file = self.client.files.upload( open( self.file_path, 'rb' ),
+				filename=self.file_name )
+			self.chat = self.client.chat.create( model=self.model )
+			self.chat.append( user( self.prompt, file( self.file.id ) ) )
+			_response = self.chat.sample( )
+			return _response.content
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Files'
 			ex.method = ''
 			error = ErrorDialog( ex )
 			error.show( )

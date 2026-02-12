@@ -166,19 +166,20 @@ class Chat( GPT ):
     """
 	include: Optional[ List[ str ] ]
 	tool_choice: Optional[ str ]
-	input: Optional[ List[ str ] ]
+	input: Optional[ List[ Dict[ str, str ] ] ]
 	instructions: Optional[ str ]
-	tools: Optional[ List[ Dict[ str, Any ] ] ]
-	reasoning: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, str ] ] ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	image_url: Optional[ str ]
 	search_recency: Optional[ int ]
 	max_search_results: Optional[ int ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	vector_stores: Optional[ Dict[ str, str ] ]
-	fildes: Optional[ Dict[ str, str ] ]
+	files: Optional[ Dict[ str, str ] ]
 	content: Optional[ List[ Dict[ str, Any ] ] ]
 	vector_store_ids: Optional[ List[ str ] ]
 	file_ids: Optional[ List[ str ] ]
+	include: Optional[ List[ str ] ]
 	response: Optional[ openai.types.responses.Response ]
 	file: Optional[ openai.types.file_object.FileObject ]
 	purpose: Optional[ str ]
@@ -199,15 +200,15 @@ class Chat( GPT ):
 		self.instructions = instruct
 		self.stream = stream
 		self.tool_choice = 'auto'
-		self.tools = None
-		self.reasoning = None
+		self.tools = [ ]
+		self.reasoning = [ ]
 		self.model = None
 		self.content = None
 		self.prompt = None
 		self.response = None
 		self.file = None
 		self.file_path = None
-		self.input = None
+		self.input = [ ]
 		self.messages = None
 		self.image_url = None
 		self.include = None
@@ -215,6 +216,8 @@ class Chat( GPT ):
 		self.max_search_results = None
 		self.purpose = None
 		self.file_ids = [ ]
+		self.include = [ ]
+		self.tools = [ ]
 		self.vector_stores = \
 		{
 			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
@@ -320,12 +323,14 @@ class Chat( GPT ):
 			A List[ str ] of the includeable options
 
 		'''
-		return [ 'code_interpreter_call.outputs',
-		         'computer_call_output.output.image_url',
-		         'file_search_call.results',
+		return [ 'file_search_call.results',
+		         'web_search_call.results',
+		         'web_search_call.action.sources',
 		         'message.input_image.image_url',
-		         'message.output_text.logprobs',
-		         'reasoning.encrypted_content' ]
+		         'computer_call_output.output.image_url',
+		         'code_interpreter_call.outputs',
+		         'reasoning.encrypted_content',
+		         'message.output_text.logprobs' ]
 	
 	@property
 	def tool_options( self ) -> List[ str ] | None:
@@ -387,8 +392,8 @@ class Chat( GPT ):
 	
 	def generate_text( self, prompt: str, model: str='gpt-5-nano', number: int=1,
 			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000,
-			store: bool=True, stream: bool=True, instruct: str=None  ) -> str | None:
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True,
+			instruct: str=None, reasoning: str='high', include: str=None  ) -> str | None:
 		"""
 	
 	        Purpose
@@ -408,10 +413,11 @@ class Chat( GPT ):
         """
 		try:
 			throw_if( 'prompt', prompt )
-			self.prompt = prompt
 			self.model = model
 			self.number = number
+			self.prompt = prompt
 			self.temperature = temperature
+			self.reasoning = reasoning
 			self.top_percent = top_p
 			self.frequency_penalty = frequency
 			self.presence_penalty = presence
@@ -419,12 +425,15 @@ class Chat( GPT ):
 			self.store = store
 			self.stream = stream
 			self.instructions = instruct
+			self.reasoning= {'effort': self.reasoning }
+			self.input = self.prompt
+			self.include = include
 			self.client = OpenAI( api_key=self.api_key )
 			if self.model.startswith( 'gpt-5' ):
-				self.response = self.client.responses.create( model=self.model, input=self.prompt,
-					max_output_tokens=self.max_completion_tokens, instructions=self.instructions  )
+				self.response = self.client.responses.create( model=self.model, input=self.input,
+					reasoning=self.reasoning )
 			else:
-				self.response = self.client.responses.create( model=self.model, input=self.prompt,
+				self.response = self.client.responses.create( model=self.model, input=self.input,
 					max_output_tokens=self.max_completion_tokens, temperature=self.temperature,
 					top_p=self.top_percent )
 			return self.response.output_text
@@ -433,8 +442,7 @@ class Chat( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Chat'
 			exception.method = 'generate_text( self, prompt: str )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise  e
 	
 	def generate_image( self, prompt: str, number: int=1, model: str='dall-e-3',
 			size: str='1024x1024', quality: str='standard', fmt: str='.png'  ) -> str | None:
@@ -650,89 +658,7 @@ class Chat( GPT ):
 			                    'recency: int=30, max_results: int=8 ) -> str | None')
 			error = ErrorDialog( exception )
 			error.show( )
-		
-	def search_file( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
-		"""
 
-	        Purpose:
-	        _______
-	        Method that analyzeses an image given a prompt,
-
-	        Parameters:
-	        ----------
-	        prompt: str
-	        url: str
-
-	        Returns:
-	        -------
-	        str | None
-
-        """
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'store_id', store_id )
-			self.prompt = prompt
-			self.model = model
-			self.vector_store_ids = [ store_id ]
-			self.tools = [
-					{
-							'text': 'file_search',
-							'vector_store_ids': self.vector_store_ids,
-							'max_num_results': self.max_search_results,
-					} ]
-			
-			self.response = self.client.responses.create( model=self.model, tools=self.tools,
-				input=self.prompt )
-			return self.response.output_text
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'search_files( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
-			
-	def search_files( self, prompt: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
-		"""
-
-	        Purpose:
-	        _______
-	        Method that analyzeses an image given a prompt,
-	
-	        Parameters:
-	        ----------
-	        prompt: str
-	        url: str
-	
-	        Returns:
-	        -------
-	        str | None
-
-        """
-		try:
-			throw_if( 'prompt', prompt )
-			self.prompt = prompt
-			self.model = model
-			self.client = OpenAI( api_key=self.api_key )
-			self.vector_store_ids = list( self.vector_stores.values( ) )
-			self.tools = [
-			{
-				'text': 'file_search',
-				'vector_store_ids': self.vector_store_ids,
-				'max_num_results': self.max_search_results ,
-			} ]
-			
-			self.response = self.client.responses.create( model=self.model, tools=self.tools,
-				input=self.prompt )
-			return self.response.output_text
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'search_files( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
-	
 	def upload_file( self, filepath: str, purpose: str='user_data' ) -> str | None:
 		'''
 			
@@ -1129,6 +1055,89 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Chat'
 			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search( self, prompt: str, store_id: str, model: str = 'gpt-4.1-nano-2025-04-14' ) -> str | None:
+		"""
+
+	        Purpose:
+	        _______
+	        Method that analyzeses an image given a prompt,
+
+	        Parameters:
+	        ----------
+	        prompt: str
+	        url: str
+
+	        Returns:
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'store_id', store_id )
+			self.prompt = prompt
+			self.model = model
+			self.vector_store_ids = [ store_id ]
+			self.tools = [
+					{
+							'text': 'file_search',
+							'vector_store_ids': self.vector_store_ids,
+							'max_num_results': self.max_search_results,
+					} ]
+			
+			self.client = OpenAI( api_key=self.api_key )
+			self.response = self.client.responses.create( model=self.model, tools=self.tools,
+				input=self.prompt )
+			return self.response.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'search_files( self, prompt: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def survey( self, prompt: str, model: str = 'gpt-4.1-nano-2025-04-14' ) -> str | None:
+		"""
+
+	        Purpose:
+	        _______
+	        Method that analyzeses an image given a prompt,
+	
+	        Parameters:
+	        ----------
+	        prompt: str
+	        url: str
+	
+	        Returns:
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.model = model
+			self.client = OpenAI( api_key=self.api_key )
+			self.vector_store_ids = list( self.vector_stores.values( ) )
+			self.tools = [
+					{
+							'text': 'file_search',
+							'vector_store_ids': self.vector_store_ids,
+							'max_num_results': self.max_search_results,
+					} ]
+			
+			self.response = self.client.responses.create( model=self.model, tools=self.tools,
+				input=self.prompt )
+			return self.response.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'search_files( self, prompt: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	

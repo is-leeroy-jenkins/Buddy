@@ -61,7 +61,7 @@ ANALYST = '❓'
 BUDDY = '🧠'
 PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
-PROMPT_VERSION = '13'
+PROMPT_VERSION = '16'
 LOCAL_AUDIO_PATH = r'stores/audio/conditions.mp3'
 
 # -------------- API KEYS ---------------------
@@ -100,7 +100,7 @@ GPT_MODES = [ 'Chat',
               'Images',
               'Audio',
               'Embeddings',
-              'Document Q & A',
+              'Document Q&A',
               'Files',
               'Vector Stores',
               'Prompt Engineering',
@@ -126,7 +126,7 @@ GPT_WEB_DOMAINS = [ 'congress.gov',
 GROK_LOGO = r'resources/grok_logo.png'
 GROK_MODES = [ 'Text',
                'Images',
-               'Document Q & A',
+               'Document Q&A',
                'Files',
                'Vector Stores',
                'Prompt Engineering',
@@ -144,7 +144,7 @@ GEMINI_LOGO = r'resources/gemini_logo.png'
 GEMINI_MODES = [ 'Text',
                  'Images',
                  'Files',
-                 'Document Q & A',
+                 'Document Q&A',
                  'Embeddings',
                  'Audio',
                  'Vector Stores',

@@ -50,6 +50,7 @@ import pandas as pd
 from openai import OpenAI
 from PIL import Image, ImageFilter, ImageEnhance
 import base64
+import fitz
 import io
 from pathlib import Path
 import multiprocessing
@@ -455,9 +456,9 @@ def save_temp( upload ) -> str:
 		Save uploaded file to a named temporary file and return path.
 		
 	"""
-	with tempfile.NamedTemporaryFile( delete=False ) as tmp:
-		tmp.write( tmp.read( ) )
-		return tmp.name
+	with tempfile.NamedTemporaryFile( mode='w+', delete=False ) as tmp:
+		tmp.write( upload.name )
+		return tmp.file
 
 def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 	"""
@@ -713,6 +714,9 @@ init_state( )
 # ======================================================================================
 # Session State — initialize per-mode model keys and token counters
 # ======================================================================================
+if 'api_keys' not in st.session_state:
+	st.session_state.api_keys = { 'GPT': None, 'Grok': None, 'Gemini': None, }
+
 if 'openai_api_key' not in st.session_state:
 	st.session_state.openai_api_key = ''
 
@@ -771,18 +775,20 @@ if 'last_call_usage' not in st.session_state:
 	st.session_state.last_call_usage = {
 			'prompt_tokens': 0,
 			'completion_tokens': 0,
-			'total_tokens': 0,
-	}
+			'total_tokens': 0, }
 
 if 'token_usage' not in st.session_state:
 	st.session_state.token_usage = {
 			'prompt_tokens': 0,
 			'completion_tokens': 0,
-			'total_tokens': 0,
-	}
+			'total_tokens': 0, }
 
 if 'files' not in st.session_state:
 	st.session_state.files: List[ str ] = [ ]
+	
+#----------MODELS--------------------------------
+if 'model' not in st.session_state:
+	st.session_state.model = None
 
 if 'text_model' not in st.session_state:
 	st.session_state[ 'text_model' ] = None
@@ -799,6 +805,7 @@ if 'embedding_model' not in st.session_state:
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
 
+#--------HYPER-PARAMETERS----------------------
 if 'instructions' not in st.session_state:
 	st.session_state[ 'instructions' ] = None
 
@@ -837,7 +844,8 @@ if 'store' not in st.session_state:
 
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
-
+	
+#-------Audio API---------------------------
 if 'audio_file' not in st.session_state:
 	st.session_state[ 'audio_file' ] = None
 
@@ -864,14 +872,31 @@ if 'auto_play' not in st.session_state:
 
 if 'audio_format' not in st.session_state:
 	st.session_state[ 'audio_format' ] = 'audio/wav'
+
+#------- DOC Q&A ---------------------------
+if 'files' not in st.session_state:
+	st.session_state[ 'files' ] = [ ]
+	
+if 'uploaded' not in st.session_state:
+	st.session_state[ 'uploaded' ] = None
+
+if 'doc_messages' not in st.session_state:
+	st.session_state.doc_messages = [ ]
+
+if 'doc_active_docs' not in st.session_state:
+	st.session_state.doc_active_docs = [ ]
+
+if 'doc_source' not in st.session_state:
+	st.session_state.doc_source = None
+
+if 'doc_multi_mode' not in st.session_state:
+	st.session_state.doc_multi_mode = False
+	
+if 'doc_instructions' not in st.session_state:
+	st.session_state.doc_instructions = ''
 	
 if 'provider' not in st.session_state:
 	st.session_state[ 'provider' ] = 'GPT'
-
-if 'api_keys' not in st.session_state:
-	st.session_state.api_keys = { 'GPT': None,
-			'Grok': None,
-			'Gemini': None,}
 
 # ======================================================================================
 #  PROVIDER
@@ -974,8 +999,8 @@ def get_vectorstores_module( ):
 		Ensures Gemini / Grok functionality is not bypassed.
 		
 	"""
-	provider_module = st.session_state[ 'provider' ]
-	return provider_module.VectorStores()
+	provider_module = get_provider_module( )
+	return provider_module.VectorStores( )
 
 def _provider( ):
 	return st.session_state.get( 'provider' )
@@ -1039,19 +1064,174 @@ def embedding_model_options( embed ):
 		return _safe( 'gemini', 'embedding_model_options', embed.model_options )
 	return embed.model_options
 
+#-------------DOC Q&A ----------------------
+def route_document_query( prompt: str ) -> str:
+	source = st.session_state.get( 'doc_source' )
+	instructions = st.session_state.get( 'doc_instructions', '' )
+	active_docs = st.session_state.get( 'doc_active_docs', [ ] )
+	doc_bytes = st.session_state.get( 'doc_bytes', { } )
+	
+	if not source:
+		return 'No document source selected.'
+	
+	if not active_docs:
+		return 'No document selected.'
+	
+	# --------------------------------------------------
+	# LOCAL DOCUMENT → Chat (single or multi)
+	# --------------------------------------------------
+	if source == 'uploadlocal':
+		chat = get_chat_module( )
+		
+		# Single document
+		if len( active_docs ) == 1:
+			name = active_docs[ 0 ]
+			file_bytes = doc_bytes.get( name )
+			
+			if not file_bytes:
+				return 'Document content not available.'
+			
+			text = extract_text_from_bytes( file_bytes )
+			
+			full_prompt = f"""
+				{instructions}
+				
+				Use the following document to answer the question.
+				Be precise and cite relevant portions when possible.
+				
+				DOCUMENT:
+				{text}
+				
+				QUESTION:
+				{prompt}
+				"""
+			return chat.generate_text( prompt=full_prompt )
+		
+		# Multi-document injection
+		combined_text = ""
+		
+		for name in active_docs:
+			file_bytes = doc_bytes.get( name )
+			if not file_bytes:
+				continue
+			
+			text = extract_text_from_bytes( file_bytes )
+			
+			combined_text += f"\n\n===== DOCUMENT: {name} =====\n\n{text}\n"
+		
+		if not combined_text.strip( ):
+			return 'No readable document content available.'
+		
+		full_prompt = f"""
+			{instructions}
+			
+			You are analyzing multiple documents.
+			
+			Use the content below to answer the question.
+			If multiple documents are relevant, compare them.
+			Cite document names when possible.
+			
+			DOCUMENT SET:
+			{combined_text}
+			
+			QUESTION:
+			{prompt}
+			"""
+					
+		return chat.generate_text( prompt=full_prompt )
+	
+	# --------------------------------------------------
+	# FILES API → Files class
+	# --------------------------------------------------
+	if source == "filesapi":
+		files = get_files_module( )
+		
+		# Single file search
+		if len( active_docs ) == 1:
+			return files.search( prompt, active_docs[ 0 ] )
+		
+		# Multi-file survey
+		return files.survey( prompt )
+	
+	# --------------------------------------------------
+	# VECTOR STORE → VectorStores class
+	# --------------------------------------------------
+	if source == 'vectorstore':
+		vectorstores = get_vectorstores_module( )
+		
+		# Single store
+		if len( active_docs ) == 1:
+			return vectorstores.search( prompt, active_docs[ 0 ] )
+		
+		# Multi-store aggregation
+		responses = [ ]
+		for store_id in active_docs:
+			result = vectorstores.search( prompt, store_id )
+			if result:
+				responses.append( result )
+		
+		if not responses:
+			return 'No results found across selected vector stores.'
+		
+		return "\n\n".join( responses )
+	
+	return 'Unsupported document source.'
+
+def extract_text_from_bytes( file_bytes: bytes ) -> str:
+	"""
+	Extracts text from PDF or text-based documents.
+	"""
+	try:
+		import fitz  # PyMuPDF
+		
+		doc = fitz.open( stream=file_bytes, filetype="pdf" )
+		text = ""
+		for page in doc:
+			text += page.get_text( )
+		return text.strip( )
+	
+	except Exception:
+		try:
+			return file_bytes.decode( errors="ignore" )
+		except Exception:
+			return ""
+
+def summarize_active_document( ) -> str:
+	"""
+	Uses the routing layer to summarize the currently active document.
+	"""
+	
+	instructions = st.session_state.get( "doc_instructions", "" )
+	summary_prompt = """
+		Provide a clear, structured summary of this document.
+		Include:
+		- Purpose
+		- Key themes
+		- Major conclusions
+		- Important data points (if any)
+		- Policy implications (if applicable)
+		
+		Be precise and concise.
+		"""
+	
+	if instructions:
+		summary_prompt = f"{instructions}\n\n{summary_prompt}"
+	
+	return route_document_query( summary_prompt.strip( ) )
+
 # ==============================================================================
 # Sidebar
 # ==============================================================================
 with st.sidebar:
-	provider = st.session_state.get( "provider"  )
+	provider = st.session_state.get( 'provider'  )
 
 	style_subheaders( )
-	st.subheader( "" )
+	st.subheader( '' )
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	provider = st.selectbox( "Select API", list( cfg.PROVIDERS.keys( ) ),
-		index=list( cfg.PROVIDERS.keys( ) ).index( st.session_state.get( "provider", "GPT" ) ) )
+	provider = st.selectbox( 'Select API', list( cfg.PROVIDERS.keys( ) ),
+		index=list( cfg.PROVIDERS.keys( ) ).index( st.session_state.get( 'provider', 'GPT' ) ) )
 	
-	st.session_state[ "provider" ] = provider
+	st.session_state[ 'provider' ] = provider
 	logo_path = cfg.LOGO_MAP.get( provider )
 	if logo_path and os.path.exists( logo_path ):
 		logo_path = cfg.LOGO_MAP.get( provider )
@@ -1168,8 +1348,9 @@ if mode == 'Chat':
 			# -------------------------------
 			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
 				try:
+					chat = OpenAI( api_key=cfg.OPENAI_API_KEY )
 					with st.spinner( 'Running prompt...' ):
-						response = client.responses.create(
+						response = chat.responses.create(
 							prompt={ 'id': cfg.PROMPT_ID, 'version': cfg.PROMPT_VERSION, },
 							input=[ { 'role': 'user', 'content': [ { 'type': 'input_text',
 							                                         'text': user_input, } ], } ],
@@ -1491,27 +1672,22 @@ elif mode == "Images":
 			fmt = st.selectbox( 'Format', image.format_options, )
 
 	instructions = st.session_state[ 'instructions' ]
-	left_ins, right_ins = st.columns( [ 0.80,  0.20 ] )
-	with left_ins:
-		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
-			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
-	
-	with right_ins:
-		set_col, clear_col = st.columns( [ 0.5,
-		                                   0.5 ] )
-		with set_col:
-			set_button = st.button( '💾 Save' )
+	with st.expander( 'System Instructions', expanded=False, width='stretch' ):
+		left_ins, mid_ins, right_ins = st.columns( [ 0.6,  0.2, 0.2 ],
+			vertical_alignment='center' )
 		
-		with clear_col:
-			clear_button = st.button( '🧹 Clear' )
+		with left_ins:
+			instructions = st.text_area( 'System Instructions', height=80, width=750,
+				help=cfg.SYSTEM_INSTRUCTIONS )
+			st.session_state.doc_instructions = instructions
 		
-		if set_button:
-			st.session_state[ 'instructions' ] = instructions
-		
-		if clear_button:
-			instructions = ''
-			st.session_state[ 'instructions' ] = None
-
+		with right_ins:
+			if st.button( 'Save Instructions', width='stretch' ):
+				st.session_state.doc_messages = [ ]
+			
+			reset_ins = st.button( 'Clear Instructions', width='stretch' )
+			if reset_ins:
+				instructions = None
 	
 	# ------------------------------------------------------------------
 	# Main UI — Tabs
@@ -1549,8 +1725,6 @@ elif mode == "Images":
 					st.error( f'Image generation failed: {exc}' )
 	
 	with tab_analyze:
-		st.markdown( 'Image analysis — upload an image to analyze.' )
-		
 		uploaded_img = st.file_uploader(
 			'Upload an image for analysis',
 			type=[ 'png', 'jpg', 'jpeg', 'webp' ],
@@ -1656,8 +1830,6 @@ elif mode == "Images":
 						st.error( f"Analysis Failed: {exc}" )
 	
 	with tab_edit:
-		st.markdown( 'Image Editing — upload an image to edit.' )
-		
 		uploaded_img = st.file_uploader( 'Upload Image for Edit',
 			type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 			accept_multiple_files=False,
@@ -2382,92 +2554,77 @@ elif mode == 'Vector Stores':
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
-elif mode == 'Document Q & A':
-	st.subheader( '📄 Document Q & A')
-	left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
-	with left_ins:
-		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
-			instructions = st.text_area( 'Text', height=300, help=cfg.SYSTEM_INSTRUCTIONS )
-	
-	with right_ins:
-		set_col, clear_col = st.columns( [ 0.5, 0.5 ] )
-		with set_col:
-			set_button = st.button( '💾 Save' )
+elif mode == 'Document Q&A':
+	st.subheader( '📄 Document Q & A' )
+	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
+	with st.expander( 'Controls', expanded=False, width='stretch' ):
+		left_ins, mid_ins, right_ins = st.columns( [ 0.6, 0.2, 0.2 ],
+			vertical_alignment='center' )
 		
-		with clear_col:
-			clear_button = st.button( '🧹 Clear' )
+		with left_ins:
+			instructions = st.text_area( 'System Instructions', height=150, width=750,
+				help=cfg.SYSTEM_INSTRUCTIONS )
+			st.session_state.doc_instructions = instructions
 		
-		if set_button:
-			st.session_state[ 'instructions' ] = instructions
+		with mid_ins:
+			source = st.radio( 'Source', [ 'Upload Local', 'Files API',  'Vector Store' ] )
+			st.session_state.doc_source = source.lower( ).replace( ' ', '' )
 		
-		if clear_button:
-			instructions = ''
-			st.session_state[ 'instructions' ] = None
+		with right_ins:
+			if st.button( 'Clear Conversation', width='stretch' ):
+				st.session_state.doc_messages = [ ]
+				st.rerun( )
 			
-		uploaded = st.file_uploader( 'Upload Document',
-			type=[ 'pdf', 'txt', 'md', 'docx' ], accept_multiple_files=False, )
-	
-	left, right = st.columns( [ 0.7, 0.3 ], border=True )
-	uploaded = None
-	with left:
-		pdf_viewer = st.empty( )
-		
-	with right:
-		
-		if uploaded:
-			pdf_viewer = st.pdf( uploaded )
-			st.success( f"Saved {len( uploaded )} file(s) to session" )
-		
-		c1, c2 = st.columns( [ 1, 1 ] )
-		with c1:
-			if st.button( "Remove" ):
-				uploaded = None
-				st.success( f"Removed!" )
-		with c2:
-			if st.button( "Show Selected" ):
-				st.info( f"Local temp path: {uploaded}" )
-			
-	question = st.chat_input( "Ask a question about the selected document" )
-	if question is not None:
-		with st.spinner( "Running Document Q&A…" ):
-			try:
-				doc_qa = get_provider_module( ).Files( )
-				answer = None
-				if hasattr( doc_qa, "summarize" ):
-					try:
-						answer = doc_qa.summarize( prompt=question,
-							pdf_path=selected_path, )
-					except TypeError:
-						answer = doc_qa.summarize( question, uploaded )
+			reset_ins = st.button('Clear Instructions', width='stretch')
+			if reset_ins:
+				instructions = None
+				
+			if st.button( 'Summarize Document', width='stretch' ):
+				if not st.session_state.get( 'doc_active_docs' ):
+					st.warning( 'No document loaded.' )
 				else:
-					raise RuntimeError( "No document-QA method found on chat object.")
-				
-				st.markdown( "Answer:" )
-				st.markdown( answer or "No answer returned." )
-				
-				st.session_state.messages.append(
-				{
-					"role": "user",
-					"content": f"[Document question] {question}",
-				} )
-				
-				st.session_state.messages.append(
-				{
-					"role": "assistant",
-					"content": answer or "",
-				} )
-				
-				try:
-					_update_token_counters(
-						getattr( chat, "response", None )
-						or answer
-					)
-				except Exception:
-					pass
-			except Exception as e:
-				st.error(
-					f"Document Q&A failed: {e}"
-				)
+					st.session_state.doc_messages.append({'role': 'user',
+					                                      'content': 'Summarize this document.'})
+					
+					summary = summarize_active_document( )
+					st.session_state.doc_messages.append({'role': 'assistant','content': summary})
+					
+					st.rerun( )
+	
+	doc_left, doc_right = st.columns( [ 0.2, 0.8 ], border=True )
+	with doc_left:
+		uploaded = st.file_uploader( 'Upload', type=[ 'pdf', 'txt', 'md', 'docx' ],
+			accept_multiple_files=False, label_visibility='visible' )
+		
+		if uploaded is not None:
+			st.session_state.doc_active_docs = [ uploaded.name ]
+			st.session_state.doc_bytes = { uploaded.name: uploaded.getvalue( ) }
+			st.success( f'{uploaded.name} has been loaded!' )
+		else:
+			st.info( 'Load a document.' )
+		
+		unload = st.button( label='Unload Document', width='stretch' )
+		if unload:
+			uploaded = None
+			st.session_state.doc_active_docs = None
+	
+	with doc_right:
+		if st.session_state.get( 'doc_active_docs' ):
+			name = st.session_state.doc_active_docs[ 0 ]
+			file_bytes = st.session_state.doc_bytes.get( name )
+			if file_bytes:
+				st.pdf( file_bytes, height=420 )
+	
+	for msg in st.session_state.doc_messages:
+		with st.chat_message( msg[ 'role' ] ):
+			st.markdown( msg[ 'content' ] )
+	
+	if prompt := st.chat_input( 'Ask a question about the document' ):
+		st.session_state.doc_messages.append( { 'role': 'user', 'content': prompt } )
+		response = route_document_query( prompt )
+		st.session_state.doc_messages.append( { 'role': 'assistant', 'content': response } )
+		st.rerun( )
 
 # ======================================================================================
 # FILES API MODE
@@ -2889,8 +3046,7 @@ st.markdown(
 	}
 	</style>
 	""",
-	unsafe_allow_html=True,
-)
+	unsafe_allow_html=True, )
 
 # ---- Resolve active model by mode
 _mode_to_model_key = {
@@ -2905,8 +3061,7 @@ mode_val = mode or "—"
 
 active_model = st.session_state.get(
 	_mode_to_model_key.get( mode, "" ),
-	None,
-)
+	None,)
 
 # ---- Build right-side (mode-gated)
 right_parts = [ ]
@@ -2954,5 +3109,4 @@ st.markdown(
         </div>
     </div>
     """,
-	unsafe_allow_html=True,
-)
+	unsafe_allow_html=True,)

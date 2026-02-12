@@ -522,6 +522,8 @@ class Files( Gemini ):
 	mime_type: Optional[ str ]
 	file_path: Optional[ str ]
 	file_list: Optional[ List[ File ] ]
+	file_paths: Optional[ List[ str ] ]
+	file_lists: Optional[ List[ File ] ]
 	response: Optional[ Any ]
 	use_vertex: Optional[ bool ]
 	collections: Optional[ Dict[ str, str ] ]
@@ -676,6 +678,60 @@ class Files( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
+	def search( self, prompt: str, filepath: str, model: str = 'gemini-2.0-flash',
+			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
+			presence: float = 0.0, max_tokens: int = 10000, stops: List[
+				str ] = None ) -> str | None:
+		"""
+			
+			Purpose:
+			-------
+			Uploads and summarizes a PDF or text document.
+			
+			Parameters:
+			-----------
+			prompt: str - Summarization instructions.
+			filepath: str - Path to the document file.
+			model: str - The model identifier for processing.
+			Returns:
+			--------
+			Optional[ str ] - The document summary or None on failure.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'filepath', filepath )
+			self.prompt = prompt
+			self.file_path = filepath
+			self.model = model
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.content_config = GenerateContentConfig( temperature=self.temperature )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			if self.use_vertex:
+				with open( self.file_path, 'rb' ) as f:
+					doc_part = Part.from_bytes( data=f.read( ), mime_type="application/pdf" )
+				response = self.client.models.generate_content( model=self.model,
+					contents=[ doc_part,
+					           self.prompt ], config=self.content_config )
+			else:
+				uploaded_file = self.client.files.upload( path=self.file_path )
+				response = self.client.models.generate_content( model=self.model,
+					contents=[ uploaded_file,
+					           self.prompt ], config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Files'
+			exception.method = 'search( self, prompt, filepath, model ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+			
 	def list( self, model: str='gemini-2.0-flash', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
 			max_tokens: int=10000, stops: List[ str ]=None ) -> List[ str ]:
@@ -747,7 +803,60 @@ class Files( Gemini ):
 			exception.method = 'delete( self, file_id: str ) -> bool'
 			error = ErrorDialog( exception )
 			error.show( )
-
+	
+	def survey( self, prompt: str, filepaths: List[ str ], model: str='gemini-2.0-flash',
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, stops: List[ str ]=None ) -> str | None:
+		"""
+			
+			Purpose:
+			-------
+			Uploads and summarizes a PDF or text document.
+			
+			Parameters:
+			-----------
+			prompt: str - Summarization instructions.
+			filepath: str - Path to the document file.
+			model: str - The model identifier for processing.
+			Returns:
+			--------
+			Optional[ str ] - The document summary or None on failure.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'filepaths', filepaths )
+			self.prompt = prompt
+			self.file_paths = filepaths
+			self.model = model
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.content_config = GenerateContentConfig( temperature=self.temperature )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			if self.use_vertex:
+				with open( self.file_path, 'rb' ) as f:
+					doc_part = Part.from_bytes( data=f.read( ), mime_type="application/pdf" )
+				response = self.client.models.generate_content( model=self.model,
+					contents=[ doc_part,
+					           self.prompt ], config=self.content_config )
+			else:
+				uploaded_file = self.client.files.upload( path=self.file_paths )
+				response = self.client.models.generate_content( model=self.model,
+					contents=[ uploaded_file,
+					           self.prompt ], config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Files'
+			exception.method = 'survey( self, prompt, filepaths, model ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+			
 class Embeddings( Gemini ):
 	'''
 
