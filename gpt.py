@@ -1992,6 +1992,7 @@ class Images( GPT ):
 	file_url: Optional[ str ]
 	style: Optional[ str ]
 	response_format: Optional[ str ]
+	background: Optional[ str ]
 	
 	def __init__( self, temperture: float=0.8, top_p: float=0.9, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, store: bool=False, stream: bool=False,
@@ -1999,7 +2000,6 @@ class Images( GPT ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=self.api_key )
-		self.number = n
 		self.temperature = temperture
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
@@ -2011,6 +2011,7 @@ class Images( GPT ):
 		self.tools = [ ]
 		self.tool_choice = 'auto'
 		self.input = [ ]
+		self.background = None
 		self.input_text = None
 		self.file_path = None
 		self.image_url = None
@@ -2089,7 +2090,33 @@ class Images( GPT ):
 		         'jpg',
 		         'webp',
 		         'gif' ]
-		
+	
+	@property
+	def output_options( self ) -> List[ str ]:
+		'''
+	
+	        Purpose:
+	        ________
+	        Method that returns a  list of format options
+
+        '''
+		return [ 'png',
+		         'jpeg',
+		         'webp' ]
+	
+	@property
+	def background_options( self ) -> List[ str ]:
+		'''
+	
+	        Purpose:
+	        ________
+	        Method that returns a  list of format options
+
+        '''
+		return [ 'transparent',
+		         'opaque',
+		         'auto' ]
+	
 	@property
 	def quality_options( self ) -> List[ str ]:
 		'''
@@ -2296,7 +2323,6 @@ class VectorStores( GPT ):
 	client: Optional[ OpenAI ]
 	prompt: Optional[ str ]
 	response_format: Optional[ str ]
-	number: Optional[ int ]
 	name: Optional[ str ]
 	store_ids: Optional[ List[ str ] ]
 	file_path: Optional[ str ]
@@ -2371,6 +2397,42 @@ class VectorStores( GPT ):
 			raise
 	
 	def search( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
+		"""
+
+	        Purpose:
+	        _______
+	        Method that analyzeses an image given a prompt,
+
+	        Parameters:
+	        ----------
+	        prompt: str
+	        url: str
+
+	        Returns:
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'store_id', store_id )
+			self.prompt = prompt
+			self.model = model
+			self.vector_store_ids = [ store_id ]
+			self.tools = [
+					{
+							'text': 'file_search',
+							'vector_store_ids': self.vector_store_ids,
+							'max_num_results': self.max_search_results,
+					} ]
+			self.response = self.client.responses.create( model=self.model, tools=self.tools,
+				input=self.prompt )
+			return self.response.output_text
+		except Exception as e:
+			raise
+	
+	def survey( self, prompt: str, store_id: List[ str ]=None,
+			model: str = 'gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
 
 	        Purpose:
