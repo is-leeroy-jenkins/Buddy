@@ -1541,24 +1541,27 @@ elif mode == "Text":
 	with center:
 		left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
 		with left_ins:
+			# ------------------------------------------------------------------
+			# Expander — System Instructions
+			# ------------------------------------------------------------------
+			instructions = st.session_state[ 'instructions' ]
 			with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-				instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
-		
-		with right_ins:
-			set_col, clear_col = st.columns( [ 0.5, 0.5 ] )
-			with set_col:
-				set_button = st.button( '💾 Save' )
+				left_ins, right_ins = st.columns( [ 0.7,  0.3 ],
+					vertical_alignment='center' )
 				
-			with clear_col:
-				clear_button = st.button( '🧹 Clear' )
-			
-			if set_button:
-				st.session_state[ 'instructions' ] = instructions
-			
-			if clear_button:
-				instructions = ''
-				st.session_state[ 'instructions' ] = None
-	
+				with left_ins:
+					instructions = st.text_area( 'Enter Text', height=80, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS )
+					st.session_state.doc_instructions = instructions
+				
+				with right_ins:
+					if st.button( 'Save Instructions', width='stretch' ):
+						st.session_state.doc_messages = [ ]
+					
+					reset_ins = st.button( 'Clear Instructions', width='stretch' )
+					if reset_ins:
+						instructions = None
+				
 		st.text( '' )
 		#----------- MESSAGES-----------------------
 		for msg in st.session_state.messages:
@@ -1670,9 +1673,12 @@ elif mode == "Images":
 		fmt = None
 		if hasattr( image, 'format_options' ):
 			fmt = st.selectbox( 'Format', image.format_options, )
-
+	
+	# ------------------------------------------------------------------
+	# Expander — System Instructions
+	# ------------------------------------------------------------------
 	instructions = st.session_state[ 'instructions' ]
-	with st.expander( 'System Instructions', expanded=True, width='stretch' ):
+	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 		left_ins, right_ins = st.columns( [ 0.7,  0.3 ],
 			vertical_alignment='center' )
 		
@@ -2030,26 +2036,28 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	left_ins, right_ins = st.columns( [ 0.8,  0.2 ] )
 	
-	# ---------SYSTEM ISTRUCTIONS----------------
-	with left_ins:
-		with st.expander( 'System Instructions', expanded=False, width='stretch' ):
-			instructions = st.text_area( 'Text', height=80, help=cfg.SYSTEM_INSTRUCTIONS )
+	# ------------------------------------------------------------------
+	# Expander — System Instructions
+	# ------------------------------------------------------------------
+	instructions = st.session_state[ 'instructions' ]
+	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+		left_ins, right_ins = st.columns( [ 0.7,
+		                                    0.3 ],
+			vertical_alignment='center' )
+		
+		with left_ins:
+			instructions = st.text_area( 'Enter Text', height=80, width='stretch',
+				help=cfg.SYSTEM_INSTRUCTIONS )
+			st.session_state.doc_instructions = instructions
+		
+		with right_ins:
+			if st.button( 'Save Instructions', width='stretch' ):
+				st.session_state.doc_messages = [ ]
+			
+			reset_ins = st.button( 'Clear Instructions', width='stretch' )
+			if reset_ins:
+				instructions = None
 	
-	with right_ins:
-		set_col, clear_col = st.columns( [ 0.5,  0.5 ] )
-		with set_col:
-			set_button = st.button( '💾 Save' )
-		
-		with clear_col:
-			clear_button = st.button( '🧹 Clear' )
-		
-		if set_button:
-			st.session_state[ 'instructions' ] = instructions
-		
-		if clear_button:
-			instructions = ''
-			st.session_state[ 'instructions' ] = None
-
 	left_col, center_col, right_col = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
 	
 	# -----------UPLOAD AUDIO----------------------
