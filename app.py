@@ -1422,8 +1422,6 @@ elif mode == "Text":
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	chat = provider_module.Chat( )
-	st.divider( )
-	
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
@@ -1539,30 +1537,31 @@ elif mode == "Text":
 	left, center, right = st.columns( [ 0.15, 5.5, 0.15 ] )
 	instructions = st.session_state[ 'instructions' ]
 	with center:
+		# ------------------------------------------------------------------
+		# Expander — System Instructions
+		# ------------------------------------------------------------------
+		instructions = st.session_state[ 'instructions' ]
+		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+			left_ins, right_ins = st.columns( [ 0.7,
+			                                    0.3 ],
+				vertical_alignment='center' )
+			
+			with left_ins:
+				instructions = st.text_area( 'Enter Text', height=80, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS )
+				st.session_state.doc_instructions = instructions
+			
+			with right_ins:
+				if st.button( 'Save Instructions', width='stretch' ):
+					st.session_state.doc_messages = [ ]
+				
+				reset_ins = st.button( 'Clear Instructions', width='stretch' )
+				if reset_ins:
+					instructions = None
+	
 		left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
 		with left_ins:
-			# ------------------------------------------------------------------
-			# Expander — System Instructions
-			# ------------------------------------------------------------------
-			instructions = st.session_state[ 'instructions' ]
-			with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-				left_ins, right_ins = st.columns( [ 0.7,  0.3 ],
-					vertical_alignment='center' )
-				
-				with left_ins:
-					instructions = st.text_area( 'Enter Text', height=80, width='stretch',
-						help=cfg.SYSTEM_INSTRUCTIONS )
-					st.session_state.doc_instructions = instructions
-				
-				with right_ins:
-					if st.button( 'Save Instructions', width='stretch' ):
-						st.session_state.doc_messages = [ ]
-					
-					reset_ins = st.button( 'Clear Instructions', width='stretch' )
-					if reset_ins:
-						instructions = None
-				
-		st.text( '' )
+			st.text( '' )
 		#----------- MESSAGES-----------------------
 		for msg in st.session_state.messages:
 			with st.chat_message( msg[ 'role' ] ):
