@@ -1542,13 +1542,11 @@ elif mode == "Text":
 		# ------------------------------------------------------------------
 		instructions = st.session_state[ 'instructions' ]
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-			left_ins, right_ins = st.columns( [ 0.7,
-			                                    0.3 ],
-				vertical_alignment='center' )
+			left_ins, right_ins = st.columns( [ 0.7, 0.3 ], vertical_alignment='center' )
 			
 			with left_ins:
 				instructions = st.text_area( 'Enter Text', height=80, width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS )
+					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instruction' )
 				st.session_state.doc_instructions = instructions
 			
 			with right_ins:
@@ -1683,7 +1681,7 @@ elif mode == "Images":
 		
 		with left_ins:
 			instructions = st.text_area( 'Enter Text', height=80, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS )
+				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instruction' )
 			st.session_state.doc_instructions = instructions
 		
 		with right_ins:
@@ -2040,13 +2038,12 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	instructions = st.session_state[ 'instructions' ]
 	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-		left_ins, right_ins = st.columns( [ 0.7,
-		                                    0.3 ],
+		left_ins, right_ins = st.columns( [ 0.7, 0.3 ],
 			vertical_alignment='center' )
 		
 		with left_ins:
 			instructions = st.text_area( 'Enter Text', height=80, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS )
+				help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instruction' )
 			st.session_state.doc_instructions = instructions
 		
 		with right_ins:
@@ -2571,7 +2568,7 @@ elif mode == 'Document Q&A':
 		
 		with left_ins:
 			instructions = st.text_area( 'System Instructions', height=150, width=750,
-				help=cfg.SYSTEM_INSTRUCTIONS )
+				help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
 			st.session_state.doc_instructions = instructions
 		
 		with mid_ins:
@@ -2775,6 +2772,17 @@ elif mode == "Prompt Engineering":
 				st.session_state.pe_name = row[ 0 ]
 				st.session_state.pe_text = row[ 1 ]
 				st.session_state.pe_version = row[ 2 ]
+				record = fetch_prompt_by_id( pid )
+				prompt_text = row[ 1 ]
+				
+				# Store selected prompt text centrally
+				st.session_state.pe_loaded_text = prompt_text
+				
+				# Cascade to all system instruction areas
+				st.session_state.doc_system = prompt_text
+				st.session_state.audio_system = prompt_text
+				st.session_state.image_system = prompt_text
+				st.session_state.text_system = prompt_text
 	
 	# ------------------------------------------------------------------
 	# XML / Markdown converters
@@ -2860,7 +2868,8 @@ elif mode == "Prompt Engineering":
 			}
 		)
 	
-	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True, )
+	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
+		key='prompt_table' )
 	selected = [ r for r in edited if r.get( "Selected" ) ]
 	if len( selected ) == 1:
 		pid = selected[ 0 ][ "PromptsId" ]
