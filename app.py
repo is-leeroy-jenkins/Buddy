@@ -1388,8 +1388,7 @@ if mode == 'Chat':
 	# ------------------------------------------------------------------
 	with st.sidebar:
 		st.text( '⚙️  Chat Settings' )
-		st.radio( 'Execution Mode',
-			options=[ 'Standard', 'Guidance Only', 'Analysis Only' ],
+		st.radio( 'Execution Mode', options=[ 'Standard', 'Guidance Only', 'Analysis Only' ],
 			index=[ 'Standard', 'Guidance Only',
 			        'Analysis Only' ].index( st.session_state.execution_mode ),
 			key='execution_mode', )
@@ -1705,7 +1704,7 @@ elif mode == "Text":
 # IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
-	st.subheader( 'Images API')
+	st.subheader( '📷 Images API')
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	image = provider_module.Images( )
@@ -1715,276 +1714,357 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	with st.sidebar:
 		st.text( '⚙️ Image Settings' )
-		
-		# ---------------- Model ----------------
-		image_model = st.selectbox( "Model", image.model_options,
-			index=( image.model_options.index( st.session_state[ "image_model" ] )
-					if st.session_state.get( "image_model" ) in image.model_options
-					else 0 ),
-		)
-		st.session_state[ "image_model" ] = image_model
-		
-		# ---------------- Size / Aspect Ratio (provider-aware) ----------------
-		if hasattr( image, "aspect_options" ):
-			size_or_aspect = st.selectbox( "Aspect Ratio", image.aspect_options, )
-			size_arg = size_or_aspect
-		else:
-			size_or_aspect = st.selectbox( "Size", image.size_options, )
-			size_arg = size_or_aspect
-		
-		# ---------------- Quality ----------------
-		quality = None
-		if hasattr( image, 'quality_options' ):
-			quality = st.selectbox( 'Quality', image.quality_options, )
-		
-		# ---------------- Format ----------------
-		fmt = None
-		if hasattr( image, 'format_options' ):
-			fmt = st.selectbox( 'Format', image.format_options, )
 	
 	# ------------------------------------------------------------------
-	# Expander — System Instructions
+	# Main Chat UI
 	# ------------------------------------------------------------------
-	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-		left_ins, right_ins = st.columns( [ 0.7,  0.3 ],
-			vertical_alignment='center' )
-		
-		with left_ins:
-			st.text_area( 'Enter Text', height=80, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instruction' )
-			instructions = st.session_state.get( 'image_system_instruction', '' )
-		
-		with right_ins:
-			if st.button( 'Save Instructions', width='stretch' ):
-				st.session_state.doc_messages = [ ]
-			
-			reset_image_ins = st.button( 'Clear Instructions', width='stretch', key='clear_image_ins' )
-			if reset_image_ins:
-				st.session_state.image_system_instruction = ''
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	# ------------------------------------------------------------------
+	# EXPANDER — IMAGE SETTINGS
+	# ------------------------------------------------------------------
+	if st.session_state.get( 'do_clear_instructions', False ):
+		st.session_state[ 'image_system_instructions' ] = ''
+		st.session_state[ 'do_clear_instructions' ] = False
 	
-	# ------------------------------------------------------------------
-	# Main UI — Tabs
-	# ------------------------------------------------------------------
-	tab_gen, tab_analyze, tab_edit = st.tabs( [ '📷 Generate', '‍🔬 Analyze', '🎨 Edit' ] )
-	with tab_gen:
-		prompt = st.chat_input( 'Prompt' )
-		if st.button( 'Generate Image' ):
-			with st.spinner( 'Generating…' ):
-				try:
-					kwargs: Dict[ str, Any ] = {
-							'prompt': prompt,
-							'model': image_model,
-					}
-					
-					# Provider-safe optional args
-					if size_arg is not None:
-						kwargs[ 'size' ] = size_arg
-					if quality is not None:
-						kwargs[ 'quality' ] = quality
-					if fmt is not None:
-						kwargs[ 'fmt' ] = fmt
-					
-					img_url = image.generate( **kwargs )
-					st.image( img_url )
-					
-					try:
-						_update_token_counters(
-							getattr( image, 'response', None )
-						)
-					except Exception:
-						pass
+	with center:
+		with st.expander( '🧠 Language Model', expanded=False, width='stretch' ):
+			# ------------------------------------------------------------------
+			# Expander — LLM
+			# ------------------------------------------------------------------
+			with st.expander( 'Model Options', expanded=False, width='stretch' ):
+				img_one, img_two, img_three, img_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ], border=True )
 				
-				except Exception as exc:
-					st.error( f'Image generation failed: {exc}' )
-	
-	with tab_analyze:
-		uploaded_img = st.file_uploader(
-			'Upload an image for analysis',
-			type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-			accept_multiple_files=False,
-			key='images_analyze_uploader',
-		)
-		
-		if uploaded_img:
-			tmp_path = save_temp( uploaded_img )
+				with img_one:
+					# ---------------- Model ---------------
+					image_model = st.selectbox( "Image Model", image.model_options,
+						index=(image.model_options.index( st.session_state[ "image_model" ] )
+						       if st.session_state.get( "image_model" ) in image.model_options
+						       else 0), )
+					
+					st.session_state[ "image_model" ] = image_model
+				
+				with img_two:
+					# ---------------- Size / Aspect Ratio (provider-aware) ----------------
+					if hasattr( image, "aspect_options" ):
+						size_or_aspect = st.selectbox( "Aspect Ratio", image.aspect_options, )
+						size_arg = size_or_aspect
+					else:
+						size_or_aspect = st.selectbox( "Size", image.size_options, )
+						size_arg = size_or_aspect
+				
+				with img_three:
+					# ---------------- Quality ----------------
+					quality = None
+					if hasattr( image, 'quality_options' ):
+						quality = st.selectbox( 'Image Quality', image.quality_options, )
+				
+				with img_four:
+					# ---------------- Format ----------------
+					fmt = None
+					if hasattr( image, 'format_options' ):
+						fmt = st.selectbox( 'Image Format', image.format_options, )
+				
+			# ------------------------------------------------------------------
+			# Expander — Hyperparmaters
+			# ------------------------------------------------------------------
+			with st.expander( 'Hyperparameters', expanded=False, width='stretch' ):
+				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2,
+				                                                                0.2,
+				                                                                0.2,
+				                                                                0.2,
+				                                                                0.2 ],
+					border=True, gap='xsmall' )
+				
+				with prm_one:
+					top_p = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
+					st.session_state[ 'top_p' ] = float( top_p )
+				
+				with prm_two:
+					logprobs = st.slider( 'Log-Probs', 0, 20,
+						int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
+					st.session_state[ 'logprobs' ] = int( logprobs )
+				
+				with prm_three:
+					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+						0.01, help=cfg.FREQUENCY_PENALTY )
+					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+				
+				with prm_four:
+					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+						0.01, help=cfg.PRESENCE_PENALTY )
+					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+				
+				with prm_five:
+					temperature = st.slider( 'Temperature', 0.0, 1.0,
+						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+						help=cfg.TEMPERATURE )
+					st.session_state[ 'temperature' ] = float( temperature )
 			
-			st.image(
-				uploaded_img,
-				caption='Uploaded image preview',
-				use_column_width=True,
+			# ------------------------------------------------------------------
+			# Expander — Response
+			# ------------------------------------------------------------------
+			with st.expander( 'Response Options', expanded=False, width='stretch' ):
+				res_one, res_two, res_three, res_four, res_five = st.columns( [ 0.20,
+				                                                                0.20,
+				                                                                0.20,
+				                                                                0.20,
+				                                                                0.20 ],
+					border=True, gap='small' )
+				
+				with res_one:
+					stream = st.toggle( 'Stream', key='image_stream', value=False, help=cfg.STREAM )
+					st.session_state[ 'stream' ] = stream
+				
+				with res_two:
+					store = st.toggle( 'Store', key='image_store', value=True, help=cfg.STORE )
+					st.session_state[ 'store' ] = store
+				
+				with res_three:
+					back = st.toggle( 'Background', key='image_bakground',
+						value=False, help=cfg.BACKGROUND_MODE )
+					st.session_state[ 'background' ] = back
+				
+				with res_four:
+					n = st.number_input( 'Number', min_value=1, max_value=100,
+						value=1, help='Number of generated images' )
+					st.session_state[ 'number' ] = int( n )
+				
+				with res_five:
+					max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+						value=6048, help=cfg.MAX_OUTPUT_TOKENS )
+					st.session_state[ 'max_tokens' ] = int( max_tokens )
+			
+		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+			st.text_area( 'Prompt Text', height=100, width='stretch',
+				help=cfg.SYSTEM_INSTRUCTIONS, key='image_instruct_expander' )
+			
+			if st.button( 'Clear Instructions', width='stretch' ):
+				st.session_state[ 'image_system_instructions' ] = True
+				st.rerun( )
+	
+		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
+		with tab_gen:
+			prompt = st.chat_input( 'Prompt' )
+			if st.button( 'Generate Image' ):
+				with st.spinner( 'Generating…' ):
+					try:
+						kwargs: Dict[ str, Any ] = {
+								'prompt': prompt,
+								'model': image_model,
+						}
+						
+						# Provider-safe optional args
+						if size_arg is not None:
+							kwargs[ 'size' ] = size_arg
+						if quality is not None:
+							kwargs[ 'quality' ] = quality
+						if fmt is not None:
+							kwargs[ 'fmt' ] = fmt
+						
+						img_url = image.generate( **kwargs )
+						st.image( img_url )
+						
+						try:
+							_update_token_counters(
+								getattr( image, 'response', None )
+							)
+						except Exception:
+							pass
+					
+					except Exception as exc:
+						st.error( f'Image generation failed: {exc}' )
+		
+		with tab_analyze:
+			uploaded_img = st.file_uploader(
+				'Upload an image for analysis',
+				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+				accept_multiple_files=False,
+				key='images_analyze_uploader',
 			)
 			
-			# Discover available analysis methods on Image object
-			available_methods = [ ]
-			for candidate in (
-						'analyze',
-						'describe_image',
-						'describe',
-						'classify',
-						'detect_objects',
-						'caption',
-						'image_analysis',
-			):
-				if hasattr( image, candidate ):
-					available_methods.append( candidate )
-			
-			if available_methods:
-				chosen_method = st.selectbox(
-					'Method',
-					available_methods,
+			if uploaded_img:
+				tmp_path = save_temp( uploaded_img )
+				
+				st.image(
+					uploaded_img,
+					caption='Uploaded image preview',
+					use_column_width=True,
+				)
+				
+				# Discover available analysis methods on Image object
+				available_methods = [ ]
+				for candidate in (
+							'analyze',
+							'describe_image',
+							'describe',
+							'classify',
+							'detect_objects',
+							'caption',
+							'image_analysis',
+				):
+					if hasattr( image, candidate ):
+						available_methods.append( candidate )
+				
+				if available_methods:
+					chosen_method = st.selectbox(
+						'Method',
+						available_methods,
+						index=0,
+					)
+				else:
+					chosen_method = None
+					st.info(
+						'No dedicated image analysis method found on Image object; '
+						'attempting generic handlers.'
+					)
+				
+				chosen_model = st.selectbox(
+					"Model (analysis)",
+					[ image_model,
+					  None ],
 					index=0,
 				)
-			else:
-				chosen_method = None
-				st.info(
-					'No dedicated image analysis method found on Image object; '
-					'attempting generic handlers.'
+				
+				chosen_model_arg = (
+						image_model if chosen_model is None else chosen_model
 				)
-			
-			chosen_model = st.selectbox(
-				"Model (analysis)",
-				[ image_model,
-				  None ],
-				index=0,
-			)
-			
-			chosen_model_arg = (
-					image_model if chosen_model is None else chosen_model
-			)
-			
-			if st.button( "Analyze Image" ):
-				with st.spinner( "Analyzing image…" ):
-					analysis_result = None
-					try:
-						if chosen_method:
-							func = getattr( image, chosen_method, None )
-							if func:
-								try:
-									analysis_result = func( tmp_path )
-								except TypeError:
-									analysis_result = func(
-										tmp_path, model=chosen_model_arg
-									)
-						else:
-							for fallback in (
-										"analyze",
-										"describe_image",
-										"describe",
-										"caption",
-							):
-								if hasattr( image, fallback ):
-									func = getattr( image, fallback )
+				
+				if st.button( "Analyze Image" ):
+					with st.spinner( "Analyzing image…" ):
+						analysis_result = None
+						try:
+							if chosen_method:
+								func = getattr( image, chosen_method, None )
+								if func:
 									try:
 										analysis_result = func( tmp_path )
-										break
-									except Exception:
-										continue
-						
-						if analysis_result is None:
-							st.warning(
-								"No analysis output returned by the available methods."
-							)
-						else:
-							if isinstance( analysis_result, (dict, list) ):
-								st.json( analysis_result )
+									except TypeError:
+										analysis_result = func(
+											tmp_path, model=chosen_model_arg
+										)
 							else:
-								st.markdown( "**Analysis result:**" )
-								st.write( analysis_result )
+								for fallback in (
+											"analyze",
+											"describe_image",
+											"describe",
+											"caption",
+								):
+									if hasattr( image, fallback ):
+										func = getattr( image, fallback )
+										try:
+											analysis_result = func( tmp_path )
+											break
+										except Exception:
+											continue
 							
-							try:
-								_update_token_counters(
-									getattr( image, "response", None )
-									or analysis_result
+							if analysis_result is None:
+								st.warning(
+									"No analysis output returned by the available methods."
 								)
-							except Exception:
-								pass
-					
-					except Exception as exc:
-						st.error( f"Analysis Failed: {exc}" )
-	
-	with tab_edit:
-		uploaded_img = st.file_uploader( 'Upload Image for Edit',
-			type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-			accept_multiple_files=False,
-			key='images_edit_uploader',
-		)
+							else:
+								if isinstance( analysis_result, (dict, list) ):
+									st.json( analysis_result )
+								else:
+									st.markdown( "**Analysis result:**" )
+									st.write( analysis_result )
+								
+								try:
+									_update_token_counters(
+										getattr( image, "response", None )
+										or analysis_result
+									)
+								except Exception:
+									pass
+						
+						except Exception as exc:
+							st.error( f"Analysis Failed: {exc}" )
 		
-		if uploaded_img:
-			tmp_path = save_temp( uploaded_img )
+		with tab_edit:
+			uploaded_img = st.file_uploader( 'Upload Image for Edit',
+				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+				accept_multiple_files=False,
+				key='images_edit_uploader',
+			)
 			
-			st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-			
-			available_methods = [ ]
-			for candidate in (
-						'edit',
-						'describe_image',
-						'describe',
-						'classify',
-						'detect_objects',
-						'caption',
-						'image_edit',
-			):
-				if hasattr( image, candidate ):
-					available_methods.append( candidate )
-			
-			if available_methods:
-				chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-			else:
-				chosen_method = None
-				st.info( 'No dedicated image editing method found on Image object;'
-				         'attempting generic handlers.')
-			
-			chosen_model = st.selectbox( "Model (edit)", [ image_model,  None ], index=0, )
-			
-			chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
-			
-			if st.button( "Edit Image" ):
-				with st.spinner( "Editing image…" ):
-					analysis_result = None
-					try:
-						if chosen_method:
-							func = getattr( image, chosen_method, None )
-							if func:
-								try:
-									analysis_result = func( tmp_path )
-								except TypeError:
-									analysis_result = func(
-										tmp_path, model=chosen_model_arg
-									)
-						else:
-							for fallback in (
-										"analyze",
-										"describe_image",
-										"describe",
-										"caption",
-							):
-								if hasattr( image, fallback ):
-									func = getattr( image, fallback )
+			if uploaded_img:
+				tmp_path = save_temp( uploaded_img )
+				
+				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
+				
+				available_methods = [ ]
+				for candidate in (
+							'edit',
+							'describe_image',
+							'describe',
+							'classify',
+							'detect_objects',
+							'caption',
+							'image_edit',
+				):
+					if hasattr( image, candidate ):
+						available_methods.append( candidate )
+				
+				if available_methods:
+					chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+				else:
+					chosen_method = None
+					st.info( 'No dedicated image editing method found on Image object;'
+					         'attempting generic handlers.')
+				
+				chosen_model = st.selectbox( "Model (edit)", [ image_model,  None ], index=0, )
+				
+				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+				
+				if st.button( "Edit Image" ):
+					with st.spinner( "Editing image…" ):
+						analysis_result = None
+						try:
+							if chosen_method:
+								func = getattr( image, chosen_method, None )
+								if func:
 									try:
 										analysis_result = func( tmp_path )
-										break
-									except Exception:
-										continue
-						
-						if analysis_result is None:
-							st.warning( "No editing output returned by the available methods." )
-						else:
-							if isinstance( analysis_result, (dict, list) ):
-								st.json( analysis_result )
+									except TypeError:
+										analysis_result = func(
+											tmp_path, model=chosen_model_arg
+										)
 							else:
-								st.markdown( "**Analysis result:**" )
-								st.write( analysis_result )
+								for fallback in (
+											"analyze",
+											"describe_image",
+											"describe",
+											"caption",
+								):
+									if hasattr( image, fallback ):
+										func = getattr( image, fallback )
+										try:
+											analysis_result = func( tmp_path )
+											break
+										except Exception:
+											continue
 							
-							try:
-								_update_token_counters(
-									getattr( image, "response", None )
-									or analysis_result
-								)
-							except Exception:
-								pass
-					
-					except Exception as exc:
-						st.error( f"Analysis Failed: {exc}" )
+							if analysis_result is None:
+								st.warning( "No editing output returned by the available methods." )
+							else:
+								if isinstance( analysis_result, (dict, list) ):
+									st.json( analysis_result )
+								else:
+									st.markdown( "**Analysis result:**" )
+									st.write( analysis_result )
+								
+								try:
+									_update_token_counters(
+										getattr( image, "response", None )
+										or analysis_result
+									)
+								except Exception:
+									pass
+						
+						except Exception as exc:
+							st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
 # AUDIO MODE
