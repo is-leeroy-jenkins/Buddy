@@ -1537,7 +1537,7 @@ elif mode == "Text":
 						st.session_state[ 'store' ] = store
 						
 					with res_three:
-						back = st.toggle( 'Background:', key='chat_bakground', value=True, help=cfg.STORE )
+						back = st.toggle( 'Background:', key='chat_bakground', value=False, help=cfg.BACKGROUND_MODE )
 						st.session_state[ 'background' ] = back
 						
 					with res_four:
