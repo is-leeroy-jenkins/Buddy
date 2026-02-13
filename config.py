@@ -104,7 +104,8 @@ GPT_MODES = [ 'Chat',
               'Files',
               'Vector Stores',
               'Prompt Engineering',
-              'Data Export' ]
+              'Data Management',
+              'Export' ]
 
 GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0' ]
 
@@ -130,7 +131,8 @@ GROK_MODES = [ 'Text',
                'Files',
                'Vector Stores',
                'Prompt Engineering',
-               'Data Export' ]
+               'Data Management',
+               'Export' ]
 
 GROK_COLLECTIONS = [ { 'DOD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6'},
                      { 'DOA Regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e'},
@@ -149,7 +151,8 @@ GEMINI_MODES = [ 'Text',
                  'Audio',
                  'Vector Stores',
                  'Prompt Engineering',
-                 'Data Export' ]
+                 'Data Management',
+                 'Export' ]
 
 #----------------- MAPS ---------------------------
 MODE_CLASS_MAP = {
@@ -186,7 +189,6 @@ TOP_P = r'''Optional. The maximum cumulative probability of tokens to consider w
 		their assigned probabilities so that only the most likely tokens are considered.
 		Top-k sampling directly limits the maximum number of tokens to consider,
 		while Nucleus sampling limits the number of tokens based on the cumulative probability.'''
-
 
 PRESENCE_PENALTY = r'''Optional. Presence penalty applied to the next token's logprobs
 		if the token has already been seen in the response. This penalty is binary on/off

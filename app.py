@@ -53,6 +53,8 @@ import base64
 import fitz
 import io
 from pathlib import Path
+import plotly.express as px
+
 import multiprocessing
 import os
 import sqlite3
@@ -698,6 +700,188 @@ def build_prompt( user_input: str ) -> str:
 	
 	prompt += f"<|user|>\n{user_input}\n</s>\n<|assistant|>\n"
 	return prompt
+
+DM_DB_PATH = os.path.join( "stores", "sqlite", "Data.db" )
+os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
+
+# ==============================================================================
+# DATABASE CORE
+# ==============================================================================
+def dm_conn( ) -> sqlite3.Connection:
+	return sqlite3.connect( DM_DB_PATH )
+
+def dm_tables( ) -> List[ str ]:
+	with dm_conn( ) as conn:
+		rows = conn.execute(
+			"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+		).fetchall( )
+		return [ r[ 0 ] for r in rows ]
+
+def dm_schema( table: str ) -> List[ Tuple ]:
+	with dm_conn( ) as conn:
+		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
+
+def dm_read( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
+	query = f'SELECT rowid, * FROM "{table}"'
+	if limit:
+		query += f" LIMIT {limit} OFFSET {offset}"
+	with dm_conn( ) as conn:
+		return pd.read_sql_query( query, conn )
+
+def dm_drop_table( table: str ):
+	with dm_conn( ) as conn:
+		conn.execute( f'DROP TABLE "{table}";' )
+		conn.commit( )
+
+def dm_create_index( table: str, column: str ):
+	with dm_conn( ) as conn:
+		conn.execute( f'CREATE INDEX IF NOT EXISTS idx_{table}_{column} ON "{table}"("{column}");' )
+		conn.commit( )
+
+def dm_apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
+	st.subheader( "Advanced Filters" )
+	
+	conditions = [ ]
+	
+	col1, col2, col3 = st.columns( 3 )
+	
+	column = col1.selectbox( "Column", df.columns )
+	operator = col2.selectbox( "Operator", [ "=",
+	                                         "!=",
+	                                         ">",
+	                                         "<",
+	                                         ">=",
+	                                         "<=",
+	                                         "contains" ] )
+	value = col3.text_input( "Value" )
+	
+	if value:
+		if operator == "=":
+			df = df[ df[ column ] == value ]
+		elif operator == "!=":
+			df = df[ df[ column ] != value ]
+		elif operator == ">":
+			df = df[ df[ column ].astype( float ) > float( value ) ]
+		elif operator == "<":
+			df = df[ df[ column ].astype( float ) < float( value ) ]
+		elif operator == ">=":
+			df = df[ df[ column ].astype( float ) >= float( value ) ]
+		elif operator == "<=":
+			df = df[ df[ column ].astype( float ) <= float( value ) ]
+		elif operator == "contains":
+			df = df[ df[ column ].astype( str ).str.contains( value ) ]
+	
+	return df
+
+def dm_aggregation( df: pd.DataFrame ):
+	st.subheader( "Aggregation Engine" )
+	
+	numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+	
+	if not numeric_cols:
+		st.info( "No numeric columns available." )
+		return
+	
+	col = st.selectbox( "Column", numeric_cols )
+	agg = st.selectbox( "Aggregation", [ "COUNT",
+	                                     "SUM",
+	                                     "AVG",
+	                                     "MIN",
+	                                     "MAX",
+	                                     "MEDIAN" ] )
+	
+	if agg == "COUNT":
+		result = df[ col ].count( )
+	elif agg == "SUM":
+		result = df[ col ].sum( )
+	elif agg == "AVG":
+		result = df[ col ].mean( )
+	elif agg == "MIN":
+		result = df[ col ].min( )
+	elif agg == "MAX":
+		result = df[ col ].max( )
+	elif agg == "MEDIAN":
+		result = df[ col ].median( )
+	
+	st.metric( "Result", result )
+
+def dm_visualization( df: pd.DataFrame ):
+	st.subheader( "Visualization Engine" )
+	
+	numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+	categorical_cols = df.select_dtypes( include=[ "object" ] ).columns.tolist( )
+	
+	chart = st.selectbox( "Chart Type", [
+			"Histogram",
+			"Bar",
+			"Line",
+			"Scatter",
+			"Box",
+			"Pie",
+			"Correlation"
+	] )
+	
+	if chart == "Histogram" and numeric_cols:
+		col = st.selectbox( "Column", numeric_cols )
+		fig = px.histogram( df, x=col )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == "Bar":
+		x = st.selectbox( "X", df.columns )
+		y = st.selectbox( "Y", numeric_cols )
+		fig = px.bar( df, x=x, y=y )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == "Line":
+		x = st.selectbox( "X", df.columns )
+		y = st.selectbox( "Y", numeric_cols )
+		fig = px.line( df, x=x, y=y )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == "Scatter":
+		x = st.selectbox( "X", numeric_cols )
+		y = st.selectbox( "Y", numeric_cols )
+		fig = px.scatter( df, x=x, y=y )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == "Box":
+		col = st.selectbox( "Column", numeric_cols )
+		fig = px.box( df, y=col )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == "Pie":
+		col = st.selectbox( "Category Column", categorical_cols )
+		fig = px.pie( df, names=col )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == "Correlation" and len( numeric_cols ) > 1:
+		corr = df[ numeric_cols ].corr( )
+		fig = px.imshow( corr, text_auto=True )
+		st.plotly_chart( fig, use_container_width=True )
+
+def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
+	columns = [ ]
+	for col in df.columns:
+		sql_type = dm_sqlite_type( df[ col ].dtype )
+		safe_col = col.replace( " ", "_" )
+		columns.append( f'"{safe_col}" {sql_type}' )
+	
+	create_stmt = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join( columns )});'
+	
+	with dm_conn( ) as conn:
+		conn.execute( create_stmt )
+		conn.commit( )
+
+def dm_insert_df( table_name: str, df: pd.DataFrame ):
+	df = df.copy( )
+	df.columns = [ c.replace( " ", "_" ) for c in df.columns ]
+	
+	placeholders = ", ".join( [ "?" ] * len( df.columns ) )
+	stmt = f'INSERT INTO "{table_name}" VALUES ({placeholders});'
+	
+	with dm_conn( ) as conn:
+		conn.executemany( stmt, df.values.tolist( ) )
+		conn.commit( )
 
 # ==============================================================================
 # Page Setup / Configuration
@@ -2769,79 +2953,123 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
-	st.subheader( '📄 Document Q & A' )
+	st.subheader( '📚 Document Q & A' )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	with st.expander( '💻 System Instructions', expanded=False, width='stretch' ):
-		left_ins, right_ins = st.columns( [ 0.8, 0.2 ],
-			vertical_alignment='center' )
-		
-		with left_ins:
-			st.text_area( 'Enter Text', height=150, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
-			instructions = st.session_state.get( 'doc_system_instruction', '' )
+	
+	# ------------------------------------------------------------------
+	# Main Chat UI
+	# ------------------------------------------------------------------
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	with center:
+		# ------------------------------------------------------------------
+		# Expander — Inference Parameters
+		# ------------------------------------------------------------------
+		with st.expander( '🧠 Inference Options', expanded=False, width='stretch' ):
+			inf_one, inf_two, inf_three, inf_four, inf_five = \
+				st.columns( [ 0.2, 0.2, 0.2,  0.2, 0.2 ],
+				border=True, gap='xsmall' )
 			
-		with right_ins:
-			source = st.radio( 'Source', [ 'Upload Local', 'Files API', 'Vector Store' ] )
-			st.session_state.doc_source = source.lower( ).replace( ' ', '' )
+			with inf_one:
+				top_p = st.slider( 'Top-P', 0.0, 1.0,
+					float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
+				st.session_state[ 'top_p' ] = float( top_p )
+			
+			with inf_two:
+				logprobs = st.slider( 'Log-Probs', 0, 20,
+					int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
+				st.session_state[ 'logprobs' ] = int( logprobs )
+			
+			with inf_three:
+				freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+					float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+					0.01, help=cfg.FREQUENCY_PENALTY )
+				st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+			
+			with inf_four:
+				pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+					float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+					0.01, help=cfg.PRESENCE_PENALTY )
+				st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+			
+			with inf_five:
+				temperature = st.slider( 'Temperature', 0.0, 1.0,
+					float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+					help=cfg.TEMPERATURE )
+				st.session_state[ 'temperature' ] = float( temperature )
 		
-		left_btn, center_btn, right_btn = st.columns( [ 0.8,  0.1, 0.1 ], border=True )
-		with left_btn:
-			if st.button( 'Clear Conversation', width='stretch' ):
-				st.session_state.doc_messages = [ ]
-				st.rerun( )
-		
-		with center_btn:
-			reset_doc_ins = st.button( 'Clear Instructions', width='stretch', key='clear_doc_instructions' )
-			if reset_doc_ins:
-				st.session_state.doc_system_instruction = ''
+		# ------------------------------------------------------------------
+		# Expander — System Instructions
+		# ------------------------------------------------------------------
+		with st.expander( '💻 System Instructions', expanded=False, width='stretch' ):
+			left_inst, right_inst = st.columns( [ 0.6, 0.4 ], vertical_alignment='center', border=True )
+			
+			with left_inst:
+				st.text_area( 'Enter Text', height=100, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
+				instructions = st.session_state.get( 'doc_system_instruction', '' )
 				
-		with right_btn:
-			if st.button( 'Summarize Document', width='stretch' ):
-				if not st.session_state.get( 'doc_active_docs' ):
-					st.warning( 'No document loaded.' )
-				else:
-					st.session_state.doc_messages.append({'role': 'user',
-					                                      'content': 'Summarize this document.'})
-				
-				summary = summarize_active_document( )
-				st.session_state.doc_messages.append({'role': 'assistant','content': summary})
-				
-				st.rerun( )
-	
-	doc_left, doc_right = st.columns( [ 0.2, 0.8 ], border=True )
-	with doc_left:
-		uploaded = st.file_uploader( 'Upload', type=[ 'pdf', 'txt', 'md', 'docx' ],
-			accept_multiple_files=False, label_visibility='visible' )
+			with right_inst:
+				source = st.radio( 'Source', [ 'Upload Local', 'Files API', 'Vector Store' ] )
+				st.session_state.doc_source = source.lower( ).replace( ' ', '' )
+			
+			left_btn, center_btn, right_btn = st.columns( [ 0.6,  0.2, 0.2 ] )
+			with left_btn:
+				if st.button( 'Clear Conversation', width='stretch' ):
+					st.session_state.doc_messages = [ ]
+					st.rerun( )
+			
+			with center_btn:
+				reset_doc_ins = st.button( 'Clear Instructions', width='stretch', key='clear_doc_instructions' )
+				if reset_doc_ins:
+					st.session_state.doc_system_instruction = ''
+					
+			with right_btn:
+				if st.button( 'Summarize Document', width='stretch' ):
+					if not st.session_state.get( 'doc_active_docs' ):
+						st.warning( 'No document loaded.' )
+					else:
+						st.session_state.doc_messages.append({'role': 'user',
+						                                      'content': 'Summarize this document.'})
+					
+					summary = summarize_active_document( )
+					st.session_state.doc_messages.append({'role': 'assistant','content': summary})
+					
+					st.rerun( )
+			
+		doc_left, doc_right = st.columns( [ 0.2, 0.8 ], border=True )
+		with doc_left:
+			uploaded = st.file_uploader( 'Upload', type=[ 'pdf', 'txt', 'md', 'docx' ],
+				accept_multiple_files=False, label_visibility='visible' )
+			
+			if uploaded is not None:
+				st.session_state.doc_active_docs = [ uploaded.name ]
+				st.session_state.doc_bytes = { uploaded.name: uploaded.getvalue( ) }
+				st.success( f'{uploaded.name} has been loaded!' )
+			else:
+				st.info( 'Load a document.' )
+			
+			unload = st.button( label='Unload Document', width='stretch' )
+			if unload:
+				uploaded = None
+				st.session_state.doc_active_docs = None
 		
-		if uploaded is not None:
-			st.session_state.doc_active_docs = [ uploaded.name ]
-			st.session_state.doc_bytes = { uploaded.name: uploaded.getvalue( ) }
-			st.success( f'{uploaded.name} has been loaded!' )
-		else:
-			st.info( 'Load a document.' )
+		with doc_right:
+			if st.session_state.get( 'doc_active_docs' ):
+				name = st.session_state.doc_active_docs[ 0 ]
+				file_bytes = st.session_state.doc_bytes.get( name )
+				if file_bytes:
+					st.pdf( file_bytes, height=420 )
 		
-		unload = st.button( label='Unload Document', width='stretch' )
-		if unload:
-			uploaded = None
-			st.session_state.doc_active_docs = None
-	
-	with doc_right:
-		if st.session_state.get( 'doc_active_docs' ):
-			name = st.session_state.doc_active_docs[ 0 ]
-			file_bytes = st.session_state.doc_bytes.get( name )
-			if file_bytes:
-				st.pdf( file_bytes, height=420 )
-	
-	for msg in st.session_state.doc_messages:
-		with st.chat_message( msg[ 'role' ] ):
-			st.markdown( msg[ 'content' ] )
-	
-	if prompt := st.chat_input( 'Ask a question about the document' ):
-		st.session_state.doc_messages.append( { 'role': 'user', 'content': prompt } )
-		response = route_document_query( prompt )
-		st.session_state.doc_messages.append( { 'role': 'assistant', 'content': response } )
-		st.rerun( )
+		for msg in st.session_state.doc_messages:
+			with st.chat_message( msg[ 'role' ] ):
+				st.markdown( msg[ 'content' ] )
+		
+		if prompt := st.chat_input( 'Ask a question about the document' ):
+			st.session_state.doc_messages.append( { 'role': 'user', 'content': prompt } )
+			response = route_document_query( prompt )
+			st.session_state.doc_messages.append( { 'role': 'assistant', 'content': response } )
+			st.rerun( )
 
 # ======================================================================================
 # FILES API MODE
@@ -3202,9 +3430,8 @@ elif mode == "Prompt Engineering":
 		with c3:
 			st.button( "🧹 Clear Selection", on_click=reset_selection )
 
-
 # ==============================================================================
-# DATA MODE
+# Export MODE
 # ==============================================================================
 elif mode == 'Data Export':
 	st.subheader( '📭  Export' )
@@ -3262,6 +3489,170 @@ elif mode == 'Data Export':
 	st.download_button( 'Download Chat History (PDF)', buf.getvalue( ),
 		'buddy_chat.pdf', mime='application/pdf' )
 	
+
+elif mode == 'Data Management':
+		# ==============================================================================
+		# MAIN UI
+		# ==============================================================================
+		st.subheader( "🗄 Data Management" )
+		
+		tabs = st.tabs( [
+				"📥 Import",
+				"🗂 Browse",
+				"✏ CRUD",
+				"📊 Explore",
+				"🔎 Filter",
+				"🧮 Aggregate",
+				"📈 Visualize",
+				"⚙ Admin",
+				"🧠 SQL"
+		] )
+		
+		tables = dm_tables( )
+		if not tables:
+			st.info( "No tables available." )
+		else:
+			table = st.selectbox( "Table", tables )
+			df_full = dm_read( table )
+			
+			# ------------------------------------------------------------------------------
+			# Tabs[ 0
+			# ------------------------------------------------------------------------------
+			with tabs[ 0 ]:
+				st.text( "Upload Excel File" )
+				uploaded_file = st.file_uploader(
+					"Browse Excel File",
+					type=[ "xlsx" ],
+					key="dm_excel_upload"
+				)
+				
+				if uploaded_file:
+					try:
+						sheets = pd.read_excel( uploaded_file, sheet_name=None )
+						
+						for sheet_name, df in sheets.items( ):
+							table_name = sheet_name.replace( " ", "_" )
+							dm_create_table_from_df( table_name, df )
+							dm_insert_df( table_name, df )
+						
+						st.success( "Excel file successfully imported." )
+						st.rerun( )
+					
+					except Exception as e:
+						st.error( f"Import failed: {e}" )
+		
+			# ------------------------------------------------------------------------------
+			# Explore + Pagination
+			# ------------------------------------------------------------------------------
+			with tabs[ 1 ]:
+				tables = dm_tables( )
+				
+				if tables:
+					table = st.selectbox( "Select Table", tables, key="dm_browse_table" )
+					df = dm_read( table )
+					st.dataframe( df, use_container_width=True )
+				else:
+					st.info( "No tables available." )
+	
+			
+			# ------------------------------------------------------------------------------
+			# Aggregation
+			# ------------------------------------------------------------------------------
+			with tabs[ 2 ]:
+				tables = dm_tables( )
+				
+				if not tables:
+					st.info( "No tables available." )
+				else:
+					table = st.selectbox( "Select Table", tables, key="dm_crud_table" )
+					df = dm_read( table )
+					
+					st.subheader( "Insert Row" )
+					
+					insert_vals = { }
+					for col in df.columns:
+						if col != "rowid":
+							insert_vals[ col ] = st.text_input( col, key=f"insert_{col}" )
+					
+					if st.button( "Insert Row" ):
+						cols = list( insert_vals.keys( ) )
+						placeholders = ", ".join( [ "?" ] * len( cols ) )
+						stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+						
+						with dm_conn( ) as conn:
+							conn.execute( stmt, list( insert_vals.values( ) ) )
+							conn.commit( )
+						
+						st.success( "Row inserted." )
+						st.rerun( )
+					
+					st.divider( )
+					st.subheader( "Update Row" )
+					
+					rowid = st.number_input( "Row ID", min_value=1, step=1, key="update_rowid" )
+					
+					update_vals = { }
+					for col in df.columns:
+						if col != "rowid":
+							update_vals[ col ] = st.text_input( col, key=f"update_{col}" )
+					
+					if st.button( "Update Row" ):
+						set_clause = ", ".join( [ f"{c}=?" for c in update_vals ] )
+						stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
+						
+						with dm_conn( ) as conn:
+							conn.execute( stmt, list( update_vals.values( ) ) + [ rowid ] )
+							conn.commit( )
+						
+						st.success( "Row updated." )
+						st.rerun( )
+					
+					st.divider( )
+					st.subheader( "Delete Row" )
+					
+					delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1, key="delete_rowid" )
+					
+					if st.button( "Delete Row" ):
+						with dm_conn( ) as conn:
+							conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
+							conn.commit( )
+						
+						st.success( "Row deleted." )
+						st.rerun( )
+			
+			# ------------------------------------------------------------------------------
+			# Visualization
+			# ------------------------------------------------------------------------------
+			with tabs[ 3 ]:
+				dm_visualization( df_full )
+			
+			# ------------------------------------------------------------------------------
+			# Admin
+			# ------------------------------------------------------------------------------
+			with tabs[ 4 ]:
+				if st.button( "Drop Table" ):
+					dm_drop_table( table )
+					st.success( "Table dropped." )
+					st.rerun( )
+				
+				col = st.selectbox( "Create Index on Column", df_full.columns )
+				if st.button( "Create Index" ):
+					dm_create_index( table, col )
+					st.success( "Index created." )
+			
+			# ------------------------------------------------------------------------------
+			# SQL Console
+			# ------------------------------------------------------------------------------
+			with tabs[ 5 ]:
+				query = st.text_area( "SELECT only" )
+				if st.button( "Run" ):
+					if not query.lower( ).strip( ).startswith( "select" ):
+						st.error( "Only SELECT allowed." )
+					else:
+						with dm_conn( ) as conn:
+							result = pd.read_sql_query( query, conn )
+						st.dataframe( result, use_container_width=True )
+
 # ======================================================================================
 # Footer — Fixed Bottom Status Bar
 # ======================================================================================
@@ -3315,7 +3706,7 @@ mode_val = mode or "—"
 
 active_model = st.session_state.get(
 	_mode_to_model_key.get( mode, "" ),
-	None,)
+	None, )
 
 # ---- Build right-side (mode-gated)
 right_parts = [ ]
@@ -3350,17 +3741,17 @@ elif mode == 'Embeddings':
 	method = st.session_state.get( 'embed_method' )
 	if method is not None:
 		right_parts.append( f'Method: {method}' )
-
-right_text = " · ".join( right_parts ) if right_parts else "—"
-
-# ---- Render footer
-st.markdown(
-	f"""
-    <div class="boo-status-bar">
-        <div class="boo-status-inner">
-            <span>{provider_val} — {mode_val}</span>
-            <span>{right_text}</span>
-        </div>
-    </div>
-    """,
-	unsafe_allow_html=True,)
+	
+	right_text = " · ".join( right_parts ) if right_parts else "—"
+	
+	# ---- Render footer
+	st.markdown(
+		f"""
+	    <div class="boo-status-bar">
+	        <div class="boo-status-inner">
+	            <span>{provider_val} — {mode_val}</span>
+	            <span>{right_text}</span>
+	        </div>
+	    </div>
+	    """,
+		unsafe_allow_html=True, )
