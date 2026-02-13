@@ -845,6 +845,9 @@ if 'tool_choice' not in st.session_state:
 if 'reasoning' not in st.session_state:
 	st.session_state[ 'reasoning' ] = 'high'
 
+if 'background' not in st.session_state:
+	st.session_state[ 'background' ] = False
+
 if 'store' not in st.session_state:
 	st.session_state[ 'store' ] = True
 
@@ -1431,146 +1434,136 @@ elif mode == "Text":
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
-	with st.sidebar:
+	with (st.sidebar):
 		st.text( '⚙️ Text Settings' )
 		
-		# ---------------- Model ----------------
-		text_model = st.selectbox( 'Select Model', chat.model_options,
-			index=( chat.model_options.index( st.session_state[ 'text_model' ] )
-					if st.session_state.get( 'text_model' ) in chat.model_options else 0 ), )
-		st.session_state[ 'text_model' ] = text_model
-		
-		# ---------------- Parameters ----------------
-		st.caption( 'Generation Controls' )
-		with st.expander( '🎚️  Parameters:', expanded=False ):
-			temperature = st.slider( 'Temperature', 0.0, 1.0,
-				float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
-				help=cfg.TEMPERATURE )
-			st.session_state[ 'temperature' ] = float( temperature )
-			
-			st.divider( )
-			
-			store = st.toggle( 'Store:', key='chat_store', value=True, help=cfg.STORE )
-			st.session_state[ 'store' ] = store
-			
-			st.divider( )
-			
-			stream = st.toggle( 'Stream:', key='chat_stream', value=False, help=cfg.STREAM )
-			st.session_state[ 'stream' ] = stream
-			
-			st.divider( )
-			
-			top_p = st.slider(
-				'Top-P',
-				0.0, 1.0,
-				float( st.session_state.get( 'top_p', 1.0 ) ),
-				0.01,
-				help=cfg.TOP_P
-			)
-			st.session_state[ 'top_p' ] = float( top_p )
-			
-			st.divider( )
-			
-			logprobs = st.slider(
-				'Log-Probs',
-				0, 20,
-				int( st.session_state.get( 'logprobs', 0 ) ),
-				1,
-				help=cfg.LOG_PROBS
-			)
-			st.session_state[ 'logprobs' ] = int( logprobs )
-			
-			st.divider( )
-			
-			max_tokens = st.number_input(
-				'Max Tokens',
-				min_value=1,
-				max_value=100000,
-				value=6048,
-				help=cfg.MAX_OUTPUT_TOKENS
-			)
-			st.session_state[ 'max_tokens' ] = int( max_tokens )
-			
-			st.divider( )
-			
-			freq_penalty = st.slider(
-				'Frequency Penalty',
-				-2.0, 2.0,
-				float( st.session_state.get( 'freq_penalty', 0.0 ) ),
-				0.01,
-				help=cfg.FREQUENCY_PENALTY
-			)
-			st.session_state[ 'freq_penalty' ] = float( freq_penalty )
-			
-			st.divider( )
-			
-			pres_penalty = st.slider(
-				'Presence Penalty',
-				-2.0, 2.0,
-				float( st.session_state.get( 'pres_penalty', 0.0 ) ),
-				0.01,
-				help=cfg.PRESENCE_PENALTY
-			)
-			st.session_state[ 'pres_penalty' ] = float( pres_penalty )
-	
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
-		text_left, text_right = st.columns( [ 0.5,  0.5 ] )
+		if st.session_state.get( 'do_clear_instructions', False ):
+			st.session_state[ 'text_instructions' ] = ''
+			st.session_state[ 'do_clear_instructions' ] = False
 		
+		with st.expander( '🧠 Language Model', expanded=False, width='stretch' ):
+			# ------------------------------------------------------------------
+			# Expander — LLM
+			# ------------------------------------------------------------------
+			with st.expander( '🕸️ Model Options', expanded=False, width='stretch' ):
+					llm_one, llm_two, llm_three, llm_four, llm_five = st.columns( [ 0.2,
+					                                                                0.2,
+					                                                                0.2,
+					                                                                0.2,
+					                                                                0.2 ], border=True )
+					
+					with llm_one:
+						text_model = st.selectbox( 'Select Model', chat.model_options,
+							index=(chat.model_options.index( st.session_state[ 'text_model' ] )
+							       if st.session_state.get( 'text_model' ) in chat.model_options else 0), )
+						st.session_state[ 'text_model' ] = text_model
+					
+					with llm_two:
+						include = st.multiselect( 'Include:', options=chat.include_options,
+							key='chat_include', help=cfg.INCLUDE )
+						chat.include = include
+						st.session_state[ 'include' ] = include
+					
+					with llm_three:
+						tool_choice = st.multiselect( 'Tool Choice:', options=chat.choice_options,
+							key='chat_tool_choice', help=cfg.CHOICE )
+						chat.tool_choice = tool_choice
+						st.session_state[ 'tool_choice' ] = tool_choice
+					
+					with llm_four:
+						tools = st.multiselect( 'Tools:', options=chat.tool_options, key='chat_tools',
+							help=cfg.TOOLS )
+						chat.tools = tools
+						st.session_state[ 'tools' ] = tools
+					
+					with llm_five:
+						reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
+							key='chat_reasoning', help=cfg.REASONING )
+						chat.reasoning = reasoning
+			
+			# ------------------------------------------------------------------
+			# Expander — Hyperparmaters
+			# ------------------------------------------------------------------
+			with st.expander( '🎚️ Hyperparameters', expanded=False, width='stretch' ):
+				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ],
+					border=True, gap='small'  )
+				
+				with prm_one:
+					top_p = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
+					st.session_state[ 'top_p' ] = float( top_p )
+				
+				with prm_two:
+					logprobs = st.slider( 'Log-Probs', 0, 20,
+						int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
+					st.session_state[ 'logprobs' ] = int( logprobs )
+					
+				with prm_three:
+					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+						0.01, help=cfg.FREQUENCY_PENALTY )
+					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+				
+				with prm_four:
+					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+						0.01, help=cfg.PRESENCE_PENALTY )
+					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+				
+				with prm_five:
+					temperature = st.slider( 'Temperature', 0.0, 1.0,
+						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+						help=cfg.TEMPERATURE )
+					st.session_state[ 'temperature' ] = float( temperature )
+			
+			# ------------------------------------------------------------------
+			# Expander — Response
+			# ------------------------------------------------------------------
+			with st.expander( '🛠️ Response Options', expanded=False, width='stretch' ):
+					res_one, res_two, res_three, res_four, res_five = st.columns( [0.20, 0.20, 0.20, 0.20, 0.20 ],
+						border=True, gap='small' )
+					
+					with res_one:
+						stream = st.toggle( 'Stream:', key='chat_stream', value=False, help=cfg.STREAM )
+						st.session_state[ 'stream' ] = stream
+						
+					with res_two:
+						store = st.toggle( 'Store:', key='chat_store', value=True, help=cfg.STORE )
+						st.session_state[ 'store' ] = store
+						
+					with res_three:
+						back = st.toggle( 'Background:', key='chat_bakground', value=True, help=cfg.STORE )
+						st.session_state[ 'background' ] = back
+						
+					with res_four:
+						stop_text = st.text_input( 'Stop Sequences',
+							value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch' )
+						
+						st.session_state[ 'stop_sequences' ] = [
+								s for s in stop_text.splitlines( ) if s.strip( ) ]
+					
+					with res_five:
+						max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+							value=6048, help=cfg.MAX_OUTPUT_TOKENS )
+						st.session_state[ 'max_tokens' ] = int( max_tokens )
+			
 		# ------------------------------------------------------------------
 		# Expander — Instructions
 		# ------------------------------------------------------------------
-		with text_left:
-			if st.session_state.get( 'do_clear_instructions', False ):
-				st.session_state[ 'text_instructions' ] = ''
-				st.session_state[ 'do_clear_instructions' ] = False
+		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+			st.text_area( 'Prompt Text', height=240, width='stretch',
+				help=cfg.SYSTEM_INSTRUCTIONS, key='text_instructions' )
 			
-			with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-				st.text_area( 'Prompt Text', height=80, width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS, key='text_instructions' )
-				
-				if st.button( 'Clear Instructions', width='stretch' ):
-					st.session_state[ 'do_clear_instructions' ] = True
-					st.rerun( )
+			if st.button( 'Clear Instructions', width='stretch' ):
+				st.session_state[ 'do_clear_instructions' ] = True
+				st.rerun( )
 		
-		# ------------------------------------------------------------------
-		# Expander — Tools
-		# ------------------------------------------------------------------
-		with text_right:
-			with st.expander( '🛠️ Tools:', expanded=False, width='stretch' ):
-				tool_left, tool_right = st.columns( [ 0.5, 0.5 ], border=True )
-				
-				with tool_left:
-					include = st.multiselect( 'Include:', options=chat.include_options,
-						key='chat_include', help=cfg.INCLUDE )
-					chat.include = include
-					st.session_state[ 'include' ] = include
-					
-					tool_choice = st.multiselect( 'Tool Choice:', options=chat.choice_options,
-						key='chat_tool_choice', help=cfg.CHOICE )
-					chat.tool_choice = tool_choice
-					st.session_state[ 'tool_choice' ] = tool_choice
-				
-				with tool_right:
-					tools = st.multiselect( 'Tools:', options=chat.tool_options, key='chat_tools',
-						help=cfg.TOOLS )
-					chat.tools = tools
-					st.session_state[ 'tools' ] = tools
-					
-					reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
-						key='chat_reasoning', help=cfg.REASONING )
-					chat.reasoning = reasoning
-					
-				stop_text = st.text_area( 'Stop Sequences',
-					value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
-					height=40, help=cfg.STOP_SEQUENCE )
-				
-				st.session_state[ 'stop_sequences' ] = [
-						s for s in stop_text.splitlines( ) if s.strip( ) ]
-
 		# ------------------------------------------------------------------
 		# ----------- MESSAGES -----------------------
 		# ------------------------------------------------------------------

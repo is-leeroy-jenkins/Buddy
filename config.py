@@ -231,3 +231,6 @@ SYSTEM_INSTRUCTIONS = r'''Gives the model high-level instructions on how it shou
 		instructions provided this way will take priority over a prompt in the input parameter.'''
 
 SAMPLE_RATES = [ 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000 ]
+
+BACKGROUND_MODE = r'''Background mode enables you to execute long-running tasks reliably,
+		without having to worry about timeouts or other connectivity issues.'''
