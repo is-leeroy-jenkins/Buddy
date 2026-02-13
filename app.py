@@ -305,9 +305,9 @@ def init_state( ) -> None:
 	if 'execution_mode' not in st.session_state:
 		st.session_state.execution_mode = 'Standard'
 		
-	for k in ( "audio_system_instructions",
-				"image_system_instructions",
-				"text_system_instructions", ):
+	for k in ( 'audio_system_instructions',
+				'image_system_instructions',
+				'text_system_instructions', ):
 		st.session_state.setdefault( k, "" )
 
 def reset_state( ) -> None:
@@ -774,9 +774,6 @@ if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
 	st.session_state[ 'mode' ] = 'Chat'
 
-if 'messages' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
-
 if 'last_call_usage' not in st.session_state:
 	st.session_state.last_call_usage = {
 			'prompt_tokens': 0,
@@ -805,18 +802,37 @@ if 'image_model' not in st.session_state:
 if 'audio_model' not in st.session_state:
 	st.session_state[ 'audio_model' ] = None
 	
-if 'embedding_model' not in st.session_state:
-	st.session_state[ 'embedding_model' ] = None
+if 'embeddings_model' not in st.session_state:
+	st.session_state[ 'embeddings_model' ] = None
 
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
 
-#--------HYPER-PARAMETERS----------------------
-if 'instructions' not in st.session_state:
-	st.session_state[ 'instructions' ] = None
+if 'transcription_model' not in st.session_state:
+	st.session_state[ 'transcription_model' ] = None
 
+if 'translation_model' not in st.session_state:
+	st.session_state[ 'translation_model' ] = None
+
+# --------SYSTEM INSTRUCTIONS----------------------
+if 'instructions' not in st.session_state:
+	st.session_state[ 'instructions' ] = ''
+	
+if 'text_system_instructions' not in st.session_state:
+	st.session_state[ 'text_system_instructions' ] = ''
+
+if 'image_system_instructions' not in st.session_state:
+	st.session_state[ 'image_system_instructions' ] = ''
+
+if 'audio_system_instructions' not in st.session_state:
+	st.session_state[ 'audio_system_instructions' ] = ''
+
+if 'doc_instructions' not in st.session_state:
+	st.session_state.doc_instructions = ''
+
+#--------GENERATION CONTROLS--------------------
 if 'temperature' not in st.session_state:
-	st.session_state[ 'temperature' ] = 0.7
+	st.session_state[ 'temperature' ] = 0.8
 	
 if 'top_p' not in st.session_state:
 	st.session_state[ 'top_p' ] = 1.0
@@ -843,7 +859,7 @@ if 'tool_choice' not in st.session_state:
 	st.session_state[ 'tool_choice' ] = 'auto'
 
 if 'reasoning' not in st.session_state:
-	st.session_state[ 'reasoning' ] = 'high'
+	st.session_state[ 'reasoning' ] = 'low'
 
 if 'background' not in st.session_state:
 	st.session_state[ 'background' ] = False
@@ -853,8 +869,14 @@ if 'store' not in st.session_state:
 
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
-	
-#-------Audio API---------------------------
+
+if 'background' not in st.session_state:
+	st.session_state[ 'background' ] = False
+
+if 'messages' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+#-------AUDIO-API---------------------------
 if 'audio_file' not in st.session_state:
 	st.session_state[ 'audio_file' ] = None
 
@@ -882,7 +904,49 @@ if 'auto_play' not in st.session_state:
 if 'audio_format' not in st.session_state:
 	st.session_state[ 'audio_format' ] = 'audio/wav'
 
-#------- DOC Q&A ---------------------------
+# ------- IMAGE API--------------------------
+if 'image_size' not in st.session_state:
+	st.session_state[ 'image_size' ] = None
+	
+if 'image_style' not in st.session_state:
+	st.session_state[ 'image_style' ] = None
+
+if 'image_detail' not in st.session_state:
+	st.session_state[ 'image_detail' ] = None
+
+if 'image_background' not in st.session_state:
+	st.session_state[ 'image_background' ] = None
+
+if 'image_quality' not in st.session_state:
+	st.session_state[ 'image_quality' ] = None
+
+if 'image_format' not in st.session_state:
+	st.session_state[ 'image_format' ] = None
+
+if 'image_url' not in st.session_state:
+	st.session_state[ 'image_url' ] = None
+
+if 'ascpect_ratio' not in st.session_state:
+	st.session_state[ 'aspect_ratio' ] = None
+
+# ------- FILES API--------------------------
+if 'purpose' not in st.session_state:
+	st.session_state[ 'purpose' ] = None
+
+if 'file_type' not in st.session_state:
+	st.session_state[ 'file_type' ] = None
+
+if 'file_id' not in st.session_state:
+	st.session_state[ 'file_id' ] = None
+
+if 'file_url' not in st.session_state:
+	st.session_state[ 'file_url' ] = None
+	
+# -------VECTOR STORES API-------------------
+if 'vector_store_id' not in st.session_state:
+	st.session_state[ 'vector_store_id' ] = None
+
+#------- DOC Q&A  ---------------------------
 if 'files' not in st.session_state:
 	st.session_state[ 'files' ] = [ ]
 	
@@ -900,12 +964,6 @@ if 'doc_source' not in st.session_state:
 
 if 'doc_multi_mode' not in st.session_state:
 	st.session_state.doc_multi_mode = False
-	
-if 'doc_instructions' not in st.session_state:
-	st.session_state.doc_instructions = ''
-	
-if 'provider' not in st.session_state:
-	st.session_state[ 'provider' ] = 'GPT'
 
 # ======================================================================================
 #  PROVIDER
@@ -1647,8 +1705,9 @@ elif mode == "Text":
 # IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
-	st.subheader( 'Image API')
+	st.subheader( 'Images API')
 	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
 	image = provider_module.Images( )
 	
 	# ------------------------------------------------------------------

@@ -1179,7 +1179,7 @@ class Embeddings( GPT ):
 	dimensions: Optional[ int ]
 	
 	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True, ):
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=False, ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
