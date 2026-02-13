@@ -1450,7 +1450,7 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			# Expander — LLM
 			# ------------------------------------------------------------------
-			with st.expander( '🕸️ Model Options', expanded=False, width='stretch' ):
+			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 					llm_one, llm_two, llm_three, llm_four, llm_five = st.columns( [ 0.2,
 					                                                                0.2,
 					                                                                0.2,
@@ -1489,9 +1489,9 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
-			with st.expander( '🎚️ Hyperparameters', expanded=False, width='stretch' ):
+			with st.expander( 'Hyperparameters', expanded=False, width='stretch' ):
 				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ],
-					border=True, gap='small'  )
+					border=True, gap='xsmall'  )
 				
 				with prm_one:
 					top_p = st.slider( 'Top-P', 0.0, 1.0,
@@ -1524,20 +1524,21 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			# Expander — Response
 			# ------------------------------------------------------------------
-			with st.expander( '🛠️ Response Options', expanded=False, width='stretch' ):
+			with st.expander( 'Response Options', expanded=False, width='stretch' ):
 					res_one, res_two, res_three, res_four, res_five = st.columns( [0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='small' )
 					
 					with res_one:
-						stream = st.toggle( 'Stream:', key='chat_stream', value=False, help=cfg.STREAM )
+						stream = st.toggle( 'Stream', key='chat_stream', value=False, help=cfg.STREAM )
 						st.session_state[ 'stream' ] = stream
 						
 					with res_two:
-						store = st.toggle( 'Store:', key='chat_store', value=True, help=cfg.STORE )
+						store = st.toggle( 'Store', key='chat_store', value=True, help=cfg.STORE )
 						st.session_state[ 'store' ] = store
 						
 					with res_three:
-						back = st.toggle( 'Background:', key='chat_bakground', value=False, help=cfg.BACKGROUND_MODE )
+						back = st.toggle( 'Background', key='chat_bakground',
+							value=False, help=cfg.BACKGROUND_MODE )
 						st.session_state[ 'background' ] = back
 						
 					with res_four:
@@ -1641,7 +1642,6 @@ elif mode == "Text":
 			st.write( f'Session totals — prompt: {tu[ "prompt_tokens" ]} · '
 				f'completion: {tu[ "completion_tokens" ]} · '
 				f'total: {tu[ "total_tokens" ]}' )
-
 
 # ======================================================================================
 # IMAGES MODE
@@ -2572,12 +2572,12 @@ elif mode == 'Document Q&A':
 	st.subheader( '📄 Document Q & A' )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	with st.expander( 'Controls', expanded=False, width='stretch' ):
+	with st.expander( '💻 System Instructions', expanded=False, width='stretch' ):
 		left_ins, mid_ins, right_ins = st.columns( [ 0.6, 0.2, 0.2 ],
 			vertical_alignment='center' )
 		
 		with left_ins:
-			st.text_area( 'System Instructions', height=150, width=750,
+			st.text_area( 'Enter Text', height=150, width=750,
 				help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
 			instructions = st.session_state.get( 'doc_system_instruction', '' )
 			
