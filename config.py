@@ -226,9 +226,8 @@ REASONING = r'''Reasoning models introduce reasoning tokens in addition to input
 
 CHOICE = r''' Determines how tools are chosen when using reasoning models'''
 
-SYSTEM_INSTRUCTIONS = r'''Foundational, pre-prompt guidelines that define an Large Language Model's
-					(LLM) persona, behavior, tone, and constraints throughout a conversation.
-					Acting as a "preamble" or system message, these instructions take precedence
-					over user prompts, ensuring consistent, tailored, and safe interactions.'''
+SYSTEM_INSTRUCTIONS = r'''Gives the model high-level instructions on how it should behave while
+		generating a response, including tone, goals, and examples of correct responses. Any
+		instructions provided this way will take priority over a prompt in the input parameter.'''
 
 SAMPLE_RATES = [ 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000 ]

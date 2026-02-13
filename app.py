@@ -304,6 +304,11 @@ def init_state( ) -> None:
 	
 	if 'execution_mode' not in st.session_state:
 		st.session_state.execution_mode = 'Standard'
+		
+	for k in ( "audio_system_instructions",
+				"image_system_instructions",
+				"text_system_instructions", ):
+		st.session_state.setdefault( k, "" )
 
 def reset_state( ) -> None:
 	"""
@@ -711,6 +716,7 @@ inject_response_css( )
 
 init_state( )
 
+
 # ======================================================================================
 # Session State — initialize per-mode model keys and token counters
 # ======================================================================================
@@ -1067,7 +1073,6 @@ def embedding_model_options( embed ):
 #-------------DOC Q&A ----------------------
 def route_document_query( prompt: str ) -> str:
 	source = st.session_state.get( 'doc_source' )
-	instructions = st.session_state.get( 'doc_instructions', '' )
 	active_docs = st.session_state.get( 'doc_active_docs', [ ] )
 	doc_bytes = st.session_state.get( 'doc_bytes', { } )
 	
@@ -1201,7 +1206,7 @@ def summarize_active_document( ) -> str:
 	Uses the routing layer to summarize the currently active document.
 	"""
 	
-	instructions = st.session_state.get( "doc_instructions", "" )
+	doc_instructions = st.session_state.get( "doc_instructions", "" )
 	summary_prompt = """
 		Provide a clear, structured summary of this document.
 		Include:
@@ -1214,8 +1219,8 @@ def summarize_active_document( ) -> str:
 		Be precise and concise.
 		"""
 	
-	if instructions:
-		summary_prompt = f"{instructions}\n\n{summary_prompt}"
+	if doc_instructions:
+		summary_prompt = f"{doc_instructions}\n\n{summary_prompt}"
 	
 	return route_document_query( summary_prompt.strip( ) )
 
@@ -1307,7 +1312,7 @@ with st.sidebar:
 	else:
 		mode = st.sidebar.radio( 'Select Mode', cfg.GPT_MODES, index=0 )
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	
+
 # =============================================================================
 # CHAT MODE
 # =============================================================================
@@ -1422,6 +1427,7 @@ elif mode == "Text":
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	chat = provider_module.Chat( )
+	
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
@@ -1430,206 +1436,219 @@ elif mode == "Text":
 		
 		# ---------------- Model ----------------
 		text_model = st.selectbox( 'Select Model', chat.model_options,
-			index=(chat.model_options.index( st.session_state[ 'text_model' ] )
-			       if st.session_state.get( 'text_model' ) in chat.model_options  else 0), )
+			index=( chat.model_options.index( st.session_state[ 'text_model' ] )
+					if st.session_state.get( 'text_model' ) in chat.model_options else 0 ), )
 		st.session_state[ 'text_model' ] = text_model
-		
-		st.divider( )
 		
 		# ---------------- Parameters ----------------
 		st.caption( 'Generation Controls' )
 		with st.expander( '🎚️  Parameters:', expanded=False ):
-			temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
-				value=float( st.session_state.get( 'temperature', 0.7 ) ), step=0.01,
-				help = cfg.TEMPERATURE )
+			temperature = st.slider( 'Temperature', 0.0, 1.0,
+				float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+				help=cfg.TEMPERATURE )
 			st.session_state[ 'temperature' ] = float( temperature )
+			
 			st.divider( )
 			
-			store = st.toggle( label='Store:', key='chat_store', value=True, help=cfg.STORE )
+			store = st.toggle( 'Store:', key='chat_store', value=True, help=cfg.STORE )
 			st.session_state[ 'store' ] = store
 			
 			st.divider( )
 			
-			stream = st.toggle( label='Stream:', key='chat_stream', value=False, help=cfg.STREAM )
+			stream = st.toggle( 'Stream:', key='chat_stream', value=False, help=cfg.STREAM )
 			st.session_state[ 'stream' ] = stream
 			
 			st.divider( )
 			
-			top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0,
-				value=float( st.session_state.get( 'top_p', 1.0 ) ),
-				step=0.01, help=cfg.TOP_P )
+			top_p = st.slider(
+				'Top-P',
+				0.0, 1.0,
+				float( st.session_state.get( 'top_p', 1.0 ) ),
+				0.01,
+				help=cfg.TOP_P
+			)
 			st.session_state[ 'top_p' ] = float( top_p )
 			
 			st.divider( )
 			
-			logprobs = st.slider( 'Log-Probs', min_value=0, max_value=20,
-				value=int( st.session_state.get( 'logprobs', 0 ) ),
-				step=1, help=cfg.LOG_PROBS )
+			logprobs = st.slider(
+				'Log-Probs',
+				0, 20,
+				int( st.session_state.get( 'logprobs', 0 ) ),
+				1,
+				help=cfg.LOG_PROBS
+			)
 			st.session_state[ 'logprobs' ] = int( logprobs )
 			
 			st.divider( )
-
-			max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-				value=6048, help=cfg.MAX_OUTPUT_TOKENS )
+			
+			max_tokens = st.number_input(
+				'Max Tokens',
+				min_value=1,
+				max_value=100000,
+				value=6048,
+				help=cfg.MAX_OUTPUT_TOKENS
+			)
 			st.session_state[ 'max_tokens' ] = int( max_tokens )
 			
 			st.divider( )
 			
-			freq_penalty = st.slider( 'Frequency Penalty', min_value=-2.0, max_value=2.0,
-				value=float( st.session_state.get( 'freq_penalty', 0.0 ) ),
-				step=0.01, help=cfg.FREQUENCY_PENALTY )
+			freq_penalty = st.slider(
+				'Frequency Penalty',
+				-2.0, 2.0,
+				float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+				0.01,
+				help=cfg.FREQUENCY_PENALTY
+			)
 			st.session_state[ 'freq_penalty' ] = float( freq_penalty )
 			
 			st.divider( )
 			
-			pres_penalty = st.slider( 'Presence Penalty', min_value=-2.0, max_value=2.0,
-				value=float( st.session_state.get( 'pres_penalty', 0.0 ) ),
-				step=0.01, help=cfg.PRESENCE_PENALTY )
+			pres_penalty = st.slider(
+				'Presence Penalty',
+				-2.0, 2.0,
+				float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+				0.01,
+				help=cfg.PRESENCE_PENALTY
+			)
 			st.session_state[ 'pres_penalty' ] = float( pres_penalty )
-			
-		st.divider( )
-		
-		# ---------------- Tools ----------------
-		st.caption( 'Specialized Options' )
-		with st.expander( '🛠️ Tools:', expanded=False ):
-			
-			# ---------------- Include Options ----------------
-			include = st.multiselect( label='Include:', options=chat.include_options,
-				key='chat_include', help=cfg.INCLUDE )
-			chat.include = include
-			st.session_state[ 'include' ] = include
-		
-			st.divider( )
-			
-			# ---------------- Choice Options ----------------
-			tool_choice = st.multiselect( label='Tool Choice:', options=chat.choice_options,
-				key='chat_tool_choic', help=cfg.CHOICE )
-			chat.tool_choice = tool_choice
-			st.session_state[ 'tool_choice' ] = tool_choice
-		
-			st.divider( )
-			
-			# ---------------- Tools Options ----------------
-			tools = st.multiselect( label='Tools:', options=chat.tool_options,
-				key='chat_tools', help=cfg.TOOLS  )
-			chat.tools = tools
-			st.session_state[ 'tools' ] = tools
-			
-			st.divider( )
-			
-			# ---------------- Reasoning Options ----------------
-			reasoning = st.multiselect( label='Reasoning:', options=chat.reasoning_options,
-			key='chat_reasoning', help=cfg.REASONING )
-			chat.reasoning = reasoning
-			st.session_state[ 'reasoning' ] = reasoning
-			
-			st.divider( )
-		
-			stop_text = st.text_area( 'Stop Sequences',
-				value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
-				height=80, help=cfg.STOP_SEQUENCE )
-			st.session_state[ 'stop_sequences' ] = [
-					s for s in stop_text.splitlines( ) if s.strip( ) ]
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.15, 5.5, 0.15 ] )
-	instructions = st.session_state[ 'instructions' ]
+	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
 	with center:
+		text_left, text_right = st.columns( [ 0.5,  0.5 ] )
+		
 		# ------------------------------------------------------------------
-		# Expander — System Instructions
+		# Expander — Instructions
 		# ------------------------------------------------------------------
-		instructions = st.session_state[ 'instructions' ]
-		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-			left_ins, right_ins = st.columns( [ 0.7, 0.3 ], vertical_alignment='center' )
+		with text_left:
+			if st.session_state.get( 'do_clear_instructions', False ):
+				st.session_state[ 'text_instructions' ] = ''
+				st.session_state[ 'do_clear_instructions' ] = False
 			
-			with left_ins:
-				instructions = st.text_area( 'Enter Text', height=80, width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instruction' )
-				st.session_state.doc_instructions = instructions
-			
-			with right_ins:
-				if st.button( 'Save Instructions', width='stretch' ):
-					st.session_state.doc_messages = [ ]
+			with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+				st.text_area( 'Prompt Text', height=80, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='text_instructions' )
 				
-				reset_ins = st.button( 'Clear Instructions', width='stretch' )
-				if reset_ins:
-					instructions = None
-	
-		left_ins, right_ins = st.columns( [ 0.8, 0.2 ] )
-		with left_ins:
-			st.text( '' )
-		#----------- MESSAGES-----------------------
+				if st.button( 'Clear Instructions', width='stretch' ):
+					st.session_state[ 'do_clear_instructions' ] = True
+					st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# Expander — Tools
+		# ------------------------------------------------------------------
+		with text_right:
+			with st.expander( '🛠️ Tools:', expanded=False, width='stretch' ):
+				tool_left, tool_right = st.columns( [ 0.5, 0.5 ], border=True )
+				
+				with tool_left:
+					include = st.multiselect( 'Include:', options=chat.include_options,
+						key='chat_include', help=cfg.INCLUDE )
+					chat.include = include
+					st.session_state[ 'include' ] = include
+					
+					tool_choice = st.multiselect( 'Tool Choice:', options=chat.choice_options,
+						key='chat_tool_choice', help=cfg.CHOICE )
+					chat.tool_choice = tool_choice
+					st.session_state[ 'tool_choice' ] = tool_choice
+				
+				with tool_right:
+					tools = st.multiselect( 'Tools:', options=chat.tool_options, key='chat_tools',
+						help=cfg.TOOLS )
+					chat.tools = tools
+					st.session_state[ 'tools' ] = tools
+					
+					reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
+						key='chat_reasoning', help=cfg.REASONING )
+					chat.reasoning = reasoning
+					
+				stop_text = st.text_area( 'Stop Sequences',
+					value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
+					height=40, help=cfg.STOP_SEQUENCE )
+				
+				st.session_state[ 'stop_sequences' ] = [
+						s for s in stop_text.splitlines( ) if s.strip( ) ]
+
+		# ------------------------------------------------------------------
+		# ----------- MESSAGES -----------------------
+		# ------------------------------------------------------------------
 		for msg in st.session_state.messages:
-			with st.chat_message( msg[ 'role' ] ):
+			with st.chat_message( msg[ 'role' ], avatar="" ):
 				st.markdown( msg[ 'content' ] )
+		
 		if provider_name == 'GPT':
 			prompt = st.chat_input( 'Ask ChatGPT…' )
 		elif provider_name == 'Grok':
 			prompt = st.chat_input( 'Ask Grok…' )
 		elif provider_name == 'Gemini':
 			prompt = st.chat_input( 'Ask Gemini…' )
-			
+		else:
+			prompt = None
+		
 		if prompt is not None:
-			st.session_state.messages.append( {
-					'role': 'user',
-					'content': prompt } )
-			
-			with st.chat_message( 'assistant' ):
+			st.session_state.messages.append( { 'role': 'user', 'content': prompt } )
+			with st.chat_message( 'assistant', avatar="" ):
 				gen_kwargs = { }
-			
-			with st.spinner( 'Thinking…' ):
-				gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
-				gen_kwargs[ 'top_p' ] = st.session_state[ 'top_p' ]
-				gen_kwargs[ 'logprobs' ] = st.session_state[ 'logprobs' ]
-				gen_kwargs[ 'max_tokens' ] = st.session_state[ 'max_tokens' ]
-				gen_kwargs[ 'frequency' ] = st.session_state[ 'freq_penalty' ]
-				gen_kwargs[ 'presence' ] = st.session_state[ 'pres_penalty' ]
-			
-				if st.session_state[ 'stop_sequences' ]:
-					gen_kwargs[ 'stops' ] = st.session_state[ 'stop_sequences' ]
 				
-				response = None
-				try:
-					mdl = str( gen_kwargs[ 'model' ] )
-					if mdl.startswith( 'gpt-5' ):
-						response = chat.generate_text( prompt=prompt, model=gen_kwargs[ 'model' ] )
-					else:
-						response = chat.generate_text( )
-				except Exception as exc:
-					err = Error( exc )
-					st.error( f'Generation Failed: {err.info}' )
+				with st.spinner( 'Thinking…' ):
+					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
+					gen_kwargs[ 'top_p' ] = st.session_state[ 'top_p' ]
+					gen_kwargs[ 'logprobs' ] = st.session_state[ 'logprobs' ]
+					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'max_tokens' ]
+					gen_kwargs[ 'frequency' ] = st.session_state[ 'freq_penalty' ]
+					gen_kwargs[ 'presence' ] = st.session_state[ 'pres_penalty' ]
+					
+					if st.session_state[ 'stop_sequences' ]:
+						gen_kwargs[ 'stops' ] = st.session_state[ 'stop_sequences' ]
+					
 					response = None
-				
-				st.markdown( response )
-				st.session_state.messages.append( {
-						'role': 'assistant',
-						'content': response } )
-				
-				try:
-					_update_token_counters(
-						getattr( chat, 'response', None ) or response
-					)
-				except Exception:
-					pass
-	
-	lcu = st.session_state.last_call_usage
-	tu = st.session_state.token_usage
-	
-	if any( lcu.values( ) ):
-		st.info(
-			f"Last call — prompt: {lcu[ 'prompt_tokens' ]}, "
-			f"completion: {lcu[ 'completion_tokens' ]}, "
-			f"total: {lcu[ 'total_tokens' ]}"
-		)
-	
-	if tu[ "total_tokens" ] > 0:
-		st.write(
-			f"Session totals — prompt: {tu[ 'prompt_tokens' ]} · "
-			f"completion: {tu[ 'completion_tokens' ]} · "
-			f"total: {tu[ 'total_tokens' ]}"
-		)
+					
+					try:
+						mdl = str( gen_kwargs[ 'model' ] )
+						if mdl.startswith( 'gpt-5' ):
+							response = chat.generate_text(
+								prompt=prompt,
+								model=gen_kwargs[ 'model' ]
+							)
+						else:
+							response = chat.generate_text( )
+					
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Generation Failed: {err.info}' )
+						response = None
+					
+					if response is not None and str( response ).strip( ):
+						st.markdown( response )
+						st.session_state.messages.append( { 'role': 'assistant', 'content': response } )
+					else:
+						st.error( 'Generation returned no content.' )
+			
+						try:
+							_update_token_counters( getattr( chat, 'response', None ) or response )
+						except Exception:
+							pass
+			
+		# --------------------------------------------------------------
+		# Token Usage Reporting
+		# --------------------------------------------------------------
+		lcu = st.session_state.last_call_usage
+		tu = st.session_state.token_usage
+		
+		if any( lcu.values( ) ):
+			st.info(
+				f'Last call — prompt: {lcu[ "prompt_tokens" ]}, '
+				f'completion: {lcu[ "completion_tokens "]}, '
+				f'total: {lcu[ "total_tokens" ]}'
+			)
+		
+		if tu[ 'total_tokens' ] > 0:
+			st.write( f'Session totals — prompt: {tu[ "prompt_tokens" ]} · '
+				f'completion: {tu[ "completion_tokens" ]} · '
+				f'total: {tu[ "total_tokens" ]}' )
+
 
 # ======================================================================================
 # IMAGES MODE
@@ -1674,23 +1693,22 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	# Expander — System Instructions
 	# ------------------------------------------------------------------
-	instructions = st.session_state[ 'instructions' ]
 	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 		left_ins, right_ins = st.columns( [ 0.7,  0.3 ],
 			vertical_alignment='center' )
 		
 		with left_ins:
-			instructions = st.text_area( 'Enter Text', height=80, width='stretch',
+			st.text_area( 'Enter Text', height=80, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instruction' )
-			st.session_state.doc_instructions = instructions
+			instructions = st.session_state.get( 'image_system_instruction', '' )
 		
 		with right_ins:
 			if st.button( 'Save Instructions', width='stretch' ):
 				st.session_state.doc_messages = [ ]
 			
-			reset_ins = st.button( 'Clear Instructions', width='stretch' )
-			if reset_ins:
-				instructions = None
+			reset_image_ins = st.button( 'Clear Instructions', width='stretch', key='clear_image_ins' )
+			if reset_image_ins:
+				st.session_state.image_system_instruction = ''
 	
 	# ------------------------------------------------------------------
 	# Main UI — Tabs
@@ -2036,23 +2054,22 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	# Expander — System Instructions
 	# ------------------------------------------------------------------
-	instructions = st.session_state[ 'instructions' ]
 	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 		left_ins, right_ins = st.columns( [ 0.7, 0.3 ],
 			vertical_alignment='center' )
 		
 		with left_ins:
-			instructions = st.text_area( 'Enter Text', height=80, width='stretch',
+			st.text_area( 'Enter Text', height=80, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instruction' )
-			st.session_state.doc_instructions = instructions
+			instructions = st.session_state.get( 'audio_system_instruction', '' )
 		
 		with right_ins:
 			if st.button( 'Save Instructions', width='stretch' ):
 				st.session_state.doc_messages = [ ]
 			
-			reset_ins = st.button( 'Clear Instructions', width='stretch' )
-			if reset_ins:
-				instructions = None
+			reset_audio_ins = st.button( 'Clear Instructions', width='stretch', key='clear_audio_ins' )
+			if reset_audio_ins:
+				st.session_state.audio_system_instruction = ''
 	
 	left_col, center_col, right_col = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
 	
@@ -2567,10 +2584,10 @@ elif mode == 'Document Q&A':
 			vertical_alignment='center' )
 		
 		with left_ins:
-			instructions = st.text_area( 'System Instructions', height=150, width=750,
+			st.text_area( 'System Instructions', height=150, width=750,
 				help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
-			st.session_state.doc_instructions = instructions
-		
+			instructions = st.session_state.get( 'doc_system_instruction', '' )
+			
 		with mid_ins:
 			source = st.radio( 'Source', [ 'Upload Local', 'Files API',  'Vector Store' ] )
 			st.session_state.doc_source = source.lower( ).replace( ' ', '' )
@@ -2580,10 +2597,10 @@ elif mode == 'Document Q&A':
 				st.session_state.doc_messages = [ ]
 				st.rerun( )
 			
-			reset_ins = st.button('Clear Instructions', width='stretch')
-			if reset_ins:
-				instructions = None
-				
+			reset_doc_ins = st.button('Clear Instructions', width='stretch', key='clear_doc_instructions' )
+			if reset_doc_ins:
+				st.session_state.doc_system_instruction = ''
+			
 			if st.button( 'Summarize Document', width='stretch' ):
 				if not st.session_state.get( 'doc_active_docs' ):
 					st.warning( 'No document loaded.' )
@@ -2731,23 +2748,27 @@ elif mode == "Prompt Engineering":
 	import sqlite3
 	import math
 	
-	TABLE = 'Prompts'
+	TABLE = "Prompts"
 	PAGE_SIZE = 10
 	
-	st.subheader( '📝 Prompt Engineering' )
+	st.subheader( "📝 Prompt Engineering" )
 	st.divider( )
-	# ------------------------------------------------------------------
-	# Session state (single source of truth)
-	# ------------------------------------------------------------------
-	st.session_state.setdefault( 'pe_page', 1 )
-	st.session_state.setdefault( 'pe_search', "" )
-	st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
-	st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
-	st.session_state.setdefault( 'pe_selected_id', None )
 	
-	st.session_state.setdefault( 'pe_name', "" )
-	st.session_state.setdefault( 'pe_text', "" )
-	st.session_state.setdefault( 'pe_version', 1 )
+	st.session_state.setdefault( "pe_cascade_enabled", False )
+	st.checkbox( "Cascade selection into System Instructions", key="pe_cascade_enabled" )
+	
+	# ------------------------------------------------------------------
+	# Session state
+	# ------------------------------------------------------------------
+	st.session_state.setdefault( "pe_page", 1 )
+	st.session_state.setdefault( "pe_search", "" )
+	st.session_state.setdefault( "pe_sort_col", "PromptsId" )
+	st.session_state.setdefault( "pe_sort_dir", "ASC" )
+	st.session_state.setdefault( "pe_selected_id", None )
+	
+	st.session_state.setdefault( "pe_name", "" )
+	st.session_state.setdefault( "pe_text", "" )
+	st.session_state.setdefault( "pe_version", 1 )
 	
 	# ------------------------------------------------------------------
 	# DB helpers
@@ -2757,8 +2778,8 @@ elif mode == "Prompt Engineering":
 	
 	def reset_selection( ):
 		st.session_state.pe_selected_id = None
-		st.session_state.pe_name = ""
-		st.session_state.pe_text = ""
+		st.session_state.pe_name = ''
+		st.session_state.pe_text =''
 		st.session_state.pe_version = 1
 	
 	def load_prompt( pid: int ) -> None:
@@ -2768,61 +2789,60 @@ elif mode == "Prompt Engineering":
 				(pid,),
 			)
 			row = cur.fetchone( )
-			if row:
-				st.session_state.pe_name = row[ 0 ]
-				st.session_state.pe_text = row[ 1 ]
-				st.session_state.pe_version = row[ 2 ]
-				record = fetch_prompt_by_id( pid )
-				prompt_text = row[ 1 ]
-				
-				# Store selected prompt text centrally
-				st.session_state.pe_loaded_text = prompt_text
-				
-				# Cascade to all system instruction areas
-				st.session_state.doc_system = prompt_text
-				st.session_state.audio_system = prompt_text
-				st.session_state.image_system = prompt_text
-				st.session_state.text_system = prompt_text
+			if not row:
+				return
+			st.session_state.pe_name = row[ 0 ]
+			st.session_state.pe_text = row[ 1 ]
+			st.session_state.pe_version = row[ 2 ]
 	
 	# ------------------------------------------------------------------
-	# XML / Markdown converters
+	# Filters
 	# ------------------------------------------------------------------
-	def xml_to_md( ):
-		st.session_state.pe_text = xml_converter( st.session_state.pe_text )
-	
-	def md_to_xml( ):
-		st.session_state.pe_text = markdown_converter( st.session_state.pe_text )
-	
-	# ------------------------------------------------------------------
-	# Controls (table filters)
-	# ------------------------------------------------------------------
-	c1, c2, c3, c4 = st.columns( [ 4, 2, 2,  3 ] )
+	c1, c2, c3, c4 = st.columns( [ 4,
+	                               2,
+	                               2,
+	                               3 ] )
 	
 	with c1:
-		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
+		st.text_input( "Search (Name/Text contains)", key="pe_search" )
 	
 	with c2:
-		st.selectbox( 'Sort by',
-			[ 'PromptsId', 'Name', 'Version' ], key='pe_sort_col', )
+		st.selectbox(
+			"Sort by",
+			[ "PromptsId",
+			  "Name",
+			  "Version" ],
+			key="pe_sort_col",
+		)
 	
 	with c3:
-		st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir', )
+		st.selectbox( "Direction", [ "ASC",
+		                             "DESC" ], key="pe_sort_dir" )
 	
 	with c4:
 		st.markdown(
 			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
 			unsafe_allow_html=True,
 		)
-		a1, a2, a3 = st.columns( [ 2, 1, 1 ] )
+		a1, a2, a3 = st.columns( [ 2,
+		                           1,
+		                           1 ] )
+		
 		with a1:
-			jump_id = st.number_input( "Go to ID", min_value=1, step=1, label_visibility="collapsed", )
+			jump_id = st.number_input(
+				"Go to ID",
+				min_value=1,
+				step=1,
+				label_visibility="collapsed",
+			)
+		
 		with a2:
 			if st.button( "Go" ):
 				st.session_state.pe_selected_id = int( jump_id )
 				load_prompt( int( jump_id ) )
+		
 		with a3:
-			if st.button( "Undo" ):
-				reset_selection( )
+			st.button( "Clear", on_click=reset_selection )
 	
 	# ------------------------------------------------------------------
 	# Load prompt table
@@ -2833,7 +2853,8 @@ elif mode == "Prompt Engineering":
 	if st.session_state.pe_search:
 		where = "WHERE Name LIKE ? OR Text LIKE ?"
 		s = f"%{st.session_state.pe_search}%"
-		params.extend( [ s, s ] )
+		params.extend( [ s,
+		                 s ] )
 	
 	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
 	
@@ -2860,32 +2881,57 @@ elif mode == "Prompt Engineering":
 	for r in rows:
 		table_rows.append(
 			{
-					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
-					'PromptsId': r[ 0 ],
-					'Name': r[ 1 ],
-					'Version': r[ 3 ],
-					'ID': r[ 4 ],
+					"Selected": r[ 0 ] == st.session_state.pe_selected_id,
+					"PromptsId": r[ 0 ],
+					"Name": r[ 1 ],
+					"Version": r[ 3 ],
+					"ID": r[ 4 ],
 			}
 		)
 	
-	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
-		key='prompt_table' )
-	selected = [ r for r in edited if r.get( "Selected" ) ]
+	edited = st.data_editor(
+		table_rows,
+		hide_index=True,
+		use_container_width=True,
+		key="prompt_table",
+	)
+	
+	# ------------------------------------------------------------------
+	# SELECTION PROCESSING (must run BEFORE widgets below)
+	# ------------------------------------------------------------------
+	selected = [
+			r for r in edited
+			if isinstance( r, dict ) and r.get( "Selected" )
+	]
+	
 	if len( selected ) == 1:
-		pid = selected[ 0 ][ "PromptsId" ]
+		pid = int( selected[ 0 ][ "PromptsId" ] )
 		if pid != st.session_state.pe_selected_id:
 			st.session_state.pe_selected_id = pid
 			load_prompt( pid )
 	
+	elif len( selected ) == 0:
+		reset_selection( )
+	
+	elif len( selected ) > 1:
+		st.warning( "Select exactly one prompt row." )
+	
 	# ------------------------------------------------------------------
 	# Paging
 	# ------------------------------------------------------------------
-	p1, p2, p3 = st.columns( [ 0.25, 3.5, 0.25 ] )
+	p1, p2, p3 = st.columns( [ 0.25,
+	                           3.5,
+	                           0.25 ] )
+	
 	with p1:
 		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
 			st.session_state.pe_page -= 1
+	
 	with p2:
-		st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
+		st.markdown(
+			f"Page **{st.session_state.pe_page}** of **{total_pages}**"
+		)
+	
 	with p3:
 		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
 			st.session_state.pe_page += 1
@@ -2893,32 +2939,27 @@ elif mode == "Prompt Engineering":
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	
 	# ------------------------------------------------------------------
-	# Converter controls
+	# Edit Prompt
 	# ------------------------------------------------------------------
-	with st.expander( 'XML ↔ Markdown Converter', expanded=False ):
-		b1, b2 = st.columns( 2 )
-		with b1:
-			st.button( 'Convert XML → Markdown', on_click=xml_to_md )
-		with b2:
-			st.button( 'Convert Markdown → XML', on_click=md_to_xml )
-	
-	# ------------------------------------------------------------------
-	# Create / Edit Prompt
-	# ------------------------------------------------------------------
-	with st.expander( '🖊️ Edit Prompt', expanded=True ):
+	with st.expander( "🖊️ Edit Prompt", expanded=True ):
 		st.text_input(
-			'PromptsId',
+			"PromptsId",
 			value=st.session_state.pe_selected_id or "",
 			disabled=True,
 		)
-		st.text_input( 'Name', key='pe_name' )
-		st.text_area( 'Text', key='pe_text', height=260 )
-		st.number_input( 'Version', min_value=1, key='pe_version' )
+		
+		st.text_input( "Name", key="pe_name" )
+		st.text_area( "Text", key="pe_text", height=260 )
+		st.number_input( "Version", min_value=1, key="pe_version" )
 		
 		c1, c2, c3 = st.columns( 3 )
 		
 		with c1:
-			if st.button( "💾 Save Changes" if st.session_state.pe_selected_id else "➕ Create Prompt" ):
+			if st.button(
+					"💾 Save Changes"
+					if st.session_state.pe_selected_id
+					else "➕ Create Prompt"
+			):
 				with get_conn( ) as conn:
 					if st.session_state.pe_selected_id:
 						conn.execute(
@@ -2947,23 +2988,24 @@ elif mode == "Prompt Engineering":
 							),
 						)
 					conn.commit( )
-				st.success( 'Saved.' )
+				
+				st.success( "Saved." )
 				reset_selection( )
 		
 		with c2:
-			if st.session_state.pe_selected_id and st.button( 'Delete' ):
+			if st.session_state.pe_selected_id and st.button( "Delete" ):
 				with get_conn( ) as conn:
 					conn.execute(
-						f'DELETE FROM {TABLE} WHERE PromptsId=?',
+						f"DELETE FROM {TABLE} WHERE PromptsId=?",
 						(st.session_state.pe_selected_id,),
 					)
 					conn.commit( )
 				reset_selection( )
-				st.success( 'Deleted.' )
+				st.success( "Deleted." )
 		
 		with c3:
-			if st.button( '🧹 Clear Selection' ):
-				reset_selection( )
+			st.button( "🧹 Clear Selection", on_click=reset_selection )
+
 
 # ==============================================================================
 # DATA MODE
