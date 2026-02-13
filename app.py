@@ -1500,10 +1500,10 @@ elif mode == "Text":
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		if st.session_state.get( 'do_clear_instructions', False ):
-			st.session_state[ 'text_instructions' ] = ''
+			st.session_state[ 'text_system_instructions' ] = ''
 			st.session_state[ 'do_clear_instructions' ] = False
 		
-		with st.expander( '🧠 Language Model', expanded=False, width='stretch' ):
+		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# Expander — LLM
 			# ------------------------------------------------------------------
@@ -1516,6 +1516,7 @@ elif mode == "Text":
 					
 					with llm_one:
 						text_model = st.selectbox( 'Select Model', chat.model_options,
+							help='Required. Text Generation model used by the AI',
 							index=(chat.model_options.index( st.session_state[ 'text_model' ] )
 							       if st.session_state.get( 'text_model' ) in chat.model_options else 0), )
 						st.session_state[ 'text_model' ] = text_model
@@ -1542,11 +1543,11 @@ elif mode == "Text":
 						reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
 							key='chat_reasoning', help=cfg.REASONING )
 						chat.reasoning = reasoning
-			
+					
 			# ------------------------------------------------------------------
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
-			with st.expander( 'Hyperparameters', expanded=False, width='stretch' ):
+			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
 				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ],
 					border=True, gap='xsmall'  )
 				
@@ -1616,7 +1617,7 @@ elif mode == "Text":
 		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=240, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='text_instructions' )
+				help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
 			
 			if st.button( 'Clear Instructions', width='stretch' ):
 				st.session_state[ 'do_clear_instructions' ] = True
@@ -1707,6 +1708,11 @@ elif mode == "Images":
 	st.subheader( '📷 Images API')
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	image_size = st.session_state.get( 'image_size', None )
+	image_style = st.session_state.get( 'image_style', None )
+	image_quality = st.session_state.get( 'image_quality', None )
+	image_format = st.session_state.get( 'image_format', None )
+	image_detail = st.session_state.get( 'image_detail', None )
 	image = provider_module.Images( )
 	
 	# ------------------------------------------------------------------
@@ -1722,17 +1728,17 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	# EXPANDER — IMAGE SETTINGS
 	# ------------------------------------------------------------------
-	if st.session_state.get( 'do_clear_instructions', False ):
+	if st.session_state.get( 'clear_image_instructions', False ):
 		st.session_state[ 'image_system_instructions' ] = ''
-		st.session_state[ 'do_clear_instructions' ] = False
+		st.session_state[ 'clear_image_instructions' ] = False
 	
 	with center:
-		with st.expander( '🧠 Language Model', expanded=False, width='stretch' ):
+		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# Expander — LLM
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				img_one, img_two, img_three, img_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ], border=True )
+				img_one, img_two, img_three, img_four, img_five = st.columns( [ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
 				
 				with img_one:
 					# ---------------- Model ---------------
@@ -1764,10 +1770,16 @@ elif mode == "Images":
 					if hasattr( image, 'format_options' ):
 						fmt = st.selectbox( 'Image Format', image.format_options, )
 				
+				with img_five:
+					# ---------------- Detail ----------------
+					fmt = None
+					if hasattr( image, 'detail_options' ):
+						fmt = st.selectbox( 'Image Detail', image.detail_options, )
+			
 			# ------------------------------------------------------------------
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
-			with st.expander( 'Hyperparameters', expanded=False, width='stretch' ):
+			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
 				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2,
 				                                                                0.2,
 				                                                                0.2,
@@ -1839,10 +1851,10 @@ elif mode == "Images":
 			
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=100, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='image_instruct_expander' )
+				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
 			
 			if st.button( 'Clear Instructions', width='stretch' ):
-				st.session_state[ 'image_system_instructions' ] = True
+				st.session_state[ 'clear_image_instructions' ] = True
 				st.rerun( )
 	
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
@@ -2086,7 +2098,6 @@ elif mode == "Audio":
 	transcriber = None
 	translator = None
 	tts = None
-	
 	if hasattr( provider_module, 'Transcription' ):
 		transcriber = provider_module.Transcription( )
 	if hasattr( provider_module, 'Translation' ):
@@ -2094,186 +2105,236 @@ elif mode == "Audio":
 	if hasattr( provider_module, 'TTS' ):
 		tts = provider_module.TTS( )
 	
+	# ---------------- Task ----------------
+	available_tasks = [ ]
+	language = None
+	voice = None
+	audio_model = None
+	model_options = [ ]
+	
+	if transcriber is not None:
+		available_tasks.append( 'Transcribe' )
+	if translator is not None:
+		available_tasks.append( 'Translate' )
+	if tts is not None:
+		available_tasks.append( 'Text-to-Speech' )
+		
 	# ------------------------------------------------------------------
-	# Sidebar — Audio Settings (NO functionality removed)
+	#  AUDIO SETTINGS
 	# ------------------------------------------------------------------
-	with st.sidebar:
-		st.text( '⚙️ Audio Settings' )
+	if st.session_state.get( 'clear_audio_instructions', False ):
+		st.session_state[ 'audio_system_instructions' ] = ''
+		st.session_state[ 'clear_audio_instructions' ] = False
 		
-		# ---------------- Task ----------------
-		available_tasks = [ ]
-		language = None
-		voice = None
-		audio_model = None
-		model_options = [ ]
-		
-		if transcriber is not None:
-			available_tasks.append( 'Transcribe' )
-		if translator is not None:
-			available_tasks.append( 'Translate' )
-		if tts is not None:
-			available_tasks.append( 'Text-to-Speech' )
-			
-		# ---------------- Model (provider-correct) ----------------
-		
-		with st.expander( label='Model Options:', expanded=False ):
-			if not available_tasks:
-				st.info( 'Audio is not supported by the selected provider.' )
-				task = None
-			else:
-				task = st.selectbox( 'Task', available_tasks )
+	# ------------------------------------------------------------------
+	# Main Chat UI
+	# ------------------------------------------------------------------
+	left, center, right = st.columns( [ 0.05, 0.9,  0.05 ] )
+	with center:
+		# ------------------------------------------------------------------
+		# Expander — LLM
+		# ------------------------------------------------------------------
+		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
+			with st.expander( 'Model Options', expanded=False, width='stretch' ):
+				aud_one, aud_two, aud_three, aud_four, aud_five = \
+					st.columns( [ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
 				
-			if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
-				model_options = transcriber.model_options
-			elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
-				model_options = translator.model_options
-			elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
-				model_options = tts.model_options
-			
-			st.divider( )
-			
-			if model_options:
-				audio_model = st.selectbox( 'Model', model_options,
-					index=( model_options.index( st.session_state.get( 'audio_model' ) )
-							if st.session_state.get( 'audio_model' ) in model_options
-							else 0 ), )
-				st.session_state[ 'audio_model' ] = audio_model
-			
-			st.divider( )
-			
-			# ---------------- Language / Voice Options ----------------
-			if task in ('Transcribe', 'Translate'):
-				obj = transcriber if task == 'Transcribe' else translator
-				if obj and hasattr( obj, 'language_options' ):
-					language = st.selectbox( 'Language', obj.language_options, )
-			
-			
-			if task == 'Text-to-Speech' and tts:
-				if hasattr( tts, 'voice_options' ):
-					voice = st.selectbox( 'Voice', tts.voice_options, )
-	
-		with st.expander( label='Sound Options:', expanded=False ):
-			audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES )
-			
-			st.divider( )
-			
-			audio_start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
-			
-			st.divider( )
-			
-			audio_end = st.number_input( label='End Time:', min_value=0.0, value=0.0 )
-			
-			st.divider( )
-	
-			audio_format = st.selectbox( label='Audio Format',
-				options=[ 'audio/mp3', 'audio/wav', 'audio/aac', 'audio/flac',
-				          'audio/opus', 'audio/pcm' ] )
-			
-			st.divider( )
-			
-			set_left, set_right = st.columns( [ 0.5, 0.5 ] )
-			with set_left:
-				audio_loop = st.toggle( label='Loop', value=False )
-			
-			with set_right:
-				auto_play = st.toggle( label='Auto', value=False )
-	
-	# ------------------------------------------------------------------
-	# Main UI — Audio Input / Output
-	# ------------------------------------------------------------------
-	left_ins, right_ins = st.columns( [ 0.8,  0.2 ] )
-	
-	# ------------------------------------------------------------------
-	# Expander — System Instructions
-	# ------------------------------------------------------------------
-	with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-		left_ins, right_ins = st.columns( [ 0.7, 0.3 ],
-			vertical_alignment='center' )
-		
-		with left_ins:
-			st.text_area( 'Enter Text', height=80, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instruction' )
-			instructions = st.session_state.get( 'audio_system_instruction', '' )
-		
-		with right_ins:
-			if st.button( 'Save Instructions', width='stretch' ):
-				st.session_state.doc_messages = [ ]
-			
-			reset_audio_ins = st.button( 'Clear Instructions', width='stretch', key='clear_audio_ins' )
-			if reset_audio_ins:
-				st.session_state.audio_system_instruction = ''
-	
-	left_col, center_col, right_col = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
-	
-	# -----------UPLOAD AUDIO----------------------
-	with left_col:
-		if task in ('Transcribe', 'Translate'):
-			uploaded = st.file_uploader( 'Upload File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
-			if uploaded:
-				tmp_path = save_temp( uploaded )
-				if task == 'Transcribe' and transcriber:
-					with st.spinner( 'Transcribing…' ):
-						try:
-							text = transcriber.transcribe( tmp_path, model=audio_model,
-								language=language, )
-							st.text_area( 'Transcript', value=text, height=300 )
-							
-							try:
-								_update_token_counters(
-									getattr( transcriber, 'response', None )
-								)
-							except Exception:
-								pass
-						
-						except Exception as exc:
-							st.error( f'Transcription failed: {exc}' )
+				# ---------------- Task ---------------
+				with aud_one:
+					if not available_tasks:
+						st.info( 'Audio is not supported by the selected provider.' )
+						task = None
+					else:
+						task = st.selectbox( 'Mode', available_tasks )
 				
-				elif task == 'Translate' and translator:
-					with st.spinner( 'Translating…' ):
-						try:
-							text = translator.translate( tmp_path, model=audio_model,
-								language=language, )
-							st.text_area( 'Translation', value=text, height=300 )
-							
-							try:
-								_update_token_counters( getattr( translator, 'response', None ) )
-							except Exception:
-								pass
-						
-						except Exception as exc:
-							st.error( f'Translation failed: {exc}' )
-		
-		elif task == 'Text-to-Speech' and tts:
-			text = st.text_area( 'Text to synthesize' )
-			
-			if text and st.button( 'Generate Audio' ):
-				with st.spinner( 'Synthesizing speech…' ):
-					try:
-						audio_bytes = tts.speak( text, model=audio_model, voice=voice, )
-						st.audio( audio_bytes )
-						
-						try:
-							_update_token_counters( getattr( tts, "response", None ) )
-						except Exception:
-							pass
+				# ---------------- Model ---------------
+				with aud_two:
+					if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
+						model_options = transcriber.model_options
+					elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
+						model_options = translator.model_options
+					elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
+						model_options = tts.model_options
 					
-					except Exception as exc:
-						st.error( f"Text-to-speech failed: {exc}" )
+					if model_options:
+						audio_model = st.selectbox( 'Model', model_options,
+							index=(model_options.index( st.session_state.get( 'audio_model' ) )
+							       if st.session_state.get( 'audio_model' ) in model_options
+							       else 0), )
+						st.session_state[ 'audio_model' ] = audio_model
+				
+				# ---------------- Language ----------------
+				with aud_three:
+					if task in ('Transcribe', 'Translate'):
+						obj = transcriber if task == 'Transcribe' else translator
+						if obj and hasattr( obj, 'language_options' ):
+							language = st.selectbox( 'Language', obj.language_options, )
+					
+					if task == 'Text-to-Speech' and tts:
+						if hasattr( tts, 'voice_options' ):
+							voice = st.selectbox( 'Voice', tts.voice_options, )
+				
+				# ---------------- Sample Rate ----------------
+				with aud_four:
+					audio_rate = st.selectbox( label='Speed', options=cfg.SAMPLE_RATES )
+				
+				# ---------------- Format ----------------
+				with aud_five:
+					audio_format = st.selectbox( label='Format',
+						options=[ 'audio/mp3',
+						          'audio/wav',
+						          'audio/aac',
+						          'audio/flac',
+						          'audio/opus',
+						          'audio/pcm' ] )
+			
+			# ------------------------------------------------------------------
+			# Expander — Hyperparmaters
+			# ------------------------------------------------------------------
+			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
+				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2,
+				                                                                0.2,
+				                                                                0.2,
+				                                                                0.2,
+				                                                                0.2 ],
+					border=True, gap='xsmall' )
+				
+				with prm_one:
+					top_p = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
+					st.session_state[ 'top_p' ] = float( top_p )
+				
+				with prm_two:
+					logprobs = st.slider( 'Log-Probs', 0, 20,
+						int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
+					st.session_state[ 'logprobs' ] = int( logprobs )
+				
+				with prm_three:
+					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+						0.01, help=cfg.FREQUENCY_PENALTY )
+					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+				
+				with prm_four:
+					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+						0.01, help=cfg.PRESENCE_PENALTY )
+					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+				
+				with prm_five:
+					temperature = st.slider( 'Temperature', 0.0, 1.0,
+						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+						help=cfg.TEMPERATURE )
+					st.session_state[ 'temperature' ] = float( temperature )
+			
+			# ------------------------------------------------------------------
+			# Expander — Response
+			# ------------------------------------------------------------------
+			with st.expander( 'Response Options', expanded=False, width='stretch' ):
+				resp_one, resp_two, resp_three, resp_four, resp_five = \
+					st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					border=True, )
+				
+				with resp_one:
+					loop = st.toggle( label='Loop Audio', value=False )
+					st.session_state[ 'audio_loop' ] = loop
+				
+				with resp_two:
+					play = st.toggle( label='Auto Play', value=False )
+					st.session_state[ 'audio_loop' ] = play
+				
+				with resp_three:
+					start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
+					st.session_state[ 'audio_start' ] = start
+				
+				with resp_four:
+					end = st.number_input( label='End Time:', min_value=0.0, value=0.0 )
+					st.session_state[ 'number' ] = end
+				
+				with resp_five:
+					max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+						value=6048, help=cfg.MAX_OUTPUT_TOKENS )
+					st.session_state[ 'max_tokens' ] = int( max_tokens )
+		
+		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+			st.text_area( 'Prompt Text', height=100, width='stretch',
+				help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
+			
+			if st.button( 'Clear Instructions', width='stretch' ):
+				st.session_state[ 'clear_audio_instructions' ] = True
+				st.rerun( )
+
+		left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
+		
+		# -----------UPLOAD AUDIO----------------------
+		with left_audio:
+			if task in ('Transcribe', 'Translate'):
+				uploaded = st.file_uploader( 'Upload File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
+				if uploaded:
+					tmp_path = save_temp( uploaded )
+					if task == 'Transcribe' and transcriber:
+						with st.spinner( 'Transcribing…' ):
+							try:
+								text = transcriber.transcribe( tmp_path, model=audio_model,
+									language=language, )
+								st.text_area( 'Transcript', value=text, height=300 )
+								
+								try:
+									_update_token_counters(
+										getattr( transcriber, 'response', None )
+									)
+								except Exception:
+									pass
+							
+							except Exception as exc:
+								st.error( f'Transcription failed: {exc}' )
+					
+					elif task == 'Translate' and translator:
+						with st.spinner( 'Translating…' ):
+							try:
+								text = translator.translate( tmp_path, model=audio_model,
+									language=language, )
+								st.text_area( 'Translation', value=text, height=300 )
+								
+								try:
+									_update_token_counters( getattr( translator, 'response', None ) )
+								except Exception:
+									pass
+							
+							except Exception as exc:
+								st.error( f'Translation failed: {exc}' )
+			
+			elif task == 'Text-to-Speech' and tts:
+				text = st.text_area( 'Text to synthesize' )
+				
+				if text and st.button( 'Generate Audio' ):
+					with st.spinner( 'Synthesizing speech…' ):
+						try:
+							audio_bytes = tts.speak( text, model=audio_model, voice=voice, )
+							st.audio( audio_bytes )
+							
+							try:
+								_update_token_counters( getattr( tts, "response", None ) )
+							except Exception:
+								pass
 						
-	#-----------RECORD AUDIO----------------------
-	with center_col:
-		recording = st.audio_input( label='Record Audio', sample_rate=audio_rate)
-		
-	# -----------PLAY AUDIO----------------------
-	with right_col:
-		if audio_file is not None:
-			array = np.ndarray( audio_file )
-		else:
-			array = None
-		audio_recording = st.audio( data=audio_file, sample_rate=audio_rate,
-			start_time=audio_start, end_time=audio_end, format=audio_format, width='stretch',
-			loop=audio_loop, autoplay=auto_play  )
-		
+						except Exception as exc:
+							st.error( f"Text-to-speech failed: {exc}" )
+							
+		#-----------RECORD AUDIO----------------------
+		with center_audio:
+			recording = st.audio_input( label='Record Audio', sample_rate=audio_rate)
+			
+		# -----------PLAY AUDIO----------------------
+		with right_audio:
+			if audio_file is not None:
+				array = np.ndarray( audio_file )
+			else:
+				array = None
+			audio_recording = st.audio( data=audio_file, sample_rate=audio_rate,
+				start_time=audio_start, end_time=audio_end, format=audio_format, width='stretch',
+				loop=audio_loop, autoplay=auto_play  )
+	
 # ======================================================================================
 # EMBEDDINGS MODE
 # ======================================================================================
@@ -2712,38 +2773,41 @@ elif mode == 'Document Q&A':
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	with st.expander( '💻 System Instructions', expanded=False, width='stretch' ):
-		left_ins, mid_ins, right_ins = st.columns( [ 0.6, 0.2, 0.2 ],
+		left_ins, right_ins = st.columns( [ 0.8, 0.2 ],
 			vertical_alignment='center' )
 		
 		with left_ins:
-			st.text_area( 'Enter Text', height=150, width=750,
+			st.text_area( 'Enter Text', height=150, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
 			instructions = st.session_state.get( 'doc_system_instruction', '' )
 			
-		with mid_ins:
-			source = st.radio( 'Source', [ 'Upload Local', 'Files API',  'Vector Store' ] )
+		with right_ins:
+			source = st.radio( 'Source', [ 'Upload Local', 'Files API', 'Vector Store' ] )
 			st.session_state.doc_source = source.lower( ).replace( ' ', '' )
 		
-		with right_ins:
+		left_btn, center_btn, right_btn = st.columns( [ 0.8,  0.1, 0.1 ], border=True )
+		with left_btn:
 			if st.button( 'Clear Conversation', width='stretch' ):
 				st.session_state.doc_messages = [ ]
 				st.rerun( )
-			
-			reset_doc_ins = st.button('Clear Instructions', width='stretch', key='clear_doc_instructions' )
+		
+		with center_btn:
+			reset_doc_ins = st.button( 'Clear Instructions', width='stretch', key='clear_doc_instructions' )
 			if reset_doc_ins:
 				st.session_state.doc_system_instruction = ''
-			
+				
+		with right_btn:
 			if st.button( 'Summarize Document', width='stretch' ):
 				if not st.session_state.get( 'doc_active_docs' ):
 					st.warning( 'No document loaded.' )
 				else:
 					st.session_state.doc_messages.append({'role': 'user',
 					                                      'content': 'Summarize this document.'})
-					
-					summary = summarize_active_document( )
-					st.session_state.doc_messages.append({'role': 'assistant','content': summary})
-					
-					st.rerun( )
+				
+				summary = summarize_active_document( )
+				st.session_state.doc_messages.append({'role': 'assistant','content': summary})
+				
+				st.rerun( )
 	
 	doc_left, doc_right = st.columns( [ 0.2, 0.8 ], border=True )
 	with doc_left:

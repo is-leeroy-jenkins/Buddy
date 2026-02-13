@@ -178,7 +178,7 @@ LOGO_MAP = {
 
 
 #-------- DEFINITIONS -------------------
-TEMPERATURE = r'''A number between 0 and 2. Higher values like 0.8 will make the output
+TEMPERATURE = r'''Optional. A number between 0 and 2. Higher values like 0.8 will make the output
 		more random, while lower values like 0.2 will make it more focused and deterministic'''
 
 TOP_P = r'''Optional. The maximum cumulative probability of tokens to consider when sampling.
@@ -203,30 +203,32 @@ LOG_PROBS = r'''Optional. Only valid if responseLogprobs=True. This sets the num
 		return at each decoding step in the Candidate.logprobs_result.
 		The number must be in the range of [0, 20].'''
 
-MAX_OUTPUT_TOKENS = r'''The maximum number of tokens used in generating output content'''
+MAX_OUTPUT_TOKENS = r'''Optional. The maximum number of tokens used in generating output content'''
 
-STOP_SEQUENCE = r'''Up to 4 string sequences where the API will stop generating further tokens.'''
+STOP_SEQUENCE = r'''Optional. Up to 4 string sequences where the API will stop generating further tokens.'''
 
-STORE = 'Whether to maintain state from turn to turn, preserving reasoning and tool context '
+STORE = 'Optional. Whether to maintain state from turn to turn, preserving reasoning and tool context '
 
-STREAM = 'Whether to return the generated respose in asynchronous chunks'
+STREAM = 'Optional. Whether to return the generated respose in asynchronous chunks'
 
-TOOLS = '''An array of tools the model may call while generating a response. You can specify which
-		tool to use by setting the tool_choice parameter.'''
+TOOLS = '''Optional. An array of tools the model may call while generating a response. You can specify which
+		tool to use by setting the tool_choice parameter. Used by the Reponses API
+		and Reasoning models (GPT 5x, Ox, 4o, etc)'''
 
-INCLUDE = r'''Specify additional output data to include in the model response enabling reasoning
+INCLUDE = r'''Optional. Specifies additional output data to include in the model response enabling reasoning
 			items to be used in multi-turn conversations when using the Responses API statelessly
+			and Reasoning models (GPT 5x, Ox, 4o, etc)
 			'''
 
-REASONING = r'''Reasoning models introduce reasoning tokens in addition to input and output tokens.
+REASONING = r'''Optional. Reasoning models introduce reasoning tokens in addition to input and output tokens.
 				The models use these reasoning tokens to “think,” breaking down the prompt and
 				considering multiple approaches to generating a response. After generating reasoning tokens,
 				the model produces an answer as visible completion tokens and discards
-				the reasoning tokens from its context. '''
+				the reasoning tokens from its context. Used by the Reasoning models (GPT 5x and Ox etc)'''
 
-CHOICE = r''' Determines how tools are chosen when using reasoning models'''
+CHOICE = r'''Optional. Determines how tools are chosen when using reasoning models GPT 5x and Ox etc)'''
 
-SYSTEM_INSTRUCTIONS = r'''Gives the model high-level instructions on how it should behave while
+SYSTEM_INSTRUCTIONS = r'''Optional. Gives the model high-level instructions on how it should behave while
 		generating a response, including tone, goals, and examples of correct responses. Any
 		instructions provided this way will take priority over a prompt in the input parameter.'''
 
@@ -234,3 +236,7 @@ SAMPLE_RATES = [ 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000 ]
 
 BACKGROUND_MODE = r'''Background mode enables you to execute long-running tasks reliably,
 		without having to worry about timeouts or other connectivity issues.'''
+
+HYPERPARAMETERS = r'''Settings used during the inference (deployment) phase to control the behavior,
+		creativity, and format of a model's output allowing users to fine-tune model
+		responses without retraining. '''
