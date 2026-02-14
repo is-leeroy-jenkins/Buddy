@@ -1048,6 +1048,393 @@ def dm_create_custom_table( table_name: str, columns: list ) -> None:
 		conn.execute( sql )
 		conn.commit( )
 
+def dm_is_safe_read_query( query: str ) -> bool:
+	"""
+		Purpose:
+		--------
+		Determine whether a SQL query is read-only and safe to execute.
+	
+		Allows:
+			SELECT
+			WITH (CTE returning SELECT)
+			EXPLAIN SELECT
+			PRAGMA (read-only)
+	
+		Blocks:
+			INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, ATTACH,
+			DETACH, VACUUM, REPLACE, TRIGGER, and multiple statements.
+	"""
+	
+	if not query or not isinstance( query, str ):
+		return False
+	
+	q = query.strip( ).lower( )
+	
+	# ------------------------------------------------------------------
+	# Block multiple statements
+	# ------------------------------------------------------------------
+	if ";" in q[ :-1 ]:
+		return False
+	
+	# ------------------------------------------------------------------
+	# Remove SQL comments
+	# ------------------------------------------------------------------
+	q = re.sub( r"--.*?$", "", q, flags=re.MULTILINE )
+	q = re.sub( r"/\*.*?\*/", "", q, flags=re.DOTALL )
+	
+	q = q.strip( )
+	
+	# ------------------------------------------------------------------
+	# Allowed starting keywords
+	# ------------------------------------------------------------------
+	allowed_starts = ("select", "with", "explain", "pragma")
+	
+	if not q.startswith( allowed_starts ):
+		return False
+	
+	# ------------------------------------------------------------------
+	# Block dangerous keywords anywhere
+	# ------------------------------------------------------------------
+	blocked_keywords = (
+			"insert ",
+			"update ",
+			"delete ",
+			"drop ",
+			"alter ",
+			"create ",
+			"attach ",
+			"detach ",
+			"vacuum ",
+			"replace ",
+			"trigger "
+	)
+	
+	for keyword in blocked_keywords:
+		if keyword in q:
+			return False
+	
+	return True
+
+# ======================================================================================
+#  PROVIDER UTILITIES
+# ======================================================================================
+def get_provider_module( ):
+	provider = st.session_state.get( 'provider' )
+	module_name = cfg.PROVIDERS.get( provider )
+	return __import__( module_name )
+
+def get_chat_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Chat() instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Chat( )
+
+def get_tts_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Text to Speech instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.TTS( )
+
+def get_images_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns an Images instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Images( )
+
+def get_embeddings_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns an Embeddings instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Embeddings( )
+
+def get_translation_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Translation instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Translation( )
+
+def get_transcription_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Transcription instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Transcription( )
+
+def get_files_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns a Files instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.Files( )
+
+def get_vectorstores_module( ):
+	"""
+
+		Purpose:
+		-------
+		Returns an Images instance for the currently selected provider.
+		Ensures Gemini / Grok functionality is not bypassed.
+		
+	"""
+	provider_module = get_provider_module( )
+	return provider_module.VectorStores( )
+
+def _provider( ):
+	return st.session_state.get( 'provider' )
+
+def _safe( module, attr, fallback ):
+	try:
+		mod = __import__( module )
+		return getattr( mod, attr, fallback )
+	except Exception:
+		return fallback
+
+# ---------------- TEXT ----------------
+def text_model_options( chat ):
+	if _provider( ) == 'GPT':
+		return _safe( 'gpt', 'model_options', chat.model_options )
+	if _provider( ) == 'Gemini':
+		return _safe( 'gemini', 'model_options', chat.model_options )
+	if _provider( ) == 'Grok':
+		return _safe( 'grok', 'model_options', chat.model_options )
+	return chat.model_options
+
+# ---------------- IMAGES ----------------
+def image_model_options( image ):
+	if _provider( ) == 'GPT':
+		return _safe( 'gpt', 'image_model_options', image.model_options )
+	if _provider( ) == 'Gemini':
+		return _safe( 'gemini', 'image_model_options', image.model_options )
+	if _provider( ) == 'Grok':
+		return _safe( 'grok', 'model_options', image.model_options )
+	return image.model_options
+
+def image_size_or_aspect_options( image ):
+	if _provider( ) == 'GPT':
+		return _safe( 'gpt', 'aspect_options', image.size_options )
+	if _provider( ) == 'Gemini':
+		return _safe( 'gemini', 'aspect_options', image.size_options )
+	if _provider( ) == 'Grok':
+		return _safe( 'grok', 'model_options', image.size_options )
+	return image.size_options
+
+# ---------------- AUDIO ----------------
+def audio_model_options( transcriber ):
+	if _provider( ) == 'GPT':
+		return _safe( 'gpt', 'audio_model_options', transcriber.model_options )
+	if _provider( ) == 'Gemini':
+		return _safe( 'gemini', 'audio_model_options', transcriber.model_options )
+	return transcriber.model_options
+
+def audio_language_options( transcriber ):
+	if _provider( ) == 'GPT':
+		return _safe( 'gpt', 'language_options', transcriber.language_options )
+	if _provider( ) == 'Gemini':
+		return _safe( 'gemini', 'language_options', transcriber.language_options )
+	return transcriber.language_options
+
+# ---------------- EMBEDDINGS ----------------
+def embedding_model_options( embed ):
+	if _provider( ) == 'GPT':
+		return _safe( 'gpt', 'embedding_model_options', embed.model_options )
+	if _provider( ) == 'Gemini':
+		return _safe( 'gemini', 'embedding_model_options', embed.model_options )
+	return embed.model_options
+
+# -------------DOC Q&A ----------------------
+def route_document_query( prompt: str ) -> str:
+	source = st.session_state.get( 'doc_source' )
+	active_docs = st.session_state.get( 'doc_active_docs', [ ] )
+	doc_bytes = st.session_state.get( 'doc_bytes', { } )
+	
+	if not source:
+		return 'No document source selected.'
+	
+	if not active_docs:
+		return 'No document selected.'
+	
+	# --------------------------------------------------
+	# LOCAL DOCUMENT → Chat (single or multi)
+	# --------------------------------------------------
+	if source == 'uploadlocal':
+		chat = get_chat_module( )
+		
+		# Single document
+		if len( active_docs ) == 1:
+			name = active_docs[ 0 ]
+			file_bytes = doc_bytes.get( name )
+			
+			if not file_bytes:
+				return 'Document content not available.'
+			
+			text = extract_text_from_bytes( file_bytes )
+			
+			full_prompt = f"""
+				{instructions}
+				
+				Use the following document to answer the question.
+				Be precise and cite relevant portions when possible.
+				
+				DOCUMENT:
+				{text}
+				
+				QUESTION:
+				{prompt}
+				"""
+			return chat.generate_text( prompt=full_prompt )
+		
+		# Multi-document injection
+		combined_text = ""
+		
+		for name in active_docs:
+			file_bytes = doc_bytes.get( name )
+			if not file_bytes:
+				continue
+			
+			text = extract_text_from_bytes( file_bytes )
+			
+			combined_text += f"\n\n===== DOCUMENT: {name} =====\n\n{text}\n"
+		
+		if not combined_text.strip( ):
+			return 'No readable document content available.'
+		
+		full_prompt = f"""
+			{instructions}
+			
+			You are analyzing multiple documents.
+			
+			Use the content below to answer the question.
+			If multiple documents are relevant, compare them.
+			Cite document names when possible.
+			
+			DOCUMENT SET:
+			{combined_text}
+			
+			QUESTION:
+			{prompt}
+			"""
+		
+		return chat.generate_text( prompt=full_prompt )
+	
+	# --------------------------------------------------
+	# FILES API → Files class
+	# --------------------------------------------------
+	if source == "filesapi":
+		files = get_files_module( )
+		
+		# Single file search
+		if len( active_docs ) == 1:
+			return files.search( prompt, active_docs[ 0 ] )
+		
+		# Multi-file survey
+		return files.survey( prompt )
+	
+	# --------------------------------------------------
+	# VECTOR STORE → VectorStores class
+	# --------------------------------------------------
+	if source == 'vectorstore':
+		vectorstores = get_vectorstores_module( )
+		
+		# Single store
+		if len( active_docs ) == 1:
+			return vectorstores.search( prompt, active_docs[ 0 ] )
+		
+		# Multi-store aggregation
+		responses = [ ]
+		for store_id in active_docs:
+			result = vectorstores.search( prompt, store_id )
+			if result:
+				responses.append( result )
+		
+		if not responses:
+			return 'No results found across selected vector stores.'
+		
+		return "\n\n".join( responses )
+	
+	return 'Unsupported document source.'
+
+def extract_text_from_bytes( file_bytes: bytes ) -> str:
+	"""
+	Extracts text from PDF or text-based documents.
+	"""
+	try:
+		import fitz  # PyMuPDF
+		
+		doc = fitz.open( stream=file_bytes, filetype="pdf" )
+		text = ""
+		for page in doc:
+			text += page.get_text( )
+		return text.strip( )
+	
+	except Exception:
+		try:
+			return file_bytes.decode( errors="ignore" )
+		except Exception:
+			return ""
+
+def summarize_active_document( ) -> str:
+	"""
+	Uses the routing layer to summarize the currently active document.
+	"""
+	
+	doc_instructions = st.session_state.get( "doc_instructions", "" )
+	summary_prompt = """
+		Provide a clear, structured summary of this document.
+		Include:
+		- Purpose
+		- Key themes
+		- Major conclusions
+		- Important data points (if any)
+		- Policy implications (if applicable)
+		
+		Be precise and concise.
+		"""
+	
+	if doc_instructions:
+		summary_prompt = f"{doc_instructions}\n\n{summary_prompt}"
+	
+	return route_document_query( summary_prompt.strip( ) )
+
 # ==============================================================================
 # Page Setup / Configuration
 # ==============================================================================
@@ -1313,326 +1700,6 @@ if 'doc_source' not in st.session_state:
 
 if 'doc_multi_mode' not in st.session_state:
 	st.session_state.doc_multi_mode = False
-
-# ======================================================================================
-#  PROVIDER
-# ======================================================================================
-def get_provider_module( ):
-	provider = st.session_state.get( 'provider' )
-	module_name = cfg.PROVIDERS.get( provider  )
-	return __import__( module_name )
-
-def get_chat_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns a Chat() instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.Chat( )
-
-def get_tts_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns a Text to Speech instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.TTS( )
-
-def get_images_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns an Images instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.Images( )
-
-def get_embeddings_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns an Embeddings instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.Embeddings( )
-
-def get_translation_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns a Translation instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.Translation( )
-
-def get_transcription_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns a Transcription instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.Transcription( )
-
-def get_files_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns a Files instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.Files( )
-
-def get_vectorstores_module( ):
-	"""
-
-		Purpose:
-		-------
-		Returns an Images instance for the currently selected provider.
-		Ensures Gemini / Grok functionality is not bypassed.
-		
-	"""
-	provider_module = get_provider_module( )
-	return provider_module.VectorStores( )
-
-def _provider( ):
-	return st.session_state.get( 'provider' )
-
-def _safe( module, attr, fallback ):
-	try:
-		mod = __import__( module )
-		return getattr( mod, attr, fallback )
-	except Exception:
-		return fallback
-
-# ---------------- TEXT ----------------
-def text_model_options( chat ):
-	if _provider( ) == 'GPT':
-		return _safe( 'gpt', 'model_options', chat.model_options )
-	if _provider( ) == 'Gemini':
-		return _safe( 'gemini', 'model_options', chat.model_options )
-	if _provider( ) == 'Grok':
-		return _safe( 'grok', 'model_options', chat.model_options )
-	return chat.model_options
-
-# ---------------- IMAGES ----------------
-def image_model_options( image ):
-	if _provider( ) == 'GPT':
-		return _safe( 'gpt', 'image_model_options', image.model_options )
-	if _provider( ) == 'Gemini':
-		return _safe( 'gemini', 'image_model_options', image.model_options )
-	if _provider( ) == 'Grok':
-		return _safe( 'grok', 'model_options', image.model_options )
-	return image.model_options
-
-def image_size_or_aspect_options( image ):
-	if _provider( ) == 'GPT':
-		return _safe( 'gpt', 'aspect_options', image.size_options )
-	if _provider( ) == 'Gemini':
-		return _safe( 'gemini', 'aspect_options', image.size_options )
-	if _provider( ) == 'Grok':
-		return _safe( 'grok', 'model_options', image.size_options )
-	return image.size_options
-
-# ---------------- AUDIO ----------------
-def audio_model_options( transcriber ):
-	if _provider( ) == 'GPT':
-		return _safe( 'gpt', 'audio_model_options', transcriber.model_options )
-	if _provider( ) == 'Gemini':
-		return _safe( 'gemini', 'audio_model_options', transcriber.model_options )
-	return transcriber.model_options
-
-def audio_language_options( transcriber ):
-	if _provider( ) == 'GPT':
-		return _safe( 'gpt', 'language_options', transcriber.language_options )
-	if _provider( ) == 'Gemini':
-		return _safe( 'gemini', 'language_options', transcriber.language_options )
-	return transcriber.language_options
-
-# ---------------- EMBEDDINGS ----------------
-def embedding_model_options( embed ):
-	if _provider( ) == 'GPT':
-		return _safe( 'gpt', 'embedding_model_options', embed.model_options )
-	if _provider( ) == 'Gemini':
-		return _safe( 'gemini', 'embedding_model_options', embed.model_options )
-	return embed.model_options
-
-#-------------DOC Q&A ----------------------
-def route_document_query( prompt: str ) -> str:
-	source = st.session_state.get( 'doc_source' )
-	active_docs = st.session_state.get( 'doc_active_docs', [ ] )
-	doc_bytes = st.session_state.get( 'doc_bytes', { } )
-	
-	if not source:
-		return 'No document source selected.'
-	
-	if not active_docs:
-		return 'No document selected.'
-	
-	# --------------------------------------------------
-	# LOCAL DOCUMENT → Chat (single or multi)
-	# --------------------------------------------------
-	if source == 'uploadlocal':
-		chat = get_chat_module( )
-		
-		# Single document
-		if len( active_docs ) == 1:
-			name = active_docs[ 0 ]
-			file_bytes = doc_bytes.get( name )
-			
-			if not file_bytes:
-				return 'Document content not available.'
-			
-			text = extract_text_from_bytes( file_bytes )
-			
-			full_prompt = f"""
-				{instructions}
-				
-				Use the following document to answer the question.
-				Be precise and cite relevant portions when possible.
-				
-				DOCUMENT:
-				{text}
-				
-				QUESTION:
-				{prompt}
-				"""
-			return chat.generate_text( prompt=full_prompt )
-		
-		# Multi-document injection
-		combined_text = ""
-		
-		for name in active_docs:
-			file_bytes = doc_bytes.get( name )
-			if not file_bytes:
-				continue
-			
-			text = extract_text_from_bytes( file_bytes )
-			
-			combined_text += f"\n\n===== DOCUMENT: {name} =====\n\n{text}\n"
-		
-		if not combined_text.strip( ):
-			return 'No readable document content available.'
-		
-		full_prompt = f"""
-			{instructions}
-			
-			You are analyzing multiple documents.
-			
-			Use the content below to answer the question.
-			If multiple documents are relevant, compare them.
-			Cite document names when possible.
-			
-			DOCUMENT SET:
-			{combined_text}
-			
-			QUESTION:
-			{prompt}
-			"""
-					
-		return chat.generate_text( prompt=full_prompt )
-	
-	# --------------------------------------------------
-	# FILES API → Files class
-	# --------------------------------------------------
-	if source == "filesapi":
-		files = get_files_module( )
-		
-		# Single file search
-		if len( active_docs ) == 1:
-			return files.search( prompt, active_docs[ 0 ] )
-		
-		# Multi-file survey
-		return files.survey( prompt )
-	
-	# --------------------------------------------------
-	# VECTOR STORE → VectorStores class
-	# --------------------------------------------------
-	if source == 'vectorstore':
-		vectorstores = get_vectorstores_module( )
-		
-		# Single store
-		if len( active_docs ) == 1:
-			return vectorstores.search( prompt, active_docs[ 0 ] )
-		
-		# Multi-store aggregation
-		responses = [ ]
-		for store_id in active_docs:
-			result = vectorstores.search( prompt, store_id )
-			if result:
-				responses.append( result )
-		
-		if not responses:
-			return 'No results found across selected vector stores.'
-		
-		return "\n\n".join( responses )
-	
-	return 'Unsupported document source.'
-
-def extract_text_from_bytes( file_bytes: bytes ) -> str:
-	"""
-	Extracts text from PDF or text-based documents.
-	"""
-	try:
-		import fitz  # PyMuPDF
-		
-		doc = fitz.open( stream=file_bytes, filetype="pdf" )
-		text = ""
-		for page in doc:
-			text += page.get_text( )
-		return text.strip( )
-	
-	except Exception:
-		try:
-			return file_bytes.decode( errors="ignore" )
-		except Exception:
-			return ""
-
-def summarize_active_document( ) -> str:
-	"""
-	Uses the routing layer to summarize the currently active document.
-	"""
-	
-	doc_instructions = st.session_state.get( "doc_instructions", "" )
-	summary_prompt = """
-		Provide a clear, structured summary of this document.
-		Include:
-		- Purpose
-		- Key themes
-		- Major conclusions
-		- Important data points (if any)
-		- Policy implications (if applicable)
-		
-		Be precise and concise.
-		"""
-	
-	if doc_instructions:
-		summary_prompt = f"{doc_instructions}\n\n{summary_prompt}"
-	
-	return route_document_query( summary_prompt.strip( ) )
 
 # ==============================================================================
 # Sidebar
@@ -3708,18 +3775,15 @@ elif mode == 'Data Management':
 		else:
 			st.info( "No tables available." )
 
-# ------------------------------------------------------------------------------
-# CRUD (Schema-Aware)
-# ------------------------------------------------------------------------------
-
+	# ------------------------------------------------------------------------------
+	# CRUD (Schema-Aware)
+	# ------------------------------------------------------------------------------
 	with tabs[ 2 ]:
 		tables = dm_tables( )
-		
 		if not tables:
 			st.info( "No tables available." )
 		else:
 			table = st.selectbox( "Select Table", tables, key="crud_table" )
-			
 			df = dm_read( table )
 			schema = dm_schema( table )
 			
@@ -3730,9 +3794,7 @@ elif mode == 'Data Management':
 			# INSERT
 			# ------------------------------------------------------------------
 			st.subheader( "Insert Row" )
-			
 			insert_data = { }
-			
 			for column, col_type in type_map.items( ):
 				if "INT" in col_type:
 					insert_data[ column ] = st.number_input( column, step=1, key=f"ins_{column}" )
@@ -3750,7 +3812,6 @@ elif mode == 'Data Management':
 			if st.button( "Insert Row" ):
 				cols = list( insert_data.keys( ) )
 				placeholders = ", ".join( [ "?" ] * len( cols ) )
-				
 				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
 				
 				with dm_conn( ) as conn:
@@ -3764,11 +3825,8 @@ elif mode == 'Data Management':
 			# UPDATE
 			# ------------------------------------------------------------------
 			st.subheader( "Update Row" )
-			
 			rowid = st.number_input( "Row ID", min_value=1, step=1 )
-			
 			update_data = { }
-			
 			for column, col_type in type_map.items( ):
 				if "INT" in col_type:
 					val = st.number_input( column, step=1, key=f"upd_{column}" )
@@ -3801,9 +3859,7 @@ elif mode == 'Data Management':
 			# DELETE
 			# ------------------------------------------------------------------
 			st.subheader( "Delete Row" )
-			
 			delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
-			
 			if st.button( "Delete Row" ):
 				with dm_conn( ) as conn:
 					conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
@@ -3832,10 +3888,8 @@ elif mode == 'Data Management':
 		if tables:
 			table = st.selectbox( "Table", tables, key="filter_table" )
 			df = dm_read( table )
-			
 			column = st.selectbox( "Column", df.columns )
 			value = st.text_input( "Contains" )
-			
 			if value:
 				df = df[ df[ column ].astype( str ).str.contains( value ) ]
 			st.dataframe( df, use_container_width=True )
@@ -3849,7 +3903,6 @@ elif mode == 'Data Management':
 			table = st.selectbox( "Table", tables, key="agg_table" )
 			df = dm_read( table )
 			numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
-			
 			if numeric_cols:
 				col = st.selectbox( "Column", numeric_cols )
 				agg = st.selectbox( "Function", [ "SUM",
@@ -3871,7 +3924,6 @@ elif mode == 'Data Management':
 			table = st.selectbox( "Table", tables, key="viz_table" )
 			df = dm_read( table )
 			numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
-			
 			if numeric_cols:
 				col = st.selectbox( "Column", numeric_cols )
 				fig = px.histogram( df, x=col )
@@ -3900,18 +3952,12 @@ elif mode == 'Data Management':
 				st.success( "Index created." )
 	st.divider( )
 	st.subheader( "Create Custom Table" )
-	
 	new_table_name = st.text_input( "Table Name" )
-	
 	column_count = st.number_input( "Number of Columns", min_value=1, max_value=20, value=1 )
-	
 	columns = [ ]
-	
 	for i in range( column_count ):
 		st.markdown( f"### Column {i + 1}" )
-		
 		col_name = st.text_input( "Column Name", key=f"col_name_{i}" )
-		
 		col_type = st.selectbox(
 			"Column Type",
 			[ "INTEGER",
@@ -3944,17 +3990,52 @@ elif mode == 'Data Management':
 	# SQL
 	# ------------------------------------------------------------------------------
 	with tabs[ 8 ]:
-		query = st.text_area( "SELECT only (single statement)" )
+		st.subheader( "SQL Console" )
+		query = st.text_area( "Enter SQL Query" )
 		if st.button( "Run Query" ):
-			if ";" in query.strip( )[ :-1 ]:
-				st.error( "Multiple statements not allowed." )
-			elif not query.lower( ).strip( ).startswith( "select" ):
-				st.error( "Only SELECT allowed." )
+			if not dm_is_safe_read_query( query ):
+				st.error( "Query blocked: Only read-only SELECT statements are allowed." )
 			else:
-				with dm_conn( ) as conn:
-					result = pd.read_sql_query( query, conn )
-				st.dataframe( result, use_container_width=True )
+				try:
+					start_time = time.perf_counter( )
+					with dm_conn( ) as conn:
+						result = pd.read_sql_query( query, conn )
+					
+					end_time = time.perf_counter( )
+					elapsed = end_time - start_time
+					
+					# ----------------------------------------------------------
+					# Display Results
+					# ----------------------------------------------------------
+					st.dataframe( result, use_container_width=True )
+					row_count = len( result )
+					
+					# ----------------------------------------------------------
+					# Execution Metrics
+					# ----------------------------------------------------------
+					col1, col2 = st.columns( 2 )
+					col1.metric( "Rows Returned", f"{row_count:,}" )
+					col2.metric( "Execution Time (seconds)", f"{elapsed:.6f}" )
+					
+					# Optional slow query warning
+					if elapsed > 2.0:
+						st.warning( "Slow query detected (> 2 seconds). Consider indexing." )
+					
+					# ----------------------------------------------------------
+					# Download
+					# ----------------------------------------------------------
+					if not result.empty:
+						csv = result.to_csv( index=False ).encode( "utf-8" )
+						st.download_button(
+							"Download CSV",
+							csv,
+							"query_results.csv",
+							"text/csv"
+						)
 				
+				except Exception as e:
+					st.error( f"Execution failed: {e}" )
+
 # ======================================================================================
 # Footer — Fixed Bottom Status Bar
 # ======================================================================================
