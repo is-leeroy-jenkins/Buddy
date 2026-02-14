@@ -2986,9 +2986,6 @@ elif mode == 'Embeddings':
 # ======================================================================================
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	# ------------------------------------------------------------------
-	# Provider-aware VectorStore instantiation
-	# ------------------------------------------------------------------
 	vector = None
 	collector  = None
 	searcher = None
