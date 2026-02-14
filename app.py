@@ -3707,113 +3707,110 @@ elif mode == 'Data Management':
 			st.dataframe( df, use_container_width=True )
 		else:
 			st.info( "No tables available." )
-		
-	# ------------------------------------------------------------------------------
-	# CRUD TAB
-	# ------------------------------------------------------------------------------
+
 # ------------------------------------------------------------------------------
 # CRUD (Schema-Aware)
 # ------------------------------------------------------------------------------
 
-with tabs[ 2 ]:
-	tables = dm_tables( )
-	
-	if not tables:
-		st.info( "No tables available." )
-	else:
-		table = st.selectbox( "Select Table", tables, key="crud_table" )
+	with tabs[ 2 ]:
+		tables = dm_tables( )
 		
-		df = dm_read( table )
-		schema = dm_schema( table )
-		
-		# Build type map
-		type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != "rowid" }
-		
-		# ------------------------------------------------------------------
-		# INSERT
-		# ------------------------------------------------------------------
-		st.subheader( "Insert Row" )
-		
-		insert_data = { }
-		
-		for column, col_type in type_map.items( ):
-			if "INT" in col_type:
-				insert_data[ column ] = st.number_input( column, step=1, key=f"ins_{column}" )
+		if not tables:
+			st.info( "No tables available." )
+		else:
+			table = st.selectbox( "Select Table", tables, key="crud_table" )
 			
-			elif "REAL" in col_type:
-				insert_data[
-					column ] = st.number_input( column, format="%.6f", key=f"ins_{column}" )
+			df = dm_read( table )
+			schema = dm_schema( table )
 			
-			elif "BOOL" in col_type:
-				insert_data[ column ] = 1 if st.checkbox( column, key=f"ins_{column}" ) else 0
+			# Build type map
+			type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != "rowid" }
 			
-			else:
-				insert_data[ column ] = st.text_input( column, key=f"ins_{column}" )
-		
-		if st.button( "Insert Row" ):
-			cols = list( insert_data.keys( ) )
-			placeholders = ", ".join( [ "?" ] * len( cols ) )
+			# ------------------------------------------------------------------
+			# INSERT
+			# ------------------------------------------------------------------
+			st.subheader( "Insert Row" )
 			
-			stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+			insert_data = { }
 			
-			with dm_conn( ) as conn:
-				conn.execute( stmt, list( insert_data.values( ) ) )
-				conn.commit( )
+			for column, col_type in type_map.items( ):
+				if "INT" in col_type:
+					insert_data[ column ] = st.number_input( column, step=1, key=f"ins_{column}" )
+				
+				elif "REAL" in col_type:
+					insert_data[
+						column ] = st.number_input( column, format="%.6f", key=f"ins_{column}" )
+				
+				elif "BOOL" in col_type:
+					insert_data[ column ] = 1 if st.checkbox( column, key=f"ins_{column}" ) else 0
+				
+				else:
+					insert_data[ column ] = st.text_input( column, key=f"ins_{column}" )
 			
-			st.success( "Row inserted." )
-			st.rerun( )
-		
-		# ------------------------------------------------------------------
-		# UPDATE
-		# ------------------------------------------------------------------
-		st.subheader( "Update Row" )
-		
-		rowid = st.number_input( "Row ID", min_value=1, step=1 )
-		
-		update_data = { }
-		
-		for column, col_type in type_map.items( ):
-			if "INT" in col_type:
-				val = st.number_input( column, step=1, key=f"upd_{column}" )
-				update_data[ column ] = val
+			if st.button( "Insert Row" ):
+				cols = list( insert_data.keys( ) )
+				placeholders = ", ".join( [ "?" ] * len( cols ) )
+				
+				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+				
+				with dm_conn( ) as conn:
+					conn.execute( stmt, list( insert_data.values( ) ) )
+					conn.commit( )
+				
+				st.success( "Row inserted." )
+				st.rerun( )
 			
-			elif "REAL" in col_type:
-				val = st.number_input( column, format="%.6f", key=f"upd_{column}" )
-				update_data[ column ] = val
+			# ------------------------------------------------------------------
+			# UPDATE
+			# ------------------------------------------------------------------
+			st.subheader( "Update Row" )
 			
-			elif "BOOL" in col_type:
-				val = 1 if st.checkbox( column, key=f"upd_{column}" ) else 0
-				update_data[ column ] = val
+			rowid = st.number_input( "Row ID", min_value=1, step=1 )
 			
-			else:
-				val = st.text_input( column, key=f"upd_{column}" )
-				update_data[ column ] = val
-		
-		if st.button( "Update Row" ):
-			set_clause = ", ".join( [ f"{c}=?" for c in update_data ] )
-			stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
+			update_data = { }
 			
-			with dm_conn( ) as conn:
-				conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
-				conn.commit( )
+			for column, col_type in type_map.items( ):
+				if "INT" in col_type:
+					val = st.number_input( column, step=1, key=f"upd_{column}" )
+					update_data[ column ] = val
+				
+				elif "REAL" in col_type:
+					val = st.number_input( column, format="%.6f", key=f"upd_{column}" )
+					update_data[ column ] = val
+				
+				elif "BOOL" in col_type:
+					val = 1 if st.checkbox( column, key=f"upd_{column}" ) else 0
+					update_data[ column ] = val
+				
+				else:
+					val = st.text_input( column, key=f"upd_{column}" )
+					update_data[ column ] = val
 			
-			st.success( "Row updated." )
-			st.rerun( )
-		
-		# ------------------------------------------------------------------
-		# DELETE
-		# ------------------------------------------------------------------
-		st.subheader( "Delete Row" )
-		
-		delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
-		
-		if st.button( "Delete Row" ):
-			with dm_conn( ) as conn:
-				conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
-				conn.commit( )
+			if st.button( "Update Row" ):
+				set_clause = ", ".join( [ f"{c}=?" for c in update_data ] )
+				stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
+				
+				with dm_conn( ) as conn:
+					conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
+					conn.commit( )
+				
+				st.success( "Row updated." )
+				st.rerun( )
 			
-			st.success( "Row deleted." )
-			st.rerun( )
+			# ------------------------------------------------------------------
+			# DELETE
+			# ------------------------------------------------------------------
+			st.subheader( "Delete Row" )
+			
+			delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
+			
+			if st.button( "Delete Row" ):
+				with dm_conn( ) as conn:
+					conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
+					conn.commit( )
+				
+				st.success( "Row deleted." )
+				st.rerun( )
 	# ------------------------------------------------------------------------------
 	# EXPLORE
 	# ------------------------------------------------------------------------------
