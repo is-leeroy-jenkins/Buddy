@@ -134,7 +134,6 @@ def markdown_converter( text: Any ) -> str:
 		str
 			Converted text.
 	"""
-	
 	if not isinstance( text, str ) or not text.strip( ):
 		return ""
 	
@@ -412,7 +411,8 @@ def extract_sources( response ) -> List[ Dict[ str, Any ] ]:
 			if raw:
 				for src in raw:
 					s = normalize( src )
-					sources.append( {
+					sources.append(
+					{
 							'title': s.get( 'title' ),
 							'snippet': s.get( 'snippet' ),
 							'url': s.get( 'url' ),
@@ -507,11 +507,7 @@ def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 		Defensive: returns zeros if not present.
 		
 	"""
-	usage = {
-			'prompt_tokens': 0,
-			'completion_tokens': 0,
-			'total_tokens': 0,
-	}
+	usage = { 'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0, }
 	if not resp:
 		return usage
 	
@@ -694,10 +690,8 @@ def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 
 def insert_prompt( data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		conn.execute(
-			"INSERT INTO Prompts (Name, Text, Version, ID) VALUES (?, ?, ?, ?)",
-			(data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ])
-		)
+		conn.execute( 'INSERT INTO Prompts (Name, Text, Version, ID) VALUES (?, ?, ?, ?)',
+			(data[ 'Name' ], data[ 'Text' ], data[ 'Version' ], data[ 'ID' ]) )
 
 def update_prompt( pid: int, data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
@@ -796,7 +790,6 @@ def dm_create_index( table: str, column: str ) -> None:
 		column : str
 			Column name to index.
 	"""
-	
 	if not table or not column:
 		return
 	
@@ -1153,9 +1146,7 @@ def dm_safe_identifier( name: str ) -> str:
 
 def dm_get_indexes( table: str ):
 	with dm_conn( ) as conn:
-		rows = conn.execute(
-			f'PRAGMA index_list("{table}");'
-		).fetchall( )
+		rows = conn.execute(f'PRAGMA index_list("{table}");').fetchall( )
 		return rows
 
 def dm_add_column( table: str, column: str, col_type: str ):
@@ -1164,8 +1155,7 @@ def dm_add_column( table: str, column: str, col_type: str ):
 	
 	with dm_conn( ) as conn:
 		conn.execute(
-			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};'
-		)
+			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};')
 		conn.commit( )
 
 def dm_profile_table( table: str ):
@@ -1173,16 +1163,14 @@ def dm_profile_table( table: str ):
 	profile_rows = [ ]
 	total_rows = len( df )
 	for col in df.columns:
-		series = df[ col ]
-		
+		series = df[ col ]		
 		null_count = series.isna( ).sum( )
-		distinct_count = series.nunique( dropna=True )
-		
-		row = {
-				"column": col,
-				"dtype": str( series.dtype ),
-				"null_%": round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
-				"distinct_%": round( (distinct_count / total_rows) * 100, 2 ) if total_rows else 0,
+		distinct_count = series.nunique( dropna=True )		
+		row = \
+		{ 
+				'column': col, 'dtype': str( series.dtype ),
+				'null_%': round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
+				'distinct_%': round( (distinct_count / total_rows) * 100, 2 ) if total_rows else 0,
 		}
 		
 		if pd.api.types.is_numeric_dtype( series ):
@@ -1576,11 +1564,10 @@ def route_document_query( prompt: str ) -> str:
 
 def extract_text_from_bytes( file_bytes: bytes ) -> str:
 	"""
-	Extracts text from PDF or text-based documents.
+		Extracts text from PDF or text-based documents.
 	"""
 	try:
-		import fitz  # PyMuPDF
-		
+		import fitz  # PyMuPDF		
 		doc = fitz.open( stream=file_bytes, filetype="pdf" )
 		text = ""
 		for page in doc:
@@ -1595,9 +1582,8 @@ def extract_text_from_bytes( file_bytes: bytes ) -> str:
 
 def summarize_active_document( ) -> str:
 	"""
-	Uses the routing layer to summarize the currently active document.
+		Uses the routing layer to summarize the currently active document.
 	"""
-	
 	doc_instructions = st.session_state.get( "doc_instructions", "" )
 	summary_prompt = """
 		Provide a clear, structured summary of this document.
@@ -1610,7 +1596,6 @@ def summarize_active_document( ) -> str:
 		
 		Be precise and concise.
 		"""
-	
 	if doc_instructions:
 		summary_prompt = f"{doc_instructions}\n\n{summary_prompt}"
 	
@@ -1621,18 +1606,13 @@ def summarize_active_document( ) -> str:
 # ==============================================================================
 openai_client = OpenAI( )
 st.session_state[ 'openai_client' ] = openai_client
-
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
-
-st.set_page_config( page_title=cfg.APP_TITLE, layout='wide',
-	page_icon=cfg.FAVICON, initial_sidebar_state='collapsed' )
+st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
+	initial_sidebar_state='collapsed' )
 
 st.caption( cfg.APP_SUBTITLE )
-
 inject_response_css( )
-
 init_state( )
-
 
 # ======================================================================================
 # Session State — initialize per-mode model keys and token counters
@@ -1901,40 +1881,25 @@ with st.sidebar:
 		st.logo( logo_path, size='large', link=cfg.CRS )
 	
 	with st.expander( '🔑 Keys:', expanded=False ):
-		openai_key = st.text_input(
-			'OpenAI API Key',
-			type='password',
+		openai_key = st.text_input( 'OpenAI API Key', type='password',
 			value=st.session_state.openai_api_key or '',
-			help='Overrides OPENAI_API_KEY from config.py for this session only.'
-		)
+			help='Overrides OPENAI_API_KEY from config.py for this session only.' )
 		
-		gemini_key = st.text_input(
-			'Gemini API Key',
-			type='password',
+		gemini_key = st.text_input( 'Gemini API Key', type='password',
 			value=st.session_state.gemini_api_key or '',
-			help='Overrides GEMINI_API_KEY from config.py for this session only.'
-		)
+			help='Overrides GEMINI_API_KEY from config.py for this session only.' )
 		
-		groq_key = st.text_input(
-			'Groq API Key',
-			type='password',
+		groq_key = st.text_input( 'Groq API Key', type='password',
 			value=st.session_state.groq_api_key or '',
-			help='Overrides GROQ_API_KEY from config.py for this session only.'
-		)
+			help='Overrides GROQ_API_KEY from config.py for this session only.' )
 		
-		google_key = st.text_input(
-			'Google API Key',
-			type='password',
+		google_key = st.text_input('Google API Key', type='password',
 			value=st.session_state.google_api_key or '',
-			help='Overrides GOOGLE_API_KEY from config.py for this session only.'
-		)
+			help='Overrides GOOGLE_API_KEY from config.py for this session only.' )
 		
-		xai_key = st.text_input(
-			'xAi API Key',
-			type='password',
+		xai_key = st.text_input( 'xAi API Key', type='password',
 			value=st.session_state.xai_api_key or '',
-			help='Overrides XAI_API_KEY from config.py for this session only.'
-		)
+			help='Overrides XAI_API_KEY from config.py for this session only.' )
 		
 		if openai_key:
 			st.session_state.openai_api_key = openai_key
@@ -1996,8 +1961,7 @@ if mode == 'Chat':
 	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
 	
 	with center:
-		user_input = st.chat_input( "Do you have a Planning, Programming, or Budget Execution question?" )
-		
+		user_input = st.chat_input( 'Have a Planning, Programming, or Budget Execution question?' )
 		if user_input:
 			# -------------------------------
 			# Render user message
@@ -2045,7 +2009,6 @@ if mode == 'Chat':
 					# Extract and render text output
 					# -------------------------------
 					output_text = ""
-				
 					for item in response.output:
 						if item.type == "message":
 							for part in item.content:
@@ -2060,18 +2023,8 @@ if mode == 'Chat':
 					# -------------------------------
 					# Persist minimal chat history
 					# -------------------------------
-					st.session_state.chat_history.append(
-						{
-							'role': 'user',
-							'content': user_input
-						}
-					)
-					st.session_state.chat_history.append(
-						{
-								'role': 'assistant',
-								'content': output_text
-						}
-					)
+					st.session_state.chat_history.append({'role': 'user', 'content': user_input})
+					st.session_state.chat_history.append({'role':'assistant', 'content':output_text})
 				except Exception as e:
 					st.error( "An error occurred while running the prompt." )
 					st.exception( e )
@@ -2105,11 +2058,8 @@ elif mode == "Text":
 			# Expander — LLM
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-					llm_one, llm_two, llm_three, llm_four, llm_five = st.columns( [ 0.2,
-					                                                                0.2,
-					                                                                0.2,
-					                                                                0.2,
-					                                                                0.2 ], border=True )
+					llm_one, llm_two, llm_three, llm_four, llm_five = \ 
+						st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
 					
 					with llm_one:
 						text_model = st.selectbox( 'Select Model', chat.model_options,
@@ -2131,8 +2081,8 @@ elif mode == "Text":
 						st.session_state[ 'tool_choice' ] = tool_choice
 					
 					with llm_four:
-						tools = st.multiselect( 'Tools:', options=chat.tool_options, key='chat_tools',
-							help=cfg.TOOLS )
+						tools = st.multiselect( 'Tools:', options=chat.tool_options, 
+							key='chat_tools', help=cfg.TOOLS )
 						chat.tools = tools
 						st.session_state[ 'tools' ] = tools
 					
@@ -2145,8 +2095,8 @@ elif mode == "Text":
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ],
-					border=True, gap='xsmall'  )
+				prm_one, prm_two, prm_three, prm_four, prm_five = \ 
+					st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True, gap='xsmall'  )
 				
 				with prm_one:
 					top_p = st.slider( 'Top-P', 0.0, 1.0,
@@ -2180,8 +2130,8 @@ elif mode == "Text":
 			# Expander — Response
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-					res_one, res_two, res_three, res_four, res_five = st.columns( [0.20, 0.20, 0.20, 0.20, 0.20 ],
-						border=True, gap='small' )
+					res_one, res_two, res_three, res_four, res_five = \ 
+						st.columns( [0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='small' )
 					
 					with res_one:
 						stream = st.toggle( 'Stream', key='chat_stream', value=False, help=cfg.STREAM )
@@ -2335,7 +2285,8 @@ elif mode == "Images":
 			# Expander — LLM
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				img_one, img_two, img_three, img_four, img_five = st.columns( [ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
+				img_one, img_two, img_three, img_four, img_five = \ 
+					st.columns( [ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
 				
 				with img_one:
 					# ---------------- Model ---------------
@@ -2347,7 +2298,7 @@ elif mode == "Images":
 					st.session_state[ "image_model" ] = image_model
 				
 				with img_two:
-					# ---------------- Size / Aspect Ratio (provider-aware) ----------------
+					# ---------------- Size / Aspect Ratio  ----------------
 					if hasattr( image, "aspect_options" ):
 						size_or_aspect = st.selectbox( "Aspect Ratio", image.aspect_options, )
 						size_arg = size_or_aspect
@@ -2377,11 +2328,8 @@ elif mode == "Images":
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2,
-				                                                                0.2,
-				                                                                0.2,
-				                                                                0.2,
-				                                                                0.2 ],
+				prm_one, prm_two, prm_three, prm_four, prm_five = \
+					st.columns( [ 0.2,  0.2,  0.2, 0.2, 0.2 ],
 					border=True, gap='xsmall' )
 				
 				with prm_one:
@@ -2416,11 +2364,8 @@ elif mode == "Images":
 			# Expander — Response
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-				res_one, res_two, res_three, res_four, res_five = st.columns( [ 0.20,
-				                                                                0.20,
-				                                                                0.20,
-				                                                                0.20,
-				                                                                0.20 ],
+				res_one, res_two, res_three, res_four, res_five = \
+					st.columns( [ 0.20,  0.20,  0.20,  0.20, 0.20 ],
 					border=True, gap='small' )
 				
 				with res_one:
@@ -2491,58 +2436,31 @@ elif mode == "Images":
 				'Upload an image for analysis',
 				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 				accept_multiple_files=False,
-				key='images_analyze_uploader',
-			)
+				key='images_analyze_uploader', )
 			
 			if uploaded_img:
 				tmp_path = save_temp( uploaded_img )
-				
-				st.image(
-					uploaded_img,
-					caption='Uploaded image preview',
-					use_column_width=True,
-				)
+				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 				
 				# Discover available analysis methods on Image object
 				available_methods = [ ]
-				for candidate in (
-							'analyze',
-							'describe_image',
-							'describe',
-							'classify',
-							'detect_objects',
-							'caption',
-							'image_analysis',
-				):
+				for candidate in ( 'analyze', 'describe_image', 'describe', 'classify',
+							'detect_objects', 'caption', 'image_analysis', ):
 					if hasattr( image, candidate ):
 						available_methods.append( candidate )
 				
 				if available_methods:
-					chosen_method = st.selectbox(
-						'Method',
-						available_methods,
-						index=0,
-					)
+					chosen_method = st.selectbox( 'Method', available_methods, index=0, )
 				else:
 					chosen_method = None
-					st.info(
-						'No dedicated image analysis method found on Image object; '
-						'attempting generic handlers.'
-					)
+					st.info( 'No dedicated image analysis method found on Image object; '
+						'attempting generic handlers.' )
 				
-				chosen_model = st.selectbox(
-					"Model (analysis)",
-					[ image_model,
-					  None ],
-					index=0,
-				)
+				chosen_model = st.selectbox( 'Model (analysis)', [ image_model, None ], index=0, )
 				
-				chosen_model_arg = (
-						image_model if chosen_model is None else chosen_model
-				)
-				
-				if st.button( "Analyze Image" ):
-					with st.spinner( "Analyzing image…" ):
+				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+				if st.button( 'Analyze Image' ):
+					with st.spinner( 'Analyzing image…' ):
 						analysis_result = None
 						try:
 							if chosen_method:
@@ -2555,12 +2473,8 @@ elif mode == "Images":
 											tmp_path, model=chosen_model_arg
 										)
 							else:
-								for fallback in (
-											"analyze",
-											"describe_image",
-											"describe",
-											"caption",
-								):
+								for fallback in ( 'analyze', 'describe_image',
+											'describe', 'caption', ):
 									if hasattr( image, fallback ):
 										func = getattr( image, fallback )
 										try:
@@ -2571,7 +2485,7 @@ elif mode == "Images":
 							
 							if analysis_result is None:
 								st.warning(
-									"No analysis output returned by the available methods."
+									'No analysis output returned by the available methods.'
 								)
 							else:
 								if isinstance( analysis_result, (dict, list) ):
@@ -2604,15 +2518,8 @@ elif mode == "Images":
 				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 				
 				available_methods = [ ]
-				for candidate in (
-							'edit',
-							'describe_image',
-							'describe',
-							'classify',
-							'detect_objects',
-							'caption',
-							'image_edit',
-				):
+				for candidate in ( 'edit', 'describe_image', 'describe', 'classify',
+							'detect_objects', 'caption', 'image_edit', ):
 					if hasattr( image, candidate ):
 						available_methods.append( candidate )
 				
@@ -2623,12 +2530,12 @@ elif mode == "Images":
 					st.info( 'No dedicated image editing method found on Image object;'
 					         'attempting generic handlers.')
 				
-				chosen_model = st.selectbox( "Model (edit)", [ image_model,  None ], index=0, )
+				chosen_model = st.selectbox( 'Model (edit)', [ image_model,  None ], index=0, )
 				
 				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
 				
-				if st.button( "Edit Image" ):
-					with st.spinner( "Editing image…" ):
+				if st.button( 'Edit Image' ):
+					with st.spinner( 'Editing image…' ):
 						analysis_result = None
 						try:
 							if chosen_method:
@@ -2641,12 +2548,8 @@ elif mode == "Images":
 											tmp_path, model=chosen_model_arg
 										)
 							else:
-								for fallback in (
-											"analyze",
-											"describe_image",
-											"describe",
-											"caption",
-								):
+								for fallback in ( 'analyze', 'describe_image',
+											'describe', 'caption', ):
 									if hasattr( image, fallback ):
 										func = getattr( image, fallback )
 										try:
@@ -2656,17 +2559,17 @@ elif mode == "Images":
 											continue
 							
 							if analysis_result is None:
-								st.warning( "No editing output returned by the available methods." )
+								st.warning( 'No editing output returned by the available methods.' )
 							else:
 								if isinstance( analysis_result, (dict, list) ):
 									st.json( analysis_result )
 								else:
-									st.markdown( "**Analysis result:**" )
+									st.markdown( '**Analysis result:**' )
 									st.write( analysis_result )
 								
 								try:
 									_update_token_counters(
-										getattr( image, "response", None )
+										getattr( image, 'response', None )
 										or analysis_result
 									)
 								except Exception:
@@ -2937,7 +2840,7 @@ elif mode == "Audio":
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
-	st.subheader( '⛓️  Vector Embeddings', help=cfg.EMBEDDINGS_API )
+	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
 	if not hasattr( provider_module, 'Embeddings' ):
 		st.info( 'Embeddings are not supported by the selected provider.' )
@@ -3363,7 +3266,7 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
-	st.subheader( '📚 Document Q & A' )
+	st.subheader( '🕵️ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	
@@ -3582,27 +3485,26 @@ elif mode == "Prompt Engineering":
 	import sqlite3
 	import math
 	
-	TABLE = "Prompts"
+	TABLE = 'Prompts'
 	PAGE_SIZE = 10
 	
-	st.subheader( "📝 Prompt Engineering", help=cfg.PROMPT_ENGINEERING )
-	st.divider( )
+	st.subheader( '📝 Prompt Engineering', help=cfg.PROMPT_ENGINEERING )
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	
-	st.session_state.setdefault( "pe_cascade_enabled", False )
-	st.checkbox( "Cascade selection into System Instructions", key="pe_cascade_enabled" )
+	st.session_state.setdefault( 'pe_cascade_enabled', False )
+	st.checkbox( 'Cascade selection into System Instructions', key='pe_cascade_enabled' )
 	
 	# ------------------------------------------------------------------
 	# Session state
 	# ------------------------------------------------------------------
-	st.session_state.setdefault( "pe_page", 1 )
-	st.session_state.setdefault( "pe_search", "" )
-	st.session_state.setdefault( "pe_sort_col", "PromptsId" )
-	st.session_state.setdefault( "pe_sort_dir", "ASC" )
-	st.session_state.setdefault( "pe_selected_id", None )
-	
-	st.session_state.setdefault( "pe_name", "" )
-	st.session_state.setdefault( "pe_text", "" )
-	st.session_state.setdefault( "pe_version", 1 )
+	st.session_state.setdefault( 'pe_page', 1 )
+	st.session_state.setdefault( 'pe_search', '' )
+	st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
+	st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
+	st.session_state.setdefault( 'pe_selected_id', None )
+	st.session_state.setdefault( 'pe_name', '' )
+	st.session_state.setdefault( 'pe_text', '' )
+	st.session_state.setdefault( 'pe_version', 1 )
 	
 	# ------------------------------------------------------------------
 	# DB helpers
@@ -3620,8 +3522,7 @@ elif mode == "Prompt Engineering":
 		with get_conn( ) as conn:
 			cur = conn.execute(
 				f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
-				(pid,),
-			)
+				(pid,), )
 			row = cur.fetchone( )
 			if not row:
 				return
@@ -3632,51 +3533,35 @@ elif mode == "Prompt Engineering":
 	# ------------------------------------------------------------------
 	# Filters
 	# ------------------------------------------------------------------
-	c1, c2, c3, c4 = st.columns( [ 4,
-	                               2,
-	                               2,
-	                               3 ] )
+	c1, c2, c3, c4 = st.columns( [ 4,  2, 2,  3 ] )
 	
 	with c1:
-		st.text_input( "Search (Name/Text contains)", key="pe_search" )
+		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 	
 	with c2:
-		st.selectbox(
-			"Sort by",
-			[ "PromptsId",
-			  "Name",
-			  "Version" ],
-			key="pe_sort_col",
-		)
+		st.selectbox( 'Sort by', [ 'PromptsId', 'Name', 'Version' ], key='pe_sort_col', )
 	
 	with c3:
-		st.selectbox( "Direction", [ "ASC",
-		                             "DESC" ], key="pe_sort_dir" )
+		st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir' )
 	
 	with c4:
 		st.markdown(
 			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
 			unsafe_allow_html=True,
 		)
-		a1, a2, a3 = st.columns( [ 2,
-		                           1,
-		                           1 ] )
+		a1, a2, a3 = st.columns( [ 2, 1,  1 ] )
 		
 		with a1:
-			jump_id = st.number_input(
-				"Go to ID",
-				min_value=1,
-				step=1,
-				label_visibility="collapsed",
-			)
+			jump_id = st.number_input( 'Go to ID', min_value=1,
+				step=1, label_visibility='collapsed', )
 		
 		with a2:
-			if st.button( "Go" ):
+			if st.button( 'Go' ):
 				st.session_state.pe_selected_id = int( jump_id )
 				load_prompt( int( jump_id ) )
 		
 		with a3:
-			st.button( "Clear", on_click=reset_selection )
+			st.button( 'Clear', on_click=reset_selection )
 	
 	# ------------------------------------------------------------------
 	# Load prompt table
@@ -3685,13 +3570,11 @@ elif mode == "Prompt Engineering":
 	params = [ ]
 	
 	if st.session_state.pe_search:
-		where = "WHERE Name LIKE ? OR Text LIKE ?"
+		where = 'WHERE Name LIKE ? OR Text LIKE ?'
 		s = f"%{st.session_state.pe_search}%"
-		params.extend( [ s,
-		                 s ] )
+		params.extend( [ s, s ] )
 	
 	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
-	
 	query = f"""
         SELECT PromptsId, Name, Text, Version, ID
         FROM {TABLE}
@@ -3714,32 +3597,23 @@ elif mode == "Prompt Engineering":
 	table_rows = [ ]
 	for r in rows:
 		table_rows.append(
-			{
-					"Selected": r[ 0 ] == st.session_state.pe_selected_id,
-					"PromptsId": r[ 0 ],
-					"Name": r[ 1 ],
-					"Version": r[ 3 ],
-					"ID": r[ 4 ],
-			}
-		)
+		{
+				'Selected': r[ 0 ] == st.session_state.pe_selected_id,
+				'PromptsId': r[ 0 ],
+				'Name': r[ 1 ],
+				'Version': r[ 3 ],
+				'ID': r[ 4 ],
+		} )
 	
-	edited = st.data_editor(
-		table_rows,
-		hide_index=True,
-		use_container_width=True,
-		key="prompt_table",
-	)
+	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
+		key="prompt_table", )
 	
 	# ------------------------------------------------------------------
 	# SELECTION PROCESSING (must run BEFORE widgets below)
 	# ------------------------------------------------------------------
-	selected = [
-			r for r in edited
-			if isinstance( r, dict ) and r.get( "Selected" )
-	]
-	
+	selected = [ r for r in edited if isinstance( r, dict ) and r.get( 'Selected' ) ]
 	if len( selected ) == 1:
-		pid = int( selected[ 0 ][ "PromptsId" ] )
+		pid = int( selected[ 0 ][ 'PromptsId' ] )
 		if pid != st.session_state.pe_selected_id:
 			st.session_state.pe_selected_id = pid
 			load_prompt( pid )
@@ -3748,23 +3622,18 @@ elif mode == "Prompt Engineering":
 		reset_selection( )
 	
 	elif len( selected ) > 1:
-		st.warning( "Select exactly one prompt row." )
+		st.warning( 'Select exactly one prompt row.' )
 	
 	# ------------------------------------------------------------------
 	# Paging
 	# ------------------------------------------------------------------
-	p1, p2, p3 = st.columns( [ 0.25,
-	                           3.5,
-	                           0.25 ] )
-	
+	p1, p2, p3 = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with p1:
 		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
 			st.session_state.pe_page -= 1
 	
 	with p2:
-		st.markdown(
-			f"Page **{st.session_state.pe_page}** of **{total_pages}**"
-		)
+		st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
 	
 	with p3:
 		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
@@ -3782,18 +3651,15 @@ elif mode == "Prompt Engineering":
 			disabled=True,
 		)
 		
-		st.text_input( "Name", key="pe_name" )
-		st.text_area( "Text", key="pe_text", height=260 )
-		st.number_input( "Version", min_value=1, key="pe_version" )
-		
+		st.text_input( 'Name', key='pe_name' )
+		st.text_area( 'Text', key='pe_text', height=260 )
+		st.number_input( 'Version', min_value=1, key='pe_version' )
 		c1, c2, c3 = st.columns( 3 )
 		
 		with c1:
-			if st.button(
-					"💾 Save Changes"
+			if st.button( '💾 Save Changes'
 					if st.session_state.pe_selected_id
-					else "➕ Create Prompt"
-			):
+					else '➕ Create Prompt' ):
 				with get_conn( ) as conn:
 					if st.session_state.pe_selected_id:
 						conn.execute(
@@ -3807,8 +3673,7 @@ elif mode == "Prompt Engineering":
 									st.session_state.pe_text,
 									st.session_state.pe_version,
 									st.session_state.pe_selected_id,
-							),
-						)
+							), )
 					else:
 						conn.execute(
 							f"""
@@ -3823,22 +3688,21 @@ elif mode == "Prompt Engineering":
 						)
 					conn.commit( )
 				
-				st.success( "Saved." )
+				st.success( 'Saved.' )
 				reset_selection( )
 		
 		with c2:
-			if st.session_state.pe_selected_id and st.button( "Delete" ):
+			if st.session_state.pe_selected_id and st.button( 'Delete' ):
 				with get_conn( ) as conn:
 					conn.execute(
-						f"DELETE FROM {TABLE} WHERE PromptsId=?",
-						(st.session_state.pe_selected_id,),
-					)
+						f'DELETE FROM {TABLE} WHERE PromptsId=?',
+						(st.session_state.pe_selected_id,), )
 					conn.commit( )
 				reset_selection( )
-				st.success( "Deleted." )
+				st.success( 'Deleted.' )
 		
 		with c3:
-			st.button( "🧹 Clear Selection", on_click=reset_selection )
+			st.button( '🧹 Clear Selection', on_click=reset_selection )
 
 # ==============================================================================
 # EXPORT MODE
@@ -3903,18 +3767,11 @@ elif mode == 'Data Export':
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
-	st.subheader( "🏛️ Data Management", help=cfg.DOCUMENT_MANAGEMENT )
-	tabs = st.tabs( [
-			"📥 Import",
-			"🗂 Browse",
-			"✏ CRUD",
-			"📊 Explore",
-			"🔎 Filter",
-			"🧮 Aggregate",
-			"📈 Visualize",
-			"⚙ Admin",
-			"🧠 SQL"
-	] )
+	st.subheader( "🏛️ Data Management", help=cfg.DATA_MANAGEMENT )
+	tabs = st.tabs( [ "📥 Import", "🗂 Browse", "💉 CRUD", "📊 Explore", "🔎 Filter",
+			"🧮 Aggregate", "📈 Visualize", "⚙ Admin", "🧠 SQL" ] )
+	
+	st.divider( )
 	
 	tables = dm_tables( )
 	if not tables:
@@ -3927,13 +3784,13 @@ elif mode == 'Data Management':
 	# UPLOAD TAB
 	# ------------------------------------------------------------------------------
 	with tabs[ 0 ]:
-		uploaded_file = st.file_uploader( "Upload Excel File", type=[ "xlsx" ] )
-		overwrite = st.checkbox( "Overwrite existing tables", value=True )
+		uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
+		overwrite = st.checkbox( 'Overwrite existing tables', value=True )
 		if uploaded_file:
 			try:
 				sheets = pd.read_excel( uploaded_file, sheet_name=None )
 				with dm_conn( ) as conn:
-					conn.execute( "BEGIN" )
+					conn.execute( 'BEGIN' )
 					for sheet_name, df in sheets.items( ):
 						table_name = dm_safe_identifier( sheet_name )
 						if overwrite:
@@ -3967,7 +3824,7 @@ elif mode == 'Data Management':
 					
 					conn.commit( )
 				
-				st.success( "Import completed successfully (transaction committed)." )
+				st.success( 'Import completed successfully (transaction committed).' )
 				st.rerun( )
 			
 			except Exception as e:
@@ -3975,7 +3832,7 @@ elif mode == 'Data Management':
 					conn.rollback( )
 				except:
 					pass
-				st.error( f"Import failed — transaction rolled back.\n\n{e}" )
+				st.error( f'Import failed — transaction rolled back.\n\n{e}' )
 		
 	# ------------------------------------------------------------------------------
 	# BROWSE TAB
@@ -3983,11 +3840,11 @@ elif mode == 'Data Management':
 	with tabs[ 1 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables, key='table_name' )
+			table = st.selectbox( 'Table', tables, key='table_name' )
 			df = dm_read( table )
 			st.dataframe( df, use_container_width=True )
 		else:
-			st.info( "No tables available." )
+			st.info( 'No tables available.' )
 
 	# ------------------------------------------------------------------------------
 	# CRUD (Schema-Aware)
@@ -3995,91 +3852,91 @@ elif mode == 'Data Management':
 	with tabs[ 2 ]:
 		tables = dm_tables( )
 		if not tables:
-			st.info( "No tables available." )
+			st.info( 'No tables available.' )
 		else:
-			table = st.selectbox( "Select Table", tables, key="crud_table" )
+			table = st.selectbox( 'Select Table', tables, key='crud_table' )
 			df = dm_read( table )
 			schema = dm_schema( table )
 			
 			# Build type map
-			type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != "rowid" }
+			type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != 'rowid' }
 			
 			# ------------------------------------------------------------------
 			# INSERT
 			# ------------------------------------------------------------------
-			st.subheader( "Insert Row" )
+			st.subheader( 'Insert Row' )
 			insert_data = { }
 			for column, col_type in type_map.items( ):
-				if "INT" in col_type:
-					insert_data[ column ] = st.number_input( column, step=1, key=f"ins_{column}" )
+				if 'INT' in col_type:
+					insert_data[ column ] = st.number_input( column, step=1, key=f'ins_{column}' )
 				
-				elif "REAL" in col_type:
+				elif 'REAL' in col_type:
 					insert_data[
-						column ] = st.number_input( column, format="%.6f", key=f"ins_{column}" )
+						column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
 				
-				elif "BOOL" in col_type:
-					insert_data[ column ] = 1 if st.checkbox( column, key=f"ins_{column}" ) else 0
+				elif 'BOOL' in col_type:
+					insert_data[ column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
 				
 				else:
-					insert_data[ column ] = st.text_input( column, key=f"ins_{column}" )
+					insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
 			
-			if st.button( "Insert Row" ):
+			if st.button( 'Insert Row' ):
 				cols = list( insert_data.keys( ) )
-				placeholders = ", ".join( [ "?" ] * len( cols ) )
+				placeholders = ', '.join( [ '?' ] * len( cols ) )
 				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
 				
 				with dm_conn( ) as conn:
 					conn.execute( stmt, list( insert_data.values( ) ) )
 					conn.commit( )
 				
-				st.success( "Row inserted." )
+				st.success( 'Row inserted.' )
 				st.rerun( )
 			
 			# ------------------------------------------------------------------
 			# UPDATE
 			# ------------------------------------------------------------------
-			st.subheader( "Update Row" )
-			rowid = st.number_input( "Row ID", min_value=1, step=1 )
+			st.subheader( 'Update Row' )
+			rowid = st.number_input( 'Row ID', min_value=1, step=1 )
 			update_data = { }
 			for column, col_type in type_map.items( ):
-				if "INT" in col_type:
-					val = st.number_input( column, step=1, key=f"upd_{column}" )
+				if 'INT' in col_type:
+					val = st.number_input( column, step=1, key=f'upd_{column}' )
 					update_data[ column ] = val
 				
-				elif "REAL" in col_type:
-					val = st.number_input( column, format="%.6f", key=f"upd_{column}" )
+				elif 'REAL' in col_type:
+					val = st.number_input( column, format='%.6f', key=f'upd_{column}' )
 					update_data[ column ] = val
 				
-				elif "BOOL" in col_type:
-					val = 1 if st.checkbox( column, key=f"upd_{column}" ) else 0
+				elif 'BOOL' in col_type:
+					val = 1 if st.checkbox( column, key=f'upd_{column}' ) else 0
 					update_data[ column ] = val
 				
 				else:
 					val = st.text_input( column, key=f"upd_{column}" )
 					update_data[ column ] = val
 			
-			if st.button( "Update Row" ):
-				set_clause = ", ".join( [ f"{c}=?" for c in update_data ] )
-				stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
+			if st.button( 'Update Row' ):
+				set_clause = ', '.join( [ f'{c}=?' for c in update_data ] )
+				stmt = f'UPDATE {table} SET {set_clause} WHERE rowid=?;'
 				
 				with dm_conn( ) as conn:
 					conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
 					conn.commit( )
 				
-				st.success( "Row updated." )
+				st.success( 'Row updated.' )
 				st.rerun( )
 			
 			# ------------------------------------------------------------------
 			# DELETE
 			# ------------------------------------------------------------------
-			st.subheader( "Delete Row" )
-			delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
-			if st.button( "Delete Row" ):
+			st.subheader( 'Delete Row' )
+			delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
+			if st.button( 'Delete Row' ):
 				with dm_conn( ) as conn:
-					conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
+					conn.execute( f'DELETE FROM {table} WHERE rowid=?;', (delete_id,) )
 					conn.commit( )
 				
-				st.success( "Row deleted." )
+				st.success( 'Row deleted.' )
 				st.rerun( )
 	
 	# ------------------------------------------------------------------------------
@@ -4088,9 +3945,9 @@ elif mode == 'Data Management':
 	with tabs[ 3 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables, key="explore_table" )
-			page_size = st.slider( "Rows per page", 10, 500, 50 )
-			page = st.number_input( "Page", min_value=1, step=1 )
+			table = st.selectbox( 'Table', tables, key='explore_table' )
+			page_size = st.slider( 'Rows per page', 10, 500, 50 )
+			page = st.number_input( 'Page', min_value=1, step=1 )
 			offset = (page - 1) * page_size
 			df_page = dm_read( table, page_size, offset )
 			st.dataframe( df_page, use_container_width=True )
@@ -4101,10 +3958,10 @@ elif mode == 'Data Management':
 	with tabs[ 4 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables, key="filter_table" )
+			table = st.selectbox( 'Table', tables, key='filter_table' )
 			df = dm_read( table )
-			column = st.selectbox( "Column", df.columns )
-			value = st.text_input( "Contains" )
+			column = st.selectbox( 'Column', df.columns )
+			value = st.text_input( 'Contains' )
 			if value:
 				df = df[ df[ column ].astype( str ).str.contains( value ) ]
 			st.dataframe( df, use_container_width=True )
@@ -4115,20 +3972,18 @@ elif mode == 'Data Management':
 	with tabs[ 5 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables, key="agg_table" )
+			table = st.selectbox( 'Table', tables, key='agg_table' )
 			df = dm_read( table )
-			numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+			numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 			if numeric_cols:
-				col = st.selectbox( "Column", numeric_cols )
-				agg = st.selectbox( "Function", [ "SUM",
-				                                  "AVG",
-				                                  "COUNT" ] )
-				if agg == "SUM":
-					st.metric( "Result", df[ col ].sum( ) )
-				elif agg == "AVG":
-					st.metric( "Result", df[ col ].mean( ) )
-				elif agg == "COUNT":
-					st.metric( "Result", df[ col ].count( ) )
+				col = st.selectbox( 'Column', numeric_cols )
+				agg = st.selectbox( 'Function', [ 'SUM',  'AVG', 'COUNT' ] )
+				if agg == 'SUM':
+					st.metric( 'Result', df[ col ].sum( ) )
+				elif agg == 'AVG':
+					st.metric( 'Result', df[ col ].mean( ) )
+				elif agg == 'COUNT':
+					st.metric( 'Result', df[ col ].count( ) )
 		
 	# ------------------------------------------------------------------------------
 	# VISUALIZE
@@ -4136,11 +3991,11 @@ elif mode == 'Data Management':
 	with tabs[ 6 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables, key="viz_table" )
+			table = st.selectbox( 'Table', tables, key='viz_table' )
 			df = dm_read( table )
-			numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+			numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 			if numeric_cols:
-				col = st.selectbox( "Column", numeric_cols )
+				col = st.selectbox( 'Column', numeric_cols )
 				fig = px.histogram( df, x=col )
 				st.plotly_chart( fig, use_container_width=True )
 		
@@ -4150,119 +4005,104 @@ elif mode == 'Data Management':
 	with tabs[ 7 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables, key="admin_table" )
+			table = st.selectbox( 'Table', tables, key='admin_table' )
 		
 		st.divider( )
-		st.subheader( "Data Profiling" )
 		
+		st.subheader( 'Data Profiling' )
 		tables = dm_tables( )
-		
 		if tables:
-			table = st.selectbox( "Select Table", tables, key="profile_table" )
-			if st.button( "Generate Profile" ):
+			table = st.selectbox( 'Select Table', tables, key='profile_table' )
+			if st.button( 'Generate Profile' ):
 				profile_df = dm_profile_table( table )
 				st.dataframe( profile_df, use_container_width=True )
 				
-		st.subheader( "Drop Table" )
+		st.subheader( 'Drop Table' )
 
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Select Table to Drop", tables, key="admin_drop_table" )
+			table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
 			
 			# Initialize confirmation state
-			if "dm_confirm_drop" not in st.session_state:
+			if 'dm_confirm_drop' not in st.session_state:
 				st.session_state.dm_confirm_drop = False
 			
 			# Step 1: Initial Drop click
-			if st.button( "Drop Table", key="admin_drop_button" ):
+			if st.button( 'Drop Table', key='admin_drop_button' ):
 				st.session_state.dm_confirm_drop = True
 			
 			# Step 2: Confirmation UI
 			if st.session_state.dm_confirm_drop:
-				st.warning(
-					f"You are about to permanently delete table '{table}'. "
-					"This action cannot be undone."
-				)
+				st.warning( f'You are about to permanently delete table {table}. '
+					'This action cannot be undone.' )
 				
 				col1, col2 = st.columns( 2 )
 				
-				if col1.button( "Confirm Drop", key="admin_confirm_drop" ):
+				if col1.button( 'Confirm Drop', key='admin_confirm_drop' ):
 					try:
 						dm_drop_table( table )
-						st.success( f"Table '{table}' dropped successfully." )
+						st.success( f'Table {table} dropped successfully.' )
 					except Exception as e:
-						st.error( f"Drop failed: {e}" )
+						st.error( f'Drop failed: {e}' )
 					
 					st.session_state.dm_confirm_drop = False
 					st.rerun( )
 				
-				if col2.button( "Cancel", key="admin_cancel_drop" ):
+				if col2.button( 'Cancel', key='admin_cancel_drop' ):
 					st.session_state.dm_confirm_drop = False
 					st.rerun( )
 			
 			df = dm_read( table )
-			col = st.selectbox( "Create Index On", df.columns )
+			col = st.selectbox( 'Create Index On', df.columns )
 			
-			if st.button( "Create Index" ):
+			if st.button( 'Create Index' ):
 				dm_create_index( table, col )
-				st.success( "Index created." )
+				st.success( 'Index created.' )
 				
 		st.divider( )
 		
-		st.subheader( "Create Custom Table" )
-		new_table_name = st.text_input( "Table Name" )
-		column_count = st.number_input( "Number of Columns", min_value=1, max_value=20, value=1 )
+		st.subheader( 'Create Custom Table' )
+		new_table_name = st.text_input( 'Table Name' )
+		column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
 		columns = [ ]
 		for i in range( column_count ):
-			st.markdown( f"### Column {i + 1}" )
-			col_name = st.text_input( "Column Name", key=f"col_name_{i}" )
-			col_type = st.selectbox(
-				"Column Type",
-				[ "INTEGER",
-				  "REAL",
-				  "TEXT" ],
-				key=f"col_type_{i}"
-			)
+			st.markdown( f'### Column {i + 1}' )
+			col_name = st.text_input( 'Column Name', key=f'col_name_{i}' )
+			col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ],
+				key=f'col_type_{i}' )
 			
-			not_null = st.checkbox( "NOT NULL", key=f"not_null_{i}" )
-			primary_key = st.checkbox( "PRIMARY KEY", key=f"pk_{i}" )
-			auto_inc = st.checkbox( "AUTOINCREMENT (INTEGER only)", key=f"ai_{i}" )
+			not_null = st.checkbox( 'NOT NULL', key=f'not_null_{i}' )
+			primary_key = st.checkbox( 'PRIMARY KEY', key=f'pk_{i}' )
+			auto_inc = st.checkbox( 'AUTOINCREMENT (INTEGER only)', key=f'ai_{i}' )
 			
 			columns.append( {
-					"name": col_name,
-					"type": col_type,
-					"not_null": not_null,
-					"primary_key": primary_key,
-					"auto_increment": auto_inc
-			} )
+					'name': col_name,
+					'type': col_type,
+					'not_null': not_null,
+					'primary_key': primary_key,
+					'auto_increment': auto_inc } )
 		
-		if st.button( "Create Table" ):
+		if st.button( 'Create Table' ):
 			try:
 				dm_create_custom_table( new_table_name, columns )
-				st.success( "Table created successfully." )
+				st.success( 'Table created successfully.' )
 				st.rerun( )
 			
 			except Exception as e:
-				st.error( f"Error: {e}" )
+				st.error( f'Error: {e}' )
 		
 		st.divider( )
-		st.subheader( "Schema Viewer" )
+		st.subheader( 'Schema Viewer' )
 		
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Select Table", tables, key="schema_view_table" )
+			table = st.selectbox( 'Select Table', tables, key='schema_view_table' )
 			
 			# Column schema
 			schema = dm_schema( table )
 			schema_df = pd.DataFrame(
 				schema,
-				columns=[ "cid",
-				          "name",
-				          "type",
-				          "notnull",
-				          "default",
-				          "pk" ]
-			)
+				columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
 			
 			st.markdown( "### Columns" )
 			st.dataframe( schema_df, use_container_width=True )
@@ -4280,7 +4120,7 @@ elif mode == 'Data Management':
 			if indexes:
 				idx_df = pd.DataFrame(
 					indexes,
-					columns=[ "seq", "name",  "unique",  "origin", "partial" ]
+					columns=[ 'seq', 'name',  'unique',  'origin', 'partial' ]
 				)
 				st.markdown( "### Indexes" )
 				st.dataframe( idx_df, use_container_width=True )
@@ -4292,66 +4132,59 @@ elif mode == 'Data Management':
 		
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Select Table", tables, key="alter_table_select" )
-			operation = st.selectbox(
-				"Operation",
-				[ "Add Column",
-				  "Rename Column",
-				  "Rename Table",
-				  "Drop Column" ]
-			)
+			table = st.selectbox( 'Select Table', tables, key='alter_table_select' )
+			operation = st.selectbox( 'Operation',
+				[ 'Add Column', 'Rename Column', 'Rename Table', 'Drop Column' ] )
 			
-			if operation == "Add Column":
-				new_col = st.text_input( "Column Name" )
-				col_type = st.selectbox( "Column Type", [ "INTEGER",
-				                                          "REAL",
-				                                          "TEXT" ] )
+			if operation == 'Add Column':
+				new_col = st.text_input( 'Column Name' )
+				col_type = st.selectbox( 'Column Type', [ 'INTEGER',  'REAL',  'TEXT' ] )
 				
-				if st.button( "Add Column" ):
+				if st.button( 'Add Column' ):
 					dm_add_column( table, new_col, col_type )
-					st.success( "Column added." )
+					st.success( 'Column added.' )
 					st.rerun( )
 			
-			elif operation == "Rename Column":
+			elif operation == 'Rename Column':
 				schema = dm_schema( table )
 				col_names = [ col[ 1 ] for col in schema ]
 				
-				old_col = st.selectbox( "Column to Rename", col_names )
-				new_col = st.text_input( "New Column Name" )
+				old_col = st.selectbox( 'Column to Rename', col_names )
+				new_col = st.text_input( 'New Column Name' )
 				
-				if st.button( "Rename Column" ):
+				if st.button( 'Rename Column' ):
 					dm_rename_column( table, old_col, new_col )
-					st.success( "Column renamed." )
+					st.success( 'Column renamed.' )
 					st.rerun( )
 			
-			elif operation == "Rename Table":
-				new_name = st.text_input( "New Table Name" )
+			elif operation == 'Rename Table':
+				new_name = st.text_input( 'New Table Name' )
 				
-				if st.button( "Rename Table" ):
+				if st.button( 'Rename Table' ):
 					dm_rename_table( table, new_name )
-					st.success( "Table renamed." )
+					st.success( 'Table renamed.' )
 					st.rerun( )
 			
-			elif operation == "Drop Column":
+			elif operation == 'Drop Column':
 				schema = dm_schema( table )
 				col_names = [ col[ 1 ] for col in schema ]
 				
-				drop_col = st.selectbox( "Column to Drop", col_names )
+				drop_col = st.selectbox( 'Column to Drop', col_names )
 				
-				if st.button( "Drop Column" ):
+				if st.button( 'Drop Column' ):
 					dm_drop_column( table, drop_col )
-					st.success( "Column dropped." )
+					st.success( 'Column dropped.' )
 					st.rerun( )
 					
 	# ------------------------------------------------------------------------------
 	# SQL
 	# ------------------------------------------------------------------------------
 	with tabs[ 8 ]:
-		st.subheader( "SQL Console" )
-		query = st.text_area( "Enter SQL Query" )
-		if st.button( "Run Query" ):
+		st.subheader( 'SQL Console' )
+		query = st.text_area( 'Enter SQL Query' )
+		if st.button( 'Run Query' ):
 			if not dm_is_safe_read_query( query ):
-				st.error( "Query blocked: Only read-only SELECT statements are allowed." )
+				st.error( 'Query blocked: Only read-only SELECT statements are allowed.' )
 			else:
 				try:
 					start_time = time.perf_counter( )
@@ -4371,27 +4204,23 @@ elif mode == 'Data Management':
 					# Execution Metrics
 					# ----------------------------------------------------------
 					col1, col2 = st.columns( 2 )
-					col1.metric( "Rows Returned", f"{row_count:,}" )
-					col2.metric( "Execution Time (seconds)", f"{elapsed:.6f}" )
+					col1.metric( 'Rows Returned', f'{row_count:,}' )
+					col2.metric( 'Execution Time (seconds)', f'{elapsed:.6f}' )
 					
 					# Optional slow query warning
 					if elapsed > 2.0:
-						st.warning( "Slow query detected (> 2 seconds). Consider indexing." )
+						st.warning( 'Slow query detected (> 2 seconds). Consider indexing.' )
 					
 					# ----------------------------------------------------------
 					# Download
 					# ----------------------------------------------------------
 					if not result.empty:
-						csv = result.to_csv( index=False ).encode( "utf-8" )
-						st.download_button(
-							"Download CSV",
-							csv,
-							"query_results.csv",
-							"text/csv"
-						)
+						csv = result.to_csv( index=False ).encode( 'utf-8' )
+						st.download_button( 'Download CSV', csv,
+							'query_results.csv', 'text/csv' )
 				
 				except Exception as e:
-					st.error( f"Execution failed: {e}" )
+					st.error( f'Execution failed: {e}' )
 
 # ======================================================================================
 # APPLICATION FOOTER — Fixed Bottom Status Bar
