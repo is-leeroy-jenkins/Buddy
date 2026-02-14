@@ -939,6 +939,115 @@ def dm_insert_df( table_name: str, df: pd.DataFrame ):
 		conn.executemany( stmt, df.values.tolist( ) )
 		conn.commit( )
 
+def dm_sqlite_type( dtype ) -> str:
+	"""
+		Purpose:
+		--------
+		Map a pandas dtype to an appropriate SQLite column type.
+	
+		Parameters:
+		-----------
+		dtype : pandas dtype
+			The dtype of a pandas Series.
+	
+		Returns:
+		--------
+		str
+			SQLite column type.
+	"""
+	dtype_str = str( dtype ).lower( )
+	
+	# ------------------------------------------------------------------
+	# Integer Types (including nullable Int64)
+	# ------------------------------------------------------------------
+	if "int" in dtype_str:
+		return "INTEGER"
+	
+	# ------------------------------------------------------------------
+	# Float Types
+	# ------------------------------------------------------------------
+	if "float" in dtype_str:
+		return "REAL"
+	
+	# ------------------------------------------------------------------
+	# Boolean
+	# ------------------------------------------------------------------
+	if "bool" in dtype_str:
+		return "INTEGER"
+	
+	# ------------------------------------------------------------------
+	# Datetime
+	# ------------------------------------------------------------------
+	if "datetime" in dtype_str:
+		return "TEXT"
+	
+	# ------------------------------------------------------------------
+	# Categorical
+	# ------------------------------------------------------------------
+	if "category" in dtype_str:
+		return "TEXT"
+	
+	# ------------------------------------------------------------------
+	# Default fallback
+	# ------------------------------------------------------------------
+	return "TEXT"
+
+def dm_create_custom_table( table_name: str, columns: list ) -> None:
+	"""
+		Purpose:
+		--------
+		Create a custom SQLite table from column definitions.
+	
+		Parameters:
+		-----------
+		table_name : str
+			Name of table.
+	
+		columns : list of dict
+			[
+				{
+					"name": str,
+					"type": str,
+					"not_null": bool,
+					"primary_key": bool,
+					"auto_increment": bool
+				}
+			]
+	"""
+	if not table_name:
+		raise ValueError( "Table name required." )
+	
+	# Validate identifier
+	if not re.match( r"^[A-Za-z_][A-Za-z0-9_]*$", table_name ):
+		raise ValueError( "Invalid table name." )
+	
+	col_defs = [ ]
+	
+	for col in columns:
+		col_name = col[ "name" ]
+		col_type = col[ "type" ].upper( )
+		
+		if not re.match( r"^[A-Za-z_][A-Za-z0-9_]*$", col_name ):
+			raise ValueError( f"Invalid column name: {col_name}" )
+		
+		definition = f'"{col_name}" {col_type}'
+		
+		if col[ "primary_key" ]:
+			definition += " PRIMARY KEY"
+			if col[ "auto_increment" ] and col_type == "INTEGER":
+				definition += " AUTOINCREMENT"
+		
+		if col[ "not_null" ]:
+			definition += " NOT NULL"
+		
+		col_defs.append( definition )
+	
+	sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join( col_defs )});'
+	
+	with dm_conn( ) as conn:
+		conn.execute( sql )
+		conn.commit( )
+
 # ==============================================================================
 # Page Setup / Configuration
 # ==============================================================================
@@ -3602,62 +3711,109 @@ elif mode == 'Data Management':
 	# ------------------------------------------------------------------------------
 	# CRUD TAB
 	# ------------------------------------------------------------------------------
-	with tabs[ 2 ]:
-		tables = dm_tables( )
-		if tables:
-			table = st.selectbox( "Table", tables, key="crud_table" )
-			df = dm_read( table )
-			
-			# INSERT
-			st.subheader( "Insert Row" )
-			insert_vals = { }
-			for col in df.columns:
-				if col != "rowid":
-					insert_vals[ col ] = st.text_input( col, key=f"ins_{col}" )
-			
-			if st.button( "Insert" ):
-				cols = list( insert_vals.keys( ) )
-				placeholders = ", ".join( [ "?" ] * len( cols ) )
-				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
-				with dm_conn( ) as conn:
-					conn.execute( stmt, list( insert_vals.values( ) ) )
-					conn.commit( )
-				st.success( "Inserted." )
-				st.rerun( )
-			
-			# UPDATE
-			st.subheader( "Update Row" )
-			rid = st.number_input( "Row ID", min_value=1, step=1 )
-			update_vals = { }
-			
-			for col in df.columns:
-				if col != "rowid":
-					val = st.text_input( col, key=f"upd_{col}" )
-					if val != "":
-						update_vals[ col ] = val
-			
-			if st.button( "Update" ):
-				if update_vals:
-					set_clause = ", ".join( [ f"{c}=?" for c in update_vals ] )
-					stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
-					with dm_conn( ) as conn:
-						conn.execute( stmt, list( update_vals.values( ) ) + [ rid ] )
-						conn.commit( )
-					st.success( "Updated." )
-					st.rerun( )
-			
-			# DELETE
-			st.subheader( "Delete Row" )
-			delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
-			confirm = st.checkbox( "Confirm deletion" )
-			
-			if st.button( "Delete" ) and confirm:
-				with dm_conn( ) as conn:
-					conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
-					conn.commit( )
-				st.success( "Deleted." )
-				st.rerun( )
+# ------------------------------------------------------------------------------
+# CRUD (Schema-Aware)
+# ------------------------------------------------------------------------------
+
+with tabs[ 2 ]:
+	tables = dm_tables( )
+	
+	if not tables:
+		st.info( "No tables available." )
+	else:
+		table = st.selectbox( "Select Table", tables, key="crud_table" )
 		
+		df = dm_read( table )
+		schema = dm_schema( table )
+		
+		# Build type map
+		type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != "rowid" }
+		
+		# ------------------------------------------------------------------
+		# INSERT
+		# ------------------------------------------------------------------
+		st.subheader( "Insert Row" )
+		
+		insert_data = { }
+		
+		for column, col_type in type_map.items( ):
+			if "INT" in col_type:
+				insert_data[ column ] = st.number_input( column, step=1, key=f"ins_{column}" )
+			
+			elif "REAL" in col_type:
+				insert_data[
+					column ] = st.number_input( column, format="%.6f", key=f"ins_{column}" )
+			
+			elif "BOOL" in col_type:
+				insert_data[ column ] = 1 if st.checkbox( column, key=f"ins_{column}" ) else 0
+			
+			else:
+				insert_data[ column ] = st.text_input( column, key=f"ins_{column}" )
+		
+		if st.button( "Insert Row" ):
+			cols = list( insert_data.keys( ) )
+			placeholders = ", ".join( [ "?" ] * len( cols ) )
+			
+			stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+			
+			with dm_conn( ) as conn:
+				conn.execute( stmt, list( insert_data.values( ) ) )
+				conn.commit( )
+			
+			st.success( "Row inserted." )
+			st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# UPDATE
+		# ------------------------------------------------------------------
+		st.subheader( "Update Row" )
+		
+		rowid = st.number_input( "Row ID", min_value=1, step=1 )
+		
+		update_data = { }
+		
+		for column, col_type in type_map.items( ):
+			if "INT" in col_type:
+				val = st.number_input( column, step=1, key=f"upd_{column}" )
+				update_data[ column ] = val
+			
+			elif "REAL" in col_type:
+				val = st.number_input( column, format="%.6f", key=f"upd_{column}" )
+				update_data[ column ] = val
+			
+			elif "BOOL" in col_type:
+				val = 1 if st.checkbox( column, key=f"upd_{column}" ) else 0
+				update_data[ column ] = val
+			
+			else:
+				val = st.text_input( column, key=f"upd_{column}" )
+				update_data[ column ] = val
+		
+		if st.button( "Update Row" ):
+			set_clause = ", ".join( [ f"{c}=?" for c in update_data ] )
+			stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
+			
+			with dm_conn( ) as conn:
+				conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
+				conn.commit( )
+			
+			st.success( "Row updated." )
+			st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# DELETE
+		# ------------------------------------------------------------------
+		st.subheader( "Delete Row" )
+		
+		delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
+		
+		if st.button( "Delete Row" ):
+			with dm_conn( ) as conn:
+				conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
+				conn.commit( )
+			
+			st.success( "Row deleted." )
+			st.rerun( )
 	# ------------------------------------------------------------------------------
 	# EXPLORE
 	# ------------------------------------------------------------------------------
@@ -3745,7 +3901,48 @@ elif mode == 'Data Management':
 			if st.button( "Create Index" ):
 				dm_create_index( table, col )
 				st.success( "Index created." )
+	st.divider( )
+	st.subheader( "Create Custom Table" )
+	
+	new_table_name = st.text_input( "Table Name" )
+	
+	column_count = st.number_input( "Number of Columns", min_value=1, max_value=20, value=1 )
+	
+	columns = [ ]
+	
+	for i in range( column_count ):
+		st.markdown( f"### Column {i + 1}" )
 		
+		col_name = st.text_input( "Column Name", key=f"col_name_{i}" )
+		
+		col_type = st.selectbox(
+			"Column Type",
+			[ "INTEGER",
+			  "REAL",
+			  "TEXT" ],
+			key=f"col_type_{i}"
+		)
+		
+		not_null = st.checkbox( "NOT NULL", key=f"not_null_{i}" )
+		primary_key = st.checkbox( "PRIMARY KEY", key=f"pk_{i}" )
+		auto_inc = st.checkbox( "AUTOINCREMENT (INTEGER only)", key=f"ai_{i}" )
+		
+		columns.append( {
+				"name": col_name,
+				"type": col_type,
+				"not_null": not_null,
+				"primary_key": primary_key,
+				"auto_increment": auto_inc
+		} )
+	
+	if st.button( "Create Table" ):
+		try:
+			dm_create_custom_table( new_table_name, columns )
+			st.success( "Table created successfully." )
+			st.rerun( )
+		
+		except Exception as e:
+			st.error( f"Error: {e}" )
 	# ------------------------------------------------------------------------------
 	# SQL
 	# ------------------------------------------------------------------------------
