@@ -1151,6 +1151,13 @@ def dm_safe_identifier( name: str ) -> str:
 	
 	return safe
 
+def dm_get_indexes( table: str ):
+	with dm_conn( ) as conn:
+		rows = conn.execute(
+			f'PRAGMA index_list("{table}");'
+		).fetchall( )
+		return rows
+	
 # ======================================================================================
 #  PROVIDER UTILITIES
 # ======================================================================================
@@ -3788,16 +3795,52 @@ elif mode == 'Data Management':
 		uploaded_file = st.file_uploader( "Upload Excel File", type=[ "xlsx" ] )
 		overwrite = st.checkbox( "Overwrite existing tables", value=True )
 		if uploaded_file:
-			sheets = pd.read_excel( uploaded_file, sheet_name=None )
-			for sheet_name, df in sheets.items( ):
-				table_name = sheet_name.replace( " ", "_" )
-				if overwrite:
-					dm_drop_table( table_name )
+			try:
+				sheets = pd.read_excel( uploaded_file, sheet_name=None )
+				with dm_conn( ) as conn:
+					conn.execute( "BEGIN" )
+					for sheet_name, df in sheets.items( ):
+						table_name = dm_safe_identifier( sheet_name )
+						if overwrite:
+							conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
+						
+						# --- Create Table ---
+						columns = [ ]
+						df.columns = [ dm_safe_identifier( c ) for c in df.columns ]
+						for col in df.columns:
+							sql_type = dm_sqlite_type( df[ col ].dtype )
+							columns.append( f'"{col}" {sql_type}' )
+						
+						create_stmt = (
+								f'CREATE TABLE "{table_name}" '
+								f'({", ".join( columns )});'
+						)
+						
+						conn.execute( create_stmt )
+						
+						# --- Insert Data ---
+						placeholders = ", ".join( [ "?" ] * len( df.columns ) )
+						insert_stmt = (
+								f'INSERT INTO "{table_name}" '
+								f'VALUES ({placeholders});'
+						)
+						
+						conn.executemany(
+							insert_stmt,
+							df.where( pd.notnull( df ), None ).values.tolist( )
+						)
+					
+					conn.commit( )
 				
-				dm_create_table_from_df( table_name, df )
-				dm_insert_df( table_name, df )
-			st.success( "Import completed." )
-			st.rerun( )
+				st.success( "Import completed successfully (transaction committed)." )
+				st.rerun( )
+			
+			except Exception as e:
+				try:
+					conn.rollback( )
+				except:
+					pass
+				st.error( f"Import failed — transaction rolled back.\n\n{e}" )
 		
 	# ------------------------------------------------------------------------------
 	# BROWSE TAB
@@ -4054,6 +4097,48 @@ elif mode == 'Data Management':
 			
 			except Exception as e:
 				st.error( f"Error: {e}" )
+		
+		st.divider( )
+		st.subheader( "Schema Viewer" )
+		
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Select Table", tables, key="schema_view_table" )
+			
+			# Column schema
+			schema = dm_schema( table )
+			schema_df = pd.DataFrame(
+				schema,
+				columns=[ "cid",
+				          "name",
+				          "type",
+				          "notnull",
+				          "default",
+				          "pk" ]
+			)
+			
+			st.markdown( "### Columns" )
+			st.dataframe( schema_df, use_container_width=True )
+			
+			# Row count
+			with dm_conn( ) as conn:
+				count = conn.execute(
+					f'SELECT COUNT(*) FROM "{table}"'
+				).fetchone( )[ 0 ]
+			
+			st.metric( "Row Count", f"{count:,}" )
+			
+			# Indexes
+			indexes = dm_get_indexes( table )
+			if indexes:
+				idx_df = pd.DataFrame(
+					indexes,
+					columns=[ "seq", "name",  "unique",  "origin", "partial" ]
+				)
+				st.markdown( "### Indexes" )
+				st.dataframe( idx_df, use_container_width=True )
+			else:
+				st.info( "No indexes defined." )
 				
 	# ------------------------------------------------------------------------------
 	# SQL
