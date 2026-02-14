@@ -242,3 +242,98 @@ BACKGROUND_MODE = r'''Background mode enables you to execute long-running tasks 
 HYPERPARAMETERS = r'''Settings used during the inference (deployment) phase to control the behavior,
 		creativity, and format of a model's output allowing users to fine-tune model
 		responses without retraining. '''
+
+PROMPT_ENGINEERING = r'''Prompt engineering is the process of writing effective instructions
+		for a model, such that it consistently generates content that meets your requirements.
+		Because the content generated from a model is non-deterministic, prompting to get your
+		desired output is a mix of art and science. However, you can apply techniques and
+		best practices to get good results consistently.
+		'''
+
+TEXT_GENERATION = r'''Use a large language model to produce coherent, context-aware natural language
+		output in response to user prompts, system instructions, or retrieved document context.
+		When a user submits a request—whether it is a general inquiry, a structured analytical task,
+		or a document-grounded question—Buddy constructs a prompt that may include system directives,
+		conversation history, and optionally retrieved content from its vector store. The underlying
+		model then generates text according to configurable parameters such as temperature,
+		maximum tokens, and response format. This capability enables Buddy to function as
+		a conversational assistant, analytical explainer, summarizer, drafting tool, and reasoning engine,
+		producing structured or narrative outputs tailored to the user’s workflow. '''
+
+CHAT_COMPLETIONS  = r'''a unified interface for interacting with advanced generative models through
+		a single request–response workflow. It allows a client to send structured inputs—such as text,
+		images, audio, or tool instructions—and receive model-generated outputs that may include
+		natural language responses, structured data, reasoning traces, or tool call instructions.
+		It supports multi-modal inputs, iterative conversations, function/tool invocation,
+		streaming outputs, and configurable generation parameters (e.g., temperature, max tokens),
+		making it suitable for building chat systems, automation agents, data extraction pipelines,
+		and decision-support applications. '''
+
+AUDIO_API = r'''The Audio API functionality enables the ingestion, transformation, and generation
+		of spoken language as part of the broader AI workflow. It allows users to upload audio files
+		for transcription, converting speech into structured text that can then be analyzed,
+		summarized, embedded, or used in Document Q&A and conversational contexts. It can also
+		support translation of spoken content into other languages and text-to-speech generation, p
+		roducing natural-sounding audio from model-generated text. By integrating speech recognition
+		and synthesis alongside text and document processing, the Audio API expands Buddy into a
+		multimodal assistant capable of handling voice-driven inputs and delivering spoken outputs
+		within analytical or conversational workflows.  '''
+
+FILES_API = r''' A structured mechanism for uploading, storing, listing, retrieving, and deleting
+		user-provided files that are intended for downstream processing by the application’s
+		AI workflows. It serves as the persistence layer for document assets that may later
+		 be used for embedding generation, Document Q&A, or other model-assisted analysis. Rather
+		 than embedding raw files directly into prompts, the Files API allows the user to reference
+		 stored file objects by identifier, enabling controlled access, reuse across sessions,
+		 and integration with higher-level capabilities such as retrieval, structured extraction,
+		 or conversational analysis. In short, it manages document lifecycle and access so that
+		 file-based intelligence features operate reliably and efficiently '''
+
+IMAGES_API = r''' Enables the generation and analysis of visual content as part of the application’s
+		broader AI workflow. On the generation side, users can provide descriptive prompts to
+		create images that support presentations, reports, branding, or conceptual exploration.
+		On the analysis side, uploaded images can be processed to extract descriptive insights,
+		captions, or structured information that can then be incorporated into downstream tasks
+		such as summarization or decision support. By integrating image generation and interpretation
+		alongside text, documents, and structured data, the Images API expands beyond purely textual interaction,
+		allowing it to operate in a multimodal environment where visual and
+		linguistic information can be processed cohesively '''
+
+VECTORSTORES_API = r'''Specialized databases designed to store and index embeddings so they can be
+        searched efficiently by semantic similarity. After documents are processed and converted
+        into high-dimensional vectors, those vectors are persisted in a vector store alongside
+        metadata such as document name, chunk position, or source reference. When a user submits
+        a query, its embedding is generated and compared against stored vectors using similarity
+        metrics to retrieve the most relevant content. This enables fast, scalable semantic search
+        and underpins features like Document Q&A by ensuring that responses are grounded in the
+        most contextually relevant portions of the user’s data rather than relying solely
+        on generalized model knowledge. '''
+
+EMBEDDINGS_API = r'''A numerical vector representations of text that capture semantic meaning in a
+		high-dimensional space. When documents, prompts, or queries are processed, their textual
+		content is transformed into embeddings so that semantically similar content is positioned
+		close together mathematically. Buddy stores these vectors in its local vector database,
+		enabling similarity search, clustering, document retrieval, and contextual grounding for
+		downstream tasks like Document Q&A. By converting language into structured numerical form,
+		embeddings serve as the foundation for intelligent search, relevance ranking, and
+		retrieval-augmented reasoning within the application. '''
+
+DOCUMENT_Q_AND_A = r'''a retrieval-augmented workflow that allows users to ask natural language
+		questions about uploaded documents (e.g., PDFs, Word files, Excel sheets) and receive
+		contextually grounded answers derived directly from those materials. The system ingests
+		documents, extracts and chunks their text, generates embeddings, stores those embeddings
+		in a local vector database, and retrieves the most semantically relevant passages when a
+		question is asked. The retrieved context is then supplied to the language model to
+		generate a precise, source-aware response. This approach enables accurate,
+		citation-ready answers tied to user-provided content rather than relying solely on general
+		model knowledge, effectively turning Buddy into a document-aware analytical assistant.  '''
+
+DATA_MANAGEMENT = r'''Structured handling, organization, processing, and lifecycle control of
+		user-provided documents within the system. It encompasses uploading files, extracting and
+		normalizing their content, chunking text for semantic processing, generating embeddings,
+		storing metadata, and enabling controlled retrieval for downstream features such as Document Q&A
+		and Data Analysis. Beyond ingestion, it includes version awareness, indexing, schema inspection
+		(where applicable), and the ability to manage or remove stored assets safely. Document
+		Management provides the foundational infrastructure that transforms raw files into structured,
+		searchable, and model-ready assets, ensuring that Buddy’s intelligence features operate
+		on reliable, well-governed data rather than unmanaged documents.  '''

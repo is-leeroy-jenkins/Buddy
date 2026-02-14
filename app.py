@@ -1198,6 +1198,104 @@ def dm_profile_table( table: str ):
 	
 	return pd.DataFrame( profile_rows )
 
+def dm_drop_column( table: str, column: str ):
+	if not table or not column:
+		raise ValueError( "Table and column required." )
+	
+	with dm_conn( ) as conn:
+		# ------------------------------------------------------------
+		# Fetch original CREATE TABLE statement
+		# ------------------------------------------------------------
+		row = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='table' AND name =?
+			""",
+			(table,)
+		).fetchone( )
+		
+		if not row or not row[ 0 ]:
+			raise ValueError( "Table definition not found." )
+		
+		create_sql = row[ 0 ]
+		
+		# ------------------------------------------------------------
+		# Extract column definitions
+		# ------------------------------------------------------------
+		open_paren = create_sql.find( "(" )
+		close_paren = create_sql.rfind( ")" )
+		
+		if open_paren == -1 or close_paren == -1:
+			raise ValueError( "Malformed CREATE TABLE statement." )
+		
+		inner = create_sql[ open_paren + 1: close_paren ]
+		
+		column_defs = [ c.strip( ) for c in inner.split( "," ) ]
+		
+		# Remove target column
+		new_defs = [ ]
+		for col_def in column_defs:
+			col_name = col_def.split( )[ 0 ].strip( '"' )
+			if col_name != column:
+				new_defs.append( col_def )
+		
+		if len( new_defs ) == len( column_defs ):
+			raise ValueError( "Column not found." )
+		
+		# ------------------------------------------------------------
+		# Build new CREATE TABLE statement
+		# ------------------------------------------------------------
+		temp_table = f"{table}_rebuild_temp"
+		
+		new_create_sql = (
+				f'CREATE TABLE "{temp_table}" ('
+				+ ", ".join( new_defs )
+				+ ");"
+		)
+		
+		# ------------------------------------------------------------
+		# Begin transaction
+		# ------------------------------------------------------------
+		conn.execute( "BEGIN" )
+		
+		conn.execute( new_create_sql )
+		
+		remaining_cols = [
+				c.split( )[ 0 ].strip( '"' )
+				for c in new_defs
+		]
+		
+		col_list = ", ".join( [ f'"{c}"' for c in remaining_cols ] )
+		
+		conn.execute(
+			f'INSERT INTO "{temp_table}" ({col_list}) '
+			f'SELECT {col_list} FROM "{table}";'
+		)
+		
+		# Preserve indexes
+		indexes = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+			""",
+			(table,)
+		).fetchall( )
+		
+		conn.execute( f'DROP TABLE "{table}";' )
+		conn.execute(
+			f'ALTER TABLE "{temp_table}" RENAME TO "{table}";'
+		)
+		
+		# Recreate indexes
+		for idx in indexes:
+			idx_sql = idx[ 0 ]
+			if column not in idx_sql:
+				conn.execute( idx_sql )
+		
+		conn.commit( )
+
 # ======================================================================================
 #  PROVIDER UTILITIES
 # ======================================================================================
@@ -1877,7 +1975,7 @@ with st.sidebar:
 # CHAT MODE
 # =============================================================================
 if mode == 'Chat':
-	st.subheader( "🧠 Chat Completions" )
+	st.subheader( "💬 Chat Completions" )
 	st.divider( )
 	st.header( '' )
 	provider_module = get_provider_module( )
@@ -1982,7 +2080,7 @@ if mode == 'Chat':
 # TEXT MODE
 # ======================================================================================
 elif mode == "Text":
-	st.subheader( "📝 Text Generation" )
+	st.subheader( "💬 Text Generation", help=cfg.TEXT_GENERATION )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	chat = provider_module.Chat( )
@@ -2204,7 +2302,7 @@ elif mode == "Text":
 # IMAGES MODE
 # ======================================================================================
 elif mode == "Images":
-	st.subheader( '📷 Images API')
+	st.subheader( '📷 Images API', help=cfg.IMAGES_API )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	image_size = st.session_state.get( 'image_size', None )
@@ -2593,7 +2691,7 @@ elif mode == "Audio":
 	audio_loop = st.session_state.get( 'audio_loop', False )
 	auto_play = st.session_state.get( 'auto_play', False )
 	voice = st.session_state.get( 'voice', None )
-	st.subheader( '🔉 Audio API')
+	st.subheader( '🔉 Audio API', help=cfg.AUDIO_API )
 	transcriber = None
 	translator = None
 	tts = None
@@ -2839,7 +2937,7 @@ elif mode == "Audio":
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
-	st.subheader( '⛓️  Vector Embeddings')
+	st.subheader( '⛓️  Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
 	if not hasattr( provider_module, 'Embeddings' ):
 		st.info( 'Embeddings are not supported by the selected provider.' )
@@ -2899,7 +2997,7 @@ elif mode == 'Vector Stores':
 		provider_module = get_provider_module( )
 		collector = provider_module.VectorStores( )
 	
-		st.subheader( '📚 Collections' )
+		st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
 		st.divider( )
 		
 		# --------------------------------------------------------------
@@ -3032,7 +3130,7 @@ elif mode == 'Vector Stores':
 		provider_module = get_provider_module( )
 		searcher = provider_module.VectorStores( )
 	
-		st.subheader( '🔍 File Search Stores' )
+		st.subheader( '☁️ File Search Stores', help=cfg.VECTORSTORES_API )
 		st.divider( )
 		
 		# --------------------------------------------------------------
@@ -3152,7 +3250,7 @@ elif mode == 'Vector Stores':
 		provider_module = get_provider_module( )
 		vector = provider_module.VectorStores( )
 	
-		st.subheader( '⚡ Vector Stores' )
+		st.subheader( '🚀 Vector Stores', help=cfg.VECTORSTORES_API )
 		st.divider( )
 		
 		# --------------------------------------------------------------
@@ -3395,7 +3493,7 @@ elif mode == "Files":
 	except NameError:
 		chat = get_provider_module( ).Chat( )
 	
-	st.subheader( '📁 Files API' )
+	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
 	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with center:
@@ -3490,7 +3588,7 @@ elif mode == "Prompt Engineering":
 	TABLE = "Prompts"
 	PAGE_SIZE = 10
 	
-	st.subheader( "📝 Prompt Engineering" )
+	st.subheader( "📝 Prompt Engineering", help=cfg.PROMPT_ENGINEERING )
 	st.divider( )
 	
 	st.session_state.setdefault( "pe_cascade_enabled", False )
@@ -3808,7 +3906,7 @@ elif mode == 'Data Export':
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
-	st.subheader( "🗄 Data Management" )
+	st.subheader( "🏛️ Data Management", help=cfg.DOCUMENT_MANAGEMENT )
 	tabs = st.tabs( [
 			"📥 Import",
 			"🗂 Browse",
