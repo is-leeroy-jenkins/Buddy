@@ -45,6 +45,7 @@ from __future__ import annotations
 from boogr import Error
 import config as cfg
 import streamlit as st
+import sqlite3
 import numpy as np
 import pandas as pd
 from openai import OpenAI
@@ -739,122 +740,100 @@ def dm_create_index( table: str, column: str ):
 		conn.commit( )
 
 def dm_apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
-	st.subheader( "Advanced Filters" )
-	
+	st.subheader( 'Advanced Filters' )
 	conditions = [ ]
-	
 	col1, col2, col3 = st.columns( 3 )
-	
-	column = col1.selectbox( "Column", df.columns )
-	operator = col2.selectbox( "Operator", [ "=",
-	                                         "!=",
-	                                         ">",
-	                                         "<",
-	                                         ">=",
-	                                         "<=",
-	                                         "contains" ] )
-	value = col3.text_input( "Value" )
-	
+	column = col1.selectbox( 'Column', df.columns )
+	operator = col2.selectbox( 'Operator', [ '=', '!=', '>', '<', '>=',  '<=', 'contains' ] )
+	value = col3.text_input( 'Value' )
 	if value:
-		if operator == "=":
+		if operator == '=':
 			df = df[ df[ column ] == value ]
-		elif operator == "!=":
+		elif operator == '!=':
 			df = df[ df[ column ] != value ]
-		elif operator == ">":
+		elif operator == '>':
 			df = df[ df[ column ].astype( float ) > float( value ) ]
-		elif operator == "<":
+		elif operator == '<':
 			df = df[ df[ column ].astype( float ) < float( value ) ]
-		elif operator == ">=":
+		elif operator == '>=':
 			df = df[ df[ column ].astype( float ) >= float( value ) ]
-		elif operator == "<=":
+		elif operator == '<=':
 			df = df[ df[ column ].astype( float ) <= float( value ) ]
-		elif operator == "contains":
+		elif operator == 'contains':
 			df = df[ df[ column ].astype( str ).str.contains( value ) ]
 	
 	return df
 
 def dm_aggregation( df: pd.DataFrame ):
-	st.subheader( "Aggregation Engine" )
+	st.subheader( 'Aggregation Engine' )
 	
-	numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 	
 	if not numeric_cols:
-		st.info( "No numeric columns available." )
+		st.info( 'No numeric columns available.' )
 		return
 	
-	col = st.selectbox( "Column", numeric_cols )
-	agg = st.selectbox( "Aggregation", [ "COUNT",
-	                                     "SUM",
-	                                     "AVG",
-	                                     "MIN",
-	                                     "MAX",
-	                                     "MEDIAN" ] )
+	col = st.selectbox( 'Column', numeric_cols )
+	agg = st.selectbox( 'Aggregation', [ 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'MEDIAN' ] )
 	
-	if agg == "COUNT":
+	if agg == 'COUNT':
 		result = df[ col ].count( )
-	elif agg == "SUM":
+	elif agg == 'SUM':
 		result = df[ col ].sum( )
-	elif agg == "AVG":
+	elif agg == 'AVG':
 		result = df[ col ].mean( )
-	elif agg == "MIN":
+	elif agg == 'MIN':
 		result = df[ col ].min( )
-	elif agg == "MAX":
+	elif agg == 'MAX':
 		result = df[ col ].max( )
-	elif agg == "MEDIAN":
+	elif agg == 'MEDIAN':
 		result = df[ col ].median( )
 	
-	st.metric( "Result", result )
+	st.metric( 'Result', result )
 
 def dm_visualization( df: pd.DataFrame ):
-	st.subheader( "Visualization Engine" )
+	st.subheader( 'Visualization Engine' )
 	
-	numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
-	categorical_cols = df.select_dtypes( include=[ "object" ] ).columns.tolist( )
+	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+	categorical_cols = df.select_dtypes( include=[ 'object' ] ).columns.tolist( )
 	
-	chart = st.selectbox( "Chart Type", [
-			"Histogram",
-			"Bar",
-			"Line",
-			"Scatter",
-			"Box",
-			"Pie",
-			"Correlation"
-	] )
+	chart = st.selectbox( 'Chart Type', [ 'Histogram', 'Bar', 'Line',
+			'Scatter', 'Box', 'Pie', 'Correlation' ] )
 	
-	if chart == "Histogram" and numeric_cols:
-		col = st.selectbox( "Column", numeric_cols )
+	if chart == 'Histogram' and numeric_cols:
+		col = st.selectbox( 'Column', numeric_cols )
 		fig = px.histogram( df, x=col )
 		st.plotly_chart( fig, use_container_width=True )
 	
-	elif chart == "Bar":
-		x = st.selectbox( "X", df.columns )
-		y = st.selectbox( "Y", numeric_cols )
+	elif chart == 'Bar':
+		x = st.selectbox( 'X', df.columns )
+		y = st.selectbox( 'Y', numeric_cols )
 		fig = px.bar( df, x=x, y=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
-	elif chart == "Line":
-		x = st.selectbox( "X", df.columns )
-		y = st.selectbox( "Y", numeric_cols )
+	elif chart == 'Line':
+		x = st.selectbox( 'X', df.columns )
+		y = st.selectbox( 'Y', numeric_cols )
 		fig = px.line( df, x=x, y=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
-	elif chart == "Scatter":
-		x = st.selectbox( "X", numeric_cols )
-		y = st.selectbox( "Y", numeric_cols )
+	elif chart == 'Scatter':
+		x = st.selectbox( 'X', numeric_cols )
+		y = st.selectbox( 'Y', numeric_cols )
 		fig = px.scatter( df, x=x, y=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
-	elif chart == "Box":
-		col = st.selectbox( "Column", numeric_cols )
+	elif chart == 'Box':
+		col = st.selectbox( 'Column', numeric_cols )
 		fig = px.box( df, y=col )
 		st.plotly_chart( fig, use_container_width=True )
 	
-	elif chart == "Pie":
-		col = st.selectbox( "Category Column", categorical_cols )
+	elif chart == 'Pie':
+		col = st.selectbox( 'Category Column', categorical_cols )
 		fig = px.pie( df, names=col )
 		st.plotly_chart( fig, use_container_width=True )
 	
-	elif chart == "Correlation" and len( numeric_cols ) > 1:
+	elif chart == 'Correlation' and len( numeric_cols ) > 1:
 		corr = df[ numeric_cols ].corr( )
 		fig = px.imshow( corr, text_auto=True )
 		st.plotly_chart( fig, use_container_width=True )
@@ -863,10 +842,10 @@ def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
 	columns = [ ]
 	for col in df.columns:
 		sql_type = dm_sqlite_type( df[ col ].dtype )
-		safe_col = col.replace( " ", "_" )
-		columns.append( f'"{safe_col}" {sql_type}' )
+		safe_col = col.replace( ' ', '_' )
+		columns.append( f'{safe_col} {sql_type}')
 	
-	create_stmt = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join( columns )});'
+	create_stmt = f'CREATE TABLE IF NOT EXISTS {table_name} ({", ".join( columns )});'
 	
 	with dm_conn( ) as conn:
 		conn.execute( create_stmt )
@@ -874,10 +853,10 @@ def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
 
 def dm_insert_df( table_name: str, df: pd.DataFrame ):
 	df = df.copy( )
-	df.columns = [ c.replace( " ", "_" ) for c in df.columns ]
+	df.columns = [ c.replace( ' ', '_' ) for c in df.columns ]
 	
-	placeholders = ", ".join( [ "?" ] * len( df.columns ) )
-	stmt = f'INSERT INTO "{table_name}" VALUES ({placeholders});'
+	placeholders = ', '.join( [ '?' ] * len( df.columns ) )
+	stmt = f'INSERT INTO {table_name} VALUES ({placeholders});'
 	
 	with dm_conn( ) as conn:
 		conn.executemany( stmt, df.values.tolist( ) )
@@ -3431,7 +3410,7 @@ elif mode == "Prompt Engineering":
 			st.button( "🧹 Clear Selection", on_click=reset_selection )
 
 # ==============================================================================
-# Export MODE
+# EXPORT MODE
 # ==============================================================================
 elif mode == 'Data Export':
 	st.subheader( '📭  Export' )
@@ -3488,171 +3467,223 @@ elif mode == 'Data Export':
 	
 	st.download_button( 'Download Chat History (PDF)', buf.getvalue( ),
 		'buddy_chat.pdf', mime='application/pdf' )
-	
 
+# ==============================================================================
+# DATA MANAGEMENT MODE
+# ==============================================================================
 elif mode == 'Data Management':
-		# ==============================================================================
-		# MAIN UI
-		# ==============================================================================
-		st.subheader( "🗄 Data Management" )
-		
-		tabs = st.tabs( [
-				"📥 Import",
-				"🗂 Browse",
-				"✏ CRUD",
-				"📊 Explore",
-				"🔎 Filter",
-				"🧮 Aggregate",
-				"📈 Visualize",
-				"⚙ Admin",
-				"🧠 SQL"
-		] )
-		
-		tables = dm_tables( )
-		if not tables:
-			st.info( "No tables available." )
-		else:
-			table = st.selectbox( "Table", tables )
-			df_full = dm_read( table )
-			
-			# ------------------------------------------------------------------------------
-			# Tabs[ 0
-			# ------------------------------------------------------------------------------
-			with tabs[ 0 ]:
-				st.text( "Upload Excel File" )
-				uploaded_file = st.file_uploader(
-					"Browse Excel File",
-					type=[ "xlsx" ],
-					key="dm_excel_upload"
-				)
-				
-				if uploaded_file:
-					try:
-						sheets = pd.read_excel( uploaded_file, sheet_name=None )
-						
-						for sheet_name, df in sheets.items( ):
-							table_name = sheet_name.replace( " ", "_" )
-							dm_create_table_from_df( table_name, df )
-							dm_insert_df( table_name, df )
-						
-						st.success( "Excel file successfully imported." )
-						st.rerun( )
-					
-					except Exception as e:
-						st.error( f"Import failed: {e}" )
-		
-			# ------------------------------------------------------------------------------
-			# Explore + Pagination
-			# ------------------------------------------------------------------------------
-			with tabs[ 1 ]:
-				tables = dm_tables( )
-				
-				if tables:
-					table = st.selectbox( "Select Table", tables, key="dm_browse_table" )
-					df = dm_read( table )
-					st.dataframe( df, use_container_width=True )
-				else:
-					st.info( "No tables available." )
+	st.subheader( "🗄 Data Management" )
+	tabs = st.tabs( [
+			"📥 Import",
+			"🗂 Browse",
+			"✏ CRUD",
+			"📊 Explore",
+			"🔎 Filter",
+			"🧮 Aggregate",
+			"📈 Visualize",
+			"⚙ Admin",
+			"🧠 SQL"
+	] )
 	
-			
-			# ------------------------------------------------------------------------------
-			# Aggregation
-			# ------------------------------------------------------------------------------
-			with tabs[ 2 ]:
-				tables = dm_tables( )
+	tables = dm_tables( )
+	if not tables:
+		st.info( "No tables available." )
+	else:
+		table = st.selectbox( "Table", tables )
+		df_full = dm_read( table )
+	
+	# ------------------------------------------------------------------------------
+	# UPLOAD TAB
+	# ------------------------------------------------------------------------------
+	with tabs[ 0 ]:
+		uploaded_file = st.file_uploader( "Upload Excel File", type=[ "xlsx" ] )
+		overwrite = st.checkbox( "Overwrite existing tables", value=True )
+		if uploaded_file:
+			sheets = pd.read_excel( uploaded_file, sheet_name=None )
+			for sheet_name, df in sheets.items( ):
+				table_name = sheet_name.replace( " ", "_" )
+				if overwrite:
+					dm_drop_table( table_name )
 				
-				if not tables:
-					st.info( "No tables available." )
-				else:
-					table = st.selectbox( "Select Table", tables, key="dm_crud_table" )
-					df = dm_read( table )
-					
-					st.subheader( "Insert Row" )
-					
-					insert_vals = { }
-					for col in df.columns:
-						if col != "rowid":
-							insert_vals[ col ] = st.text_input( col, key=f"insert_{col}" )
-					
-					if st.button( "Insert Row" ):
-						cols = list( insert_vals.keys( ) )
-						placeholders = ", ".join( [ "?" ] * len( cols ) )
-						stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
-						
-						with dm_conn( ) as conn:
-							conn.execute( stmt, list( insert_vals.values( ) ) )
-							conn.commit( )
-						
-						st.success( "Row inserted." )
-						st.rerun( )
-					
-					st.divider( )
-					st.subheader( "Update Row" )
-					
-					rowid = st.number_input( "Row ID", min_value=1, step=1, key="update_rowid" )
-					
-					update_vals = { }
-					for col in df.columns:
-						if col != "rowid":
-							update_vals[ col ] = st.text_input( col, key=f"update_{col}" )
-					
-					if st.button( "Update Row" ):
-						set_clause = ", ".join( [ f"{c}=?" for c in update_vals ] )
-						stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
-						
-						with dm_conn( ) as conn:
-							conn.execute( stmt, list( update_vals.values( ) ) + [ rowid ] )
-							conn.commit( )
-						
-						st.success( "Row updated." )
-						st.rerun( )
-					
-					st.divider( )
-					st.subheader( "Delete Row" )
-					
-					delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1, key="delete_rowid" )
-					
-					if st.button( "Delete Row" ):
-						with dm_conn( ) as conn:
-							conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
-							conn.commit( )
-						
-						st.success( "Row deleted." )
-						st.rerun( )
+				dm_create_table_from_df( table_name, df )
+				dm_insert_df( table_name, df )
+			st.success( "Import completed." )
+			st.rerun( )
+		
+	# ------------------------------------------------------------------------------
+	# BROWSE TAB
+	# ------------------------------------------------------------------------------
+	with tabs[ 1 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables )
+			df = dm_read( table )
+			st.dataframe( df, use_container_width=True )
+		else:
+			st.info( "No tables available." )
+		
+	# ------------------------------------------------------------------------------
+	# CRUD TAB
+	# ------------------------------------------------------------------------------
+	with tabs[ 2 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables, key="crud_table" )
+			df = dm_read( table )
 			
-			# ------------------------------------------------------------------------------
-			# Visualization
-			# ------------------------------------------------------------------------------
-			with tabs[ 3 ]:
-				dm_visualization( df_full )
+			# INSERT
+			st.subheader( "Insert Row" )
+			insert_vals = { }
+			for col in df.columns:
+				if col != "rowid":
+					insert_vals[ col ] = st.text_input( col, key=f"ins_{col}" )
 			
-			# ------------------------------------------------------------------------------
-			# Admin
-			# ------------------------------------------------------------------------------
-			with tabs[ 4 ]:
-				if st.button( "Drop Table" ):
-					dm_drop_table( table )
-					st.success( "Table dropped." )
+			if st.button( "Insert" ):
+				cols = list( insert_vals.keys( ) )
+				placeholders = ", ".join( [ "?" ] * len( cols ) )
+				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+				with dm_conn( ) as conn:
+					conn.execute( stmt, list( insert_vals.values( ) ) )
+					conn.commit( )
+				st.success( "Inserted." )
+				st.rerun( )
+			
+			# UPDATE
+			st.subheader( "Update Row" )
+			rid = st.number_input( "Row ID", min_value=1, step=1 )
+			update_vals = { }
+			
+			for col in df.columns:
+				if col != "rowid":
+					val = st.text_input( col, key=f"upd_{col}" )
+					if val != "":
+						update_vals[ col ] = val
+			
+			if st.button( "Update" ):
+				if update_vals:
+					set_clause = ", ".join( [ f"{c}=?" for c in update_vals ] )
+					stmt = f'UPDATE "{table}" SET {set_clause} WHERE rowid=?;'
+					with dm_conn( ) as conn:
+						conn.execute( stmt, list( update_vals.values( ) ) + [ rid ] )
+						conn.commit( )
+					st.success( "Updated." )
 					st.rerun( )
-				
-				col = st.selectbox( "Create Index on Column", df_full.columns )
-				if st.button( "Create Index" ):
-					dm_create_index( table, col )
-					st.success( "Index created." )
 			
-			# ------------------------------------------------------------------------------
-			# SQL Console
-			# ------------------------------------------------------------------------------
-			with tabs[ 5 ]:
-				query = st.text_area( "SELECT only" )
-				if st.button( "Run" ):
-					if not query.lower( ).strip( ).startswith( "select" ):
-						st.error( "Only SELECT allowed." )
-					else:
-						with dm_conn( ) as conn:
-							result = pd.read_sql_query( query, conn )
-						st.dataframe( result, use_container_width=True )
-
+			# DELETE
+			st.subheader( "Delete Row" )
+			delete_id = st.number_input( "Row ID to Delete", min_value=1, step=1 )
+			confirm = st.checkbox( "Confirm deletion" )
+			
+			if st.button( "Delete" ) and confirm:
+				with dm_conn( ) as conn:
+					conn.execute( f'DELETE FROM "{table}" WHERE rowid=?;', (delete_id,) )
+					conn.commit( )
+				st.success( "Deleted." )
+				st.rerun( )
+		
+	# ------------------------------------------------------------------------------
+	# EXPLORE
+	# ------------------------------------------------------------------------------
+	with tabs[ 3 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables, key="explore_table" )
+			page_size = st.slider( "Rows per page", 10, 500, 50 )
+			page = st.number_input( "Page", min_value=1, step=1 )
+			offset = (page - 1) * page_size
+			df_page = dm_read( table, page_size, offset )
+			st.dataframe( df_page, use_container_width=True )
+		
+	# ------------------------------------------------------------------------------
+	# FILTER
+	# ------------------------------------------------------------------------------
+	with tabs[ 4 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables, key="filter_table" )
+			df = dm_read( table )
+			
+			column = st.selectbox( "Column", df.columns )
+			value = st.text_input( "Contains" )
+			
+			if value:
+				df = df[ df[ column ].astype( str ).str.contains( value ) ]
+			st.dataframe( df, use_container_width=True )
+		
+	# ------------------------------------------------------------------------------
+	# AGGREGATE
+	# ------------------------------------------------------------------------------
+	with tabs[ 5 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables, key="agg_table" )
+			df = dm_read( table )
+			numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+			
+			if numeric_cols:
+				col = st.selectbox( "Column", numeric_cols )
+				agg = st.selectbox( "Function", [ "SUM",
+				                                  "AVG",
+				                                  "COUNT" ] )
+				if agg == "SUM":
+					st.metric( "Result", df[ col ].sum( ) )
+				elif agg == "AVG":
+					st.metric( "Result", df[ col ].mean( ) )
+				elif agg == "COUNT":
+					st.metric( "Result", df[ col ].count( ) )
+		
+	# ------------------------------------------------------------------------------
+	# VISUALIZE
+	# ------------------------------------------------------------------------------
+	with tabs[ 6 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables, key="viz_table" )
+			df = dm_read( table )
+			numeric_cols = df.select_dtypes( include=[ "number" ] ).columns.tolist( )
+			
+			if numeric_cols:
+				col = st.selectbox( "Column", numeric_cols )
+				fig = px.histogram( df, x=col )
+				st.plotly_chart( fig, use_container_width=True )
+		
+	# ------------------------------------------------------------------------------
+	# ADMIN
+	# ------------------------------------------------------------------------------
+	with tabs[ 7 ]:
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Table", tables, key="admin_table" )
+			
+			if st.button( "Drop Table" ):
+				confirm = st.checkbox( "Confirm Drop" )
+				if confirm:
+					dm_drop_table( table )
+					st.success( "Dropped." )
+					st.rerun( )
+			
+			df = dm_read( table )
+			col = st.selectbox( "Create Index On", df.columns )
+			
+			if st.button( "Create Index" ):
+				dm_create_index( table, col )
+				st.success( "Index created." )
+		
+	# ------------------------------------------------------------------------------
+	# SQL
+	# ------------------------------------------------------------------------------
+	with tabs[ 8 ]:
+		query = st.text_area( "SELECT only (single statement)" )
+		if st.button( "Run Query" ):
+			if ";" in query.strip( )[ :-1 ]:
+				st.error( "Multiple statements not allowed." )
+			elif not query.lower( ).strip( ).startswith( "select" ):
+				st.error( "Only SELECT allowed." )
+			else:
+				with dm_conn( ) as conn:
+					result = pd.read_sql_query( query, conn )
+				st.dataframe( result, use_container_width=True )
+				
 # ======================================================================================
 # Footer — Fixed Bottom Status Bar
 # ======================================================================================
