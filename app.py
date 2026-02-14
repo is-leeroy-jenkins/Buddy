@@ -1975,7 +1975,7 @@ with st.sidebar:
 # CHAT MODE
 # =============================================================================
 if mode == 'Chat':
-	st.subheader( "💬 Chat Completions" )
+	st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
 	st.divider( )
 	st.header( '' )
 	provider_module = get_provider_module( )

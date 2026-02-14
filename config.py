@@ -260,7 +260,7 @@ TEXT_GENERATION = r'''Use a large language model to produce coherent, context-aw
 		a conversational assistant, analytical explainer, summarizer, drafting tool, and reasoning engine,
 		producing structured or narrative outputs tailored to the user’s workflow. '''
 
-CHAT_COMPLETIONS  = r'''a unified interface for interacting with advanced generative models through
+CHAT_COMPLETIONS  = r'''A unified interface for interacting with advanced generative models through
 		a single request–response workflow. It allows a client to send structured inputs—such as text,
 		images, audio, or tool instructions—and receive model-generated outputs that may include
 		natural language responses, structured data, reasoning traces, or tool call instructions.
@@ -309,7 +309,7 @@ VECTORSTORES_API = r'''Specialized databases designed to store and index embeddi
         most contextually relevant portions of the user’s data rather than relying solely
         on generalized model knowledge. '''
 
-EMBEDDINGS_API = r'''A numerical vector representations of text that capture semantic meaning in a
+EMBEDDINGS_API = r'''Creates numerical vector representations of text that capture semantic meaning in a
 		high-dimensional space. When documents, prompts, or queries are processed, their textual
 		content is transformed into embeddings so that semantically similar content is positioned
 		close together mathematically. Buddy stores these vectors in its local vector database,
@@ -318,7 +318,7 @@ EMBEDDINGS_API = r'''A numerical vector representations of text that capture sem
 		embeddings serve as the foundation for intelligent search, relevance ranking, and
 		retrieval-augmented reasoning within the application. '''
 
-DOCUMENT_Q_AND_A = r'''a retrieval-augmented workflow that allows users to ask natural language
+DOCUMENT_Q_AND_A = r'''A retrieval-augmented workflow that allows users to ask natural language
 		questions about uploaded documents (e.g., PDFs, Word files, Excel sheets) and receive
 		contextually grounded answers derived directly from those materials. The system ingests
 		documents, extracts and chunks their text, generates embeddings, stores those embeddings
@@ -328,8 +328,8 @@ DOCUMENT_Q_AND_A = r'''a retrieval-augmented workflow that allows users to ask n
 		citation-ready answers tied to user-provided content rather than relying solely on general
 		model knowledge, effectively turning Buddy into a document-aware analytical assistant.  '''
 
-DATA_MANAGEMENT = r'''Structured handling, organization, processing, and lifecycle control of
-		user-provided documents within the system. It encompasses uploading files, extracting and
+DATA_MANAGEMENT = r'''Structured handling, organization, processing of
+		user-provided data in a self-contained SQLite Database. It allows uploading of files, extracting and
 		normalizing their content, chunking text for semantic processing, generating embeddings,
 		storing metadata, and enabling controlled retrieval for downstream features such as Document Q&A
 		and Data Analysis. Beyond ingestion, it includes version awareness, indexing, schema inspection
