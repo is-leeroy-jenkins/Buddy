@@ -734,7 +734,7 @@ DM_DB_PATH = os.path.join( "stores", "sqlite", "Data.db" )
 os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
 
 # ==============================================================================
-# DATABASE CORE
+# DATABASE UTILITIES
 # ==============================================================================
 def dm_conn( ) -> sqlite3.Connection:
 	return sqlite3.connect( DM_DB_PATH )
@@ -4037,7 +4037,7 @@ elif mode == 'Data Management':
 					st.error( f"Execution failed: {e}" )
 
 # ======================================================================================
-# Footer — Fixed Bottom Status Bar
+# APPLICATION FOOTER — Fixed Bottom Status Bar
 # ======================================================================================
 st.markdown(
 	"""
