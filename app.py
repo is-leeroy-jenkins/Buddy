@@ -465,17 +465,36 @@ def extract_analysis( response ) -> Dict[ str, Any ]:
 	
 	return artifacts
 
-def save_temp( upload ) -> str:
+def save_temp( upload ) ->  str | None:
 	"""
-	
 		Purpose:
-		_________
-		Save uploaded file to a named temporary file and return path.
-		
+		--------
+		Save a Streamlit UploadedFile object to a temporary file on disk
+		and return the filesystem path.
+	
+		Parameters:
+		-----------
+		upload : streamlit.runtime.uploaded_file_manager.UploadedFile
+			Uploaded file object from st.file_uploader.
+	
+		Returns:
+		--------
+		str | None
+			Path to the temporary file, or None if invalid input.
 	"""
-	with tempfile.NamedTemporaryFile( mode='w+', delete=False ) as tmp:
-		tmp.write( upload.name )
-		return tmp.file
+	if upload is None:
+		return None
+	
+	try:
+		_, ext = os.path.splitext( upload.name )
+		ext = ext or ""
+		with tempfile.NamedTemporaryFile( delete=False, suffix=ext ) as tmp:
+			tmp.write( upload.getbuffer( ) )
+			tmp_path = tmp.name
+		
+		return tmp_path
+	except Exception:
+		return None
 
 def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 	"""
@@ -743,9 +762,58 @@ def dm_drop_table( table: str ):
 		conn.execute( f'DROP TABLE "{table}";' )
 		conn.commit( )
 
-def dm_create_index( table: str, column: str ):
+def dm_create_index( table: str, column: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Create a safe SQLite index on a specified table column.
+	
+		Handles:
+			- Spaces in column names
+			- Special characters
+			- Reserved words
+			- Duplicate index names
+			- Validation against actual table schema
+	
+		Parameters:
+		-----------
+		table : str
+			Table name.
+		column : str
+			Column name to index.
+	"""
+	
+	if not table or not column:
+		return
+	
+	# ------------------------------------------------------------------
+	# Validate table exists
+	# ------------------------------------------------------------------
+	tables = dm_tables( )
+	if table not in tables:
+		raise ValueError( "Invalid table name." )
+	
+	# ------------------------------------------------------------------
+	# Validate column exists
+	# ------------------------------------------------------------------
+	schema = dm_schema( table )
+	valid_columns = [ col[ 1 ] for col in schema ]
+	
+	if column not in valid_columns:
+		raise ValueError( "Invalid column name." )
+	
+	# ------------------------------------------------------------------
+	# Sanitize index name (identifier only)
+	# ------------------------------------------------------------------
+	safe_index_name = re.sub( r"[^0-9a-zA-Z_]+", "_", f"idx_{table}_{column}" )
+	
+	# ------------------------------------------------------------------
+	# Create index safely (quote identifiers)
+	# ------------------------------------------------------------------
+	sql = f'CREATE INDEX IF NOT EXISTS "{safe_index_name}" ON "{table}"("{column}");'
+	
 	with dm_conn( ) as conn:
-		conn.execute( f'CREATE INDEX IF NOT EXISTS idx_{table}_{column} ON "{table}"("{column}");' )
+		conn.execute( sql )
 		conn.commit( )
 
 def dm_apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
