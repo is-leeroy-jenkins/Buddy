@@ -1157,7 +1157,47 @@ def dm_get_indexes( table: str ):
 			f'PRAGMA index_list("{table}");'
 		).fetchall( )
 		return rows
+
+def dm_add_column( table: str, column: str, col_type: str ):
+	column = dm_safe_identifier( column )
+	col_type = col_type.upper( )
 	
+	with dm_conn( ) as conn:
+		conn.execute(
+			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};'
+		)
+		conn.commit( )
+
+def dm_profile_table( table: str ):
+	df = dm_read( table )
+	profile_rows = [ ]
+	total_rows = len( df )
+	for col in df.columns:
+		series = df[ col ]
+		
+		null_count = series.isna( ).sum( )
+		distinct_count = series.nunique( dropna=True )
+		
+		row = {
+				"column": col,
+				"dtype": str( series.dtype ),
+				"null_%": round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
+				"distinct_%": round( (distinct_count / total_rows) * 100, 2 ) if total_rows else 0,
+		}
+		
+		if pd.api.types.is_numeric_dtype( series ):
+			row[ "min" ] = series.min( )
+			row[ "max" ] = series.max( )
+			row[ "mean" ] = series.mean( )
+		else:
+			row[ "min" ] = None
+			row[ "max" ] = None
+			row[ "mean" ] = None
+		
+		profile_rows.append( row )
+	
+	return pd.DataFrame( profile_rows )
+
 # ======================================================================================
 #  PROVIDER UTILITIES
 # ======================================================================================
@@ -3946,6 +3986,7 @@ elif mode == 'Data Management':
 				
 				st.success( "Row deleted." )
 				st.rerun( )
+	
 	# ------------------------------------------------------------------------------
 	# EXPLORE
 	# ------------------------------------------------------------------------------
@@ -4015,44 +4056,54 @@ elif mode == 'Data Management':
 		tables = dm_tables( )
 		if tables:
 			table = st.selectbox( "Table", tables, key="admin_table" )
-			
-			st.subheader( "Drop Table" )
+		
+		st.divider( )
+		st.subheader( "Data Profiling" )
+		
+		tables = dm_tables( )
+		
+		if tables:
+			table = st.selectbox( "Select Table", tables, key="profile_table" )
+			if st.button( "Generate Profile" ):
+				profile_df = dm_profile_table( table )
+				st.dataframe( profile_df, use_container_width=True )
+				
+		st.subheader( "Drop Table" )
 
-			tables = dm_tables( )
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Select Table to Drop", tables, key="admin_drop_table" )
 			
-			if tables:
-				table = st.selectbox( "Select Table to Drop", tables, key="admin_drop_table" )
+			# Initialize confirmation state
+			if "dm_confirm_drop" not in st.session_state:
+				st.session_state.dm_confirm_drop = False
+			
+			# Step 1: Initial Drop click
+			if st.button( "Drop Table", key="admin_drop_button" ):
+				st.session_state.dm_confirm_drop = True
+			
+			# Step 2: Confirmation UI
+			if st.session_state.dm_confirm_drop:
+				st.warning(
+					f"You are about to permanently delete table '{table}'. "
+					"This action cannot be undone."
+				)
 				
-				# Initialize confirmation state
-				if "dm_confirm_drop" not in st.session_state:
+				col1, col2 = st.columns( 2 )
+				
+				if col1.button( "Confirm Drop", key="admin_confirm_drop" ):
+					try:
+						dm_drop_table( table )
+						st.success( f"Table '{table}' dropped successfully." )
+					except Exception as e:
+						st.error( f"Drop failed: {e}" )
+					
 					st.session_state.dm_confirm_drop = False
+					st.rerun( )
 				
-				# Step 1: Initial Drop click
-				if st.button( "Drop Table", key="admin_drop_button" ):
-					st.session_state.dm_confirm_drop = True
-				
-				# Step 2: Confirmation UI
-				if st.session_state.dm_confirm_drop:
-					st.warning(
-						f"You are about to permanently delete table '{table}'. "
-						"This action cannot be undone."
-					)
-					
-					col1, col2 = st.columns( 2 )
-					
-					if col1.button( "Confirm Drop", key="admin_confirm_drop" ):
-						try:
-							dm_drop_table( table )
-							st.success( f"Table '{table}' dropped successfully." )
-						except Exception as e:
-							st.error( f"Drop failed: {e}" )
-						
-						st.session_state.dm_confirm_drop = False
-						st.rerun( )
-					
-					if col2.button( "Cancel", key="admin_cancel_drop" ):
-						st.session_state.dm_confirm_drop = False
-						st.rerun( )
+				if col2.button( "Cancel", key="admin_cancel_drop" ):
+					st.session_state.dm_confirm_drop = False
+					st.rerun( )
 			
 			df = dm_read( table )
 			col = st.selectbox( "Create Index On", df.columns )
@@ -4062,6 +4113,7 @@ elif mode == 'Data Management':
 				st.success( "Index created." )
 				
 		st.divider( )
+		
 		st.subheader( "Create Custom Table" )
 		new_table_name = st.text_input( "Table Name" )
 		column_count = st.number_input( "Number of Columns", min_value=1, max_value=20, value=1 )
@@ -4139,7 +4191,63 @@ elif mode == 'Data Management':
 				st.dataframe( idx_df, use_container_width=True )
 			else:
 				st.info( "No indexes defined." )
+		
+		st.divider( )
+		st.subheader( "ALTER TABLE Operations" )
+		
+		tables = dm_tables( )
+		if tables:
+			table = st.selectbox( "Select Table", tables, key="alter_table_select" )
+			operation = st.selectbox(
+				"Operation",
+				[ "Add Column",
+				  "Rename Column",
+				  "Rename Table",
+				  "Drop Column" ]
+			)
+			
+			if operation == "Add Column":
+				new_col = st.text_input( "Column Name" )
+				col_type = st.selectbox( "Column Type", [ "INTEGER",
+				                                          "REAL",
+				                                          "TEXT" ] )
 				
+				if st.button( "Add Column" ):
+					dm_add_column( table, new_col, col_type )
+					st.success( "Column added." )
+					st.rerun( )
+			
+			elif operation == "Rename Column":
+				schema = dm_schema( table )
+				col_names = [ col[ 1 ] for col in schema ]
+				
+				old_col = st.selectbox( "Column to Rename", col_names )
+				new_col = st.text_input( "New Column Name" )
+				
+				if st.button( "Rename Column" ):
+					dm_rename_column( table, old_col, new_col )
+					st.success( "Column renamed." )
+					st.rerun( )
+			
+			elif operation == "Rename Table":
+				new_name = st.text_input( "New Table Name" )
+				
+				if st.button( "Rename Table" ):
+					dm_rename_table( table, new_name )
+					st.success( "Table renamed." )
+					st.rerun( )
+			
+			elif operation == "Drop Column":
+				schema = dm_schema( table )
+				col_names = [ col[ 1 ] for col in schema ]
+				
+				drop_col = st.selectbox( "Column to Drop", col_names )
+				
+				if st.button( "Drop Column" ):
+					dm_drop_column( table, drop_col )
+					st.success( "Column dropped." )
+					st.rerun( )
+					
 	# ------------------------------------------------------------------------------
 	# SQL
 	# ------------------------------------------------------------------------------
