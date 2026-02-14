@@ -111,63 +111,72 @@ def xml_converter( text: str ) -> str:
 			markdown_blocks.append( body )
 	return "\n\n".join( markdown_blocks )
 
-def markdown_converter( markdown: str ) -> str:
+def markdown_converter( text: Any ) -> str:
 	"""
-		
 		Purpose:
-		_________
-		Convert Markdown-formatted system instructions back into
-		XML-delimited prompt text by treating level-2 headings (##)
-		as section delimiters.
+		--------
+		Convert between Markdown headings and simple XML-like heading tags.
+	
+		Behavior:
+		---------
+		Auto-detects direction:
+		  - If <h1>...</h1> / <h2>...</h2> ... exist, converts to Markdown (# / ## / ###).
+		  - Otherwise converts Markdown headings (# / ## / ###) to <hN>...</hN> tags.
 	
 		Parameters:
 		-----------
-		markdown (str)- Markdown text using '##' headings to indicate sections.
+		text : Any
+			Source text. Non-string values return "".
 	
 		Returns:
 		--------
-		str - XML-delimited text suitable for storage in the prompt database.
-				
+		str
+			Converted text.
 	"""
-	lines: List[ str ] = markdown.splitlines( )
-	output: List[ str ] = [ ]
-	current_tag: Optional[ str ] = None
-	buffer: List[ str ] = [ ]
 	
-	def flush( ) -> None:
-		"""
-		
-			Purpose:
-			_________
-			Emit the currently buffered section as an XML-delimited block.
+	if not isinstance( text, str ) or not text.strip( ):
+		return ""
+	
+	# Normalize newlines
+	src = text.replace( "\r\n", "\n" ).replace( "\r", "\n" )
+	
+	htag_pattern = re.compile( r"<h([1-6])>(.*?)</h\1>", flags=re.IGNORECASE | re.DOTALL )
+	md_heading_pattern = re.compile( r"^(#{1,6})[ \t]+(.+?)[ \t]*$", flags=re.MULTILINE )
+	
+	# ------------------------------------------------------------------
+	# Direction detection
+	# ------------------------------------------------------------------
+	contains_htags = bool( htag_pattern.search( src ) )
+	
+	# ------------------------------------------------------------------
+	# XML-like heading tags -> Markdown headings
+	# ------------------------------------------------------------------
+	if contains_htags:
+		def _htag_to_md( match: re.Match ) -> str:
+			level = int( match.group( 1 ) )
+			content = match.group( 2 ).strip( )
 			
-		"""
-		nonlocal current_tag, buffer
-		if current_tag is None:
-			return
-		body: str = "\n".join( buffer ).strip( )
-		output.append( f"<{current_tag}>" )
-		if body:
-			output.append( body )
-		output.append( f"</{current_tag}>" )
-		output.append( "" )
-		buffer.clear( )
-		for line in lines:
-			match = MARKDOWN_HEADING_PATTERN.match( line )
-			if match:
-				flush( )
-				title: str = match.group( 'title' )
-				current_tag = (title.strip( ).lower( )
-				               .replace( ' ', '_' ).replace( '-', '_' ))
-			else:
-				if current_tag is not None:
-					buffer.append( line )
-		flush( )
+			# Preserve inner newlines safely by collapsing interior whitespace
+			# while keeping content readable.
+			content = re.sub( r"[ \t]+\n", "\n", content )
+			content = re.sub( r"\n[ \t]+", "\n", content )
+			
+			return f"{'#' * level} {content}"
 		
-		# Remove trailing whitespace blocks
-		while output and not output[ -1 ].strip( ):
-			output.pop( )
-		return "\n".join( output )
+		out = htag_pattern.sub( _htag_to_md, src )
+		return out.strip( )
+	
+	# ------------------------------------------------------------------
+	# Markdown headings -> XML-like heading tags
+	# ------------------------------------------------------------------
+	def _md_to_htag( match: re.Match ) -> str:
+		hashes = match.group( 1 )
+		content = match.group( 2 ).strip( )
+		level = len( hashes )
+		return f"<h{level}>{content}</h{level}>"
+	
+	out = md_heading_pattern.sub( _md_to_htag, src )
+	return out.strip( )
 
 def encode_image_base64( path: str ) -> str:
 	"""
@@ -3516,7 +3525,7 @@ elif mode == 'Data Management':
 	with tabs[ 1 ]:
 		tables = dm_tables( )
 		if tables:
-			table = st.selectbox( "Table", tables )
+			table = st.selectbox( "Table", tables, key='table_name' )
 			df = dm_read( table )
 			st.dataframe( df, use_container_width=True )
 		else:
