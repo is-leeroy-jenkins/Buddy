@@ -59,6 +59,7 @@ import plotly.express as px
 import multiprocessing
 import os
 import sqlite3
+import time
 import typing_extensions
 from typing import Any, Dict, List, Tuple, Optional
 import tempfile
@@ -757,9 +758,22 @@ def dm_read( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
 	with dm_conn( ) as conn:
 		return pd.read_sql_query( query, conn )
 
-def dm_drop_table( table: str ):
+def dm_drop_table( table: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Safely drop a table if it exists.
+	
+		Parameters:
+		-----------
+		table : str
+			Table name.
+	"""
+	if not table:
+		return
+	
 	with dm_conn( ) as conn:
-		conn.execute( f'DROP TABLE "{table}";' )
+		conn.execute( f'DROP TABLE IF EXISTS "{table}";' )
 		conn.commit( )
 
 def dm_create_index( table: str, column: str ) -> None:
@@ -1114,6 +1128,28 @@ def dm_is_safe_read_query( query: str ) -> bool:
 			return False
 	
 	return True
+
+def dm_safe_identifier( name: str ) -> str:
+	"""
+		Purpose:
+		--------
+		Sanitize a string into a safe SQLite identifier.
+	
+		- Replaces invalid characters with underscores
+		- Ensures it starts with a letter or underscore
+		- Prevents empty names
+	"""
+	if not name or not isinstance( name, str ):
+		raise ValueError( "Invalid identifier." )
+
+	safe = re.sub( r"[^0-9a-zA-Z_]", "_", name.strip( ) )
+	if not re.match( r"^[A-Za-z_]", safe ):
+		safe = f"_{safe}"
+
+	if not safe:
+		raise ValueError( "Invalid identifier after sanitization." )
+	
+	return safe
 
 # ======================================================================================
 #  PROVIDER UTILITIES
@@ -3597,7 +3633,7 @@ elif mode == "Prompt Engineering":
 	# ------------------------------------------------------------------
 	# Edit Prompt
 	# ------------------------------------------------------------------
-	with st.expander( "🖊️ Edit Prompt", expanded=True ):
+	with st.expander( "🖊️ Edit Prompt", expanded=False ):
 		st.text_input(
 			"PromptsId",
 			value=st.session_state.pe_selected_id or "",
@@ -3937,12 +3973,43 @@ elif mode == 'Data Management':
 		if tables:
 			table = st.selectbox( "Table", tables, key="admin_table" )
 			
-			if st.button( "Drop Table" ):
-				confirm = st.checkbox( "Confirm Drop" )
-				if confirm:
-					dm_drop_table( table )
-					st.success( "Dropped." )
-					st.rerun( )
+			st.subheader( "Drop Table" )
+
+			tables = dm_tables( )
+			
+			if tables:
+				table = st.selectbox( "Select Table to Drop", tables, key="admin_drop_table" )
+				
+				# Initialize confirmation state
+				if "dm_confirm_drop" not in st.session_state:
+					st.session_state.dm_confirm_drop = False
+				
+				# Step 1: Initial Drop click
+				if st.button( "Drop Table", key="admin_drop_button" ):
+					st.session_state.dm_confirm_drop = True
+				
+				# Step 2: Confirmation UI
+				if st.session_state.dm_confirm_drop:
+					st.warning(
+						f"You are about to permanently delete table '{table}'. "
+						"This action cannot be undone."
+					)
+					
+					col1, col2 = st.columns( 2 )
+					
+					if col1.button( "Confirm Drop", key="admin_confirm_drop" ):
+						try:
+							dm_drop_table( table )
+							st.success( f"Table '{table}' dropped successfully." )
+						except Exception as e:
+							st.error( f"Drop failed: {e}" )
+						
+						st.session_state.dm_confirm_drop = False
+						st.rerun( )
+					
+					if col2.button( "Cancel", key="admin_cancel_drop" ):
+						st.session_state.dm_confirm_drop = False
+						st.rerun( )
 			
 			df = dm_read( table )
 			col = st.selectbox( "Create Index On", df.columns )
@@ -3950,42 +4017,44 @@ elif mode == 'Data Management':
 			if st.button( "Create Index" ):
 				dm_create_index( table, col )
 				st.success( "Index created." )
-	st.divider( )
-	st.subheader( "Create Custom Table" )
-	new_table_name = st.text_input( "Table Name" )
-	column_count = st.number_input( "Number of Columns", min_value=1, max_value=20, value=1 )
-	columns = [ ]
-	for i in range( column_count ):
-		st.markdown( f"### Column {i + 1}" )
-		col_name = st.text_input( "Column Name", key=f"col_name_{i}" )
-		col_type = st.selectbox(
-			"Column Type",
-			[ "INTEGER",
-			  "REAL",
-			  "TEXT" ],
-			key=f"col_type_{i}"
-		)
+				
+		st.divider( )
+		st.subheader( "Create Custom Table" )
+		new_table_name = st.text_input( "Table Name" )
+		column_count = st.number_input( "Number of Columns", min_value=1, max_value=20, value=1 )
+		columns = [ ]
+		for i in range( column_count ):
+			st.markdown( f"### Column {i + 1}" )
+			col_name = st.text_input( "Column Name", key=f"col_name_{i}" )
+			col_type = st.selectbox(
+				"Column Type",
+				[ "INTEGER",
+				  "REAL",
+				  "TEXT" ],
+				key=f"col_type_{i}"
+			)
+			
+			not_null = st.checkbox( "NOT NULL", key=f"not_null_{i}" )
+			primary_key = st.checkbox( "PRIMARY KEY", key=f"pk_{i}" )
+			auto_inc = st.checkbox( "AUTOINCREMENT (INTEGER only)", key=f"ai_{i}" )
+			
+			columns.append( {
+					"name": col_name,
+					"type": col_type,
+					"not_null": not_null,
+					"primary_key": primary_key,
+					"auto_increment": auto_inc
+			} )
 		
-		not_null = st.checkbox( "NOT NULL", key=f"not_null_{i}" )
-		primary_key = st.checkbox( "PRIMARY KEY", key=f"pk_{i}" )
-		auto_inc = st.checkbox( "AUTOINCREMENT (INTEGER only)", key=f"ai_{i}" )
-		
-		columns.append( {
-				"name": col_name,
-				"type": col_type,
-				"not_null": not_null,
-				"primary_key": primary_key,
-				"auto_increment": auto_inc
-		} )
-	
-	if st.button( "Create Table" ):
-		try:
-			dm_create_custom_table( new_table_name, columns )
-			st.success( "Table created successfully." )
-			st.rerun( )
-		
-		except Exception as e:
-			st.error( f"Error: {e}" )
+		if st.button( "Create Table" ):
+			try:
+				dm_create_custom_table( new_table_name, columns )
+				st.success( "Table created successfully." )
+				st.rerun( )
+			
+			except Exception as e:
+				st.error( f"Error: {e}" )
+				
 	# ------------------------------------------------------------------------------
 	# SQL
 	# ------------------------------------------------------------------------------
