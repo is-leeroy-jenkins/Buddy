@@ -1727,7 +1727,7 @@ if 'audio_system_instructions' not in st.session_state:
 if 'doc_instructions' not in st.session_state:
 	st.session_state.doc_instructions = ''
 
-#--------GENERATION CONTROLS--------------------
+#--------TEXT GENERATION CONTROLS--------------------
 if 'temperature' not in st.session_state:
 	st.session_state[ 'temperature' ] = 0.8
 	
@@ -1743,14 +1743,11 @@ if 'freq_penalty' not in st.session_state:
 if 'pres_penalty' not in st.session_state:
 	st.session_state[ 'pres_penalty' ] = 0.0
 
-if 'logprobs' not in st.session_state:
-	st.session_state[ 'logprobs' ] = 0
+if 'stops' not in st.session_state:
+	st.session_state[ 'stops' ] = [ ]
 
-if 'stop_sequences' not in st.session_state:
-	st.session_state[ 'stop_sequences' ] = [ ]
-
-if 'include' not in st.session_state:
-	st.session_state[ 'include' ] = [ ]
+if 'includes' not in st.session_state:
+	st.session_state[ 'includes' ] = [ ]
 
 if 'tool_choice' not in st.session_state:
 	st.session_state[ 'tool_choice' ] = 'auto'
@@ -1767,13 +1764,10 @@ if 'store' not in st.session_state:
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
-if 'background' not in st.session_state:
-	st.session_state[ 'background' ] = False
-
 if 'messages' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
 
-#-------AUDIO-API---------------------------
+#-------AUDIO-SECIFIC PARAMETERS--------------
 if 'audio_file' not in st.session_state:
 	st.session_state[ 'audio_file' ] = None
 
@@ -1801,7 +1795,47 @@ if 'auto_play' not in st.session_state:
 if 'audio_format' not in st.session_state:
 	st.session_state[ 'audio_format' ] = 'audio/wav'
 
-# ------- IMAGE API--------------------------
+# --------AUDIO GENERATION CONTROLS---------------
+if 'audio_temperature' not in st.session_state:
+	st.session_state[ 'audio_temperature' ] = 0.8
+
+if 'audio_top_p' not in st.session_state:
+	st.session_state[ 'audio_top_p' ] = 1.0
+
+if 'audio_max_tokens' not in st.session_state:
+	st.session_state[ 'audio_max_tokens' ] = 8064
+
+if 'audio_freq_penalty' not in st.session_state:
+	st.session_state[ 'audio_freq_penalty' ] = 0.0
+
+if 'audio_pres_penalty' not in st.session_state:
+	st.session_state[ 'audio_pres_penalty' ] = 0.0
+
+if 'audio_stops' not in st.session_state:
+	st.session_state[ 'audio_stops' ] = [ ]
+
+if 'audio_include' not in st.session_state:
+	st.session_state[ 'audio_include' ] = [ ]
+
+if 'audio_tool_choice' not in st.session_state:
+	st.session_state[ 'audio_tool_choice' ] = 'auto'
+
+if 'audio_reasoning' not in st.session_state:
+	st.session_state[ 'audio_reasoning' ] = 'low'
+
+if 'audio_background' not in st.session_state:
+	st.session_state[ 'audio_background' ] = False
+
+if 'audio_store' not in st.session_state:
+	st.session_state[ 'audio_store' ] = True
+
+if 'audio_stream' not in st.session_state:
+	st.session_state[ 'audio_stream' ] = False
+
+if 'audio_messages' not in st.session_state:
+	st.session_state.audio_messages: List[ Dict[ str, Any ] ] = [ ]
+
+# ------- IMAGE-SPECIFIC PARAMETER---------------
 if 'image_size' not in st.session_state:
 	st.session_state[ 'image_size' ] = None
 	
@@ -1823,8 +1857,48 @@ if 'image_format' not in st.session_state:
 if 'image_url' not in st.session_state:
 	st.session_state[ 'image_url' ] = None
 
-if 'ascpect_ratio' not in st.session_state:
-	st.session_state[ 'aspect_ratio' ] = None
+# --------IMAGE GENERATION CONTROLS---------------
+if 'image_temperature' not in st.session_state:
+	st.session_state[ 'image_temperature' ] = 0.8
+
+if 'image_top_p' not in st.session_state:
+	st.session_state[ 'image_top_p' ] = 1.0
+
+if 'image_max_tokens' not in st.session_state:
+	st.session_state[ 'image_max_tokens' ] = 8064
+
+if 'image_freq_penalty' not in st.session_state:
+	st.session_state[ 'image_freq_penalty' ] = 0.0
+
+if 'image_pres_penalty' not in st.session_state:
+	st.session_state[ 'image_pres_penalty' ] = 0.0
+
+if 'image_stops' not in st.session_state:
+	st.session_state[ 'image_stops' ] = [ ]
+
+if 'image_includes' not in st.session_state:
+	st.session_state[ 'image_includes' ] = [ ]
+
+if 'image_tool_choice' not in st.session_state:
+	st.session_state[ 'image_tool_choice' ] = 'auto'
+
+if 'image_reasoning' not in st.session_state:
+	st.session_state[ 'image_reasoning' ] = 'low'
+
+if 'image_background' not in st.session_state:
+	st.session_state[ 'image_background' ] = False
+
+if 'image_number' not in st.session_state:
+	st.session_state[ 'image_number' ] = False
+
+if 'image_store' not in st.session_state:
+	st.session_state[ 'image_store' ] = True
+
+if 'image_stream' not in st.session_state:
+	st.session_state[ 'image_stream' ] = False
+
+if 'image_messages' not in st.session_state:
+	st.session_state.audio_messages: List[ Dict[ str, Any ] ] = [ ]
 
 # ------- FILES API--------------------------
 if 'purpose' not in st.session_state:
@@ -2055,117 +2129,110 @@ elif mode == "Text":
 		
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
-			# Expander — LLM
+			# Text Generation LLM Options
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-					llm_one, llm_two, llm_three, llm_four, llm_five = \ 
-						st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
+					llm_one, llm_two, llm_three, llm_four, llm_five = st.columns(
+						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
 					
 					with llm_one:
-						text_model = st.selectbox( 'Select Model', chat.model_options,
+						selected_text_model = st.selectbox( 'Select Model', chat.model_options,
 							help='Required. Text Generation model used by the AI',
+							key='text_model',
 							index=(chat.model_options.index( st.session_state[ 'text_model' ] )
 							       if st.session_state.get( 'text_model' ) in chat.model_options else 0), )
-						st.session_state[ 'text_model' ] = text_model
+						chat.model = st.session_state[ 'text_model' ]
 					
 					with llm_two:
-						include = st.multiselect( 'Include:', options=chat.include_options,
-							key='chat_include', help=cfg.INCLUDE )
-						chat.include = include
-						st.session_state[ 'include' ] = include
+						text_includes = st.multiselect( 'Include:', options=chat.include_options,
+							key='includes', help=cfg.INCLUDE )
+						chat.include = st.session_state[ 'includes' ]
 					
 					with llm_three:
-						tool_choice = st.multiselect( 'Tool Choice:', options=chat.choice_options,
-							key='chat_tool_choice', help=cfg.CHOICE )
-						chat.tool_choice = tool_choice
-						st.session_state[ 'tool_choice' ] = tool_choice
+						text_tool_choices = st.multiselect( 'Tool Choice:', options=chat.choice_options,
+							key='tool_choice', help=cfg.CHOICE )
+						chat.tool_choice = st.session_state[ 'tool_choice' ]
 					
 					with llm_four:
-						tools = st.multiselect( 'Tools:', options=chat.tool_options, 
-							key='chat_tools', help=cfg.TOOLS )
-						chat.tools = tools
-						st.session_state[ 'tools' ] = tools
+						text_tools = st.multiselect( 'Tools:', options=chat.tool_options,
+							key='tools', help=cfg.TOOLS )
+						chat.tools = st.session_state[ 'tools' ]
 					
 					with llm_five:
-						reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
-							key='chat_reasoning', help=cfg.REASONING )
-						chat.reasoning = reasoning
+						text_reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
+							key='reasoning', help=cfg.REASONING )
+						chat.reasoning = st.session_state[ 'reasoning' ]
 					
 			# ------------------------------------------------------------------
-			# Expander — Hyperparmaters
+			# Text Generation Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four, prm_five = \ 
-					st.columns( [ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True, gap='xsmall'  )
+				prm_one, prm_two, prm_three, prm_four = st.columns(
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
+					gap='xxsmall' )
 				
 				with prm_one:
-					top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
-					st.session_state[ 'top_p' ] = float( top_p )
+					text_top_p = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
+						help=cfg.TOP_P, key='top_p' )
+					chat.top_percent = st.session_state[ 'top_p' ]
 				
 				with prm_two:
-					logprobs = st.slider( 'Log-Probs', 0, 20,
-						int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
-					st.session_state[ 'logprobs' ] = int( logprobs )
-					
-				with prm_three:
-					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+					text_freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
 						0.01, help=cfg.FREQUENCY_PENALTY )
-					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+					chat.fequency_penalty = st.session_state[ 'freq_penalty' ]
 				
-				with prm_four:
-					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+				with prm_three:
+					text_pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
 						0.01, help=cfg.PRESENCE_PENALTY )
-					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+					chat.presense_penalty = st.session_state[ 'pres_penalty' ]
 				
-				with prm_five:
-					temperature = st.slider( 'Temperature', 0.0, 1.0,
+				with prm_four:
+					text_temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
-					st.session_state[ 'temperature' ] = float( temperature )
+					chat.temperature = st.session_state[ 'temperature' ]
 			
 			# ------------------------------------------------------------------
-			# Expander — Response
+			# Expander — Text Generation Response
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-					res_one, res_two, res_three, res_four, res_five = \ 
-						st.columns( [0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='small' )
+					res_one, res_two, res_three, res_four, res_five = st.columns(
+						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='small' )
 					
 					with res_one:
-						stream = st.toggle( 'Stream', key='chat_stream', value=False, help=cfg.STREAM )
-						st.session_state[ 'stream' ] = stream
+						text_stream = st.toggle( 'Stream', key='stream', value=False, help=cfg.STREAM )
+						chat.stream = st.session_state[ 'stream' ]
 						
 					with res_two:
-						store = st.toggle( 'Store', key='chat_store', value=True, help=cfg.STORE )
-						st.session_state[ 'store' ] = store
+						text_store = st.toggle( 'Store', key='store', value=True, help=cfg.STORE )
+						chat.store = st.session_state[ 'store' ]
 						
 					with res_three:
-						back = st.toggle( 'Background', key='chat_bakground',
+						text_background = st.toggle( 'Background', key='background',
 							value=False, help=cfg.BACKGROUND_MODE )
-						st.session_state[ 'background' ] = back
+						chat.background = st.session_state[ 'image_background' ]
 						
 					with res_four:
-						stop_text = st.text_input( 'Stop Sequences',
-							value='\n'.join( st.session_state.get( 'stop_sequences', [ ] ) ),
+						text_stop = st.text_input( 'Stop Sequences',
+							value='\n'.join( st.session_state.get( 'stops', [ ] ) ),
 							help=cfg.STOP_SEQUENCE, width='stretch' )
-						
-						st.session_state[ 'stop_sequences' ] = [
-								s for s in stop_text.splitlines( ) if s.strip( ) ]
+						chat.stops = st.session_state[ 'stops' ]
 					
 					with res_five:
-						max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-							value=6048, help=cfg.MAX_OUTPUT_TOKENS )
-						st.session_state[ 'max_tokens' ] = int( max_tokens )
+						text_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='max_tokens' )
+						chat.max_output_tokens = st.session_state[ 'max_tokens' ]
 			
 		# ------------------------------------------------------------------
-		# Expander — Instructions
+		# Expander — Text System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=240, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
-			
+			chat.instructions = st.session_state[ 'text_system_instructions' ]
 			if st.button( 'Clear Instructions', width='stretch' ):
 				st.session_state[ 'do_clear_instructions' ] = True
 				st.rerun( )
@@ -2194,13 +2261,13 @@ elif mode == "Text":
 				with st.spinner( 'Thinking…' ):
 					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
 					gen_kwargs[ 'top_p' ] = st.session_state[ 'top_p' ]
-					gen_kwargs[ 'logprobs' ] = st.session_state[ 'logprobs' ]
+					gen_kwargs[ 'background' ] = st.session_state[ 'background' ]
 					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'max_tokens' ]
 					gen_kwargs[ 'frequency' ] = st.session_state[ 'freq_penalty' ]
 					gen_kwargs[ 'presence' ] = st.session_state[ 'pres_penalty' ]
 					
-					if st.session_state[ 'stop_sequences' ]:
-						gen_kwargs[ 'stops' ] = st.session_state[ 'stop_sequences' ]
+					if st.session_state[ 'stop' ]:
+						gen_kwargs[ 'stops' ] = st.session_state[ 'stops' ]
 					
 					response = None
 					
@@ -2255,11 +2322,20 @@ elif mode == "Images":
 	st.subheader( '📷 Images API', help=cfg.IMAGES_API )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	image_model = st.session_state.get( 'image_model', None )
 	image_size = st.session_state.get( 'image_size', None )
 	image_style = st.session_state.get( 'image_style', None )
 	image_quality = st.session_state.get( 'image_quality', None )
 	image_format = st.session_state.get( 'image_format', None )
 	image_detail = st.session_state.get( 'image_detail', None )
+	image_top_p = st.session_state.get( 'image_top_percent', None)
+	image_freq = st.session_state.get( 'image_freq_penalty', None )
+	image_presense = st.session_state.get( 'image_presense_penalty', None)
+	image_number = st.session_state.get( 'image_number', None )
+	image_temperature = st.session_state.get( 'image_temperature', None )
+	image_stream = st.session_state.get( 'image_stream', None )
+	image_store = st.session_state.get( 'image_store', None )
+	image_background = st.session_state.get( 'image_background', None)
 	image = provider_module.Images( )
 	
 	# ------------------------------------------------------------------
@@ -2269,7 +2345,7 @@ elif mode == "Images":
 		st.text( '⚙️ Image Settings' )
 	
 	# ------------------------------------------------------------------
-	# Main Chat UI
+	# Image Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	# ------------------------------------------------------------------
@@ -2282,114 +2358,105 @@ elif mode == "Images":
 	with center:
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
-			# Expander — LLM
+			# Expander — LLM Image Configuration
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				img_one, img_two, img_three, img_four, img_five = \ 
-					st.columns( [ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
+				img_one, img_two, img_three, img_four, img_five = st.columns(
+					[ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
 				
 				with img_one:
 					# ---------------- Model ---------------
-					image_model = st.selectbox( "Image Model", image.model_options,
+					selected_image_model = st.selectbox( "Image Model", image.model_options,
 						index=(image.model_options.index( st.session_state[ "image_model" ] )
 						       if st.session_state.get( "image_model" ) in image.model_options
-						       else 0), )
+						       else 0), key='image_model' )
 					
-					st.session_state[ "image_model" ] = image_model
+					image_model = st.session_state[ 'image_model' ]
 				
 				with img_two:
-					# ---------------- Size / Aspect Ratio  ----------------
-					if hasattr( image, "aspect_options" ):
-						size_or_aspect = st.selectbox( "Aspect Ratio", image.aspect_options, )
-						size_arg = size_or_aspect
-					else:
-						size_or_aspect = st.selectbox( "Size", image.size_options, )
-						size_arg = size_or_aspect
+					# ---------------- Size  ----------------
+					selected_size = st.selectbox( 'Image Size', image.size_options, key='image_size' )
+					image_size = st.session_state[ 'image_size' ]
 				
 				with img_three:
 					# ---------------- Quality ----------------
-					quality = None
-					if hasattr( image, 'quality_options' ):
-						quality = st.selectbox( 'Image Quality', image.quality_options, )
+					selected_quality = st.selectbox( 'Image Quality', image.quality_options,
+						key='image_quality' )
+					image_quality = st.session_state[ 'image_quality' ]
 				
 				with img_four:
 					# ---------------- Format ----------------
-					fmt = None
-					if hasattr( image, 'format_options' ):
-						fmt = st.selectbox( 'Image Format', image.format_options, )
-				
+					selected_format = st.selectbox( 'Image Format', image.format_options,
+						key='image_format' )
+					image_format = st.session_state[ 'image_format' ]
+					
 				with img_five:
-					# ---------------- Detail ----------------
-					fmt = None
-					if hasattr( image, 'detail_options' ):
-						fmt = st.selectbox( 'Image Detail', image.detail_options, )
+					selected_detail = st.selectbox( 'Image Detail', image.detail_options,
+						key='image_detail' )
+					image_detail = st.session_state[ 'image_detail' ]
 			
 			# ------------------------------------------------------------------
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four, prm_five = \
-					st.columns( [ 0.2,  0.2,  0.2, 0.2, 0.2 ],
-					border=True, gap='xsmall' )
+				prm_one, prm_two, prm_three, prm_four  = st.columns(
+					[ 0.25,  0.25,  0.25, 0.25 ], border=True, gap='xsmall' )
 				
 				with prm_one:
-					top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
-					st.session_state[ 'top_p' ] = float( top_p )
+					selected_top_p = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'image_top_percent', 1.0 ) ), 0.01,
+						key='image_top_percent', help=cfg.TOP_P )
+					image.top_percent = st.session_state[ 'image_top_percent' ]
 				
 				with prm_two:
-					logprobs = st.slider( 'Log-Probs', 0, 20,
-						int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
-					st.session_state[ 'logprobs' ] = int( logprobs )
+					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'image_freq_penalty', 0.0 ) ),
+						0.01, help=cfg.FREQUENCY_PENALTY, key='image_freq_penalty' )
+					image_freq = st.session_state[ 'image_freq_penalty' ]
 				
 				with prm_three:
-					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
-						0.01, help=cfg.FREQUENCY_PENALTY )
-					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
-				
-				with prm_four:
 					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
-						0.01, help=cfg.PRESENCE_PENALTY )
-					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+						0.01, key='image_presense_penalty', help=cfg.PRESENCE_PENALTY )
+					image_presense = st.session_state[ 'image_presense_penalty' ]
 				
-				with prm_five:
+				with prm_four:
 					temperature = st.slider( 'Temperature', 0.0, 1.0,
-						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
-						help=cfg.TEMPERATURE )
-					st.session_state[ 'temperature' ] = float( temperature )
+						float( st.session_state.get( 'image_temperature', 0.7 ) ), 0.01,
+						help=cfg.TEMPERATURE, key='image_temperature' )
+					image_temperature = st.session_state[ 'image_temperature' ]
 			
 			# ------------------------------------------------------------------
-			# Expander — Response
+			# Expander — Image Response
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-				res_one, res_two, res_three, res_four, res_five = \
-					st.columns( [ 0.20,  0.20,  0.20,  0.20, 0.20 ],
-					border=True, gap='small' )
+				res_one, res_two, res_three, res_four, res_five = st.columns(
+					[ 0.20,  0.20,  0.20,  0.20, 0.20 ], border=True, gap='small' )
 				
 				with res_one:
-					stream = st.toggle( 'Stream', key='image_stream', value=False, help=cfg.STREAM )
-					st.session_state[ 'stream' ] = stream
+					selected_stream = st.toggle( 'Stream', key='image_stream',
+						value=False, help=cfg.STREAM )
+					image_stream = st.session_state[ 'image_stream' ]
 				
 				with res_two:
-					store = st.toggle( 'Store', key='image_store', value=True, help=cfg.STORE )
-					st.session_state[ 'store' ] = store
+					selected_store = st.toggle( 'Store', key='image_store',
+						value=True, help=cfg.STORE )
+					image_store = st.session_state[ 'image_store' ]
 				
 				with res_three:
-					back = st.toggle( 'Background', key='image_bakground',
+					selected_background = st.toggle( 'Background', key='image_background',
 						value=False, help=cfg.BACKGROUND_MODE )
-					st.session_state[ 'background' ] = back
+					image_background = st.session_state[ 'image_background' ]
 				
 				with res_four:
 					n = st.number_input( 'Number', min_value=1, max_value=100,
-						value=1, help='Number of generated images' )
-					st.session_state[ 'number' ] = int( n )
+						value=1, help='Number of generated images', key='image_number' )
+					image_number = st.session_state[ 'image_number' ]
 				
 				with res_five:
 					max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-						value=6048, help=cfg.MAX_OUTPUT_TOKENS )
-					st.session_state[ 'max_tokens' ] = int( max_tokens )
+						value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
+					image_max_tokens = st.session_state[ 'image_max_tokens' ]
 			
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=100, width='stretch',
@@ -2473,8 +2540,7 @@ elif mode == "Images":
 											tmp_path, model=chosen_model_arg
 										)
 							else:
-								for fallback in ( 'analyze', 'describe_image',
-											'describe', 'caption', ):
+								for fallback in ( 'analyze', 'describe_image', 'describe', 'caption' ):
 									if hasattr( image, fallback ):
 										func = getattr( image, fallback )
 										try:
@@ -2636,8 +2702,8 @@ elif mode == "Audio":
 		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				aud_one, aud_two, aud_three, aud_four, aud_five = \
-					st.columns( [ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
+				aud_one, aud_two, aud_three, aud_four, aud_five = st.columns(
+					[ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
 				
 				# ---------------- Task ---------------
 				with aud_one:
@@ -2681,47 +2747,34 @@ elif mode == "Audio":
 				# ---------------- Format ----------------
 				with aud_five:
 					audio_format = st.selectbox( label='Format',
-						options=[ 'audio/mp3',
-						          'audio/wav',
-						          'audio/aac',
-						          'audio/flac',
-						          'audio/opus',
-						          'audio/pcm' ] )
+						options=[ 'audio/mp3', 'audio/wav', 'audio/aac',
+						          'audio/flac', 'audio/opus', 'audio/pcm' ] )
 			
 			# ------------------------------------------------------------------
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns( [ 0.2,
-				                                                                0.2,
-				                                                                0.2,
-				                                                                0.2,
-				                                                                0.2 ],
-					border=True, gap='xsmall' )
+				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns(
+					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True, gap='xsmall' )
 				
 				with prm_one:
 					top_p = st.slider( 'Top-P', 0.0, 1.0,
 						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
 					st.session_state[ 'top_p' ] = float( top_p )
-				
+			
 				with prm_two:
-					logprobs = st.slider( 'Log-Probs', 0, 20,
-						int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
-					st.session_state[ 'logprobs' ] = int( logprobs )
-				
-				with prm_three:
 					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
 						0.01, help=cfg.FREQUENCY_PENALTY )
 					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
 				
-				with prm_four:
+				with prm_three:
 					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
 						0.01, help=cfg.PRESENCE_PENALTY )
 					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
 				
-				with prm_five:
+				with prm_four:
 					temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
@@ -2731,9 +2784,8 @@ elif mode == "Audio":
 			# Expander — Response
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-				resp_one, resp_two, resp_three, resp_four, resp_five = \
-					st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-					border=True, )
+				resp_one, resp_two, resp_three, resp_four, resp_five = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, )
 				
 				with resp_one:
 					loop = st.toggle( label='Loop Audio', value=False )

@@ -5,3 +5,4 @@ secondaryBackgroundColor = "#4B4B4B"
 textColor = "#E0E0E0"
 primaryColor = "#0078FC"
 font = 'Roboto'
+baseFontSize = 13

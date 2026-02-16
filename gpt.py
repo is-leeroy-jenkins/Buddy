@@ -71,6 +71,8 @@ class GPT:
 	api_key: Optional[ str ]
 	client: Optional[ OpenAI ]
 	prompt: Optional[ str ]
+	logprobs: Optional[ bool ]
+	top_logprobs: Optional[ int ]
 	response_format: Optional[ str ]
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
@@ -161,6 +163,7 @@ class Chat( GPT ):
     """
 	include: Optional[ List[ str ] ]
 	tool_choice: Optional[ str ]
+	background: Optional[ bool ]
 	input: Optional[ List[ Dict[ str, str ] ] ]
 	instructions: Optional[ str ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
@@ -181,7 +184,7 @@ class Chat( GPT ):
 	purpose: Optional[ str ]
 	
 	def __init__( self, model: str='gpt-5-nano', temperature: float=0.8, top_p: float=0.9,
-			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000, logprobs: bool=False,
 			store: bool=True, stops: List[str]=None, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
@@ -190,20 +193,20 @@ class Chat( GPT ):
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
 		self.presence_penalty = presence
-		self.max_completion_tokens = max_tokens
+		self.max_output_tokens = max_tokens
 		self.store = store
 		self.instructions = instruct
 		self.stops = stops
 		self.model = model
 		self.tool_choice = 'auto'
 		self.response_format = 'auto'
-		self.tools = [ ]
 		self.reasoning = [ ]
 		self.prompt = None
 		self.response = None
 		self.file = None
 		self.file_url = None
 		self.image_url = None
+		self.messages = [ ]
 		self.input = [ ]
 		self.output_text = None
 		self.include = [ ]
