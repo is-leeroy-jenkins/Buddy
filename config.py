@@ -203,6 +203,13 @@ FREQUENCY_PENALTY = r'''Optional. Frequency penalty applied to the next token's 
 
 MAX_OUTPUT_TOKENS = r'''Optional. The maximum number of tokens used in generating output content'''
 
+ALLOWED_DOMAINS = r'''Optional. The allowed domains used in generating output content'''
+
+PARALLEL_TOOL_CALLS = r'''Optional. Processes tool calls asynchronously'''
+
+MAX_TOOL_CALLS = r'''Optional. An integer representing the upper threshold on the number of tool calls
+		allowed during generation'''
+
 STOP_SEQUENCE = r'''Optional. Up to 4 string sequences where the API will stop generating further tokens.'''
 
 STORE = 'Optional. Whether to maintain state from turn to turn, preserving reasoning and tool context '
@@ -211,20 +218,20 @@ STREAM = 'Optional. Whether to return the generated respose in asynchronous chun
 
 TOOLS = '''Optional. An array of tools the model may call while generating a response. You can specify which
 		tool to use by setting the tool_choice parameter. Used by the Reponses API
-		and Reasoning models (GPT 5x, Ox, 4o, etc)'''
+		and Reasoning models'''
 
 INCLUDE = r'''Optional. Specifies additional output data to include in the model response enabling reasoning
 			items to be used in multi-turn conversations when using the Responses API statelessly
-			and Reasoning models (GPT 5x, Ox, 4o, etc)
+			and Reasoning models.
 			'''
 
 REASONING = r'''Optional. Reasoning models introduce reasoning tokens in addition to input and output tokens.
 				The models use these reasoning tokens to “think,” breaking down the prompt and
 				considering multiple approaches to generating a response. After generating reasoning tokens,
 				the model produces an answer as visible completion tokens and discards
-				the reasoning tokens from its context. Used by the Reasoning models (GPT 5x and Ox etc)'''
+				the reasoning tokens from its context. Used by the Reasoning models'''
 
-CHOICE = r'''Optional. Determines how tools are chosen when using reasoning models GPT 5x and Ox etc)'''
+CHOICE = r'''Optional. Determines how tools are chosen when using reasoning models'''
 
 SYSTEM_INSTRUCTIONS = r'''Optional. Gives the model high-level instructions on how it should behave while
 		generating a response, including tone, goals, and examples of correct responses. Any

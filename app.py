@@ -1764,6 +1764,12 @@ if 'reasoning' not in st.session_state:
 if 'background' not in st.session_state:
 	st.session_state[ 'background' ] = False
 
+if 'parallel_tools' not in st.session_state:
+	st.session_state[ 'parallel_tools' ] = False
+
+if 'max_tools' not in st.session_state:
+	st.session_state[ 'max_tools' ] = False
+
 if 'store' not in st.session_state:
 	st.session_state[ 'store' ] = True
 
@@ -1804,8 +1810,14 @@ if 'text_presense_penalty' not in st.session_state:
 if 'text_stops' not in st.session_state:
 	st.session_state[ 'text_stops' ] = [ ]
 
-if 'text_includes' not in st.session_state:
-	st.session_state[ 'text_includes' ] = [ ]
+if 'text_include' not in st.session_state:
+	st.session_state[ 'text_include' ] = [ ]
+
+if 'text_parallel_tools' not in st.session_state:
+	st.session_state[ 'text_parallel_tools' ] = False
+
+if 'text_max_calls' not in st.session_state:
+	st.session_state[ 'text_max_calls' ] = None
 
 if 'text_tool_choice' not in st.session_state:
 	st.session_state[ 'text_tool_choice' ] = 'auto'
@@ -1849,6 +1861,12 @@ if 'image_max_tokens' not in st.session_state:
 
 if 'image_frequency_penalty' not in st.session_state:
 	st.session_state[ 'image_frequency_penalty' ] = 0.0
+
+if 'image_parallel_tools' not in st.session_state:
+	st.session_state[ 'image_parallel_tools' ] = False
+
+if 'image_max_tools' not in st.session_state:
+	st.session_state[ 'image_max_tools' ] = False
 
 if 'image_presense_penalty' not in st.session_state:
 	st.session_state[ 'image_presense_penalty' ] = 0.0
@@ -2218,9 +2236,12 @@ elif mode == "Text":
 	text_number = st.session_state.get( 'text_number', None )
 	text_temperature = st.session_state.get( 'text_temperature', None )
 	text_stream = st.session_state.get( 'text_stream', None )
+	text_parallel_tools = st.session_state.get( 'text_parallel_tools', None )
+	text_max_calls = st.session_state.get( 'text_max_calls', None )
 	text_store = st.session_state.get( 'text_store', None )
 	text_tools = st.session_state.get( 'text_tools', None )
 	text_include = st.session_state.get( 'text_include', None )
+	text_domains = st.session_state.get( 'text_domains', None )
 	text_input = st.session_state.get( 'text_input', None )
 	text_choice = st.session_state.get( 'text_tool_choice', None )
 	text_background = st.session_state.get( 'text_background', None )
@@ -2248,8 +2269,8 @@ elif mode == "Text":
 			# Text Generation LLM Options
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
-						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
+					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25], border=True )
 					
 					with llm_c1:
 						set_text_model = st.selectbox( 'Select Model', text.model_options,
@@ -2265,22 +2286,18 @@ elif mode == "Text":
 						text_includes = st.session_state[ 'include' ]
 					
 					with llm_c3:
-						set_text_choice = st.multiselect( 'Tool Choice:', options=text.choice_options,
-							key='tool_choice', help=cfg.CHOICE )
-						text_tool_choice = st.session_state[ 'tool_choice' ]
-					
+						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains',
+							value='\n'.join( st.session_state.get( 'text_domains', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch' )
+						text_domains = st.session_state[ 'text_domains' ]
+				
 					with llm_c4:
-						set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
-							key='tools', help=cfg.TOOLS )
-						text_tools = st.session_state[ 'tools' ]
-					
-					with llm_c5:
 						text_reasoning = st.multiselect( 'Reasoning:', options=text.reasoning_options,
 							key='reasoning', help=cfg.REASONING )
 						text_reasoning = st.session_state[ 'reasoning' ]
 					
 			# ------------------------------------------------------------------
-			# Text Generation Hyperparmaters
+			# Text Generation Parameters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4 = st.columns(
@@ -2310,6 +2327,34 @@ elif mode == "Text":
 						float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
 					text_temperature = st.session_state[ 'text_temperature' ]
+			
+			# ------------------------------------------------------------------
+			# Text Generation Tool Options
+			# ------------------------------------------------------------------
+			with st.expander( 'Tool Options', expanded=False, width='stretch' ):
+				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
+					gap='xxsmall' )
+				
+				with prm_c1:
+					set_text_parallel = st.toggle( 'Allow Parallel', key='text_parallel_tools',
+						value=False, help=cfg.PARALLEL_TOOL_CALLS )
+					text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
+				
+				with prm_c2:
+					set_text_calls = st.number_input( 'Max Tools', min_value=0, max_value=4,
+						value=0, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tools' )
+					text_max_tools = st.session_state[ 'text_max_tools' ]
+				
+				with prm_c3:
+					set_text_choice = st.multiselect( 'Tool Choice:', options=text.choice_options,
+						key='tool_choice', help=cfg.CHOICE )
+					text_tool_choice = st.session_state[ 'tool_choice' ]
+				
+				with prm_c4:
+					set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
+						key='tools', help=cfg.TOOLS )
+					text_tools = st.session_state[ 'tools' ]
 			
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
