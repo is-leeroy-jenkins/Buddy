@@ -2336,22 +2336,22 @@ elif mode == "Text":
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
 					gap='xxsmall' )
 				
-				with prm_c1:
+				with tool_c1:
 					set_text_parallel = st.toggle( 'Allow Parallel', key='text_parallel_tools',
 						value=False, help=cfg.PARALLEL_TOOL_CALLS )
 					text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 				
-				with prm_c2:
+				with tool_c2:
 					set_text_calls = st.number_input( 'Max Tools', min_value=0, max_value=4,
-						value=0, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tools' )
+						value=0, help=cfg.MAX_TOOL_CALLS, key='text_max_tools' )
 					text_max_tools = st.session_state[ 'text_max_tools' ]
 				
-				with prm_c3:
+				with tool_c3:
 					set_text_choice = st.multiselect( 'Tool Choice:', options=text.choice_options,
 						key='tool_choice', help=cfg.CHOICE )
 					text_tool_choice = st.session_state[ 'tool_choice' ]
 				
-				with prm_c4:
+				with tool_c4:
 					set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
 						key='tools', help=cfg.TOOLS )
 					text_tools = st.session_state[ 'tools' ]
