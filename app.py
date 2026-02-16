@@ -2212,20 +2212,20 @@ elif mode == "Text":
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	text_model = st.session_state.get( 'text_model', None )
-	text_top_p = st.session_state.get( 'top_percent', None )
-	text_freq = st.session_state.get( 'frequency_penalty', None )
-	text_presense = st.session_state.get( 'presense_penalty', None )
-	text_number = st.session_state.get( 'number', None )
-	text_temperature = st.session_state.get( 'temperature', None )
-	text_stream = st.session_state.get( 'stream', None )
-	text_store = st.session_state.get( 'store', None )
-	text_tools = st.session_state.get( 'tools', None )
-	text_include = st.session_state.get( 'include', None )
-	text_input = st.session_state.get( 'input', None )
-	text_choice = st.session_state.get( 'tool_choice', None )
-	text_background = st.session_state.get( 'background', None )
-	text_messages = st.session_state.get( 'messages', None )
-	text_tokens = st.session_state.get( 'max_tokens', None )
+	text_top_p = st.session_state.get( 'text_top_percent', None )
+	text_freq = st.session_state.get( 'text_frequency_penalty', None )
+	text_presense = st.session_state.get( 'text_presense_penalty', None )
+	text_number = st.session_state.get( 'text_number', None )
+	text_temperature = st.session_state.get( 'text_temperature', None )
+	text_stream = st.session_state.get( 'text_stream', None )
+	text_store = st.session_state.get( 'text_store', None )
+	text_tools = st.session_state.get( 'text_tools', None )
+	text_include = st.session_state.get( 'text_include', None )
+	text_input = st.session_state.get( 'text_input', None )
+	text_choice = st.session_state.get( 'text_tool_choice', None )
+	text_background = st.session_state.get( 'text_background', None )
+	text_messages = st.session_state.get( 'text_messages', None )
+	text_tokens = st.session_state.get( 'text_max_tokens', None )
 	text = provider_module.Chat( )
 	
 	# ------------------------------------------------------------------
@@ -2297,19 +2297,19 @@ elif mode == "Text":
 					set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
 						0.01, help=cfg.FREQUENCY_PENALTY )
-					text_fequency = st.session_state[ 'freq_penalty' ]
+					text_fequency = st.session_state[ 'text_frequency_penalty' ]
 				
 				with prm_c3:
 					set_text_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+						float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
 						0.01, help=cfg.PRESENCE_PENALTY )
-					text_presense = st.session_state[ 'pres_penalty' ]
+					text_presense = st.session_state[ 'text_presense_penalty' ]
 				
 				with prm_c4:
 					set_text_temperature = st.slider( 'Temperature', 0.0, 1.0,
-						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+						float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
-					text_temperature = st.session_state[ 'temperature' ]
+					text_temperature = st.session_state[ 'text_temperature' ]
 			
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
@@ -2333,9 +2333,9 @@ elif mode == "Text":
 						
 					with res_four:
 						set_text_stops = st.text_input( 'Stop Sequences', key='text_stops',
-							value='\n'.join( st.session_state.get( 'stops', [ ] ) ),
+							value='\n'.join( st.session_state.get( 'text_stops', [ ] ) ),
 							help=cfg.STOP_SEQUENCE, width='stretch' )
-						text_stops = st.session_state[ 'stops' ]
+						text_stops = st.session_state[ 'text_stops' ]
 					
 					with res_five:
 						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
@@ -2438,20 +2438,20 @@ elif mode == "Images":
 	st.subheader( '📷 Images API', help=cfg.IMAGES_API )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	image_model = st.session_state.get( 'model', None )
-	image_size = st.session_state.get( 'size', None )
-	image_style = st.session_state.get( 'style', None )
-	image_quality = st.session_state.get( 'quality', None )
-	image_format = st.session_state.get( 'format', None )
-	image_detail = st.session_state.get( 'detail', None )
-	image_top_p = st.session_state.get( 'top_percent', None)
-	image_freq = st.session_state.get( 'freq_penalty', None )
-	image_presense = st.session_state.get( 'presense_penalty', None)
-	image_number = st.session_state.get( 'number', None )
-	image_temperature = st.session_state.get( 'temperature', None )
-	image_stream = st.session_state.get( 'stream', None )
-	image_store = st.session_state.get( 'store', None )
-	image_background = st.session_state.get( 'background', None)
+	image_model = st.session_state.get( 'image_model', None )
+	image_size = st.session_state.get( 'image_size', None )
+	image_style = st.session_state.get( 'image_style', None )
+	image_quality = st.session_state.get( 'image_quality', None )
+	image_format = st.session_state.get( 'image_format', None )
+	image_detail = st.session_state.get( 'image_detail', None )
+	image_top_p = st.session_state.get( 'image_top_percent', None)
+	image_freq = st.session_state.get( 'image_frequency_penalty', None )
+	image_presense = st.session_state.get( 'image_presense_penalty', None)
+	image_number = st.session_state.get( 'image_number', None )
+	image_temperature = st.session_state.get( 'image_temperature', None )
+	image_stream = st.session_state.get( 'image_stream', None )
+	image_store = st.session_state.get( 'image_store', None )
+	image_background = st.session_state.get( 'image_background', None)
 	image = provider_module.Images( )
 	
 	# ------------------------------------------------------------------
@@ -2478,11 +2478,11 @@ elif mode == "Images":
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				img_one, img_two, img_three, img_four, img_five = st.columns(
-					[ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
+					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
 				
 				with img_one:
 					# ---------------- Model ---------------
-					selected_image_model = st.selectbox( "Image Model", image.model_options,
+					set_image_model = st.selectbox( "Image Model", image.model_options,
 						index=(image.model_options.index( st.session_state[ "image_model" ] )
 						       if st.session_state.get( "image_model" ) in image.model_options
 						       else 0), key='image_model' )
@@ -2519,25 +2519,25 @@ elif mode == "Images":
 					[ 0.25,  0.25,  0.25, 0.25 ], border=True, gap='xsmall' )
 				
 				with prm_one:
-					selected_top_p = st.slider( 'Top-P', 0.0, 1.0,
+					set_image_top = st.slider( 'Top-P', 0.0, 1.0,
 						float( st.session_state.get( 'image_top_percent', 1.0 ) ), 0.01,
 						key='image_top_percent', help=cfg.TOP_P )
-					image.top_percent = st.session_state[ 'image_top_percent' ]
+					image_top_p = st.session_state[ 'image_top_percent' ]
 				
 				with prm_two:
-					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+					set_image_frequency = st.slider( 'Frequency Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'image_freq_penalty', 0.0 ) ),
-						0.01, help=cfg.FREQUENCY_PENALTY, key='image_freq_penalty' )
-					image_freq = st.session_state[ 'image_freq_penalty' ]
+						0.01, help=cfg.FREQUENCY_PENALTY, key='image_frequency_penalty' )
+					image_frequency = st.session_state[ 'image_frequency_penalty' ]
 				
 				with prm_three:
-					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+					set_image_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
 						0.01, key='image_presense_penalty', help=cfg.PRESENCE_PENALTY )
 					image_presense = st.session_state[ 'image_presense_penalty' ]
 				
 				with prm_four:
-					temperature = st.slider( 'Temperature', 0.0, 1.0,
+					set_image_temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'image_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE, key='image_temperature' )
 					image_temperature = st.session_state[ 'image_temperature' ]
@@ -2769,6 +2769,20 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	audio_model = st.session_state.get( 'audio_model', None )
+	audio_format = st.session_state.get( 'audio_response_format', None )
+	audio_top_p = st.session_state.get( 'audio_top_percent', None )
+	audio_freq = st.session_state.get( 'audio_frequency_penalty', None )
+	audio_presense = st.session_state.get( 'audio_presense_penalty', None )
+	audio_number = st.session_state.get( 'audio_number', None )
+	audio_temperature = st.session_state.get( 'audio_temperature', None )
+	audio_stream = st.session_state.get( 'audio_stream', None )
+	audio_store = st.session_state.get( 'audio_store', None )
+	audio_input = st.session_state.get( 'audio_input', None )
+	audio_reasoning = st.session_state.get( 'audio_reasoning', None )
+	audio_choice = st.session_state.get( 'audio_tool_choice', None )
+	audio_messages = st.session_state.get( 'audio_messages', None )
+	audio_background = st.session_state.get( 'audio_background', None )
 	audio_file = st.session_state.get( 'audio_file', None )
 	audio_rate = st.session_state.get( 'audio_rate', 16000 )
 	audio_start = st.session_state.get( 'audio_start', 0.0 )
@@ -2870,31 +2884,31 @@ elif mode == "Audio":
 			# Expander — Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four, prm_five = st.columns(
-					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True, gap='xsmall' )
+				prm_one, prm_two, prm_three, prm_four = st.columns(
+					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='xsmall' )
 				
 				with prm_one:
-					top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
-					st.session_state[ 'top_p' ] = float( top_p )
+					set_audio_top = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'audio_top_percent', 1.0 ) ), 0.01, help=cfg.TOP_P )
+					audio_top_p = st.session_state[ 'audio_top_percent' ]
 			
 				with prm_two:
-					freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+					set_audio_frequency = st.slider( 'Frequency Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
 						0.01, help=cfg.FREQUENCY_PENALTY )
-					st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+					audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
 				
 				with prm_three:
-					pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+					set_audio_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
 						0.01, help=cfg.PRESENCE_PENALTY )
-					st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+					audio_presense = st.session_state[ 'audio_presense_penalty' ]
 				
 				with prm_four:
-					temperature = st.slider( 'Temperature', 0.0, 1.0,
-						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+					set_audiotemperature = st.slider( 'Temperature', 0.0, 1.0,
+						float( st.session_state.get( 'audio_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
-					st.session_state[ 'temperature' ] = float( temperature )
+					audio_temperature = st.session_state[ 'audio_temperature' ]
 			
 			# ------------------------------------------------------------------
 			# Expander — Response
