@@ -82,7 +82,7 @@ from gemini import ( Chat, Images, Files, Embeddings, Transcription, TTS, Transl
 from grok import ( Chat, Images, Files, Transcription, TTS, Translation, VectorStores )
 
 # ==============================================================================
-# UTILITIES
+# CHAT UTILITIES
 # ==============================================================================
 def xml_converter( text: str ) -> str:
 	"""
@@ -588,67 +588,6 @@ def build_intent_prefix( mode: str ) -> str:
 		)
 	return ''
 
-def ensure_db( ) -> None:
-	Path( "stores/sqlite" ).mkdir( parents=True, exist_ok=True )
-	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		conn.execute( """
-                      CREATE TABLE IF NOT EXISTS chat_history
-                      (
-                          id
-                          INTEGER
-                          PRIMARY
-                          KEY
-                          AUTOINCREMENT,
-                          role
-                          TEXT,
-                          content
-                          TEXT
-                      )
-		              """ )
-		conn.execute( """
-                      CREATE TABLE IF NOT EXISTS embeddings
-                      (
-                          id
-                          INTEGER
-                          PRIMARY
-                          KEY
-                          AUTOINCREMENT,
-                          chunk
-                          TEXT,
-                          vector
-                          BLOB
-                      )
-		              """ )
-		conn.execute( """
-                      CREATE TABLE IF NOT EXISTS Prompts
-                      (
-                          PromptsId
-                          INTEGER
-                          NOT
-                          NULL
-                          UNIQUE,
-                          Name
-                          TEXT
-                      (
-                          80
-                      ),
-                          Text TEXT,
-                          Version TEXT
-                      (
-                          80
-                      ),
-                          ID TEXT
-                      (
-                          80
-                      ),
-                          PRIMARY KEY
-                      (
-                          PromptsId
-                          AUTOINCREMENT
-                      )
-                          )
-		              """ )
-
 def save_message( role: str, content: str ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "INSERT INTO chat_history (role, content) VALUES (?, ?)", (role, content) )
@@ -661,6 +600,9 @@ def clear_history( ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM chat_history" )
 
+# ==============================================================================
+# PROMPT ENGINEERING UTILITIES
+# ==============================================================================
 def fetch_prompts_df( ) -> pd.DataFrame:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		df = pd.read_sql_query(
@@ -731,6 +673,67 @@ os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
 # ==============================================================================
 # DATABASE UTILITIES
 # ==============================================================================
+def ensure_db( ) -> None:
+	Path( "stores/sqlite" ).mkdir( parents=True, exist_ok=True )
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
+		conn.execute( """
+                      CREATE TABLE IF NOT EXISTS chat_history
+                      (
+                          id
+                          INTEGER
+                          PRIMARY
+                          KEY
+                          AUTOINCREMENT,
+                          role
+                          TEXT,
+                          content
+                          TEXT
+                      )
+		              """ )
+		conn.execute( """
+                      CREATE TABLE IF NOT EXISTS embeddings
+                      (
+                          id
+                          INTEGER
+                          PRIMARY
+                          KEY
+                          AUTOINCREMENT,
+                          chunk
+                          TEXT,
+                          vector
+                          BLOB
+                      )
+		              """ )
+		conn.execute( """
+                      CREATE TABLE IF NOT EXISTS Prompts
+                      (
+                          PromptsId
+                          INTEGER
+                          NOT
+                          NULL
+                          UNIQUE,
+                          Name
+                          TEXT
+                      (
+                          80
+                      ),
+                          Text TEXT,
+                          Version TEXT
+                      (
+                          80
+                      ),
+                          ID TEXT
+                      (
+                          80
+                      ),
+                          PRIMARY KEY
+                      (
+                          PromptsId
+                          AUTOINCREMENT
+                      )
+                          )
+		              """ )
+
 def dm_conn( ) -> sqlite3.Connection:
 	return sqlite3.connect( DM_DB_PATH )
 
@@ -1615,7 +1618,7 @@ inject_response_css( )
 init_state( )
 
 # ======================================================================================
-# Session State — initialize per-mode model keys and token counters
+# SESSION STATE PARAMETER DEFINITIONS
 # ======================================================================================
 if 'api_keys' not in st.session_state:
 	st.session_state.api_keys = { 'GPT': None, 'Grok': None, 'Gemini': None, }
@@ -1686,7 +1689,7 @@ if 'token_usage' not in st.session_state:
 if 'files' not in st.session_state:
 	st.session_state.files: List[ str ] = [ ]
 	
-#----------MODELS--------------------------------
+#----------MODEL PARAMETERS --------------------------------
 if 'model' not in st.session_state:
 	st.session_state.model = None
 
@@ -1711,7 +1714,7 @@ if 'transcription_model' not in st.session_state:
 if 'translation_model' not in st.session_state:
 	st.session_state[ 'translation_model' ] = None
 
-# --------SYSTEM INSTRUCTIONS----------------------
+# --------SYSTEM PARAMETERS----------------------
 if 'instructions' not in st.session_state:
 	st.session_state[ 'instructions' ] = ''
 	
@@ -1727,21 +1730,24 @@ if 'audio_system_instructions' not in st.session_state:
 if 'doc_instructions' not in st.session_state:
 	st.session_state.doc_instructions = ''
 
-#--------TEXT GENERATION CONTROLS--------------------
+#--------CHAT-GENERATION PARAMETERS--------------------
 if 'temperature' not in st.session_state:
 	st.session_state[ 'temperature' ] = 0.8
 	
-if 'top_p' not in st.session_state:
-	st.session_state[ 'top_p' ] = 1.0
+if 'top_percent' not in st.session_state:
+	st.session_state[ 'top_percent' ] = 1.0
+
+if 'input' not in st.session_state:
+	st.session_state[ 'input' ] = [ ]
 
 if 'max_tokens' not in st.session_state:
 	st.session_state[ 'max_tokens' ] = 8064
 	
-if 'freq_penalty' not in st.session_state:
-	st.session_state[ 'freq_penalty' ] = 0.0
+if 'frequency_penalty' not in st.session_state:
+	st.session_state[ 'frequency_penalty' ] = 0.0
 	
-if 'pres_penalty' not in st.session_state:
-	st.session_state[ 'pres_penalty' ] = 0.0
+if 'presense_penalty' not in st.session_state:
+	st.session_state[ 'presense_penalty' ] = 0.0
 
 if 'stops' not in st.session_state:
 	st.session_state[ 'stops' ] = [ ]
@@ -1764,114 +1770,88 @@ if 'store' not in st.session_state:
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
+if 'input' not in st.session_state:
+	st.session_state[ 'input' ] = None
+
+if 'response_format' not in st.session_state:
+	st.session_state[ 'response_format' ] = None
+
+if 'tools' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
 if 'messages' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
 
-#-------AUDIO-SECIFIC PARAMETERS--------------
-if 'audio_file' not in st.session_state:
-	st.session_state[ 'audio_file' ] = None
+# --------TEXT-GENERATION PARAMETERS--------------------
+if 'text_temperature' not in st.session_state:
+	st.session_state[ 'text_temperature' ] = 0.8
 
-if 'sample_rate' not in st.session_state:
-	st.session_state[ 'sample_rate' ] = 16000
+if 'text_top_percent' not in st.session_state:
+	st.session_state[ 'text_top_percent' ] = 1.0
 
-if 'language' not in st.session_state:
-	st.session_state[ 'language' ] = None
+if 'text_input' not in st.session_state:
+	st.session_state[ 'text_input' ] = [ ]
 
-if 'voice' not in st.session_state:
-	st.session_state[ 'voice' ] = None
+if 'text_max_tokens' not in st.session_state:
+	st.session_state[ 'text_max_tokens' ] = 8064
 
-if 'audio_start' not in st.session_state:
-	st.session_state[ 'audio_start' ] = 0.0
+if 'text_frequency_penalty' not in st.session_state:
+	st.session_state[ 'text_frequency_penalty' ] = 0.0
 
-if 'audio_end' not in st.session_state:
-	st.session_state[ 'audio_end' ] = 0.0
+if 'text_presense_penalty' not in st.session_state:
+	st.session_state[ 'text_presense_penalty' ] = 0.0
 
-if 'audio_loop' not in st.session_state:
-	st.session_state[ 'audio_loop' ] = False
-	
-if 'auto_play' not in st.session_state:
-	st.session_state[ 'auto_play' ] = False
+if 'text_stops' not in st.session_state:
+	st.session_state[ 'text_stops' ] = [ ]
 
-if 'audio_format' not in st.session_state:
-	st.session_state[ 'audio_format' ] = 'audio/wav'
+if 'text_includes' not in st.session_state:
+	st.session_state[ 'text_includes' ] = [ ]
 
-# --------AUDIO GENERATION CONTROLS---------------
-if 'audio_temperature' not in st.session_state:
-	st.session_state[ 'audio_temperature' ] = 0.8
+if 'text_tool_choice' not in st.session_state:
+	st.session_state[ 'text_tool_choice' ] = 'auto'
 
-if 'audio_top_p' not in st.session_state:
-	st.session_state[ 'audio_top_p' ] = 1.0
+if 'text_reasoning' not in st.session_state:
+	st.session_state[ 'text_reasoning' ] = 'low'
 
-if 'audio_max_tokens' not in st.session_state:
-	st.session_state[ 'audio_max_tokens' ] = 8064
+if 'text_background' not in st.session_state:
+	st.session_state[ 'text_background' ] = False
 
-if 'audio_freq_penalty' not in st.session_state:
-	st.session_state[ 'audio_freq_penalty' ] = 0.0
+if 'text_store' not in st.session_state:
+	st.session_state[ 'text_store' ] = True
 
-if 'audio_pres_penalty' not in st.session_state:
-	st.session_state[ 'audio_pres_penalty' ] = 0.0
+if 'text_stream' not in st.session_state:
+	st.session_state[ 'text_stream' ] = False
 
-if 'audio_stops' not in st.session_state:
-	st.session_state[ 'audio_stops' ] = [ ]
+if 'text_input' not in st.session_state:
+	st.session_state[ 'text_input' ] = None
 
-if 'audio_include' not in st.session_state:
-	st.session_state[ 'audio_include' ] = [ ]
+if 'text_response_format' not in st.session_state:
+	st.session_state[ 'text_response_format' ] = None
 
-if 'audio_tool_choice' not in st.session_state:
-	st.session_state[ 'audio_tool_choice' ] = 'auto'
+if 'text_tools' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
 
-if 'audio_reasoning' not in st.session_state:
-	st.session_state[ 'audio_reasoning' ] = 'low'
+if 'text_messages' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
 
-if 'audio_background' not in st.session_state:
-	st.session_state[ 'audio_background' ] = False
-
-if 'audio_store' not in st.session_state:
-	st.session_state[ 'audio_store' ] = True
-
-if 'audio_stream' not in st.session_state:
-	st.session_state[ 'audio_stream' ] = False
-
-if 'audio_messages' not in st.session_state:
-	st.session_state.audio_messages: List[ Dict[ str, Any ] ] = [ ]
-
-# ------- IMAGE-SPECIFIC PARAMETER---------------
-if 'image_size' not in st.session_state:
-	st.session_state[ 'image_size' ] = None
-	
-if 'image_style' not in st.session_state:
-	st.session_state[ 'image_style' ] = None
-
-if 'image_detail' not in st.session_state:
-	st.session_state[ 'image_detail' ] = None
-
-if 'image_background' not in st.session_state:
-	st.session_state[ 'image_background' ] = None
-
-if 'image_quality' not in st.session_state:
-	st.session_state[ 'image_quality' ] = None
-
-if 'image_format' not in st.session_state:
-	st.session_state[ 'image_format' ] = None
-
-if 'image_url' not in st.session_state:
-	st.session_state[ 'image_url' ] = None
-
-# --------IMAGE GENERATION CONTROLS---------------
+# --------IMAGE-GENERATION PARAMETERS--------------------
 if 'image_temperature' not in st.session_state:
 	st.session_state[ 'image_temperature' ] = 0.8
 
-if 'image_top_p' not in st.session_state:
-	st.session_state[ 'image_top_p' ] = 1.0
+if 'image_top_percent' not in st.session_state:
+	st.session_state[ 'image_top_percent' ] = 1.0
+
+if 'image_input' not in st.session_state:
+	st.session_state[ 'image_input' ] = [ ]
 
 if 'image_max_tokens' not in st.session_state:
 	st.session_state[ 'image_max_tokens' ] = 8064
 
-if 'image_freq_penalty' not in st.session_state:
-	st.session_state[ 'image_freq_penalty' ] = 0.0
+if 'image_frequency_penalty' not in st.session_state:
+	st.session_state[ 'image_frequency_penalty' ] = 0.0
 
-if 'image_pres_penalty' not in st.session_state:
-	st.session_state[ 'image_pres_penalty' ] = 0.0
+if 'image_presense_penalty' not in st.session_state:
+	st.session_state[ 'image_presense_penalty' ] = 0.0
 
 if 'image_stops' not in st.session_state:
 	st.session_state[ 'image_stops' ] = [ ]
@@ -1888,19 +1868,125 @@ if 'image_reasoning' not in st.session_state:
 if 'image_background' not in st.session_state:
 	st.session_state[ 'image_background' ] = False
 
-if 'image_number' not in st.session_state:
-	st.session_state[ 'image_number' ] = False
-
 if 'image_store' not in st.session_state:
 	st.session_state[ 'image_store' ] = True
 
 if 'image_stream' not in st.session_state:
 	st.session_state[ 'image_stream' ] = False
 
-if 'image_messages' not in st.session_state:
-	st.session_state.audio_messages: List[ Dict[ str, Any ] ] = [ ]
+if 'image_input' not in st.session_state:
+	st.session_state[ 'image_input' ] = None
 
-# ------- FILES API--------------------------
+if 'image_response_format' not in st.session_state:
+	st.session_state[ 'image_response_format' ] = None
+
+if 'image_tools' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+if 'image_messages' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+# ------- IMAGE-SPECIFIC PARAMETER---------------
+if 'size' not in st.session_state:
+	st.session_state[ 'size' ] = None
+
+if 'style' not in st.session_state:
+	st.session_state[ 'style' ] = None
+
+if 'detail' not in st.session_state:
+	st.session_state[ 'detail' ] = None
+
+if 'quality' not in st.session_state:
+	st.session_state[ 'quality' ] = None
+
+if 'image_format' not in st.session_state:
+	st.session_state[ 'image_format' ] = None
+
+if 'image_url' not in st.session_state:
+	st.session_state[ 'image_url' ] = None
+
+# --------AUDIO-GENERATION PARAMETERS--------------------
+if 'audio_temperature' not in st.session_state:
+	st.session_state[ 'audio_temperature' ] = 0.8
+
+if 'audio_top_percent' not in st.session_state:
+	st.session_state[ 'audio_top_percent' ] = 1.0
+
+if 'audio_input' not in st.session_state:
+	st.session_state[ 'audio_input' ] = [ ]
+
+if 'audio_max_tokens' not in st.session_state:
+	st.session_state[ 'audio_max_tokens' ] = 8064
+
+if 'audio_frequency_penalty' not in st.session_state:
+	st.session_state[ 'audio_frequency_penalty' ] = 0.0
+
+if 'audio_presense_penalty' not in st.session_state:
+	st.session_state[ 'audio_presense_penalty' ] = 0.0
+
+if 'audio_stops' not in st.session_state:
+	st.session_state[ 'audio_stops' ] = [ ]
+
+if 'audio_includes' not in st.session_state:
+	st.session_state[ 'audio_includes' ] = [ ]
+
+if 'audio_tool_choice' not in st.session_state:
+	st.session_state[ 'audio_tool_choice' ] = 'auto'
+
+if 'audio_reasoning' not in st.session_state:
+	st.session_state[ 'audio_reasoning' ] = 'low'
+
+if 'audio_background' not in st.session_state:
+	st.session_state[ 'audio_background' ] = False
+
+if 'audio_store' not in st.session_state:
+	st.session_state[ 'audio_store' ] = True
+
+if 'audio_stream' not in st.session_state:
+	st.session_state[ 'audio_stream' ] = False
+
+if 'audio_input' not in st.session_state:
+	st.session_state[ 'audio_input' ] = None
+
+if 'audio_response_format' not in st.session_state:
+	st.session_state[ 'audio_response_format' ] = None
+
+if 'audio_tools' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+if 'messages' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+#-------AUDIO-SECIFIC PARAMETERS--------------
+if 'audio_file' not in st.session_state:
+	st.session_state[ 'audio_file' ] = None
+
+if 'sample_rate' not in st.session_state:
+	st.session_state[ 'sample_rate' ] = 16000
+
+if 'language' not in st.session_state:
+	st.session_state[ 'language' ] = None
+
+if 'voice' not in st.session_state:
+	st.session_state[ 'voice' ] = None
+
+if 'start_time' not in st.session_state:
+	st.session_state[ 'start_time' ] = 0.0
+
+if 'end_end' not in st.session_state:
+	st.session_state[ 'end_time' ] = 0.0
+
+if 'loop' not in st.session_state:
+	st.session_state[ 'loop' ] = False
+	
+if 'play' not in st.session_state:
+	st.session_state[ 'play' ] = False
+
+if 'audio_format' not in st.session_state:
+	st.session_state[ 'audio_format' ] = 'audio/wav'
+
+
+# ------- FILES-SPECIFIC PARAMETERS --------------------------
 if 'purpose' not in st.session_state:
 	st.session_state[ 'purpose' ] = None
 
@@ -1913,11 +1999,11 @@ if 'file_id' not in st.session_state:
 if 'file_url' not in st.session_state:
 	st.session_state[ 'file_url' ] = None
 	
-# -------VECTOR STORES API-------------------
+# -------VECTORSTORES-SPECIFIC PARAMETERS-------------------
 if 'vector_store_id' not in st.session_state:
 	st.session_state[ 'vector_store_id' ] = None
 
-#------- DOC Q&A  ---------------------------
+#------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'files' not in st.session_state:
 	st.session_state[ 'files' ] = [ ]
 	
@@ -2018,6 +2104,21 @@ if mode == 'Chat':
 	st.divider( )
 	st.header( '' )
 	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
+	chat_model = st.session_state.get( 'model', None )
+	chat_format = st.session_state.get( 'response_format', None )
+	chat_top_p = st.session_state.get( 'top_percent', None )
+	chat_freq = st.session_state.get( 'frequency_penalty', None )
+	chat_presense = st.session_state.get( 'presense_penalty', None )
+	chat_number = st.session_state.get( 'number', None )
+	chat_temperature = st.session_state.get( 'temperature', None )
+	chat_stream = st.session_state.get( 'stream', None )
+	chat_store = st.session_state.get( 'store', None )
+	chat_input = st.session_state.get( 'input', None )
+	chat_reasoning = st.session_state.get( 'reasoning', None )
+	chat_choice = st.session_state.get( 'tool_choice', None )
+	chat_messages = st.session_state.get( 'messages', None )
+	chat_background = st.session_state.get( 'background', None )
 	
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
@@ -2110,7 +2211,22 @@ elif mode == "Text":
 	st.subheader( "💬 Text Generation", help=cfg.TEXT_GENERATION )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	chat = provider_module.Chat( )
+	text_model = st.session_state.get( 'text_model', None )
+	text_top_p = st.session_state.get( 'top_percent', None )
+	text_freq = st.session_state.get( 'frequency_penalty', None )
+	text_presense = st.session_state.get( 'presense_penalty', None )
+	text_number = st.session_state.get( 'number', None )
+	text_temperature = st.session_state.get( 'temperature', None )
+	text_stream = st.session_state.get( 'stream', None )
+	text_store = st.session_state.get( 'store', None )
+	text_tools = st.session_state.get( 'tools', None )
+	text_include = st.session_state.get( 'include', None )
+	text_input = st.session_state.get( 'input', None )
+	text_choice = st.session_state.get( 'tool_choice', None )
+	text_background = st.session_state.get( 'background', None )
+	text_messages = st.session_state.get( 'messages', None )
+	text_tokens = st.session_state.get( 'max_tokens', None )
+	text = provider_module.Chat( )
 	
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
@@ -2132,68 +2248,68 @@ elif mode == "Text":
 			# Text Generation LLM Options
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-					llm_one, llm_two, llm_three, llm_four, llm_five = st.columns(
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
 						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
 					
-					with llm_one:
-						selected_text_model = st.selectbox( 'Select Model', chat.model_options,
+					with llm_c1:
+						set_text_model = st.selectbox( 'Select Model', text.model_options,
 							help='Required. Text Generation model used by the AI',
 							key='text_model',
-							index=(chat.model_options.index( st.session_state[ 'text_model' ] )
-							       if st.session_state.get( 'text_model' ) in chat.model_options else 0), )
-						chat.model = st.session_state[ 'text_model' ]
+							index=(text.model_options.index( st.session_state[ 'text_model' ] )
+							       if st.session_state.get( 'text_model' ) in text.model_options else 0), )
+						text_model = st.session_state[ 'text_model' ]
 					
-					with llm_two:
-						text_includes = st.multiselect( 'Include:', options=chat.include_options,
-							key='includes', help=cfg.INCLUDE )
-						chat.include = st.session_state[ 'includes' ]
+					with llm_c2:
+						set_text_includes = st.multiselect( 'Include:', options=text.include_options,
+							key='include', help=cfg.INCLUDE )
+						text_includes = st.session_state[ 'include' ]
 					
-					with llm_three:
-						text_tool_choices = st.multiselect( 'Tool Choice:', options=chat.choice_options,
+					with llm_c3:
+						set_text_choice = st.multiselect( 'Tool Choice:', options=text.choice_options,
 							key='tool_choice', help=cfg.CHOICE )
-						chat.tool_choice = st.session_state[ 'tool_choice' ]
+						text_tool_choice = st.session_state[ 'tool_choice' ]
 					
-					with llm_four:
-						text_tools = st.multiselect( 'Tools:', options=chat.tool_options,
+					with llm_c4:
+						set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
 							key='tools', help=cfg.TOOLS )
-						chat.tools = st.session_state[ 'tools' ]
+						text_tools = st.session_state[ 'tools' ]
 					
-					with llm_five:
-						text_reasoning = st.multiselect( 'Reasoning:', options=chat.reasoning_options,
+					with llm_c5:
+						text_reasoning = st.multiselect( 'Reasoning:', options=text.reasoning_options,
 							key='reasoning', help=cfg.REASONING )
-						chat.reasoning = st.session_state[ 'reasoning' ]
+						text_reasoning = st.session_state[ 'reasoning' ]
 					
 			# ------------------------------------------------------------------
 			# Text Generation Hyperparmaters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four = st.columns(
+				prm_c1, prm_c2, prm_c3, prm_c4 = st.columns(
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
 					gap='xxsmall' )
 				
-				with prm_one:
-					text_top_p = st.slider( 'Top-P', 0.0, 1.0,
+				with prm_c1:
+					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
 						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
 						help=cfg.TOP_P, key='top_p' )
-					chat.top_percent = st.session_state[ 'top_p' ]
+					text_top_p = st.session_state[ 'top_p' ]
 				
-				with prm_two:
-					text_freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+				with prm_c2:
+					set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
 						0.01, help=cfg.FREQUENCY_PENALTY )
-					chat.fequency_penalty = st.session_state[ 'freq_penalty' ]
+					text_fequency = st.session_state[ 'freq_penalty' ]
 				
-				with prm_three:
-					text_pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
+				with prm_c3:
+					set_text_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
 						0.01, help=cfg.PRESENCE_PENALTY )
-					chat.presense_penalty = st.session_state[ 'pres_penalty' ]
+					text_presense = st.session_state[ 'pres_penalty' ]
 				
-				with prm_four:
-					text_temperature = st.slider( 'Temperature', 0.0, 1.0,
+				with prm_c4:
+					set_text_temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
-					chat.temperature = st.session_state[ 'temperature' ]
+					text_temperature = st.session_state[ 'temperature' ]
 			
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
@@ -2203,28 +2319,28 @@ elif mode == "Text":
 						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='small' )
 					
 					with res_one:
-						text_stream = st.toggle( 'Stream', key='stream', value=False, help=cfg.STREAM )
-						chat.stream = st.session_state[ 'stream' ]
+						set_text_stream = st.toggle( 'Stream', key='text_stream', value=False, help=cfg.STREAM )
+						text_stream = st.session_state[ 'text_stream' ]
 						
 					with res_two:
-						text_store = st.toggle( 'Store', key='store', value=True, help=cfg.STORE )
-						chat.store = st.session_state[ 'store' ]
+						set_text_store = st.toggle( 'Store', key='text_store', value=True, help=cfg.STORE )
+						text_store = st.session_state[ 'text_store' ]
 						
 					with res_three:
-						text_background = st.toggle( 'Background', key='background',
+						set_text_background = st.toggle( 'Background', key='background',
 							value=False, help=cfg.BACKGROUND_MODE )
-						chat.background = st.session_state[ 'image_background' ]
+						text_background = st.session_state[ 'text_background' ]
 						
 					with res_four:
-						text_stop = st.text_input( 'Stop Sequences',
+						set_text_stops = st.text_input( 'Stop Sequences', key='text_stops',
 							value='\n'.join( st.session_state.get( 'stops', [ ] ) ),
 							help=cfg.STOP_SEQUENCE, width='stretch' )
-						chat.stops = st.session_state[ 'stops' ]
+						text_stops = st.session_state[ 'stops' ]
 					
 					with res_five:
-						text_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='max_tokens' )
-						chat.max_output_tokens = st.session_state[ 'max_tokens' ]
+						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						text_tokens = st.session_state[ 'text_max_tokens' ]
 			
 		# ------------------------------------------------------------------
 		# Expander — Text System Instructions
@@ -2232,7 +2348,7 @@ elif mode == "Text":
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=240, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
-			chat.instructions = st.session_state[ 'text_system_instructions' ]
+			text_instructions = st.session_state[ 'text_system_instructions' ]
 			if st.button( 'Clear Instructions', width='stretch' ):
 				st.session_state[ 'do_clear_instructions' ] = True
 				st.rerun( )
@@ -2260,14 +2376,14 @@ elif mode == "Text":
 				
 				with st.spinner( 'Thinking…' ):
 					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
-					gen_kwargs[ 'top_p' ] = st.session_state[ 'top_p' ]
-					gen_kwargs[ 'background' ] = st.session_state[ 'background' ]
-					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'max_tokens' ]
-					gen_kwargs[ 'frequency' ] = st.session_state[ 'freq_penalty' ]
-					gen_kwargs[ 'presence' ] = st.session_state[ 'pres_penalty' ]
+					gen_kwargs[ 'top_p' ] = st.session_state[ 'text_top_p' ]
+					gen_kwargs[ 'background' ] = st.session_state[ 'text_background' ]
+					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'text_max_tokens' ]
+					gen_kwargs[ 'frequency' ] = st.session_state[ 'text_freq_penalty' ]
+					gen_kwargs[ 'presence' ] = st.session_state[ 'text_pres_penalty' ]
 					
-					if st.session_state[ 'stop' ]:
-						gen_kwargs[ 'stops' ] = st.session_state[ 'stops' ]
+					if st.session_state[ 'text_stops' ]:
+						gen_kwargs[ 'stops' ] = st.session_state[ 'text_stops' ]
 					
 					response = None
 					
@@ -2322,20 +2438,20 @@ elif mode == "Images":
 	st.subheader( '📷 Images API', help=cfg.IMAGES_API )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	image_model = st.session_state.get( 'image_model', None )
-	image_size = st.session_state.get( 'image_size', None )
-	image_style = st.session_state.get( 'image_style', None )
-	image_quality = st.session_state.get( 'image_quality', None )
-	image_format = st.session_state.get( 'image_format', None )
-	image_detail = st.session_state.get( 'image_detail', None )
-	image_top_p = st.session_state.get( 'image_top_percent', None)
-	image_freq = st.session_state.get( 'image_freq_penalty', None )
-	image_presense = st.session_state.get( 'image_presense_penalty', None)
-	image_number = st.session_state.get( 'image_number', None )
-	image_temperature = st.session_state.get( 'image_temperature', None )
-	image_stream = st.session_state.get( 'image_stream', None )
-	image_store = st.session_state.get( 'image_store', None )
-	image_background = st.session_state.get( 'image_background', None)
+	image_model = st.session_state.get( 'model', None )
+	image_size = st.session_state.get( 'size', None )
+	image_style = st.session_state.get( 'style', None )
+	image_quality = st.session_state.get( 'quality', None )
+	image_format = st.session_state.get( 'format', None )
+	image_detail = st.session_state.get( 'detail', None )
+	image_top_p = st.session_state.get( 'top_percent', None)
+	image_freq = st.session_state.get( 'freq_penalty', None )
+	image_presense = st.session_state.get( 'presense_penalty', None)
+	image_number = st.session_state.get( 'number', None )
+	image_temperature = st.session_state.get( 'temperature', None )
+	image_stream = st.session_state.get( 'stream', None )
+	image_store = st.session_state.get( 'store', None )
+	image_background = st.session_state.get( 'background', None)
 	image = provider_module.Images( )
 	
 	# ------------------------------------------------------------------
