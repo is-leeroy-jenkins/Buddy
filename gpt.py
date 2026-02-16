@@ -71,7 +71,6 @@ class GPT:
 	api_key: Optional[ str ]
 	client: Optional[ OpenAI ]
 	prompt: Optional[ str ]
-	response_format: Optional[ Dict[ str, str ] ] | str
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
 	frequency_penalty: Optional[ float ]
@@ -215,7 +214,6 @@ class Chat( GPT ):
 		self.parallel_tools = None
 		self.background = None
 		self.tool_choice = 'auto'
-		self.response_format = 'auto'
 		self.prompt = None
 		self.response = None
 		self.file = None
@@ -336,7 +334,7 @@ class Chat( GPT ):
 	
 	def generate_text( self, prompt: str, model: str='gpt-5-nano', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
-			store: bool=True, stream: bool=True, instruct: str=None,
+			store: bool=True, stream: bool=True, instruct: str=None, background: bool=False,
 			reasoning: str='low', include: str=None  ) -> str | None:
 		"""
 	
@@ -367,6 +365,7 @@ class Chat( GPT ):
 			self.max_completion_tokens = max_tokens
 			self.store = store
 			self.stream = stream
+			self.background = background
 			self.instructions = instruct
 			self.reasoning= {'effort': self.reasoning }
 			self.input = self.prompt
