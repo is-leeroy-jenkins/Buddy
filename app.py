@@ -1946,10 +1946,10 @@ if 'audio_stream' not in st.session_state:
 	st.session_state[ 'audio_stream' ] = False
 
 if 'audio_input' not in st.session_state:
-	st.session_state[ 'audio_input' ] = None
+	st.session_state[ 'audio_input' ] = [ ]
 
 if 'audio_response_format' not in st.session_state:
-	st.session_state[ 'audio_response_format' ] = None
+	st.session_state[ 'audio_response_format' ] = { }
 
 if 'audio_tools' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
