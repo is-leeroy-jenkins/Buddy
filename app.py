@@ -2016,9 +2016,67 @@ if 'file_id' not in st.session_state:
 
 if 'file_url' not in st.session_state:
 	st.session_state[ 'file_url' ] = None
-	
+
+# --------VECTORSTORES-GENERATION PARAMETERS--------------------
+if 'vectorstores_temperature' not in st.session_state:
+	st.session_state[ 'vectorstores_temperature' ] = 0.8
+
+if 'vectorstores_top_percent' not in st.session_state:
+	st.session_state[ 'vectorstores_top_percent' ] = 1.0
+
+if 'vectorstores_input' not in st.session_state:
+	st.session_state[ 'vectorstores_input' ] = [ ]
+
+if 'vectorstores_max_tokens' not in st.session_state:
+	st.session_state[ 'vectorstores__max_tokens' ] = 8064
+
+if 'vectorstores_frequency_penalty' not in st.session_state:
+	st.session_state[ 'vectorstores_frequency_penalty' ] = 0.0
+
+if 'vectorstores_presense_penalty' not in st.session_state:
+	st.session_state[ 'vectorstores_presense_penalty' ] = 0.0
+
+if 'vectorstores_stops' not in st.session_state:
+	st.session_state[ 'vectorstores_stops' ] = [ ]
+
+if 'vectorstores_include' not in st.session_state:
+	st.session_state[ 'vectorstores_include' ] = [ ]
+
+if 'vectorstores_parallel_tools' not in st.session_state:
+	st.session_state[ 'vectorstores_parallel_tools' ] = False
+
+if 'vectorstores_max_calls' not in st.session_state:
+	st.session_state[ 'vectorstores_max_calls' ] = None
+
+if 'vectorstores_tool_choice' not in st.session_state:
+	st.session_state[ 'vectorstores_tool_choice' ] = 'auto'
+
+if 'vectorstores_reasoning' not in st.session_state:
+	st.session_state[ 'vectorstores_reasoning' ] = 'low'
+
+if 'vectorstores_background' not in st.session_state:
+	st.session_state[ 'vectorstores_background' ] = False
+
+if 'vectorstores_store' not in st.session_state:
+	st.session_state[ 'vectorstores_store' ] = True
+
+if 'vectorstores_stream' not in st.session_state:
+	st.session_state[ 'vectorstores_stream' ] = False
+
+if 'vectorstores_input' not in st.session_state:
+	st.session_state[ 'vectorstores_input' ] = None
+
+if 'vectorstores_response_format' not in st.session_state:
+	st.session_state[ 'vectorstores_response_format' ] = None
+
+if 'vectorstores_tools' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+if 'vectorstores_messages' not in st.session_state:
+	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
 # -------VECTORSTORES-SPECIFIC PARAMETERS-------------------
-if 'vector_store_id' not in st.session_state:
+if 'vectorstores_id' not in st.session_state:
 	st.session_state[ 'vector_store_id' ] = None
 
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
@@ -2266,15 +2324,15 @@ elif mode == "Text":
 		
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
-			# Text Generation LLM Options
+			# Text Generation Model Parameter
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns(
-						[ 0.25, 0.25, 0.25, 0.25], border=True, gap='xsmall' )
+					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25],
+						border=True, gap='xsmall' )
 					
 					with llm_c1:
 						set_text_model = st.selectbox( 'Select Model', text.model_options,
-							help='Required. Text Generation model used by the AI',
+							help='REQUIRED. Text Generation model used by the AI',
 							key='text_model',
 							index=(text.model_options.index( st.session_state[ 'text_model' ] )
 							       if st.session_state.get( 'text_model' ) in text.model_options else 0), )
@@ -2288,7 +2346,7 @@ elif mode == "Text":
 					with llm_c3:
 						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains',
 							value='\n'.join( st.session_state.get( 'text_domains', [ ] ) ),
-							help=cfg.STOP_SEQUENCE, width='stretch' )
+							help=cfg.ALLOWED_DOMAINS, width='stretch' )
 						text_domains = st.session_state[ 'text_domains' ]
 				
 					with llm_c4:
@@ -2297,7 +2355,7 @@ elif mode == "Text":
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
 			# ------------------------------------------------------------------
-			# Text Generation Parameters
+			# Text Generation Inference Parameters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ], border=True,
@@ -2330,7 +2388,7 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			# Text Generation Tool Options
 			# ------------------------------------------------------------------
-			with st.expander( 'Tool Options', expanded=False, width='stretch' ):
+			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
 				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
 					gap='xxsmall' )
@@ -2358,7 +2416,7 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
 			# ------------------------------------------------------------------
-			with st.expander( 'Response Options', expanded=False, width='stretch' ):
+			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 					res_one, res_two, res_three, res_four, res_five = st.columns(
 						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='small' )
 					
@@ -3115,6 +3173,20 @@ elif mode == 'Embeddings':
 # ======================================================================================
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	vectorstores_model = st.session_state.get( 'vectorstores_model', None )
+	vectorstores_format = st.session_state.get( 'vectorstores_response_format', None )
+	vectorstores_top_p = st.session_state.get( 'vectorstores_top_percent', None )
+	vectorstores_freq = st.session_state.get( 'vectorstores_frequency_penalty', None )
+	vectorstores_presense = st.session_state.get( 'vectorstores_presense_penalty', None )
+	vectorstores_number = st.session_state.get( 'vectorstores_number', None )
+	vectorstores_temperature = st.session_state.get( 'vectorstores_temperature', None )
+	vectorstores_stream = st.session_state.get( 'vectorstores_stream', None )
+	vectorstores_store = st.session_state.get( 'vectorstores_store', None )
+	vectorstores_input = st.session_state.get( 'vectorstores_input', None )
+	vectorstores_reasoning = st.session_state.get( 'vectorstores_reasoning', None )
+	vectorstores_choice = st.session_state.get( 'vectorstores_tool_choice', None )
+	vectorstores_messages = st.session_state.get( 'vectorstores_messages', None )
+	vectorstores_background = st.session_state.get( 'vectorstores_background', None )
 	vector = None
 	collector  = None
 	searcher = None
@@ -3148,9 +3220,7 @@ elif mode == 'Vector Stores':
 					try:
 						if hasattr( collector, "create" ):
 							res = provider_module.create( new_store_name )
-							st.success(
-								f"Create call submitted for '{new_store_name}'."
-							)
+							st.success( f"Create call submitted for '{new_store_name}'." )
 						else:
 							st.warning( "create() not available on Grok provider." )
 					except Exception as exc:
@@ -3209,17 +3279,10 @@ elif mode == 'Vector Stores':
 					else:
 						try:
 							client = getattr( collector, "client", None )
-							if (
-									client
-									and hasattr( client, "collections" )
-									and hasattr( client.collections, "retrieve" )
-							):
+							if ( client and hasattr( client, "collections" )
+									and hasattr( client.collections, "retrieve" ) ):
 								vs = client.collections.retrieve( collection_id=sel_id )
-								st.json(
-									vs.__dict__
-									if hasattr( vs, "__dict__" )
-									else vs
-								)
+								st.json( vs.__dict__ if hasattr( vs, "__dict__" ) else vs )
 							else:
 								st.warning( "collections.retrieve() not available." )
 						except Exception as exc:
@@ -3232,19 +3295,12 @@ elif mode == 'Vector Stores':
 					else:
 						try:
 							client = getattr( collector, "client", None )
-							if (
-									client
-									and hasattr( client, "collections" )
-									and hasattr( client.collections, "delete" )
-							):
-								res = client.collections.delete(
-									collection_id=sel_id
-								)
+							if ( client and hasattr( client, "collections" )
+									and hasattr( client.collections, "delete" ) ):
+								res = client.collections.delete( collection_id=sel_id )
 								st.success( f"Delete returned: {res}" )
 							else:
-								st.warning(
-									"collections.delete() not available."
-								)
+								st.warning( "collections.delete() not available." )
 						except Exception as exc:
 							st.error( f"Delete failed: {exc}" )
 				else:
@@ -3264,7 +3320,7 @@ elif mode == 'Vector Stores':
 		# --------------------------------------------------------------
 		vs_map = getattr( searcher, 'collections', None )
 		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( 'Known File Search Stores (local mapping)' )
+			st.markdown( 'Local File Search Stores' )
 			for name, vid in vs_map.items( ):
 				st.write( f'- **{name}** — {vid}' )
 			st.divider( )
@@ -3297,20 +3353,15 @@ elif mode == 'Vector Stores':
 		if not options:
 			try:
 				client = getattr( searcher, 'client', None )
-				if (
-						client
-						and hasattr( client, 'file_search_stores' )
-						and hasattr( client.file_search_stores, 'list' )
-				):
+				if ( client and hasattr( client, 'file_search_stores' )
+						and hasattr( client.file_search_stores, 'list' ) ):
 					api_list = client.file_search_stores.list( )
 					temp: List[ tuple ] = [ ]
 					for item in getattr( api_list, 'data', [ ] ) or api_list:
 						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' ) if isinstance( item, dict ) else None
-						)
+								item.get( 'name' ) if isinstance( item, dict ) else None )
 						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' ) if isinstance( item, dict ) else None
-						)
+								item.get( 'id' ) if isinstance( item, dict ) else None )
 						if nm and vid:
 							temp.append( (nm, vid) )
 					if temp:
@@ -3504,38 +3555,35 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		# Expander — Inference Parameters
 		# ------------------------------------------------------------------
-		with st.expander( '🧠 Inference Options', expanded=False, width='stretch' ):
-			inf_one, inf_two, inf_three, inf_four, inf_five = \
-				st.columns( [ 0.2, 0.2, 0.2,  0.2, 0.2 ],
-				border=True, gap='xsmall' )
+		with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
+			stores_c1, stores_c2, stores_c3, stores_c4 = st.columns( [ 0.25, 0.25, 0.25,
+			                                               0.25 ], border=True,
+				gap='xsmall' )
 			
-			with inf_one:
-				top_p = st.slider( 'Top-P', 0.0, 1.0,
-					float( st.session_state.get( 'top_p', 1.0 ) ), 0.01, help=cfg.TOP_P )
-				st.session_state[ 'top_p' ] = float( top_p )
+			with stores_c1:
+				set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
+					float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
+					help=cfg.TOP_P, key='text_top_p' )
+				text_top_p = st.session_state[ 'text_top_p' ]
 			
-			with inf_two:
-				logprobs = st.slider( 'Log-Probs', 0, 20,
-					int( st.session_state.get( 'logprobs', 0 ) ), 1, help=cfg.LOG_PROBS )
-				st.session_state[ 'logprobs' ] = int( logprobs )
-			
-			with inf_three:
-				freq_penalty = st.slider( 'Frequency Penalty', -2.0, 2.0,
+			with stores_c2:
+				set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
 					float( st.session_state.get( 'freq_penalty', 0.0 ) ),
 					0.01, help=cfg.FREQUENCY_PENALTY )
-				st.session_state[ 'freq_penalty' ] = float( freq_penalty )
+				text_fequency = st.session_state[ 'text_frequency_penalty' ]
 			
-			with inf_four:
-				pres_penalty = st.slider( 'Presence Penalty', -2.0, 2.0,
-					float( st.session_state.get( 'pres_penalty', 0.0 ) ),
+			with stores_c3:
+				set_text_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
+					float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
 					0.01, help=cfg.PRESENCE_PENALTY )
-				st.session_state[ 'pres_penalty' ] = float( pres_penalty )
+				text_presense = st.session_state[ 'text_presense_penalty' ]
 			
-			with inf_five:
-				temperature = st.slider( 'Temperature', 0.0, 1.0,
-					float( st.session_state.get( 'temperature', 0.7 ) ), 0.01,
+			with stores_c4:
+				set_text_temperature = st.slider( 'Temperature', 0.0, 1.0,
+					float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
 					help=cfg.TEMPERATURE )
-				st.session_state[ 'temperature' ] = float( temperature )
+				text_temperature = st.session_state[ 'text_temperature' ]
+		
 		
 		# ------------------------------------------------------------------
 		# Expander — System Instructions
