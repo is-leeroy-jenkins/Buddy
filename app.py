@@ -2268,9 +2268,9 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			# Text Generation LLM Options
 			# ------------------------------------------------------------------
-			with st.expander( 'Model Options', expanded=False, width='stretch' ):
+			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns(
-						[ 0.25, 0.25, 0.25, 0.25], border=True )
+						[ 0.25, 0.25, 0.25, 0.25], border=True, gap='xsmall' )
 					
 					with llm_c1:
 						set_text_model = st.selectbox( 'Select Model', text.model_options,
@@ -2282,8 +2282,8 @@ elif mode == "Text":
 					
 					with llm_c2:
 						set_text_includes = st.multiselect( 'Include:', options=text.include_options,
-							key='include', help=cfg.INCLUDE )
-						text_includes = st.session_state[ 'include' ]
+							key='text_include', help=cfg.INCLUDE )
+						text_includes = st.session_state[ 'text_include' ]
 					
 					with llm_c3:
 						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains',
@@ -2292,27 +2292,26 @@ elif mode == "Text":
 						text_domains = st.session_state[ 'text_domains' ]
 				
 					with llm_c4:
-						text_reasoning = st.multiselect( 'Reasoning:', options=text.reasoning_options,
-							key='reasoning', help=cfg.REASONING )
-						text_reasoning = st.session_state[ 'reasoning' ]
+						set_text_reasoning = st.multiselect( 'Reasoning:', options=text.reasoning_options,
+							key='text_reasoning', help=cfg.REASONING )
+						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
 			# ------------------------------------------------------------------
 			# Text Generation Parameters
 			# ------------------------------------------------------------------
-			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_c1, prm_c2, prm_c3, prm_c4 = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
-					gap='xxsmall' )
+			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
+				prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ], border=True,
+					gap='xsmall' )
 				
 				with prm_c1:
 					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
 						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
-						help=cfg.TOP_P, key='top_p' )
-					text_top_p = st.session_state[ 'top_p' ]
+						help=cfg.TOP_P, key='text_top_p' )
+					text_top_p = st.session_state[ 'text_top_p' ]
 				
 				with prm_c2:
 					set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+						float( st.session_state.get( 'freq_penalty', 0.0 )),
 						0.01, help=cfg.FREQUENCY_PENALTY )
 					text_fequency = st.session_state[ 'text_frequency_penalty' ]
 				
@@ -2372,7 +2371,7 @@ elif mode == "Text":
 						text_store = st.session_state[ 'text_store' ]
 						
 					with res_three:
-						set_text_background = st.toggle( 'Background', key='background',
+						set_text_background = st.toggle( 'Background', key='text_background',
 							value=False, help=cfg.BACKGROUND_MODE )
 						text_background = st.session_state[ 'text_background' ]
 						
@@ -2391,7 +2390,7 @@ elif mode == "Text":
 		# Expander — Text System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-			st.text_area( 'Prompt Text', height=240, width='stretch',
+			st.text_area( 'Prompt Text', height=150, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
 			text_instructions = st.session_state[ 'text_system_instructions' ]
 			if st.button( 'Clear Instructions', width='stretch' ):
