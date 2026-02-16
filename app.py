@@ -3391,11 +3391,8 @@ elif mode == 'Vector Stores':
 					else:
 						try:
 							client = getattr( searcher, 'client', None )
-							if (
-									client
-									and hasattr( client, 'file_search_stores' )
-									and hasattr( client.file_search_stores, 'retrieve' )
-							):
+							if ( client and hasattr( client, 'file_search_stores' )
+									and hasattr( client.file_search_stores, 'retrieve' ) ):
 								vs = client.file_search_stores.retrieve(
 									file_search_store_id=sel_id )
 								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
@@ -3508,11 +3505,7 @@ elif mode == 'Vector Stores':
 					else:
 						try:
 							openai_client = st.session_state[ 'openai_client' ]
-							
-							vs = openai_client.vector_stores.retrieve(
-								vector_store_id=sel_id
-							)
-							
+							vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
 							st.json( vs.model_dump( ) )
 							st.write( 'Name:', data[ 'name' ] )
 							st.write( 'Files:', data[ 'file_counts' ][ 'completed' ] )
