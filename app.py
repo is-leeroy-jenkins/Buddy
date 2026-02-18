@@ -2342,7 +2342,7 @@ elif mode == "Text":
 			# Text Generation Model Parameter
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					llm_c1, llm_c2, llm_c3, llm_c4  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='xxsmall' )
 					
 					with llm_c1:
@@ -3180,7 +3180,7 @@ elif mode == 'Embeddings':
 			set_embed_model = st.selectbox( 'Model', embed.model_options,
 				index=( embed.model_options.index( st.session_state[ 'embedding_model' ] )
 						if st.session_state.get( 'embedding_model' ) in embed.model_options
-						else 0 ), )
+						else 0 ), key='select_embedding_model' )
 			
 			embedding_model = st.selectbox( 'Model', embed.model_options,
 				index=(embed.model_options.index( st.session_state[ 'embedding_model' ] )
@@ -3309,7 +3309,7 @@ elif mode == 'Vector Stores':
 		# --------------------------------------------------------------
 		if options:
 			names = [ f"{n} — {i}" for n, i in options ]
-			sel = st.selectbox( "Select a Collection", options=names )
+			sel = st.selectbox( "Select a Collection", options=names, key='sel_collection' )
 			
 			sel_id: Optional[ str ] = None
 			for n, i in options:
@@ -3542,7 +3542,7 @@ elif mode == 'Vector Stores':
 					# --------------------------------------------------------------
 					if options:
 						names = [ f'{n} — {i}' for n, i in options ]
-						sel = st.selectbox( 'Select Vector Store', options=names, key='store_select' )
+						sel = st.selectbox( 'Select Vector Store', options=names, key='select_vectorstore' )
 						
 						sel_id: Optional[ str ] = None
 						for n, i in options:
@@ -3582,8 +3582,7 @@ elif mode == 'Vector Stores':
 										st.error( f'Delete failed: {exc}' )
 					else:
 						st.info( 'No vector stores discovered' )
-			
-		
+					
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
