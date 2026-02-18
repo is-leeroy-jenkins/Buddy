@@ -3208,33 +3208,30 @@ elif mode == 'Embeddings':
 	# ------------------------------------------------------------------
 	emb_left, emb_center, emb_right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with emb_center:
-			with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
-				# ------------------------------------------------------------------
-				# Embedding Model Parameters
-				# ------------------------------------------------------------------
-				with st.expander( 'Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
-						border=True, gap='medium' )
-					
-					with llm_c1:
-						set_embedding_model = st.selectbox( 'Select Model:', embedding.model_options,
-							help='REQUIRED. Embedding model used by the AI',
-							key='embedding_model',
-							index=(embedding.model_options.index( st.session_state[ 'embedding_model' ] )
-							       if st.session_state.get( 'embedding_model' ) in embedding.model_options else 0), )
-						embedding_model = st.session_state[ 'embedding_model' ]
-					
-					with llm_c2:
-						set_encoding_format = st.selectbox( 'Encoding Format:',
-							options=embedding.encoding_options, key='embedding_encoding_format',
-							help='REQUIRED: The format to return the embeddings in. float or base64')
-						embedding_encoding_format = st.session_state[ 'embedding_encoding_format' ]
-					
-					with llm_c3:
-						set_embedding_dimensions = st.number_input( 'Dimensions', min_value=1,
-							max_value=2048, step=1, key='embedding_dimensions',
-							help='Optional: An integer between 1 and 2048', width='stretch' )
-						embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
+		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
+				llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
+					border=True, gap='medium' )
+				
+				with llm_c1:
+					set_embedding_model = st.selectbox( 'Select Model:', embedding.model_options,
+						help='REQUIRED. Embedding model used by the AI',
+						key='embedding_model',
+						index=(embedding.model_options.index( st.session_state[ 'embedding_model' ] )
+						       if st.session_state.get( 'embedding_model' ) in embedding.model_options else 0), )
+					embedding_model = st.session_state[ 'embedding_model' ]
+				
+				with llm_c2:
+					set_encoding_format = st.selectbox( 'Encoding Format:',
+						options=embedding.encoding_options, key='embedding_encoding_format',
+						help='REQUIRED: The format to return the embeddings in. float or base64')
+					embedding_encoding_format = st.session_state[ 'embedding_encoding_format' ]
+				
+				with llm_c3:
+					set_embedding_dimensions = st.number_input( 'Dimensions', min_value=1,
+						max_value=2048, step=0, key='embedding_dimensions',
+						help='Optional (large models only): An integer between 1 and 2048',
+						width='stretch' )
+					embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
 						
 			# ------------------------------------------------------------------
 			# Main UI — Embedding execution (unchanged behavior)
