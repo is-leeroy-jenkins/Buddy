@@ -2419,7 +2419,6 @@ elif mode == "Text":
 						
 						st.rerun( )
 	
-	
 			# ------------------------------------------------------------------
 			# Text Generation Inference Parameters
 			# ------------------------------------------------------------------
@@ -2474,7 +2473,6 @@ elif mode == "Text":
 					
 					st.rerun( )
 
-
 			# ------------------------------------------------------------------
 			# Text Generation Tool Options
 			# ------------------------------------------------------------------
@@ -2517,7 +2515,6 @@ elif mode == "Text":
 							del st.session_state[ key ]
 					
 					st.rerun( )
-
 
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
@@ -2568,8 +2565,6 @@ elif mode == "Text":
 							del st.session_state[ 'text_stops_input' ]
 						
 						st.rerun( )
-
-
 
 		# ------------------------------------------------------------------
 		# Expander — Text System Instructions
@@ -2732,8 +2727,20 @@ elif mode == "Images":
 						key='image_reasoning', help=cfg.REASONING )
 					image_reasoning = st.session_state[ 'image_reasoning' ]
 					
-				st.button( 'Reset', key='image_model_reset', width='stretch' )
-			
+				if st.button( 'Reset', key='image_model_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Model Settings session keys
+					# ----------------------------------------------------------
+					for key in [ 'image_model', 'image_include', 'image_domains',
+							'image_reasoning', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+							
+						if 'image_domains_input' in st.session_state:
+							del st.session_state[ 'image_domains_input' ]
+						
+						st.rerun( )
+
 			# Expander - Image Generation Inference Parameters
 			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
@@ -2773,8 +2780,8 @@ elif mode == "Images":
 				
 			# Expander - Image Generation Tool Options
 			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
-				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
+				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+					border=True, gap='medium' )
 				
 				with tool_c1:
 					set_image_parallel = st.toggle( 'Allow Parallel', key='image_parallel_tools',
@@ -2796,8 +2803,18 @@ elif mode == "Images":
 						key='image_tools', help=cfg.TOOLS )
 					image_tools = st.session_state[ 'image_tools' ]
 				
-				st.button( 'Reset', key='image_tools_reset', width='stretch' )
-			
+				if st.button( 'Reset', key='image_tools_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Tool Settings session keys
+					# ----------------------------------------------------------
+					for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
+							'image_tools', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+				
+				
 			# Expander — Image Generation Response
 			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 				res_one, res_two, res_three, res_four, res_five = st.columns(
@@ -2827,8 +2844,21 @@ elif mode == "Images":
 						value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 					image_tokens = st.session_state[ 'image_max_tokens' ]
 				
-				st.button( 'Reset', key='image_response_reset', width='stretch' )
-		
+				if st.button( 'Reset', key='image_response_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Response session keys
+					# ----------------------------------------------------------
+					
+					for key in [ 'image_stream', 'image_store', 'image_background',
+							'image_stops', 'image_max_tokens', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					# If canonical separation used
+					if 'image_stops_input' in st.session_state:
+						del st.session_state[ 'image_stops_input' ]
+					
+					st.rerun( )
+
 		# ------------------------------------------------------------------
 		# Expander — Image System Instructions
 		# ------------------------------------------------------------------
@@ -3089,7 +3119,7 @@ elif mode == "Audio":
 		# Expander —Audio LLM Configuration
 		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
-			# Expander — Immage Model
+			# Expander — Audio Model
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				aud_one, aud_two, aud_three, aud_four, aud_five = st.columns(
 					[ 0.2, 0.2, 0.2, 0.2, .2 ], gap='xxsmall', border=True )
@@ -3139,12 +3169,21 @@ elif mode == "Audio":
 						options=[ 'audio/mp3', 'audio/wav', 'audio/aac',
 						          'audio/flac', 'audio/opus', 'audio/pcm' ] )
 				
-				st.button( 'Reset', key='audio_model_reset', width='stretch' )
-			
-			# Expander — Immage Inference
+				if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Audio Model Settings session keys
+					# ----------------------------------------------------------
+					for key in [ 'audio_model', 'audio_language', 'audio_voice', 'audio_rate',
+							'audio_format', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+
+			# Expander — Audio Inference
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='medium' )
+				prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+					border=True, gap='medium' )
 				
 				with prm_one:
 					set_audio_top = st.slider( 'Top-P', 0.0, 1.0,
@@ -3169,9 +3208,17 @@ elif mode == "Audio":
 						help=cfg.TEMPERATURE )
 					audio_temperature = st.session_state[ 'audio_temperature' ]
 				
-				st.button( 'Reset', key='audio_inference_reset', width='stretch' )
+				if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Audio Inference session keys
+					# ----------------------------------------------------------
+					for key in [ 'audio_top_percent', 'audio_temperature' ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
 			
-			# Expander — Image Response
+			# Expander — Audio Response
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
 				resp_one, resp_two, resp_three, resp_four, resp_five = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
@@ -3329,8 +3376,19 @@ elif mode == 'Embeddings':
 					width='stretch' )
 				embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
 			
-			st.button( 'Reset', key='embedding_reset', width='stretch' )
-						
+			if st.button( 'Reset', key='embedding_reset', width='stretch' ):
+				# ----------------------------------------------------------
+				# Remove Embedding Configuration session keys
+				# ----------------------------------------------------------
+				
+				for key in [ 'embedding_model', 'embedding_dimensions', 'embedding_format',
+						'embedding_input_text', ]:
+					if key in st.session_state:
+						del st.session_state[ key ]
+				
+				st.rerun( )
+
+
 		# ------------------------------------------------------------------
 		# Main UI — Embedding execution (unchanged behavior)
 		# ------------------------------------------------------------------
@@ -3778,9 +3836,18 @@ elif mode == 'Document Q&A':
 					float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
 					help=cfg.TEMPERATURE )
 				text_temperature = st.session_state[ 'text_temperature' ]
+			
+			if st.button( 'Reset', key='docqa_inference_reset', width='stretch' ):
+				# ----------------------------------------------------------
+				# Remove DocQA Inference session keys
+				# ----------------------------------------------------------
+				for key in [ 'docqa_temperature', 'docqa_top_p', 'docqa_max_tokens',
+						'docqa_top_k', 'docqa_score_threshold', ]:
+					if key in st.session_state:
+						del st.session_state[ key ]
 				
-			st.button( 'Reset', key='docqa_inference_reset', width='stretch' )
-		
+				st.rerun( )
+
 		# ------------------------------------------------------------------
 		# Expander — DocQA System Instructions
 		# ------------------------------------------------------------------
