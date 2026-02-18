@@ -4765,6 +4765,31 @@ elif mode == 'Audio':
 	if audio_file is not None:
 		right_parts.append( 'File: Set' )
 
+elif mode == 'Embeddings':
+	model = st.session_state.get( 'embed_model' )
+	method = st.session_state.get( 'embed_method' )
+	dimensions = st.session_state.get( 'embed_dimensions' )
+	batch_size = st.session_state.get( 'embed_batch_size' )
+	encoding = st.session_state.get( 'embed_encoding_format' )
+	input_data = st.session_state.get( 'embed_input' )
+	
+	# Model will already be appended via _mode_to_model_key mapping
+	# Only append additional metadata here
+	if method is not None:
+		right_parts.append( f'Method: {method}' )
+	
+	if dimensions is not None:
+		right_parts.append( f'Dim: {dimensions}' )
+	
+	if batch_size is not None:
+		right_parts.append( f'Batch: {batch_size}' )
+	
+	if encoding is not None:
+		right_parts.append( f'Format: {encoding}' )
+	
+	if input_data:
+		right_parts.append( 'Input: Set' )
+
 elif mode == 'Files':
 	purpose = st.session_state.get( 'purpose' )
 	file_type = st.session_state.get( 'file_type' )
@@ -4782,11 +4807,6 @@ elif mode == 'Files':
 	
 	if file_url is not None:
 		right_parts.append( 'URL: Set' )
-
-elif mode == 'Embeddings':
-	method = st.session_state.get( 'embed_method' )
-	if method is not None:
-		right_parts.append( f'Method: {method}' )
 
 elif mode == 'VectorStores':
 	model = st.session_state.get( 'vectorstores_model' )
