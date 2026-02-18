@@ -2012,14 +2012,20 @@ if 'audio_format' not in st.session_state:
 
 # ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
 
-if 'embedding_input' not in st.session_state:
-	st.session_state[ 'embedding_input' ] = None
+if 'embedding_text_input' not in st.session_state:
+	st.session_state[ 'embedding_text_input' ] = None
 
 if 'embedding_dimensions' not in st.session_state:
 	st.session_state[ 'embedding_dimensions' ] = None
 
 if 'embedding_encoding_format' not in st.session_state:
 	st.session_state[ 'embedding_encoding_format' ] = None
+
+if 'embedding_batch_size' not in st.session_state:
+	st.session_state[ 'embedding_batch_size' ] = None
+
+if 'embedding_method' not in st.session_state:
+	st.session_state[ 'embedding_method' ] = None
 
 # ------- FILES-SPECIFIC PARAMETERS --------------------------
 if 'purpose' not in st.session_state:
@@ -3167,6 +3173,12 @@ elif mode == "Audio":
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
+	embedding_model = st.session_state.get( 'embedding_model' )
+	method = st.session_state.get( 'embedding_method' )
+	dimensions = st.session_state.get( 'embedding_dimensions' )
+	batch_size = st.session_state.get( 'embedding_batchsize' )
+	encoding = st.session_state.get( 'embedding_format' )
+	input_data = st.session_state.get( 'embedding_input' )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
@@ -3185,7 +3197,7 @@ elif mode == 'Embeddings':
 			embedding_model = st.selectbox( 'Model', embed.model_options,
 				index=(embed.model_options.index( st.session_state[ 'embedding_model' ] )
 				       if st.session_state.get( 'embedding_model' ) in embed.model_options
-				       else 0), )
+				       else 0), key='embedding_ model')
 			method = None
 			if hasattr( embed, "methods" ):
 				method = st.selectbox( "Method", embed.methods, )
@@ -3197,7 +3209,7 @@ elif mode == 'Embeddings':
 		with center:
 			set_input_text = st.text_area( 'Text to embed' )
 			
-			if text and st.button( 'Embed' ):
+			if set_input_text and st.button( 'Embed' ):
 				with st.spinner( 'Embedding…' ):
 					try:
 						if method:
