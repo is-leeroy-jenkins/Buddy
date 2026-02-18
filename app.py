@@ -1998,7 +1998,7 @@ if 'voice' not in st.session_state:
 if 'start_time' not in st.session_state:
 	st.session_state[ 'start_time' ] = 0.0
 
-if 'end_end' not in st.session_state:
+if 'end_time' not in st.session_state:
 	st.session_state[ 'end_time' ] = 0.0
 
 if 'loop' not in st.session_state:
@@ -4545,7 +4545,7 @@ elif mode == 'Data Management':
 					st.error( f'Execution failed: {e}' )
 
 # ======================================================================================
-# Footer — Fixed Bottom Status Bar (Desktop-style)
+# Footer — Status Bar
 # ======================================================================================
 st.markdown(
 	"""
@@ -4607,6 +4607,9 @@ right_parts = [ ]
 if active_model is not None:
 	right_parts.append( f'Model: {active_model}' )
 
+# ======================================================================================
+# Footer — Status Variables
+# ======================================================================================
 if mode == 'Text':
 	temperature = st.session_state.get( 'text_temperature' )
 	top_p = st.session_state.get( 'text_top_percent' )
@@ -4777,12 +4780,12 @@ elif mode == 'Audio':
 		right_parts.append( 'File: Set' )
 
 elif mode == 'Embeddings':
-	model = st.session_state.get( 'embed_model' )
-	method = st.session_state.get( 'embed_method' )
-	dimensions = st.session_state.get( 'embed_dimensions' )
-	batch_size = st.session_state.get( 'embed_batch_size' )
-	encoding = st.session_state.get( 'embed_encoding_format' )
-	input_data = st.session_state.get( 'embed_input' )
+	model = st.session_state.get( 'embedding_model' )
+	method = st.session_state.get( 'embedding_method' )
+	dimensions = st.session_state.get( 'embedding_dimensions' )
+	batch_size = st.session_state.get( 'embedding_batch_size' )
+	encoding = st.session_state.get( 'embedding_encoding_format' )
+	input_data = st.session_state.get( 'embedding_text_input' )
 	
 	# Model will already be appended via _mode_to_model_key mapping
 	# Only append additional metadata here
