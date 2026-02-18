@@ -59,6 +59,9 @@ XML_BLOCK_PATTERN = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>",
 DB_PATH = "stores/sqlite/Data.db"
 ANALYST = '❓'
 BUDDY = '🧠'
+GPT_AVATAR = r'resources/images/gpt_avatar.png'
+GROK_AVATAR = r'resources/images/grok_avatar.png'
+GEMINI_AVATAR = r'resources/images/gemini_avatar.png'
 PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 PROMPT_VERSION = '16'
@@ -78,8 +81,9 @@ XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 #----------------- GPT CONFIG -------------------
 GPT_LOGO = r'resources/buddy_logo.ico'
 
-GPT_VECTOR_STORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
-                      'vs_697f86ad98888191b967685ae558bfc0']
+GPT_VECTOR_STORES = [ 'vs_699506f7d5348191990e0557c717fa9d',
+                      'vs_699505df9ac48191a525c0ecb86fef66',
+                      'vs_712r5W5833G6aLxIYIbuvVcK']
 
 GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
               'file-WPmTsHFYDLGHbyERqJdyqv',
@@ -107,7 +111,9 @@ GPT_MODES = [ 'Chat',
               'Data Management',
               'Export' ]
 
-GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0' ]
+GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
+                        'vs_697f86ad98888191b967685ae558bfc0',
+                        'vs_712r5W5833G6aLxIYIbuvVcK']
 
 GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
                  'file-WPmTsHFYDLGHbyERqJdyqv',

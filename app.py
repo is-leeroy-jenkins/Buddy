@@ -600,6 +600,13 @@ def clear_history( ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM chat_history" )
 
+def format_results( results ):
+	formatted_results = ''
+	for result in results.data:
+		formatted_result = f"<li> '{result.name}'"
+		formatted_results += formatted_result + "</li>"
+	return f"<p>{formatted_results}</p>"
+
 # ==============================================================================
 # PROMPT ENGINEERING UTILITIES
 # ==============================================================================
@@ -1702,8 +1709,8 @@ if 'image_model' not in st.session_state:
 if 'audio_model' not in st.session_state:
 	st.session_state[ 'audio_model' ] = None
 	
-if 'embeddings_model' not in st.session_state:
-	st.session_state[ 'embeddings_model' ] = None
+if 'embedding_model' not in st.session_state:
+	st.session_state[ 'embedding_model' ] = None
 
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
@@ -2003,6 +2010,16 @@ if 'play' not in st.session_state:
 if 'audio_format' not in st.session_state:
 	st.session_state[ 'audio_format' ] = 'audio/wav'
 
+# ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
+
+if 'embedding_input' not in st.session_state:
+	st.session_state[ 'embedding_input' ] = None
+
+if 'embedding_dimensions' not in st.session_state:
+	st.session_state[ 'embedding_dimensions' ] = None
+
+if 'embedding_encoding_format' not in st.session_state:
+	st.session_state[ 'embedding_encoding_format' ] = None
 
 # ------- FILES-SPECIFIC PARAMETERS --------------------------
 if 'purpose' not in st.session_state:
@@ -2016,8 +2033,8 @@ if 'file_id' not in st.session_state:
 
 if 'file_url' not in st.session_state:
 	st.session_state[ 'file_url' ] = None
+# -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
-# --------VECTORSTORES-GENERATION PARAMETERS--------------------
 if 'vectorstores_temperature' not in st.session_state:
 	st.session_state[ 'vectorstores_temperature' ] = 0.8
 
@@ -2028,7 +2045,7 @@ if 'vectorstores_input' not in st.session_state:
 	st.session_state[ 'vectorstores_input' ] = [ ]
 
 if 'vectorstores_max_tokens' not in st.session_state:
-	st.session_state[ 'vectorstores__max_tokens' ] = 8064
+	st.session_state[ 'vectorstores_max_tokens' ] = 8064
 
 if 'vectorstores_frequency_penalty' not in st.session_state:
 	st.session_state[ 'vectorstores_frequency_penalty' ] = 0.0
@@ -2063,21 +2080,19 @@ if 'vectorstores_store' not in st.session_state:
 if 'vectorstores_stream' not in st.session_state:
 	st.session_state[ 'vectorstores_stream' ] = False
 
-if 'vectorstores_input' not in st.session_state:
-	st.session_state[ 'vectorstores_input' ] = None
-
 if 'vectorstores_response_format' not in st.session_state:
 	st.session_state[ 'vectorstores_response_format' ] = None
 
 if 'vectorstores_tools' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state[ 'vectorstores_tools' ] = [ ]
 
 if 'vectorstores_messages' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state[ 'vectorstores_messages' ] = [ ]
 
-# -------VECTORSTORES-SPECIFIC PARAMETERS-------------------
+# ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
+
 if 'vectorstores_id' not in st.session_state:
-	st.session_state[ 'vector_store_id' ] = None
+	st.session_state[ 'vectorstores_id' ] = None
 
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'files' not in st.session_state:
@@ -2327,8 +2342,8 @@ elif mode == "Text":
 			# Text Generation Model Parameter
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25],
-						border=True, gap='xsmall' )
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+						border=True, gap='xxsmall' )
 					
 					with llm_c1:
 						set_text_model = st.selectbox( 'Select Model', text.model_options,
@@ -2358,18 +2373,18 @@ elif mode == "Text":
 			# Text Generation Inference Parameters
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
-				prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ], border=True,
-					gap='xsmall' )
+				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					border=True, gap='xxsmall' )
 				
 				with prm_c1:
 					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
+						float( st.session_state.get( 'text_top_p', 1.0 ) ), 0.01,
 						help=cfg.TOP_P, key='text_top_p' )
 					text_top_p = st.session_state[ 'text_top_p' ]
 				
 				with prm_c2:
 					set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'freq_penalty', 0.0 )),
+						float( st.session_state.get( 'text_frequency_penalty', 0.0 )),
 						0.01, help=cfg.FREQUENCY_PENALTY )
 					text_fequency = st.session_state[ 'text_frequency_penalty' ]
 				
@@ -2384,14 +2399,19 @@ elif mode == "Text":
 						float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
 					text_temperature = st.session_state[ 'text_temperature' ]
-			
+				
+				with prm_c5:
+					set_text_number = st.number_input( 'Number', min_value=0, max_value=4,
+						value=0, help='Optional. Upper limit on the responses returned by the model',
+						key='text_number' )
+					text_number = st.session_state[ 'text_number' ]
+					
 			# ------------------------------------------------------------------
 			# Text Generation Tool Options
 			# ------------------------------------------------------------------
 			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
 				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25 ], border=True,
-					gap='xxsmall' )
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 				
 				with tool_c1:
 					set_text_parallel = st.toggle( 'Allow Parallel', key='text_parallel_tools',
@@ -2405,20 +2425,20 @@ elif mode == "Text":
 				
 				with tool_c3:
 					set_text_choice = st.multiselect( 'Tool Choice:', options=text.choice_options,
-						key='tool_choice', help=cfg.CHOICE )
-					text_tool_choice = st.session_state[ 'tool_choice' ]
+						key='text_tool_choice', help=cfg.CHOICE )
+					text_tool_choice = st.session_state[ 'text_tool_choice' ]
 				
 				with tool_c4:
 					set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
-						key='tools', help=cfg.TOOLS )
-					text_tools = st.session_state[ 'tools' ]
+						key='text_tools', help=cfg.TOOLS )
+					text_tools = st.session_state[ 'text_tools' ]
 			
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 					res_one, res_two, res_three, res_four, res_five = st.columns(
-						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='small' )
+						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					with res_one:
 						set_text_stream = st.toggle( 'Stream', key='text_stream', value=False, help=cfg.STREAM )
@@ -2481,8 +2501,8 @@ elif mode == "Text":
 					gen_kwargs[ 'top_p' ] = st.session_state[ 'text_top_p' ]
 					gen_kwargs[ 'background' ] = st.session_state[ 'text_background' ]
 					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'text_max_tokens' ]
-					gen_kwargs[ 'frequency' ] = st.session_state[ 'text_freq_penalty' ]
-					gen_kwargs[ 'presence' ] = st.session_state[ 'text_pres_penalty' ]
+					gen_kwargs[ 'frequency' ] = st.session_state[ 'text_frequency_penalty' ]
+					gen_kwargs[ 'presence' ] = st.session_state[ 'text_presense_penalty' ]
 					
 					if st.session_state[ 'text_stops' ]:
 						gen_kwargs[ 'stops' ] = st.session_state[ 'text_stops' ]
@@ -2490,11 +2510,9 @@ elif mode == "Text":
 					response = None
 					
 					try:
-						mdl = str( gen_kwargs[ 'model' ] )
+						mdl = str( gen_kwargs[ 'text_model' ] )
 						if mdl.startswith( 'gpt-5' ):
-							response = chat.generate_text(
-								prompt=prompt,
-								model=gen_kwargs[ 'model' ]
+							response = chat.generate_text( prompt=prompt, model=gen_kwargs[ 'text_model' ]
 							)
 						else:
 							response = chat.generate_text( )
@@ -2563,7 +2581,7 @@ elif mode == "Images":
 		st.text( '⚙️ Image Settings' )
 	
 	# ------------------------------------------------------------------
-	# Image Main Chat UI
+	# Image Main  UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	# ------------------------------------------------------------------
@@ -2576,106 +2594,131 @@ elif mode == "Images":
 	with center:
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
-			# Expander — LLM Image Configuration
+			# Image Generation Model Parameter
 			# ------------------------------------------------------------------
-			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				img_one, img_two, img_three, img_four, img_five = st.columns(
-					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], border=True )
+			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
+				llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+					border=True, gap='xxsmall' )
 				
-				with img_one:
-					# ---------------- Model ---------------
-					set_image_model = st.selectbox( "Image Model", image.model_options,
-						index=(image.model_options.index( st.session_state[ "image_model" ] )
-						       if st.session_state.get( "image_model" ) in image.model_options
-						       else 0), key='image_model' )
-					
+				with llm_c1:
+					set_image_model = st.selectbox( 'Select Model', image.model_options,
+						help='REQUIRED. Images Generation model used by the AI',
+						key='image_model',
+						index=(image.model_options.index( st.session_state[ 'image_model' ] )
+						       if st.session_state.get( 'image_model' ) in image.model_options else 0), )
 					image_model = st.session_state[ 'image_model' ]
 				
-				with img_two:
-					# ---------------- Size  ----------------
-					selected_size = st.selectbox( 'Image Size', image.size_options, key='image_size' )
-					image_size = st.session_state[ 'image_size' ]
+				with llm_c2:
+					set_image_includes = st.multiselect( 'Include:', options=image.include_options,
+						key='image_include', help=cfg.INCLUDE )
+					image_includes = st.session_state[ 'image_include' ]
 				
-				with img_three:
-					# ---------------- Quality ----------------
-					selected_quality = st.selectbox( 'Image Quality', image.quality_options,
-						key='image_quality' )
-					image_quality = st.session_state[ 'image_quality' ]
+				with llm_c3:
+					set_image_domains = st.text_input( 'Allowed Domains', key='image_domains',
+						value='\n'.join( st.session_state.get( 'image_domains', [ ] ) ),
+						help=cfg.ALLOWED_DOMAINS, width='stretch' )
+					image_domains = st.session_state[ 'image_domains' ]
 				
-				with img_four:
-					# ---------------- Format ----------------
-					selected_format = st.selectbox( 'Image Format', image.format_options,
-						key='image_format' )
-					image_format = st.session_state[ 'image_format' ]
-					
-				with img_five:
-					selected_detail = st.selectbox( 'Image Detail', image.detail_options,
-						key='image_detail' )
-					image_detail = st.session_state[ 'image_detail' ]
+				with llm_c4:
+					set_image_reasoning = st.multiselect( 'Reasoning:', options=image.reasoning_options,
+						key='image_reasoning', help=cfg.REASONING )
+					image_reasoning = st.session_state[ 'image_reasoning' ]
 			
 			# ------------------------------------------------------------------
-			# Expander — Hyperparmaters
+			# Image Generation Inference Parameters
 			# ------------------------------------------------------------------
-			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four  = st.columns(
-					[ 0.25,  0.25,  0.25, 0.25 ], border=True, gap='xsmall' )
+			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
+				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					border=True, gap='xxsmall' )
 				
-				with prm_one:
-					set_image_top = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'image_top_percent', 1.0 ) ), 0.01,
-						key='image_top_percent', help=cfg.TOP_P )
-					image_top_p = st.session_state[ 'image_top_percent' ]
+				with prm_c1:
+					set_image_top_p = st.slider( 'Top-P', 0.0, 1.0,
+						float( st.session_state.get( 'image_top_p', 1.0 ) ), 0.01,
+						help=cfg.TOP_P, key='image_top_p' )
+					image_top_p = st.session_state[ 'image_top_p' ]
 				
-				with prm_two:
-					set_image_frequency = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'image_freq_penalty', 0.0 ) ),
-						0.01, help=cfg.FREQUENCY_PENALTY, key='image_frequency_penalty' )
-					image_frequency = st.session_state[ 'image_frequency_penalty' ]
+				with prm_c2:
+					set_image_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
+						float( st.session_state.get( 'image_frequency_penalty', 0.0 ) ),
+						0.01, help=cfg.FREQUENCY_PENALTY )
+					image_fequency = st.session_state[ 'image_frequency_penalty' ]
 				
-				with prm_three:
+				with prm_c3:
 					set_image_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'pres_penalty', 0.0 ) ),
-						0.01, key='image_presense_penalty', help=cfg.PRESENCE_PENALTY )
+						float( st.session_state.get( 'image_presense_penalty', 0.0 ) ),
+						0.01, help=cfg.PRESENCE_PENALTY )
 					image_presense = st.session_state[ 'image_presense_penalty' ]
 				
-				with prm_four:
+				with prm_c4:
 					set_image_temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'image_temperature', 0.7 ) ), 0.01,
-						help=cfg.TEMPERATURE, key='image_temperature' )
+						help=cfg.TEMPERATURE )
 					image_temperature = st.session_state[ 'image_temperature' ]
+				
+				with prm_c5:
+					set_image_number = st.number_input( 'Number', min_value=0, max_value=4,
+						value=0, help='Optional. Upper limit on the responses returned by the model',
+						key='image_number' )
+					image_number = st.session_state[ 'image_number' ]
+					
+			# ------------------------------------------------------------------
+			# Image Generation Tool Options
+			# ------------------------------------------------------------------
+			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
+				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+				
+				with tool_c1:
+					set_image_parallel = st.toggle( 'Allow Parallel', key='image_parallel_tools',
+						value=False, help=cfg.PARALLEL_TOOL_CALLS )
+					image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
+				
+				with tool_c2:
+					set_image_calls = st.number_input( 'Max Tools', min_value=0, max_value=4,
+						value=0, help=cfg.MAX_TOOL_CALLS, key='image_max_tools' )
+					image_max_tools = st.session_state[ 'image_max_tools' ]
+				
+				with tool_c3:
+					set_image_choice = st.multiselect( 'Tool Choice:', options=image.choice_options,
+						key='image_choice', help=cfg.CHOICE )
+					image_tool_choice = st.session_state[ 'image_choice' ]
+				
+				with tool_c4:
+					set_image_tools = st.multiselect( 'Tools:', options=image.tool_options,
+						key='image_tools', help=cfg.TOOLS )
+					image_tools = st.session_state[ 'image_tools' ]
 			
 			# ------------------------------------------------------------------
-			# Expander — Image Response
+			# Expander — Image Generation Response
 			# ------------------------------------------------------------------
-			with st.expander( 'Response Options', expanded=False, width='stretch' ):
+			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 				res_one, res_two, res_three, res_four, res_five = st.columns(
-					[ 0.20,  0.20,  0.20,  0.20, 0.20 ], border=True, gap='small' )
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				with res_one:
-					selected_stream = st.toggle( 'Stream', key='image_stream',
-						value=False, help=cfg.STREAM )
+					set_image_stream = st.toggle( 'Stream', key='image_stream', value=False, help=cfg.STREAM )
 					image_stream = st.session_state[ 'image_stream' ]
 				
 				with res_two:
-					selected_store = st.toggle( 'Store', key='image_store',
-						value=True, help=cfg.STORE )
-					image_store = st.session_state[ 'image_store' ]
+					set_image_store = st.toggle( 'Store', key='image_store', value=True, help=cfg.STORE )
+					text_store = st.session_state[ 'image_store' ]
 				
 				with res_three:
-					selected_background = st.toggle( 'Background', key='image_background',
+					set_image_background = st.toggle( 'Background', key='image_background',
 						value=False, help=cfg.BACKGROUND_MODE )
 					image_background = st.session_state[ 'image_background' ]
 				
 				with res_four:
-					n = st.number_input( 'Number', min_value=1, max_value=100,
-						value=1, help='Number of generated images', key='image_number' )
-					image_number = st.session_state[ 'image_number' ]
+					set_image_stops = st.text_input( 'Stop Sequences', key='image_stops',
+						value='\n'.join( st.session_state.get( 'image_stops', [ ] ) ),
+						help=cfg.STOP_SEQUENCE, width='stretch' )
+					image_stops = st.session_state[ 'image_stops' ]
 				
 				with res_five:
-					max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
+					set_image_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 						value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
-					image_max_tokens = st.session_state[ 'image_max_tokens' ]
-			
+					image_tokens = st.session_state[ 'image_max_tokens' ]
+		
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=100, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
@@ -2935,7 +2978,7 @@ elif mode == "Audio":
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				aud_one, aud_two, aud_three, aud_four, aud_five = st.columns(
-					[ 0.2, 0.2, 0.2, 0.2, .2 ], border=True )
+					[ 0.2, 0.2, 0.2, 0.2, .2 ], gap='xxsmall', border=True )
 				
 				# ---------------- Task ---------------
 				with aud_one:
@@ -2987,7 +3030,7 @@ elif mode == "Audio":
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
 				prm_one, prm_two, prm_three, prm_four = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='xsmall' )
+					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='xxsmall' )
 				
 				with prm_one:
 					set_audio_top = st.slider( 'Top-P', 0.0, 1.0,
@@ -3017,7 +3060,7 @@ elif mode == "Audio":
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
 				resp_one, resp_two, resp_three, resp_four, resp_five = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, )
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
 				
 				with resp_one:
 					loop = st.toggle( label='Loop Audio', value=False )
@@ -3124,6 +3167,7 @@ elif mode == "Audio":
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
 	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
 	if not hasattr( provider_module, 'Embeddings' ):
@@ -3133,12 +3177,15 @@ elif mode == 'Embeddings':
 		with st.sidebar:
 			st.text( '⚙️ Embedding Settings' )
 			
-			embed_model = st.selectbox( 'Model', embed.model_options,
-				index=( embed.model_options.index( st.session_state[ 'embed_model' ] )
-						if st.session_state.get( 'embed_model' ) in embed.model_options
+			set_embed_model = st.selectbox( 'Model', embed.model_options,
+				index=( embed.model_options.index( st.session_state[ 'embedding_model' ] )
+						if st.session_state.get( 'embedding_model' ) in embed.model_options
 						else 0 ), )
 			
-			st.session_state[ 'embed_model' ] = embed_model
+			embedding_model = st.selectbox( 'Model', embed.model_options,
+				index=(embed.model_options.index( st.session_state[ 'embedding_model' ] )
+				       if st.session_state.get( 'embedding_model' ) in embed.model_options
+				       else 0), )
 			method = None
 			if hasattr( embed, "methods" ):
 				method = st.selectbox( "Method", embed.methods, )
@@ -3148,13 +3195,13 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
 		with center:
-			text = st.text_area( 'Text to embed' )
+			set_input_text = st.text_area( 'Text to embed' )
 			
 			if text and st.button( 'Embed' ):
 				with st.spinner( 'Embedding…' ):
 					try:
 						if method:
-							vector = embed.create( text, model=embed_model, method=method, )
+							vector = embed.create( text, model=embedding_model, method=method, )
 						else:
 							vector = embed.create( text, model=embed_model, )
 						
@@ -3312,7 +3359,7 @@ elif mode == 'Vector Stores':
 		provider_module = get_provider_module( )
 		searcher = provider_module.VectorStores( )
 	
-		st.subheader( '☁️ File Search Stores', help=cfg.VECTORSTORES_API )
+		st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
 		st.divider( )
 		
 		# --------------------------------------------------------------
@@ -3424,114 +3471,119 @@ elif mode == 'Vector Stores':
 		provider_module = get_provider_module( )
 		vector = provider_module.VectorStores( )
 	
-		st.subheader( '🚀 Vector Stores', help=cfg.VECTORSTORES_API )
+		st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
+		
 		st.divider( )
 		
 		# --------------------------------------------------------------
 		# Local mapping
 		# --------------------------------------------------------------
 		vs_map = getattr( vector, 'collections', None )
-		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( '**Known Vector Stores (local mapping)**' )
-			for name, vid in vs_map.items( ):
-				st.write( f'- **{name}** — `{vid}`' )
-			st.divider( )
+		st.caption( 'Store Management')
+		# ------------------------------------------------------------------
+		# Main Chat UI
+		# ------------------------------------------------------------------
+		left, center, right = st.columns( [ 0.025, 0.95, 0.055 ] )
+		with center:
+			
+			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
 		
-		# --------------------------------------------------------------
-		# Create Vector Store
-		# --------------------------------------------------------------
-		with st.expander( 'Create Vector Store', expanded=False ):
-			new_store_name = st.text_input( 'New Vector Store name' )
-			if st.button( '➕ Create Vector Store' ):
-				if not new_store_name:
-					st.warning( 'Enter a Vector Store Name.' )
-				else:
-					try:
-						if hasattr( vector, 'create' ):
-							res = vector.create( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
+			with stores_left:
+				# --------------------------------------------------------------
+				# Expander - Create Vector Store
+				# --------------------------------------------------------------
+				with st.expander( 'Create Vector Store', expanded=True ):
+					new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
+					if st.button( '➕ Create New' ):
+						if not new_store_name:
+							st.warning( 'Enter a Vector Store Name.' )
 						else:
-							st.warning( 'create() not available on VectorStores wrapper.' )
-					except Exception as exc:
-						st.error( f'Create store failed: {exc}' )
-		
-		# --------------------------------------------------------------
-		# Discover vector stores
-		# --------------------------------------------------------------
-		options: List[ tuple ] = [ ]
-		if vs_map and isinstance( vs_map, dict ):
-			options = list( vs_map.items( ) )
-		
-		if not options:
-			try:
-				openai_client = st.session_state.get( 'openai_client' )
-				if ( openai_client and hasattr( openai_client, 'vector_stores' )
-						and hasattr( openai_client.vector_stores, 'list' ) ):
-					api_list = openai_client.vector_stores.list( )
-					temp: List[ tuple ] = [ ]
-					for item in getattr( api_list, 'data', [ ] ) or api_list:
-						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' ) if isinstance( item, dict ) else None
-						)
-						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' ) if isinstance( item, dict ) else None
-						)
-						if nm and vid:
-							temp.append( (nm, vid) )
-					if temp:
-						options = temp
-			except Exception:
-				options = [ ]
-		
-		# --------------------------------------------------------------
-		# Select / Retrieve / Delete
-		# --------------------------------------------------------------
-		if options:
-			names = [ f'{n} — {i}' for n, i in options ]
-			sel = st.selectbox( 'Select a vector store', options=names )
+							try:
+								if hasattr( vector, 'create' ):
+									res = vector.create( new_store_name )
+									st.success( f"Create call submitted for '{new_store_name}'." )
+								else:
+									st.warning( 'create() not available on VectorStores wrapper.' )
+							except Exception as exc:
+								st.error( f'Create store failed: {exc}' )
 			
-			sel_id: Optional[ str ] = None
-			for n, i in options:
-				if f'{n} — {i}' == sel:
-					sel_id = i
-					break
-			
-			c1, c2 = st.columns( [ 1, 1 ] )
-			
-			with c1:
-				if st.button( 'Retrieve Vector Store' ):
-					if not sel_id:
-						st.warning( 'No vector store selected.' )
-					else:
-						try:
-							openai_client = st.session_state[ 'openai_client' ]
-							vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
-							st.json( vs.model_dump( ) )
-							st.write( 'Name:', data[ 'name' ] )
-							st.write( 'Files:', data[ 'file_counts' ][ 'completed' ] )
-							st.write( 'Size (MB):', round( data[ 'usage_bytes' ] / 1_048_576, 2 ) )
-						except Exception as exc:
-							st.error( f'retrieve() failed: {exc}' )
-			
-			with c2:
-				if st.button( '❌ Delete Vector Store' ):
-					if not sel_id:
-						st.warning( 'No vector store selected.' )
-					else:
+			with stores_right:
+				# --------------------------------------------------------------
+				# Discover vector stores
+				# --------------------------------------------------------------
+				with st.expander( 'Retreive:', expanded=True ):
+					options: List[ tuple ] = [ ]
+					if vs_map and isinstance( vs_map, dict ):
+						options = list( vs_map.items( ) )
+					
+					if not options:
 						try:
 							openai_client = st.session_state.get( 'openai_client' )
-							if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
-								res = openai_client.vector_stores.delete(
-									vector_store_id=sel_id
-								)
-								st.success( f'Delete returned: {res}' )
-							else:
-								st.warning( 'vector_stores.delete() not available.' )
-						except Exception as exc:
-							st.error( f'Delete failed: {exc}' )
-		else:
-			st.info( 'No vector stores discovered' )
-
+							if ( openai_client and hasattr( openai_client, 'vector_stores' )
+									and hasattr( openai_client.vector_stores, 'list' ) ):
+								api_list = openai_client.vector_stores.list( )
+								temp: List[ tuple ] = [ ]
+								for item in getattr( api_list, 'data', [ ] ) or api_list:
+									nm = getattr( item, 'name', None ) or (
+											item.get( 'name' ) if isinstance( item, dict ) else None
+									)
+									vid = getattr( item, 'id', None ) or (
+											item.get( 'id' ) if isinstance( item, dict ) else None
+									)
+									if nm and vid:
+										temp.append( (nm, vid) )
+								if temp:
+									options = temp
+						except Exception:
+							options = [ ]
+						
+					# --------------------------------------------------------------
+					# Select / Retrieve / Delete
+					# --------------------------------------------------------------
+					if options:
+						names = [ f'{n} — {i}' for n, i in options ]
+						sel = st.selectbox( 'Select Vector Store', options=names, key='store_select' )
+						
+						sel_id: Optional[ str ] = None
+						for n, i in options:
+							if f'{n} — {i}' == sel:
+								sel_id = i
+								break
+						
+						c1, c2 = st.columns( [ 1, 1 ] )
+						
+						with c1:
+							if st.button( 'Retrieve Vector Store' ):
+								if not sel_id:
+									st.warning( 'No vector store selected.' )
+								else:
+									try:
+										openai_client = st.session_state[ 'openai_client' ]
+										vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
+										st.write( 'Name:', vs.name)
+										st.write( 'Files:', vs.file_counts )
+										st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
+									except Exception as exc:
+										st.error( f'retrieve() failed: {exc}' )
+						
+						with c2:
+							if st.button( '❌ Delete Vector Store' ):
+								if not sel_id:
+									st.warning( 'No vector store selected.' )
+								else:
+									try:
+										openai_client = st.session_state.get( 'openai_client' )
+										if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
+											res = openai_client.vector_stores.delete( vector_store_id=sel_id )
+											st.success( f'Delete returned: {res}' )
+										else:
+											st.warning( 'vector_stores.delete() not available.' )
+									except Exception as exc:
+										st.error( f'Delete failed: {exc}' )
+					else:
+						st.info( 'No vector stores discovered' )
+			
+		
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
@@ -3539,6 +3591,12 @@ elif mode == 'Document Q&A':
 	st.subheader( '🕵️ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	files = st.session_state.get( 'files' )
+	uploaded = st.session_state.get( 'uploaded' )
+	doc_messages = st.session_state.get( 'doc_messages' )
+	doc_active_docs = st.session_state.get( 'doc_active_docs' )
+	doc_source = st.session_state.get( 'doc_source' )
+	doc_multi_mode = st.session_state.get( 'doc_multi_mode' )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -3577,7 +3635,6 @@ elif mode == 'Document Q&A':
 					help=cfg.TEMPERATURE )
 				text_temperature = st.session_state[ 'text_temperature' ]
 		
-		
 		# ------------------------------------------------------------------
 		# Expander — System Instructions
 		# ------------------------------------------------------------------
@@ -3600,7 +3657,8 @@ elif mode == 'Document Q&A':
 					st.rerun( )
 			
 			with center_btn:
-				reset_doc_ins = st.button( 'Clear Instructions', width='stretch', key='clear_doc_instructions' )
+				reset_doc_ins = st.button( 'Clear Instructions', width='stretch',
+					key='clear_doc_instructions' )
 				if reset_doc_ins:
 					st.session_state.doc_system_instruction = ''
 					
@@ -3655,31 +3713,32 @@ elif mode == 'Document Q&A':
 # FILES API MODE
 # ======================================================================================
 elif mode == "Files":
+	purpose = st.session_state.get( 'purpose' )
+	file_type = st.session_state.get( 'file_type' )
+	file_id = st.session_state.get( 'file_id' )
+	file_url = st.session_state.get( 'file_url' )
 	try:
 		chat  # type: ignore
 	except NameError:
-		chat = get_provider_module( ).Chat( )
+		provider_module = get_provider_module( )
+		files = get_provider_module( ).Files( )
 	
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
 	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
 	with center:
 		list_method = None
-		for name in ( 'retrieve_files', 'list_files', 'get_files', ):
-			if hasattr( chat, name ):
-				list_method = getattr( chat, name )
-				break
+		if hasattr( files, 'list' ):
+			list_method = getattr( files, 'list' )
 		
-		uploaded_file = st.file_uploader(
-			'Upload file (server-side via Files API)',
-			type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ],
-		)
+		uploaded_file = st.file_uploader( 'Upload file (server-side via Files API)',
+			type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ], )
 		if uploaded_file:
 			tmp_path = save_temp( uploaded_file )
 			upload_fn = None
 			for name in ("upload_file", "upload", "files_upload"):
-				if hasattr( chat, name ):
-					upload_fn = getattr( chat, name )
+				if hasattr( files, name ):
+					upload_fn = getattr( files, name )
 					break
 			if not upload_fn:
 				st.warning( "No upload function found on chat object (upload_file)." )
@@ -3696,20 +3755,13 @@ elif mode == "Files":
 				files_resp = list_method( )
 				rows = [ ]
 				
-				files_list = (
-						files_resp.data
-						if hasattr( files_resp, "data" )
-						else files_resp
-						if isinstance( files_resp, list )
-						else [ ]
-				)
+				files_list = ( files_resp.data if hasattr( files_resp, "data" ) else files_resp
+						if isinstance( files_resp, list ) else [ ] )
 				
 				for f in files_list:
-					rows.append( {
-							"id": str( getattr( f, "id", "" ) ),
+					rows.append( { "id": str( getattr( f, "id", "" ) ),
 							"filename": str( getattr( f, "filename", "" ) ),
-							"purpose": str( getattr( f, "purpose", "" ) ),
-					} )
+							"purpose": str( getattr( f, "purpose", "" ) ), } )
 				
 				st.session_state.files_table = rows
 			
@@ -3718,25 +3770,17 @@ elif mode == "Files":
 				st.error( f"List files failed: {exc}" )
 		
 			if "files_list" in locals( ) and files_list:
-					file_ids = [
-							r.get( "id" )
-							if isinstance( r, dict )
-							else getattr( r, "id", None )
-							for r in files_list
-					]
-					sel = st.selectbox(
-						"Select file id to delete", options=file_ids
-					)
+					file_ids = [ r.get( "filename" ) if isinstance( r, dict )
+					             else getattr( r, "id", None ) for r in files_list ]
+					sel = st.selectbox( "Select file name to delete", options=file_ids )
 					if st.button( "Delete selected file" ):
 						del_fn = None
 						for name in ("delete_file", "delete", "files_delete"):
-							if hasattr( chat, name ):
-								del_fn = getattr( chat, name )
+							if hasattr( files, name ):
+								del_fn = getattr( files, name )
 								break
 						if not del_fn:
-							st.warning(
-								"No delete function found on chat object."
-							)
+							st.warning( "No delete function found on chat object." )
 						else:
 							with st.spinner( "Deleting file..." ):
 								try:
@@ -4490,7 +4534,7 @@ elif mode == 'Data Management':
 					st.error( f'Execution failed: {e}' )
 
 # ======================================================================================
-# APPLICATION FOOTER — Fixed Bottom Status Bar
+# Footer — Fixed Bottom Status Bar (Desktop-style)
 # ======================================================================================
 st.markdown(
 	"""
@@ -4516,7 +4560,7 @@ st.markdown(
 		border-top: 1px solid #2a2a2a;
 		padding: 6px 16px;
 		font-size: 0.85rem;
-		color: #3e9cfa;
+		color: #9aa0a6;
 		z-index: 1000;
 	}
 	.boo-status-inner {
@@ -4527,7 +4571,8 @@ st.markdown(
 	}
 	</style>
 	""",
-	unsafe_allow_html=True, )
+	unsafe_allow_html=True,
+)
 
 # ---- Resolve active model by mode
 _mode_to_model_key = {
@@ -4542,7 +4587,8 @@ mode_val = mode or "—"
 
 active_model = st.session_state.get(
 	_mode_to_model_key.get( mode, "" ),
-	None, )
+	None,
+)
 
 # ---- Build right-side (mode-gated)
 right_parts = [ ]
@@ -4551,43 +4597,265 @@ if active_model is not None:
 	right_parts.append( f'Model: {active_model}' )
 
 if mode == 'Text':
-	temperature = st.session_state.get( 'temperature' )
-	top_p = st.session_state.get( 'top_p' )
+	temperature = st.session_state.get( 'text_temperature' )
+	top_p = st.session_state.get( 'text_top_percent' )
+	freq = st.session_state.get( 'text_frequency_penalty' )
+	presence = st.session_state.get( 'text_presense_penalty' )
+	number = st.session_state.get( 'text_number' )
+	stream = st.session_state.get( 'text_stream' )
+	parallel_tools = st.session_state.get( 'text_parallel_tools' )
+	max_calls = st.session_state.get( 'text_max_calls' )
+	store = st.session_state.get( 'text_store' )
+	tools = st.session_state.get( 'text_tools' )
+	include = st.session_state.get( 'text_include' )
+	domains = st.session_state.get( 'text_domains' )
+	input_mode = st.session_state.get( 'text_input' )
+	tool_choice = st.session_state.get( 'text_tool_choice' )
+	background = st.session_state.get( 'text_background' )
+	messages = st.session_state.get( 'text_messages' )
+	max_tokens = st.session_state.get( 'text_max_tokens' )
 	
 	if temperature is not None:
 		right_parts.append( f'Temp: {temperature}' )
 	if top_p is not None:
 		right_parts.append( f'Top-P: {top_p}' )
+	if freq is not None:
+		right_parts.append( f'Freq: {freq}' )
+	if presence is not None:
+		right_parts.append( f'Presence: {presence}' )
+	if number is not None:
+		right_parts.append( f'N: {number}' )
+	if max_tokens is not None:
+		right_parts.append( f'Max Tokens: {max_tokens}' )
+	
+	if stream:
+		right_parts.append( 'Stream: On' )
+	if parallel_tools:
+		right_parts.append( 'Parallel Tools: On' )
+	if max_calls is not None:
+		right_parts.append( f'Max Calls: {max_calls}' )
+	if store:
+		right_parts.append( 'Store: On' )
+	if tools:
+		right_parts.append( 'Tools: On' )
+	if include:
+		right_parts.append( 'Include: On' )
+	if domains:
+		right_parts.append( 'Domains: Set' )
+	if input_mode:
+		right_parts.append( 'Input: Set' )
+	if tool_choice:
+		right_parts.append( f'Tool Choice: {tool_choice}' )
+	if background:
+		right_parts.append( 'Background: On' )
+	if messages:
+		right_parts.append( 'Messages: Set' )
 
 elif mode == 'Images':
 	size = st.session_state.get( 'image_size' )
 	aspect = st.session_state.get( 'image_aspect' )
+	style = st.session_state.get( 'image_style' )
+	quality = st.session_state.get( 'image_quality' )
+	fmt = st.session_state.get( 'image_format' )
+	detail = st.session_state.get( 'image_detail' )
+	top_p = st.session_state.get( 'image_top_percent' )
+	freq = st.session_state.get( 'image_frequency_penalty' )
+	presence = st.session_state.get( 'image_presense_penalty' )
+	number = st.session_state.get( 'image_number' )
+	temperature = st.session_state.get( 'image_temperature' )
+	stream = st.session_state.get( 'image_stream' )
+	store = st.session_state.get( 'image_store' )
+	background = st.session_state.get( 'image_background' )
 	
 	if aspect is not None:
 		right_parts.append( f'Aspect: {aspect}' )
 	elif size is not None:
 		right_parts.append( f'Size: {size}' )
+	
+	if style is not None:
+		right_parts.append( f'Style: {style}' )
+	if quality is not None:
+		right_parts.append( f'Quality: {quality}' )
+	if fmt is not None:
+		right_parts.append( f'Format: {fmt}' )
+	if detail is not None:
+		right_parts.append( f'Detail: {detail}' )
+	
+	if temperature is not None:
+		right_parts.append( f'Temp: {temperature}' )
+	if top_p is not None:
+		right_parts.append( f'Top-P: {top_p}' )
+	if freq is not None:
+		right_parts.append( f'Freq: {freq}' )
+	if presence is not None:
+		right_parts.append( f'Presence: {presence}' )
+	if number is not None:
+		right_parts.append( f'N: {number}' )
+	if stream:
+		right_parts.append( 'Stream: On' )
+	if store:
+		right_parts.append( 'Store: On' )
+	if background:
+		right_parts.append( 'Background: On' )
 
 elif mode == 'Audio':
 	task = st.session_state.get( 'audio_task' )
+	fmt = st.session_state.get( 'audio_response_format' )
+	top_p = st.session_state.get( 'audio_top_percent' )
+	freq = st.session_state.get( 'audio_frequency_penalty' )
+	presence = st.session_state.get( 'audio_presense_penalty' )
+	number = st.session_state.get( 'audio_number' )
+	temperature = st.session_state.get( 'audio_temperature' )
+	stream = st.session_state.get( 'audio_stream' )
+	store = st.session_state.get( 'audio_store' )
+	input_mode = st.session_state.get( 'audio_input' )
+	reasoning = st.session_state.get( 'audio_reasoning' )
+	tool_choice = st.session_state.get( 'audio_tool_choice' )
+	messages = st.session_state.get( 'audio_messages' )
+	background = st.session_state.get( 'audio_background' )
+	audio_file = st.session_state.get( 'audio_file' )
+	rate = st.session_state.get( 'audio_rate', 16000 )
+	start = st.session_state.get( 'audio_start', 0.0 )
+	end = st.session_state.get( 'audio_end', 0.0 )
+	loop = st.session_state.get( 'audio_loop', False )
+	autoplay = st.session_state.get( 'auto_play', False )
+	voice = st.session_state.get( 'voice', None )
+	
 	if task is not None:
 		right_parts.append( f'Task: {task}' )
+	if fmt is not None:
+		right_parts.append( f'Format: {fmt}' )
+	
+	if temperature is not None:
+		right_parts.append( f'Temp: {temperature}' )
+	if top_p is not None:
+		right_parts.append( f'Top-P: {top_p}' )
+	if freq is not None:
+		right_parts.append( f'Freq: {freq}' )
+	if presence is not None:
+		right_parts.append( f'Presence: {presence}' )
+	if number is not None:
+		right_parts.append( f'N: {number}' )
+	
+	if stream:
+		right_parts.append( 'Stream: On' )
+	if store:
+		right_parts.append( 'Store: On' )
+	if reasoning:
+		right_parts.append( 'Reasoning: On' )
+	if input_mode:
+		right_parts.append( 'Input: Set' )
+	if tool_choice:
+		right_parts.append( f'Tool Choice: {tool_choice}' )
+	if messages:
+		right_parts.append( 'Messages: Set' )
+	if background:
+		right_parts.append( 'Background: On' )
+	
+	if voice:
+		right_parts.append( f'Voice: {voice}' )
+	if rate is not None:
+		right_parts.append( f'Rate: {rate}' )
+	if (start or end) and end >= start:
+		right_parts.append( f'Trim: {start}s–{end}s' )
+	if loop:
+		right_parts.append( 'Loop: On' )
+	if autoplay:
+		right_parts.append( 'Autoplay: On' )
+	if audio_file is not None:
+		right_parts.append( 'File: Set' )
+
+elif mode == 'Files':
+	purpose = st.session_state.get( 'purpose' )
+	file_type = st.session_state.get( 'file_type' )
+	file_id = st.session_state.get( 'file_id' )
+	file_url = st.session_state.get( 'file_url' )
+	
+	if purpose is not None:
+		right_parts.append( f'Purpose: {purpose}' )
+	
+	if file_type is not None:
+		right_parts.append( f'Type: {file_type}' )
+	
+	if file_id is not None:
+		right_parts.append( f'File ID: {file_id}' )
+	
+	if file_url is not None:
+		right_parts.append( 'URL: Set' )
 
 elif mode == 'Embeddings':
 	method = st.session_state.get( 'embed_method' )
 	if method is not None:
 		right_parts.append( f'Method: {method}' )
+
+elif mode == 'VectorStores':
+	model = st.session_state.get( 'vectorstores_model' )
+	fmt = st.session_state.get( 'vectorstores_response_format' )
+	temperature = st.session_state.get( 'vectorstores_temperature' )
+	top_p = st.session_state.get( 'vectorstores_top_percent' )
+	freq = st.session_state.get( 'vectorstores_frequency_penalty' )
+	presence = st.session_state.get( 'vectorstores_presense_penalty' )
+	number = st.session_state.get( 'vectorstores_number' )
+	stream = st.session_state.get( 'vectorstores_stream' )
+	store = st.session_state.get( 'vectorstores_store' )
+	input_data = st.session_state.get( 'vectorstores_input' )
+	reasoning = st.session_state.get( 'vectorstores_reasoning' )
+	tool_choice = st.session_state.get( 'vectorstores_tool_choice' )
+	messages = st.session_state.get( 'vectorstores_messages' )
+	background = st.session_state.get( 'vectorstores_background' )
 	
-	right_text = " · ".join( right_parts ) if right_parts else "—"
+	if model is not None:
+		right_parts.append( f'Model: {model}' )
 	
-	# ---- Render footer
-	st.markdown(
-		f"""
-	    <div class="boo-status-bar">
-	        <div class="boo-status-inner">
-	            <span>{provider_val} — {mode_val}</span>
-	            <span>{right_text}</span>
-	        </div>
-	    </div>
-	    """,
-		unsafe_allow_html=True, )
+	if fmt is not None:
+		right_parts.append( f'Format: {fmt}' )
+	
+	if temperature is not None:
+		right_parts.append( f'Temp: {temperature}' )
+	
+	if top_p is not None:
+		right_parts.append( f'Top-P: {top_p}' )
+	
+	if freq is not None:
+		right_parts.append( f'Freq: {freq}' )
+	
+	if presence is not None:
+		right_parts.append( f'Presence: {presence}' )
+	
+	if number is not None:
+		right_parts.append( f'N: {number}' )
+	
+	if stream:
+		right_parts.append( 'Stream: On' )
+	
+	if store:
+		right_parts.append( 'Store: On' )
+	
+	if reasoning is not None:
+		right_parts.append( f'Reasoning: {reasoning}' )
+	
+	if tool_choice is not None:
+		right_parts.append( f'Tool Choice: {tool_choice}' )
+	
+	if input_data:
+		right_parts.append( 'Input: Set' )
+	
+	if messages:
+		right_parts.append( 'Messages: Set' )
+	
+	if background:
+		right_parts.append( 'Background: On' )
+
+right_text = " · ".join( right_parts ) if right_parts else "—"
+# ---- Render footer
+st.markdown(
+	f"""
+    <div class="boo-status-bar">
+        <div class="boo-status-inner">
+            <span>{provider_val} — {mode_val}</span>
+            <span>{right_text}</span>
+        </div>
+    </div>
+    """,
+	unsafe_allow_html=True,
+)

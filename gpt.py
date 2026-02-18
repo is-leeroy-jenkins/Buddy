@@ -170,9 +170,12 @@ class Chat( GPT ):
 	input: Optional[ List[ Dict[ str, str ] ] | str ]
 	instructions: Optional[ str ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
+	messages: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	image_url: Optional[ str ]
+	image_path: Optional[ str ]
 	file_url: Optional[ str ]
+	file_path: Optional[ str ]
 	allowed_domains: Optional[ List[ str ] ]
 	stops: Optional[ List[ str ] ]
 	max_search_results: Optional[ int ]
@@ -860,25 +863,31 @@ class Images( GPT ):
 	quality: Optional[ str ]
 	detail: Optional[ str ]
 	size: Optional[ str ]
+	previous_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
 	tool_choice: Optional[ str ]
-	input: Optional[ List[ Dict[ str, str ] ] ]
+	parallel_tools: Optional[ bool ]
+	input: Optional[ List[ Dict[ str, str ] ] | str ]
 	instructions: Optional[ str ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	messages: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	image_url: Optional[ str ]
+	image_path: Optional[ str ]
 	file_url: Optional[ str ]
+	file_path: Optional[ str ]
 	style: Optional[ str ]
+	allowed_domains: Optional[ List[ str ] ]
 	response_format: Optional[ str ]
 	background: Optional[ str ]
 	
-	def __init__( self, temperture: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, store: bool = False, stream: bool = False,
-			instruct: str = None ):
+	def __init__( self, temperture: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool=False, stream: bool=False,
+			instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
-		self.client = OpenAI( api_key=self.api_key )
+		self.client = None
+		self.previous_id = None
 		self.temperature = temperture
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
@@ -985,6 +994,50 @@ class Images( GPT ):
 		         'webp' ]
 	
 	@property
+	def include_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of the includeable options
+
+		'''
+		return [ 'file_search_call.results',
+		         'web_search_call.results',
+		         'web_search_call.action.sources',
+		         'message.input_image.image_url',
+		         'computer_call_output.output.image_url',
+		         'code_interpreter_call.outputs',
+		         'reasoning.encrypted_content',
+		         'message.output_text.logprobs' ]
+	
+	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'web_search',
+		         'image_generation',
+		         'file_search',
+		         'code_interpreter',
+		         'computer_use_preview' ]
+	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'auto', 'required', 'none' ]
+	
+	@property
 	def background_options( self ) -> List[ str ]:
 		'''
 	
@@ -1021,8 +1074,24 @@ class Images( GPT ):
 		         'low',
 		         'high' ]
 	
+	@property
+	def reasoning_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of reasoning effort options
+
+		'''
+		return [ 'low',
+		         'medium',
+		         'high',
+		         'none',
+		         'minimal',
+		         'xhigh' ]
+	
 	def generate( self, prompt: str, model: str, quality: str, size: str,
-			style: str = 'natural', format: str = 'png', instruct: str = None ) -> str:
+			style: str='natural', format: str='png', instruct: str=None ) -> str:
 		"""
 
                 Purpose
@@ -1045,6 +1114,7 @@ class Images( GPT ):
 			throw_if( 'model', model )
 			throw_if( 'quality', quality )
 			throw_if( 'size', size )
+			self.client = OpenAI( api_key=self.api_key )
 			self.input_text = prompt
 			self.model = model
 			self.quality = quality
@@ -1085,6 +1155,7 @@ class Images( GPT ):
 		try:
 			throw_if( 'text', text )
 			throw_if( 'path', path )
+			self.client = OpenAI( api_key=self.api_key )
 			self.input_text = text
 			self.model = model
 			self.file_path = path
@@ -1129,8 +1200,10 @@ class Images( GPT ):
 		try:
 			throw_if( 'input', prompt )
 			throw_if( 'path', path )
+			self.client = OpenAI( api_key=self.api_key )
 			self.input_text = prompt
 			self.file_path = path
+			self.size = size
 			self.response = self.client.images.edit( model=self.model,
 				image=open( self.file_path, 'rb' ), prompt=self.input_text, n=self.number,
 				size=self.size, )
@@ -2253,7 +2326,7 @@ class Files( GPT ):
 	def list( self, purpose: str="user_data" ):
 		self.purpose = purpose
 		self.client = OpenAI( api_key=self.api_key )
-		page = self.client.files.list( )  # no purpose arg
+		page = self.client.files.list( purpose=self.purpose )  # no purpose arg
 		files = getattr( page, "data", None ) or page
 		out = [ ]
 		for f in files:
@@ -2338,6 +2411,7 @@ class VectorStores( GPT ):
 	response_format: Optional[ str ]
 	name: Optional[ str ]
 	store_ids: Optional[ List[ str ] ]
+	store_id: Optional[ str ]
 	file_path: Optional[ str ]
 	file_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
@@ -2357,6 +2431,7 @@ class VectorStores( GPT ):
 		self.name = None
 		self.content = None
 		self.response = None
+		self.store_id = None
 		self.file_id = None
 		self.file_path = None
 		self.collections = \
@@ -2388,10 +2463,15 @@ class VectorStores( GPT ):
 		except Exception as e:
 			raise
 	
-	def list( self ) -> Any | None:
-		self.client = OpenAI( api_key=self.api_key )
-		_stores = self.client.vector_stores.list( )
-		return _stores
+	def list( self, id: str ) -> Any | None:
+		try:
+			throw_if( 'id', id )
+			self.store_id = id
+			self.client = OpenAI( api_key=self.api_key )
+			_stores = self.client.vector_stores.files.list( vector_store_id=self.store_id )
+			return _stores
+		except Exception as e:
+			raise e
 	
 	def retrieve( self, id: str ) -> Any | None:
 		'''

@@ -8,7 +8,7 @@ google
 google-genai
 google-cloud-storage
 openpyxl
-pydantic>=2.7
+pydantic>=2.7,<3
 tiktoken
 xai-sdk
 pymupdf
