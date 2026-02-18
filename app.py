@@ -2363,13 +2363,16 @@ elif mode == "Text":
 			st.session_state[ 'text_system_instructions' ] = ''
 			st.session_state[ 'do_clear_instructions' ] = False
 		
+		# ------------------------------------------------------------------
+		# Expander — Text LLM Configuration
+		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# Text Generation Model Parameter
 			# ------------------------------------------------------------------
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='xxsmall' )
+						border=True, gap='medium' )
 					
 					with llm_c1:
 						set_text_model = st.selectbox( 'Select Model', text.model_options,
@@ -2394,7 +2397,9 @@ elif mode == "Text":
 						set_text_reasoning = st.multiselect( 'Reasoning:', options=text.reasoning_options,
 							key='text_reasoning', help=cfg.REASONING )
 						text_reasoning = st.session_state[ 'text_reasoning' ]
-					
+			
+					st.button( 'Reset', key='text_model_reset', width='stretch' )
+				
 			# ------------------------------------------------------------------
 			# Text Generation Inference Parameters
 			# ------------------------------------------------------------------
@@ -2432,12 +2437,14 @@ elif mode == "Text":
 						key='text_number' )
 					text_number = st.session_state[ 'text_number' ]
 					
+				st.button( 'Reset', key='text_inference_reset', width='stretch' )
+				
 			# ------------------------------------------------------------------
 			# Text Generation Tool Options
 			# ------------------------------------------------------------------
 			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
 				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 				
 				with tool_c1:
 					set_text_parallel = st.toggle( 'Allow Parallel', key='text_parallel_tools',
@@ -2458,6 +2465,8 @@ elif mode == "Text":
 					set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
 						key='text_tools', help=cfg.TOOLS )
 					text_tools = st.session_state[ 'text_tools' ]
+					
+				st.button( 'Reset', key='text_tools_reset', width='stretch' )
 			
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
@@ -2489,6 +2498,8 @@ elif mode == "Text":
 						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						text_tokens = st.session_state[ 'text_max_tokens' ]
+					
+					st.button( 'Reset', key='text_response_reset', width='stretch' )
 			
 		# ------------------------------------------------------------------
 		# Expander — Text System Instructions
@@ -2618,13 +2629,14 @@ elif mode == "Images":
 		st.session_state[ 'clear_image_instructions' ] = False
 	
 	with center:
+		# ------------------------------------------------------------------
+		# Expander — Image LLM Configuration
+		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
-			# ------------------------------------------------------------------
-			# Image Generation Model Parameter
-			# ------------------------------------------------------------------
+			# Expander - Image Generation Model Parameter
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
 				llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-					border=True, gap='xxsmall' )
+					border=True, gap='medium' )
 				
 				with llm_c1:
 					set_image_model = st.selectbox( 'Select Model', image.model_options,
@@ -2649,10 +2661,10 @@ elif mode == "Images":
 					set_image_reasoning = st.multiselect( 'Reasoning:', options=image.reasoning_options,
 						key='image_reasoning', help=cfg.REASONING )
 					image_reasoning = st.session_state[ 'image_reasoning' ]
+					
+				st.button( 'Reset', key='image_model_reset', width='stretch' )
 			
-			# ------------------------------------------------------------------
-			# Image Generation Inference Parameters
-			# ------------------------------------------------------------------
+			# Expander - Image Generation Inference Parameters
 			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 					border=True, gap='xxsmall' )
@@ -2687,12 +2699,12 @@ elif mode == "Images":
 						key='image_number' )
 					image_number = st.session_state[ 'image_number' ]
 					
-			# ------------------------------------------------------------------
-			# Image Generation Tool Options
-			# ------------------------------------------------------------------
+				st.button( 'Reset', key='image_inference_reset', width='stretch' )
+				
+			# Expander - Image Generation Tool Options
 			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
 				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 				
 				with tool_c1:
 					set_image_parallel = st.toggle( 'Allow Parallel', key='image_parallel_tools',
@@ -2713,10 +2725,10 @@ elif mode == "Images":
 					set_image_tools = st.multiselect( 'Tools:', options=image.tool_options,
 						key='image_tools', help=cfg.TOOLS )
 					image_tools = st.session_state[ 'image_tools' ]
+				
+				st.button( 'Reset', key='image_tools_reset', width='stretch' )
 			
-			# ------------------------------------------------------------------
 			# Expander — Image Generation Response
-			# ------------------------------------------------------------------
 			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 				res_one, res_two, res_three, res_four, res_five = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
@@ -2744,7 +2756,12 @@ elif mode == "Images":
 					set_image_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 						value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 					image_tokens = st.session_state[ 'image_max_tokens' ]
+				
+				st.button( 'Reset', key='image_response_reset', width='stretch' )
 		
+		# ------------------------------------------------------------------
+		# Expander — Image System Instructions
+		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=100, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
@@ -2999,9 +3016,10 @@ elif mode == "Audio":
 	left, center, right = st.columns( [ 0.05, 0.9,  0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — LLM
+		# Expander —Audio LLM Configuration
 		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
+			# Expander — Immage Model
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				aud_one, aud_two, aud_three, aud_four, aud_five = st.columns(
 					[ 0.2, 0.2, 0.2, 0.2, .2 ], gap='xxsmall', border=True )
@@ -3050,13 +3068,13 @@ elif mode == "Audio":
 					audio_format = st.selectbox( label='Format',
 						options=[ 'audio/mp3', 'audio/wav', 'audio/aac',
 						          'audio/flac', 'audio/opus', 'audio/pcm' ] )
+				
+				st.button( 'Reset', key='audio_model_reset', width='stretch' )
 			
-			# ------------------------------------------------------------------
-			# Expander — Hyperparmaters
-			# ------------------------------------------------------------------
+			# Expander — Immage Inference
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
 				prm_one, prm_two, prm_three, prm_four = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='xxsmall' )
+					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='medium' )
 				
 				with prm_one:
 					set_audio_top = st.slider( 'Top-P', 0.0, 1.0,
@@ -3080,10 +3098,10 @@ elif mode == "Audio":
 						float( st.session_state.get( 'audio_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
 					audio_temperature = st.session_state[ 'audio_temperature' ]
+				
+				st.button( 'Reset', key='audio_inference_reset', width='stretch' )
 			
-			# ------------------------------------------------------------------
-			# Expander — Response
-			# ------------------------------------------------------------------
+			# Expander — Image Response
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
 				resp_one, resp_two, resp_three, resp_four, resp_five = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
@@ -3108,7 +3126,12 @@ elif mode == "Audio":
 					max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 						value=6048, help=cfg.MAX_OUTPUT_TOKENS )
 					st.session_state[ 'max_tokens' ] = int( max_tokens )
+				
+				st.button( 'Reset', key='audio_response_reset', width='stretch' )
 		
+		# ------------------------------------------------------------------
+		# Expander — Audio System Instructions
+		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
 			st.text_area( 'Prompt Text', height=100, width='stretch',
 				help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
@@ -3208,54 +3231,59 @@ elif mode == 'Embeddings':
 	# ------------------------------------------------------------------
 	emb_left, emb_center, emb_right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with emb_center:
-		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
-				llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
-					border=True, gap='medium' )
-				
-				with llm_c1:
-					set_embedding_model = st.selectbox( 'Select Model:', embedding.model_options,
-						help='REQUIRED. Embedding model used by the AI',
-						key='embedding_model',
-						index=(embedding.model_options.index( st.session_state[ 'embedding_model' ] )
-						       if st.session_state.get( 'embedding_model' ) in embedding.model_options else 0), )
-					embedding_model = st.session_state[ 'embedding_model' ]
-				
-				with llm_c2:
-					set_encoding_format = st.selectbox( 'Encoding Format:',
-						options=embedding.encoding_options, key='embedding_encoding_format',
-						help='REQUIRED: The format to return the embeddings in. float or base64')
-					embedding_encoding_format = st.session_state[ 'embedding_encoding_format' ]
-				
-				with llm_c3:
-					set_embedding_dimensions = st.number_input( 'Dimensions', min_value=1,
-						max_value=2048, step=0, key='embedding_dimensions',
-						help='Optional (large models only): An integer between 1 and 2048',
-						width='stretch' )
-					embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
+		# ------------------------------------------------------------------
+		# Expander — Embedding LLM Configuration
+		# ------------------------------------------------------------------
+		with st.expander( '🧠 Embedding Configuration', expanded=False, width='stretch' ):
+			llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
+				border=True, gap='medium' )
+			
+			with llm_c1:
+				set_embedding_model = st.selectbox( 'Embedding Model:', embedding.model_options,
+					help='REQUIRED. Embedding model used by the AI',
+					key='embedding_model',
+					index=(embedding.model_options.index( st.session_state[ 'embedding_model' ] )
+					       if st.session_state.get( 'embedding_model' ) in embedding.model_options else 0), )
+				embedding_model = st.session_state[ 'embedding_model' ]
+			
+			with llm_c2:
+				set_encoding_format = st.selectbox( 'Encoding Format:',
+					options=embedding.encoding_options, key='embedding_encoding_format',
+					help='REQUIRED: The format to return the embeddings in. float or base64')
+				embedding_encoding_format = st.session_state[ 'embedding_encoding_format' ]
+			
+			with llm_c3:
+				set_embedding_dimensions = st.number_input( 'Dimensions', min_value=0,
+					max_value=2048, step=1, key='embedding_dimensions',
+					help='Optional (large models only): An integer between 1 and 2048',
+					width='stretch' )
+				embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
+			
+			st.button( 'Reset', key='embedding_reset', width='stretch' )
 						
-			# ------------------------------------------------------------------
-			# Main UI — Embedding execution (unchanged behavior)
-			# ------------------------------------------------------------------
-			set_input_text = st.text_area( 'Text to embed', key='embedding_input_text' )
-			input_text = st.session_state['embedding_input_text' ]
-			if input_text is not '' and st.button( 'Embed' ):
-				with st.spinner( 'Embedding…' ):
-					try:
-						if embedding_dimensions is not None:
-							vector = embedding.create( input_text, model=embedding_model,
-								dimensions=embedding_dimensions )
-						else:
-							vector = embedding.create( input_text, model=embed_model, )
-						
-						st.write( 'Vector length:', len( vector ) )
-						
-						try:
-							_update_token_counters( getattr( embedding, 'response', None ) )
-						except Exception:
-							pass
+		# ------------------------------------------------------------------
+		# Main UI — Embedding execution (unchanged behavior)
+		# ------------------------------------------------------------------
+		set_input_text = st.text_area( 'Text to embed', key='embedding_input_text' )
+		input_text = st.session_state['embedding_input_text' ]
+		if input_text is not '' and st.button( 'Embed' ):
+			with st.spinner( 'Embedding…' ):
+				try:
+					if embedding_dimensions is not None:
+						vector = embedding.create( input_text, model=embedding_model,
+							dimensions=embedding_dimensions )
+					else:
+						vector = embedding.create( input_text, model=embed_model, )
 					
-					except Exception as exc:
-						st.error( f'Embedding failed: {exc}' )
+					st.write( 'Vector length:', len( vector ) )
+					
+					try:
+						_update_token_counters( getattr( embedding, 'response', None ) )
+					except Exception:
+						pass
+				
+				except Exception as exc:
+					st.error( f'Embedding failed: {exc}' )
 
 # ======================================================================================
 # VECTOR MODE
@@ -3645,12 +3673,11 @@ elif mode == 'Document Q&A':
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — Inference Parameters
+		# Expander — DocQA Inference Parameters
 		# ------------------------------------------------------------------
 		with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
-			stores_c1, stores_c2, stores_c3, stores_c4 = st.columns( [ 0.25, 0.25, 0.25,
-			                                               0.25 ], border=True,
-				gap='xsmall' )
+			stores_c1, stores_c2, stores_c3, stores_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+				border=True, gap='medium' )
 			
 			with stores_c1:
 				set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
@@ -3675,9 +3702,11 @@ elif mode == 'Document Q&A':
 					float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
 					help=cfg.TEMPERATURE )
 				text_temperature = st.session_state[ 'text_temperature' ]
+				
+			st.button( 'Reset', key='docqa_inference_reset', width='stretch' )
 		
 		# ------------------------------------------------------------------
-		# Expander — System Instructions
+		# Expander — DocQA System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( '💻 System Instructions', expanded=False, width='stretch' ):
 			left_inst, right_inst = st.columns( [ 0.6, 0.4 ], vertical_alignment='center', border=True )
