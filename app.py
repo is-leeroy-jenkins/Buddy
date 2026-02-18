@@ -1841,6 +1841,9 @@ if 'text_stops' not in st.session_state:
 if 'text_include' not in st.session_state:
 	st.session_state[ 'text_include' ] = [ ]
 
+if 'text_domains' not in st.session_state:
+	st.session_state[ 'text_domains' ] = None
+
 if 'text_parallel_tools' not in st.session_state:
 	st.session_state[ 'text_parallel_tools' ] = False
 
@@ -2388,18 +2391,35 @@ elif mode == "Text":
 						text_includes = st.session_state[ 'text_include' ]
 					
 					with llm_c3:
-						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains',
-							value='\n'.join( st.session_state.get( 'text_domains', [ ] ) ),
-							help=cfg.ALLOWED_DOMAINS, width='stretch' )
-						text_domains = st.session_state[ 'text_domains' ]
-				
+						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains_input',
+						value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
+						help=cfg.ALLOWED_DOMAINS, width='stretch' )
+						text_domains = [
+								d.strip( )
+								for d in set_text_domains.split( ',' )
+								if d.strip( )
+						]
+						
+						st.session_state[ 'text_domains' ] = text_domains
+
 					with llm_c4:
-						set_text_reasoning = st.multiselect( 'Reasoning:', options=text.reasoning_options,
-							key='text_reasoning', help=cfg.REASONING )
+						set_text_reasoning = st.selectbox( 'Reasoning Effort:',
+							options=text.reasoning_options, key='text_reasoning', help=cfg.REASONING )
 						text_reasoning = st.session_state[ 'text_reasoning' ]
-			
-					st.button( 'Reset', key='text_model_reset', width='stretch' )
-				
+					
+					if st.button( 'Reset', key='text_model_reset', width='stretch' ):
+						# ----------------------------------------------------------
+						# Remove Model Settings session keys
+						# ----------------------------------------------------------
+						
+						for key in [ 'text_model', 'text_include', 'text_domains',
+						             'text_reasoning', 'text_domains_input' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+	
+	
 			# ------------------------------------------------------------------
 			# Text Generation Inference Parameters
 			# ------------------------------------------------------------------
@@ -2436,9 +2456,25 @@ elif mode == "Text":
 						value=0, help='Optional. Upper limit on the responses returned by the model',
 						key='text_number' )
 					text_number = st.session_state[ 'text_number' ]
-					
-				st.button( 'Reset', key='text_inference_reset', width='stretch' )
 				
+				if st.button( 'Reset', key='text_inference_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Inference Settings session keys
+					# ----------------------------------------------------------
+					
+					for key in [
+							'text_top_p',
+							'text_frequency_penalty',
+							'text_presense_penalty',
+							'text_temperature',
+							'text_number',
+					]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+
+
 			# ------------------------------------------------------------------
 			# Text Generation Tool Options
 			# ------------------------------------------------------------------
@@ -2465,9 +2501,24 @@ elif mode == "Text":
 					set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
 						key='text_tools', help=cfg.TOOLS )
 					text_tools = st.session_state[ 'text_tools' ]
+				
+				if st.button( 'Reset', key='text_tools_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Tool Settings session keys
+					# ----------------------------------------------------------
 					
-				st.button( 'Reset', key='text_tools_reset', width='stretch' )
-			
+					for key in [
+							'text_parallel_tools',
+							'text_max_tools',
+							'text_tool_choice',
+							'text_tools',
+					]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+
+
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
 			# ------------------------------------------------------------------
@@ -2499,8 +2550,27 @@ elif mode == "Text":
 							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
-					st.button( 'Reset', key='text_response_reset', width='stretch' )
-			
+					if st.button( 'Reset', key='text_response_reset', width='stretch' ):
+						# ----------------------------------------------------------
+						# Remove Response Settings session keys
+						# ----------------------------------------------------------
+						for key in [
+								'text_stream',
+								'text_store',
+								'text_background',
+								'text_stops',
+								'text_max_tokens',
+						]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						# If using separated UI key for stops
+						if 'text_stops_input' in st.session_state:
+							del st.session_state[ 'text_stops_input' ]
+						
+						st.rerun( )
+
+
+
 		# ------------------------------------------------------------------
 		# Expander — Text System Instructions
 		# ------------------------------------------------------------------
@@ -3234,7 +3304,7 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		# Expander — Embedding LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( '🧠 Embedding Configuration', expanded=False, width='stretch' ):
+		with st.expander( 'Configuration', expanded=False, width='stretch' ):
 			llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
 				border=True, gap='medium' )
 			
@@ -3265,26 +3335,32 @@ elif mode == 'Embeddings':
 		# Main UI — Embedding execution (unchanged behavior)
 		# ------------------------------------------------------------------
 		set_input_text = st.text_area( 'Text to embed', key='embedding_input_text' )
-		input_text = st.session_state['embedding_input_text' ]
-		if input_text is not '' and st.button( 'Embed' ):
-			with st.spinner( 'Embedding…' ):
-				try:
-					if embedding_dimensions is not None:
-						vector = embedding.create( input_text, model=embedding_model,
-							dimensions=embedding_dimensions )
-					else:
-						vector = embedding.create( input_text, model=embed_model, )
-					
-					st.write( 'Vector length:', len( vector ) )
-					
+		col_left, col_right = st.columns( [ 0.5, 0.5 ]  )
+		with col_left:
+			st.button( 'Embed', width='stretch', key='embedding_set' )
+			input_text = st.session_state[ 'embedding_input_text' ]
+			if input_text is not '' and st.session_state[ 'embedding_input_text' ]:
+				with st.spinner( 'Embedding…' ):
 					try:
-						_update_token_counters( getattr( embedding, 'response', None ) )
-					except Exception:
-						pass
-				
-				except Exception as exc:
-					st.error( f'Embedding failed: {exc}' )
-
+						if embedding_dimensions is not None:
+							vector = embedding.create( input_text, model=embedding_model,
+								dimensions=embedding_dimensions )
+						else:
+							vector = embedding.create( input_text, model=embedding_model, )
+						
+						st.write( 'Vector length:', len( vector ) )
+						
+						try:
+							_update_token_counters( getattr( embedding, 'response', None ) )
+						except Exception:
+							pass
+					
+					except Exception as exc:
+						st.error( f'Embedding failed: {exc}' )
+		
+		with col_right:
+			st.button( 'Reset', width='stretch', key='input_text_reset' )
+			
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================
@@ -3657,7 +3733,7 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
-	st.subheader( '🕵️ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
+	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = st.session_state.get( 'files' )
@@ -4839,22 +4915,15 @@ elif mode == 'Audio':
 
 elif mode == 'Embeddings':
 	model = st.session_state.get( 'embedding_model' )
-	method = st.session_state.get( 'embedding_method' )
 	dimensions = st.session_state.get( 'embedding_dimensions' )
-	batch_size = st.session_state.get( 'embedding_batch_size' )
 	encoding = st.session_state.get( 'embedding_encoding_format' )
 	input_data = st.session_state.get( 'embedding_text_input' )
 	
-	# Model will already be appended via _mode_to_model_key mapping
-	# Only append additional metadata here
-	if method is not None:
-		right_parts.append( f'Method: {method}' )
+	if model is not None:
+		right_parts.append( f'Model: {model}' )
 	
 	if dimensions is not None:
 		right_parts.append( f'Dim: {dimensions}' )
-	
-	if batch_size is not None:
-		right_parts.append( f'Batch: {batch_size}' )
 	
 	if encoding is not None:
 		right_parts.append( f'Format: {encoding}' )
