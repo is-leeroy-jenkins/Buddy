@@ -1904,24 +1904,21 @@ class Embeddings( GPT ):
 
 
     """
+	client: Optional[ OpenAI ]
 	response: Optional[ CreateEmbeddingResponse ]
+	model: Optional[ str ]
+	input_text: Optional[ str ]
 	embedding: Optional[ List[ float ] ]
 	encoding_format: Optional[ str ]
 	dimensions: Optional[ int ]
+	batch_size: Optional[ int ]
 	
-	def __init__( self, number: int = 1, temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, store: bool = True, stream: bool = False, ):
+	def __init__( self ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-		self.number = number
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_completion_tokens = max_tokens
-		self.store = store
-		self.stream = stream
+		self.dimensions = None
+		self.input_text = None
 		self.encoding_format = None
 		self.model = None
 		self.embedding = None
@@ -1936,7 +1933,8 @@ class Embeddings( GPT ):
 			List[ str ] of embedding models
 
 		'''
-		return [ 'text-embedding-3-small',
+		return [ 'text-embedding-ada-002',
+		         'text-embedding-3-small',
 		         'text-embedding-3-large' ]
 	
 	@property
@@ -1951,8 +1949,8 @@ class Embeddings( GPT ):
 		return [ 'float',
 		         'base64' ]
 	
-	def create( self, text: str, model: str = 'text-embedding-3-small', format: str = 'float' ) -> \
-	List[ float ]:
+	def create( self, text: str, model: str='text-embedding-3-large', format: str='float',
+			dimensions: int=None ) ->  List[ float ] | None:
 		"""
 	
 	        Purpose
@@ -1967,16 +1965,21 @@ class Embeddings( GPT ):
 	
 	        Returns
 	        -------
-	        get_list[ float
+	        get_list[ float ]
 
         """
 		try:
 			throw_if( 'text', text )
-			self.input = text
+			self.input_text = text
 			self.model = model
 			self.encoding_format = format
-			self.response = self.client.embeddings.create( input=self.input, model=self.model,
-				encoding_format=self.encoding_format )
+			self.dimensions = dimensions
+			if self.model == 'text-embedding-3-large' and self.dimensions is not None:
+				self.response = self.client.embeddings.create( input=self.input, model=self.model,
+					encoding_format=self.encoding_format, dimensions=self.dimensions )
+			else:
+				self.response = self.client.embeddings.create( input=self.input, model=self.model,
+					encoding_format=self.encoding_format )
 			self.embedding = self.response.data[ 0 ].embedding
 			return self.embedding
 		except Exception as e:
@@ -1987,7 +1990,7 @@ class Embeddings( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def count_tokens( self, text: str, coding: str ) -> int:
+	def count_tokens( self, text: str, coding: str='cl100k_base' ) -> int:
 		'''
 
 	        Purpose:
@@ -2034,22 +2037,12 @@ class Embeddings( GPT ):
                 List[ str ] | None
 
         '''
-		return [ 'num',
-		         'temperature',
-		         'top_percent',
-		         'frequency_penalty',
-		         'presence_penalty',
-		         'max_completion_tokens',
-		         'store',
-		         'stream',
-		         'modalities',
-		         'stops',
-		         'create',
+		return [
 		         'api_key',
 		         'client',
 		         'model',
 		         'count_tokens',
-		         'path',
+		         'input_text',
 		         'model_options', ]
 
 class Files( GPT ):

@@ -607,6 +607,27 @@ def format_results( results ):
 		formatted_results += formatted_result + "</li>"
 	return f"<p>{formatted_results}</p>"
 
+def count_tokens( text: str ) -> int:
+	"""
+		
+		Purpose
+		----------
+		Returns the number of tokens in a text string.
+		
+		Parmeters
+		-----------
+		string : str
+		encoding_name : str
+		
+		Return
+		------------
+		int
+		
+	"""
+	encoding = tiktoken.get_encoding( 'cl100k_base' )
+	num_tokens = len( encoding.encode( text ) )
+	return num_tokens
+
 # ==============================================================================
 # PROMPT ENGINEERING UTILITIES
 # ==============================================================================
@@ -2011,9 +2032,8 @@ if 'audio_format' not in st.session_state:
 	st.session_state[ 'audio_format' ] = 'audio/wav'
 
 # ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
-
-if 'embedding_text_input' not in st.session_state:
-	st.session_state[ 'embedding_text_input' ] = None
+if 'embedding_input_text' not in st.session_state:
+	st.session_state[ 'embedding_input_text' ] = None
 
 if 'embedding_dimensions' not in st.session_state:
 	st.session_state[ 'embedding_dimensions' ] = None
@@ -3173,54 +3193,67 @@ elif mode == "Audio":
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
-	embedding_model = st.session_state.get( 'embedding_model' )
-	method = st.session_state.get( 'embedding_method' )
-	dimensions = st.session_state.get( 'embedding_dimensions' )
-	batch_size = st.session_state.get( 'embedding_batchsize' )
-	encoding = st.session_state.get( 'embedding_format' )
-	input_data = st.session_state.get( 'embedding_input' )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	embedding_model = st.session_state.get( 'embedding_model' )
+	dimensions = st.session_state.get( 'embedding_dimensions' )
+	encoding = st.session_state.get( 'embedding_encoding_format' )
+	input_text = st.session_state.get( 'embedding_input_text' )
+	embedding = provider_module.Embeddings( )
+	
 	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
-	if not hasattr( provider_module, 'Embeddings' ):
-		st.info( 'Embeddings are not supported by the selected provider.' )
-	else:
-		embed = provider_module.Embeddings( )
-		with st.sidebar:
-			st.text( '⚙️ Embedding Settings' )
-			
-			set_embed_model = st.selectbox( 'Model', embed.model_options,
-				index=( embed.model_options.index( st.session_state[ 'embedding_model' ] )
-						if st.session_state.get( 'embedding_model' ) in embed.model_options
-						else 0 ), key='select_embedding_model' )
-			
-			embedding_model = st.selectbox( 'Model', embed.model_options,
-				index=(embed.model_options.index( st.session_state[ 'embedding_model' ] )
-				       if st.session_state.get( 'embedding_model' ) in embed.model_options
-				       else 0), key='embedding_ model')
-			method = None
-			if hasattr( embed, "methods" ):
-				method = st.selectbox( "Method", embed.methods, )
-		
-		# ------------------------------------------------------------------
-		# Main UI — Embedding execution (unchanged behavior)
-		# ------------------------------------------------------------------
-		left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
-		with center:
-			set_input_text = st.text_area( 'Text to embed' )
-			
-			if set_input_text and st.button( 'Embed' ):
+	
+	# ------------------------------------------------------------------
+	# Main Chat UI
+	# ------------------------------------------------------------------
+	emb_left, emb_center, emb_right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	with emb_center:
+			with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
+				# ------------------------------------------------------------------
+				# Embedding Model Parameters
+				# ------------------------------------------------------------------
+				with st.expander( 'Model Settings', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
+						border=True, gap='medium' )
+					
+					with llm_c1:
+						set_embedding_model = st.selectbox( 'Select Model:', embedding.model_options,
+							help='REQUIRED. Embedding model used by the AI',
+							key='embedding_model',
+							index=(embedding.model_options.index( st.session_state[ 'embedding_model' ] )
+							       if st.session_state.get( 'embedding_model' ) in embedding.model_options else 0), )
+						embedding_model = st.session_state[ 'embedding_model' ]
+					
+					with llm_c2:
+						set_encoding_format = st.selectbox( 'Encoding Format:',
+							options=embedding.encoding_options, key='embedding_encoding_format',
+							help='REQUIRED: The format to return the embeddings in. float or base64')
+						embedding_encoding_format = st.session_state[ 'embedding_encoding_format' ]
+					
+					with llm_c3:
+						set_embedding_dimensions = st.number_input( 'Dimensions', min_value=1,
+							max_value=2048, step=1, key='embedding_dimensions',
+							help='Optional: An integer between 1 and 2048', width='stretch' )
+						embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
+						
+			# ------------------------------------------------------------------
+			# Main UI — Embedding execution (unchanged behavior)
+			# ------------------------------------------------------------------
+			set_input_text = st.text_area( 'Text to embed', key='embedding_input_text' )
+			input_text = st.session_state['embedding_input_text' ]
+			if input_text is not '' and st.button( 'Embed' ):
 				with st.spinner( 'Embedding…' ):
 					try:
-						if method:
-							vector = embed.create( text, model=embedding_model, method=method, )
+						if embedding_dimensions is not None:
+							vector = embedding.create( input_text, model=embedding_model,
+								dimensions=embedding_dimensions )
 						else:
-							vector = embed.create( text, model=embed_model, )
+							vector = embedding.create( input_text, model=embed_model, )
 						
 						st.write( 'Vector length:', len( vector ) )
 						
 						try:
-							_update_token_counters( getattr( embed, 'response', None ) )
+							_update_token_counters( getattr( embedding, 'response', None ) )
 						except Exception:
 							pass
 					
@@ -4545,7 +4578,7 @@ elif mode == 'Data Management':
 					st.error( f'Execution failed: {e}' )
 
 # ======================================================================================
-# Footer — Status Bar
+# FOOTER — SECTION
 # ======================================================================================
 st.markdown(
 	"""
@@ -4558,7 +4591,7 @@ st.markdown(
 	unsafe_allow_html=True,
 )
 
-# ---- Fixed footer container
+# ---- Fixed Container
 st.markdown(
 	"""
 	<style>
@@ -4585,7 +4618,9 @@ st.markdown(
 	unsafe_allow_html=True,
 )
 
-# ---- Resolve active model by mode
+# ======================================================================================
+# FOOTER RENDERING
+# ======================================================================================
 _mode_to_model_key = {
 		'Text': 'text_model',
 		'Images': 'image_model',
@@ -4601,15 +4636,12 @@ active_model = st.session_state.get(
 	None,
 )
 
-# ---- Build right-side (mode-gated)
 right_parts = [ ]
 
 if active_model is not None:
 	right_parts.append( f'Model: {active_model}' )
 
-# ======================================================================================
-# Footer — Status Variables
-# ======================================================================================
+# ---- Rendered Variables
 if mode == 'Text':
 	temperature = st.session_state.get( 'text_temperature' )
 	top_p = st.session_state.get( 'text_top_percent' )
@@ -4881,7 +4913,8 @@ elif mode == 'VectorStores':
 		right_parts.append( 'Background: On' )
 
 right_text = " · ".join( right_parts ) if right_parts else "—"
-# ---- Render footer
+
+# ---- Rendering Method
 st.markdown(
 	f"""
     <div class="boo-status-bar">
