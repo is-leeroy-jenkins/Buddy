@@ -3528,7 +3528,6 @@ elif mode == 'Embeddings':
 	encoding = st.session_state.get( 'embedding_encoding_format' )
 	input_text = st.session_state.get( 'embedding_input_text' )
 	embedding = provider_module.Embeddings( )
-	
 	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	
 	# ------------------------------------------------------------------
@@ -3723,17 +3722,21 @@ elif mode == 'Vector Stores':
 	vector = None
 	collector  = None
 	searcher = None
+	if provider_name == 'Grok':
+		st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
+	elif provider_name == 'Gemini':
+		st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
+	elif provider_name == 'GPT':
+		st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	vec_left, vec_center, vec_right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with vec_center:
 		if provider_name == 'Grok':
 			provider_module = get_provider_module( )
 			collector = provider_module.VectorStores( )
-			st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
 			
 			# --------------------------------------------------------------
 			# Local mapping (if maintained by wrapper)
@@ -3842,8 +3845,6 @@ elif mode == 'Vector Stores':
 		elif provider_name == 'Gemini':
 			provider_module = get_provider_module( )
 			searcher = provider_module.VectorStores( )
-		
-			st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
 			st.divider( )
 			
 			# --------------------------------------------------------------
@@ -3954,7 +3955,6 @@ elif mode == 'Vector Stores':
 		elif provider_name == 'GPT':
 			provider_module = get_provider_module( )
 			vector = provider_module.VectorStores( )
-			st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
 			st.divider( )
 			
 			# --------------------------------------------------------------
@@ -4066,6 +4066,7 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
+	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = st.session_state.get( 'files' )
@@ -4074,7 +4075,6 @@ elif mode == 'Document Q&A':
 	doc_active_docs = st.session_state.get( 'doc_active_docs' )
 	doc_source = st.session_state.get( 'doc_source' )
 	doc_multi_mode = st.session_state.get( 'doc_multi_mode' )
-	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -4201,6 +4201,7 @@ elif mode == 'Document Q&A':
 # FILES API MODE
 # ======================================================================================
 elif mode == 'Files':
+	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	purpose = st.session_state.get( 'purpose' )
 	file_type = st.session_state.get( 'file_type' )
 	file_id = st.session_state.get( 'file_id' )
@@ -4211,7 +4212,6 @@ elif mode == 'Files':
 		provider_module = get_provider_module( )
 		files = get_provider_module( ).Files( )
 	
-	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		st.divider( )
