@@ -856,14 +856,14 @@ def dm_schema( table: str ) -> List[ Tuple ]:
 	with dm_conn( ) as conn:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
-def dm_read( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
+def read_table( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
 	query = f'SELECT rowid, * FROM "{table}"'
 	if limit:
 		query += f" LIMIT {limit} OFFSET {offset}"
 	with dm_conn( ) as conn:
 		return pd.read_sql_query( query, conn )
 
-def dm_drop_table( table: str ) -> None:
+def drop_table( table: str ) -> None:
 	"""
 		Purpose:
 		--------
@@ -881,7 +881,7 @@ def dm_drop_table( table: str ) -> None:
 		conn.execute( f'DROP TABLE IF EXISTS "{table}";' )
 		conn.commit( )
 
-def dm_create_index( table: str, column: str ) -> None:
+def create_index( table: str, column: str ) -> None:
 	"""
 		Purpose:
 		--------
@@ -934,7 +934,7 @@ def dm_create_index( table: str, column: str ) -> None:
 		conn.execute( sql )
 		conn.commit( )
 
-def dm_apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
+def apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
 	st.subheader( 'Advanced Filters' )
 	conditions = [ ]
 	col1, col2, col3 = st.columns( 3 )
@@ -959,7 +959,7 @@ def dm_apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
 	
 	return df
 
-def dm_aggregation( df: pd.DataFrame ):
+def create_aggregation( df: pd.DataFrame ):
 	st.subheader( 'Aggregation Engine' )
 	
 	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
@@ -986,7 +986,7 @@ def dm_aggregation( df: pd.DataFrame ):
 	
 	st.metric( 'Result', result )
 
-def dm_visualization( df: pd.DataFrame ):
+def create_visualization( df: pd.DataFrame ):
 	st.subheader( 'Visualization Engine' )
 	
 	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
@@ -1036,7 +1036,7 @@ def dm_visualization( df: pd.DataFrame ):
 def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
 	columns = [ ]
 	for col in df.columns:
-		sql_type = dm_sqlite_type( df[ col ].dtype )
+		sql_type = get_sqlite_type( df[ col ].dtype )
 		safe_col = col.replace( ' ', '_' )
 		columns.append( f'{safe_col} {sql_type}')
 	
@@ -1057,7 +1057,7 @@ def dm_insert_df( table_name: str, df: pd.DataFrame ):
 		conn.executemany( stmt, df.values.tolist( ) )
 		conn.commit( )
 
-def dm_sqlite_type( dtype ) -> str:
+def get_sqlite_type( dtype ) -> str:
 	"""
 		Purpose:
 		--------
@@ -1260,7 +1260,7 @@ def dm_get_indexes( table: str ):
 		rows = conn.execute(f'PRAGMA index_list("{table}");').fetchall( )
 		return rows
 
-def dm_add_column( table: str, column: str, col_type: str ):
+def add_column( table: str, column: str, col_type: str ):
 	column = dm_safe_identifier( column )
 	col_type = col_type.upper( )
 	
@@ -1269,8 +1269,8 @@ def dm_add_column( table: str, column: str, col_type: str ):
 			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};')
 		conn.commit( )
 
-def dm_profile_table( table: str ):
-	df = dm_read( table )
+def create_profile_table( table: str ):
+	df = read_table( table )
 	profile_rows = [ ]
 	total_rows = len( df )
 	for col in df.columns:
@@ -1297,7 +1297,7 @@ def dm_profile_table( table: str ):
 	
 	return pd.DataFrame( profile_rows )
 
-def dm_drop_column( table: str, column: str ):
+def drop_column( table: str, column: str ):
 	if not table or not column:
 		raise ValueError( "Table and column required." )
 	
@@ -1839,6 +1839,9 @@ if 'doc_instructions' not in st.session_state:
 	st.session_state.doc_instructions = ''
 
 #--------CHAT-GENERATION PARAMETERS--------------------
+if 'execution_mode' not in st.session_state:
+	st.session_state[ 'execution_mode' ] = None
+	
 if 'temperature' not in st.session_state:
 	st.session_state[ 'temperature' ] = 0.8
 	
@@ -2316,6 +2319,7 @@ if mode == 'Chat':
 	chat_choice = st.session_state.get( 'tool_choice', None )
 	chat_messages = st.session_state.get( 'messages', None )
 	chat_background = st.session_state.get( 'background', None )
+	execution_mode = st.session_state.set( 'execution_mode', None )
 	
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
@@ -2352,13 +2356,13 @@ if mode == 'Chat':
 							prompt={ 'id': cfg.PROMPT_ID, 'version': cfg.PROMPT_VERSION, },
 							input=[ { 'role': 'user', 'content': [ { 'type': 'input_text',
 							                                         'text': user_input, } ], } ],
-							tools=[ { 'type': 'file_search', 'vector_store_ids': cfg.GPT_VECTORSTORE_IDS, },
-									{ 'type': 'web_search', 'filters': { 'allowed_domains': cfg.GPT_WEB_DOMAINS, },
+							tools=[ { 'type': 'file_search', 'vector_store_ids': cfg.GPT_VECTORSTORES, },
+									{ 'type': 'web_search', 'filters': { 'allowed_domains': cfg.GPT_DOMAINS, },
 											'search_context_size': 'medium',
 											'user_location': { 'type': 'approximate' },
 									},
 									{ 'type': 'code_interpreter',
-									  'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILE_IDS, },
+									  'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
 									},
 							],
 							include=[ 'web_search_call.action.sources',
@@ -4487,7 +4491,7 @@ elif mode == 'Data Management':
 		st.info( "No tables available." )
 	else:
 		table = st.selectbox( "Table", tables )
-		df_full = dm_read( table )
+		df_full = read_table( table )
 	
 	# ------------------------------------------------------------------------------
 	# UPLOAD TAB
@@ -4509,7 +4513,7 @@ elif mode == 'Data Management':
 						columns = [ ]
 						df.columns = [ dm_safe_identifier( c ) for c in df.columns ]
 						for col in df.columns:
-							sql_type = dm_sqlite_type( df[ col ].dtype )
+							sql_type = get_sqlite_type( df[ col ].dtype )
 							columns.append( f'"{col}" {sql_type}' )
 						
 						create_stmt = (
@@ -4550,7 +4554,7 @@ elif mode == 'Data Management':
 		tables = dm_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='table_name' )
-			df = dm_read( table )
+			df = read_table( table )
 			st.dataframe( df, use_container_width=True )
 		else:
 			st.info( 'No tables available.' )
@@ -4564,7 +4568,7 @@ elif mode == 'Data Management':
 			st.info( 'No tables available.' )
 		else:
 			table = st.selectbox( 'Select Table', tables, key='crud_table' )
-			df = dm_read( table )
+			df = read_table( table )
 			schema = dm_schema( table )
 			
 			# Build type map
@@ -4658,7 +4662,7 @@ elif mode == 'Data Management':
 			page_size = st.slider( 'Rows per page', 10, 500, 50 )
 			page = st.number_input( 'Page', min_value=1, step=1 )
 			offset = (page - 1) * page_size
-			df_page = dm_read( table, page_size, offset )
+			df_page = read_table( table, page_size, offset )
 			st.dataframe( df_page, use_container_width=True )
 		
 	# ------------------------------------------------------------------------------
@@ -4668,7 +4672,7 @@ elif mode == 'Data Management':
 		tables = dm_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='filter_table' )
-			df = dm_read( table )
+			df = read_table( table )
 			column = st.selectbox( 'Column', df.columns )
 			value = st.text_input( 'Contains' )
 			if value:
@@ -4682,7 +4686,7 @@ elif mode == 'Data Management':
 		tables = dm_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='agg_table' )
-			df = dm_read( table )
+			df = read_table( table )
 			numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 			if numeric_cols:
 				col = st.selectbox( 'Column', numeric_cols )
@@ -4701,7 +4705,7 @@ elif mode == 'Data Management':
 		tables = dm_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='viz_table' )
-			df = dm_read( table )
+			df = read_table( table )
 			numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 			if numeric_cols:
 				col = st.selectbox( 'Column', numeric_cols )
@@ -4723,7 +4727,7 @@ elif mode == 'Data Management':
 		if tables:
 			table = st.selectbox( 'Select Table', tables, key='profile_table' )
 			if st.button( 'Generate Profile' ):
-				profile_df = dm_profile_table( table )
+				profile_df = create_profile_table( table )
 				st.dataframe( profile_df, use_container_width=True )
 				
 		st.subheader( 'Drop Table' )
@@ -4749,7 +4753,7 @@ elif mode == 'Data Management':
 				
 				if col1.button( 'Confirm Drop', key='admin_confirm_drop' ):
 					try:
-						dm_drop_table( table )
+						drop_table( table )
 						st.success( f'Table {table} dropped successfully.' )
 					except Exception as e:
 						st.error( f'Drop failed: {e}' )
@@ -4761,11 +4765,11 @@ elif mode == 'Data Management':
 					st.session_state.dm_confirm_drop = False
 					st.rerun( )
 			
-			df = dm_read( table )
+			df = read_table( table )
 			col = st.selectbox( 'Create Index On', df.columns )
 			
 			if st.button( 'Create Index' ):
-				dm_create_index( table, col )
+				create_index( table, col )
 				st.success( 'Index created.' )
 				
 		st.divider( )
@@ -4850,7 +4854,7 @@ elif mode == 'Data Management':
 				col_type = st.selectbox( 'Column Type', [ 'INTEGER',  'REAL',  'TEXT' ] )
 				
 				if st.button( 'Add Column' ):
-					dm_add_column( table, new_col, col_type )
+					add_column( table, new_col, col_type )
 					st.success( 'Column added.' )
 					st.rerun( )
 			
@@ -4881,7 +4885,7 @@ elif mode == 'Data Management':
 				drop_col = st.selectbox( 'Column to Drop', col_names )
 				
 				if st.button( 'Drop Column' ):
-					dm_drop_column( table, drop_col )
+					drop_column( table, drop_col )
 					st.success( 'Column dropped.' )
 					st.rerun( )
 					

@@ -111,11 +111,10 @@ GPT_MODES = [ 'Chat',
               'Data Management',
               'Export' ]
 
-GPT_VECTORSTORE_IDS = [ 'vs_712r5W5833G6aLxIYIbuvVcK',
-                        'vs_697f86ad98888191b967685ae558bfc0',
-                        'vs_712r5W5833G6aLxIYIbuvVcK']
+GPT_VECTORSTORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0',
+                     'vs_712r5W5833G6aLxIYIbuvVcK']
 
-GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
+GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
                  'file-WPmTsHFYDLGHbyERqJdyqv',
                  'file-DW5TuqYoEfqFfqFFsMXBvy',
                  'file-U8ExiB6aJunAeT6872HtEU',
@@ -123,11 +122,7 @@ GPT_FILE_IDS = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
                  'file-XsjQorjtffHTWjth8EVnkL',
                  'file-32s641QK1Xb5QUatY3zfWF' ]
 
-GPT_WEB_DOMAINS = [ 'congress.gov',
-                    'google.com',
-                    'gao.gov',
-                    'omb.gov',
-                    'defense.gov' ]
+GPT_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov' ]
 
 # ---------------- GROK CONFIG ------------------
 GROK_LOGO = r'resources/grok_logo.png'
