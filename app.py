@@ -2476,12 +2476,10 @@ if mode == 'Chat':
 									},
 									{ 'type': 'code_interpreter',
 									  'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
-									},
-							],
+									}, ],
 							include=[ 'web_search_call.action.sources',
 							          'code_interpreter_call.outputs', ], store=True, )
 					sources = st.session_state.get( "last_sources", [ ] )
-		
 					if sources:
 						st.markdown( "#### Sources" )
 						for i, src in enumerate( sources, 1 ):
