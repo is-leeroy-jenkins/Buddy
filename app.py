@@ -2449,7 +2449,6 @@ if mode == 'Chat':
 	# Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
-	
 	with center:
 		user_input = st.chat_input( 'Have a Planning, Programming, or Budget Execution question?' )
 		if user_input:
@@ -2711,27 +2710,27 @@ elif mode == "Text":
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xsmall' )
 					
-					with res_c1:
+					with resp_c1:
 						set_text_stream = st.toggle( 'Stream', key='text_stream', value=False, help=cfg.STREAM )
 						text_stream = st.session_state[ 'text_stream' ]
 						
-					with res_c2:
+					with resp_c2:
 						set_text_store = st.toggle( 'Store', key='text_store', value=True, help=cfg.STORE )
 						text_store = st.session_state[ 'text_store' ]
 						
-					with res_c3:
+					with resp_c3:
 						set_text_background = st.toggle( 'Background', key='text_background',
 							value=False, help=cfg.BACKGROUND_MODE )
 						text_background = st.session_state[ 'text_background' ]
 						
-					with res_c4:
+					with resp_c4:
 						set_text_stops = st.text_input( 'Stop Sequences', key='text_stops',
 							value='\n'.join( st.session_state.get( 'text_stops', [ ] ) ),
 							help=cfg.STOP_SEQUENCE, width='stretch' )
 						text_stops = [ d.strip( ) for d in set_text_domains.split( ',' )
 						               if d.strip( ) ]
 					
-					with res_c5:
+					with resp_c5:
 						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
 							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						text_tokens = st.session_state[ 'text_max_tokens' ]
@@ -2762,7 +2761,7 @@ elif mode == "Text":
 				st.rerun( )
 		
 		# ------------------------------------------------------------------
-		# ----------- MESSAGES -----------------------
+		# ----------- MESSAGES ---------------------------------------------
 		# ------------------------------------------------------------------
 		for msg in st.session_state.messages:
 			with st.chat_message( msg[ 'role' ], avatar="" ):
@@ -3531,7 +3530,6 @@ elif mode == 'Embeddings':
 	embedding = provider_module.Embeddings( )
 	
 	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
-	st.divider( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -3567,13 +3565,9 @@ elif mode == 'Embeddings':
 				embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
 			
 			with llm_c4:
-				st.number_input(
-					"Chunk Size (tokens)",
-					min_value=50,
-					max_value=2000,
-					step=50,
-					key="embedding_chunk_size",
-					help="Maximum tokens per chunk for embedding segmentation." )
+				st.number_input( 'Chunk Size (tokens)', min_value=50, max_value=2000,
+					step=50, key='embedding_chunk_size',
+					help='Maximum tokens per chunk for embedding segmentation.' )
 
 			if st.button( 'Reset', key='embedding_reset', width='stretch' ):
 				
@@ -3688,13 +3682,8 @@ elif mode == 'Embeddings':
 			col_m4.metric( "TTR", f"{ttr:.3f}" )
 			col_m5.metric( "Characters", char_count )
 			
-			st.session_state[ 'embedding_metrics' ] = {
-					'tokens': token_count,
-					'words': total_words,
-					'unique_words': unique_words,
-					'ttr': ttr,
-					'characters': char_count
-			}
+			st.session_state[ 'embedding_metrics' ] = { 'tokens': token_count, 'words': total_words,
+					'unique_words': unique_words, 'ttr': ttr, 'characters': char_count }
 				
 
 		# ------------------------------------------------------------------
@@ -3737,344 +3726,343 @@ elif mode == 'Vector Stores':
 	collector  = None
 	searcher = None
 	
-	if provider_name == 'Grok':
-		provider_module = get_provider_module( )
-		collector = provider_module.VectorStores( )
-	
-		st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
-		st.divider( )
-		
-		# --------------------------------------------------------------
-		# Local mapping (if maintained by wrapper)
-		# --------------------------------------------------------------
-		vs_map = getattr( collector, 'collections', None )
-		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( '**Known Collections (local mapping)**' )
-			for name, vid in vs_map.items( ):
-				st.write( f"- **{name}** — `{vid}`" )
-			st.markdown( "---" )
-		
-		# --------------------------------------------------------------
-		# Create Collection
-		# --------------------------------------------------------------
-		with st.expander( 'Create:', expanded=False ):
-			new_store_name = st.text_input( 'Enter Collection Name' )
-			if st.button( '➕ Create Collection', key='create_collection' ):
-				if not new_store_name:
-					st.warning( 'Enter a Collection Name.' )
-				else:
-					try:
-						if hasattr( collector, "create" ):
-							res = provider_module.create( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
-						else:
-							st.warning( 'create() not available on Grok provider.' )
-					except Exception as exc:
-						st.error( f'Create collection failed: {exc}' )
-		
-		# --------------------------------------------------------------
-		# Discover collections (local → API fallback)
-		# --------------------------------------------------------------
-		options: List[ tuple ] = [ ]
-		if vs_map and isinstance( vs_map, dict ):
-			options = list( vs_map.items( ) )
-		
-		if not options:
-			try:
-				client = getattr( collector, 'client', None )
-				if ( client and hasattr( client, 'collections' )
-						and hasattr( client.collections, 'list' ) ):
-					api_list = client.collections.list( )
-					temp: List[ tuple ] = [ ]
-					for item in getattr( api_list, 'data', [ ] ) or api_list:
-						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' ) if isinstance( item, dict ) else None )
-						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' ) if isinstance( item, dict ) else None )
-						if nm and vid:
-							temp.append( (nm, vid) )
-					if temp:
-						options = temp
-			except Exception:
-				options = [ ]
-		
-		# --------------------------------------------------------------
-		# Select / Retrieve / Delete
-		# --------------------------------------------------------------
-		if options:
-			names = [ f"{n} — {i}" for n, i in options ]
-			sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
+	# ------------------------------------------------------------------
+	# Main Chat UI
+	# ------------------------------------------------------------------
+	vec_left, vec_center, vec_right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	with vec_center:
+		if provider_name == 'Grok':
+			provider_module = get_provider_module( )
+			collector = provider_module.VectorStores( )
+			st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
 			
-			sel_id: Optional[ str ] = None
-			for n, i in options:
-				if f"{n} — {i}" == sel:
-					sel_id = i
-					break
+			# --------------------------------------------------------------
+			# Local mapping (if maintained by wrapper)
+			# --------------------------------------------------------------
+			vs_map = getattr( collector, 'collections', None )
+			if vs_map and isinstance( vs_map, dict ):
+				st.markdown( '**Known Collections (local mapping)**' )
+				for name, vid in vs_map.items( ):
+					st.write( f"- **{name}** — `{vid}`" )
+				st.markdown( "---" )
 			
-			c1, c2 = st.columns( [ 1,  1 ] )			
-			with c1:
-				if st.button( 'Retrieve Collection', key='retrieve_collection' ):
-					if not sel_id:
-						st.warning( 'No collection selected.' )
+			# --------------------------------------------------------------
+			# Create Collection
+			# --------------------------------------------------------------
+			with st.expander( 'Create:', expanded=False ):
+				new_store_name = st.text_input( 'Enter Collection Name' )
+				if st.button( '➕ Create Collection', key='create_collection' ):
+					if not new_store_name:
+						st.warning( 'Enter a Collection Name.' )
 					else:
 						try:
-							client = getattr( collector, 'client', None )
-							if ( client and hasattr( client, 'collections' )
-									and hasattr( client.collections, 'retrieve' ) ):
-								vs = client.collections.retrieve( collection_id=sel_id )
-								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
+							if hasattr( collector, "create" ):
+								res = provider_module.create( new_store_name )
+								st.success( f"Create call submitted for '{new_store_name}'." )
 							else:
-								st.warning( 'collections.retrieve() not available.' )
+								st.warning( 'create() not available on Grok provider.' )
 						except Exception as exc:
-							st.error( f'retrieve() failed: {exc}' )
+							st.error( f'Create collection failed: {exc}' )
 			
-			with c2:
-				if st.button( '❌ Delete Collection',  key='delete_collection' ):
-					if not sel_id:
-						st.warning( 'No collection selected.' )
-					else:
-						try:
-							client = getattr( collector, 'client', None )
-							if ( client and hasattr( client, 'collections' )
-									and hasattr( client.collections, 'delete' ) ):
-								res = client.collections.delete( collection_id=sel_id )
-								st.success( f'Delete returned: {res}' )
-							else:
-								st.warning( 'collections.delete() not available.' )
-						except Exception as exc:
-							st.error( f'Delete failed: {exc}' )
-				else:
-					st.info(
-						'No collections discovered. Create one or confirm '
-						'collections exist for this account.' )
-						
-	elif provider_name == 'Gemini':
-		provider_module = get_provider_module( )
-		searcher = provider_module.VectorStores( )
-	
-		st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
-		st.divider( )
-		
-		# --------------------------------------------------------------
-		# Local mapping (if maintained by wrapper)
-		# --------------------------------------------------------------
-		vs_map = getattr( searcher, 'collections', None )
-		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( 'Local File Search Stores' )
-			for name, vid in vs_map.items( ):
-				st.write( f'- **{name}** — {vid}' )
-			st.divider( )
-		
-		# --------------------------------------------------------------
-		# Create File Search Store
-		# --------------------------------------------------------------
-		with st.expander( 'Create:', expanded=False ):
-			new_store_name = st.text_input( 'New File Search Store name' )
-			if st.button( '➕ Create File Search Store' ):
-				if not new_store_name:
-					st.warning( 'Enter a File Search Store Name.' )
-				else:
-					try:
-						if hasattr( provider_module, 'create' ):
-							res = provider_module.create( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
-						else:
-							st.warning( 'create() not available on Gemini provider.' )
-					except Exception as exc:
-						st.error( f'Create store failed: {exc}' )
-		
-		# --------------------------------------------------------------
-		# Discover file search stores (local → API fallback)
-		# --------------------------------------------------------------
-		options: List[ tuple ] = [ ]
-		if vs_map and isinstance( vs_map, dict ):
-			options = list( vs_map.items( ) )
-		
-		if not options:
-			try:
-				client = getattr( searcher, 'client', None )
-				if ( client and hasattr( client, 'file_search_stores' )
-						and hasattr( client.file_search_stores, 'list' ) ):
-					api_list = client.file_search_stores.list( )
-					temp: List[ tuple ] = [ ]
-					for item in getattr( api_list, 'data', [ ] ) or api_list:
-						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' ) if isinstance( item, dict ) else None )
-						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' ) if isinstance( item, dict ) else None )
-						if nm and vid:
-							temp.append( (nm, vid) )
-					if temp:
-						options = temp
-			except Exception:
-				options = [ ]
-		
-		# --------------------------------------------------------------
-		# Select / Retrieve / Delete
-		# --------------------------------------------------------------
-		if options:
-			names = [ f'{n} — {i}' for n, i in options ]
-			sel = st.selectbox( 'Select a File Search Store', options=names )
+			# --------------------------------------------------------------
+			# Discover collections ( API fallback )
+			# --------------------------------------------------------------
+			options: List[ tuple ] = [ ]
+			if vs_map and isinstance( vs_map, dict ):
+				options = list( vs_map.items( ) )
 			
-			sel_id: Optional[ str ] = None
-			for n, i in options:
-				if f'{n} — {i}' == sel:
-					sel_id = i
-					break
+			if not options:
+				try:
+					client = getattr( collector, 'client', None )
+					if ( client and hasattr( client, 'collections' )
+							and hasattr( client.collections, 'list' ) ):
+						api_list = client.collections.list( )
+						temp: List[ tuple ] = [ ]
+						for item in getattr( api_list, 'data', [ ] ) or api_list:
+							nm = getattr( item, 'name', None ) or (
+									item.get( 'name' ) if isinstance( item, dict ) else None )
+							vid = getattr( item, 'id', None ) or (
+									item.get( 'id' ) if isinstance( item, dict ) else None )
+							if nm and vid:
+								temp.append( (nm, vid) )
+						if temp:
+							options = temp
+				except Exception:
+					options = [ ]
 			
-			c1, c2 = st.columns( [ 1,  1 ] )
-			
-			with c1:
-				if st.button( 'Retrieve File Store' ):
-					if not sel_id:
-						st.warning( 'No file search store selected.' )
-					else:
-						try:
-							client = getattr( searcher, 'client', None )
-							if ( client and hasattr( client, 'file_search_stores' )
-									and hasattr( client.file_search_stores, 'retrieve' ) ):
-								vs = client.file_search_stores.retrieve(
-									file_search_store_id=sel_id )
-								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
-							else:
-								st.warning( 'file_search_stores.retrieve() not available.' )
-						except Exception as exc:
-							st.error( f'retrieve() failed: {exc}' )
-			
-			with c2:
-				if st.button( '❌ Delete File Store' ):
-					if not sel_id:
-						st.warning( 'No file search store selected.' )
-					else:
-						try:
-							client = getattr( searcher, 'client', None )
-							if ( client and hasattr( client, 'file_search_stores' )
-									and hasattr( client.file_search_stores, 'delete' ) ):
-								res = client.file_search_stores.delete(
-									file_search_store_id=sel_id )
-								st.success( f'Delete returned: {res}' )
-							else:
-								st.warning( 'file_search_stores.delete() not available.' )
-						except Exception as exc:
-							st.error( f'Delete failed: {exc}' )
-				else:
-					st.info( 'No file search stores discovered' )
-			
-	elif provider_name == 'GPT':
-		provider_module = get_provider_module( )
-		vector = provider_module.VectorStores( )
-	
-		st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
-		
-		st.divider( )
-		
-		# --------------------------------------------------------------
-		# Local mapping
-		# --------------------------------------------------------------
-		vs_map = getattr( vector, 'collections', None )
-		st.caption( 'Store Management')
-		# ------------------------------------------------------------------
-		# Main Chat UI
-		# ------------------------------------------------------------------
-		left, center, right = st.columns( [ 0.025, 0.95, 0.055 ] )
-		with center:
-			
-			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
-		
-			with stores_left:
-				# --------------------------------------------------------------
-				# Expander - Create Vector Store
-				# --------------------------------------------------------------
-				with st.expander( 'Create:', expanded=False ):
-					new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
-					if st.button( '➕ Create Store', key='create_store' ):
-						if not new_store_name:
-							st.warning( 'Enter a Vector Store Name.' )
+			# --------------------------------------------------------------
+			# Select / Retrieve / Delete
+			# --------------------------------------------------------------
+			if options:
+				names = [ f"{n} — {i}" for n, i in options ]
+				sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
+				
+				sel_id: Optional[ str ] = None
+				for n, i in options:
+					if f"{n} — {i}" == sel:
+						sel_id = i
+						break
+				
+				c1, c2 = st.columns( [ 1,  1 ] )
+				with c1:
+					if st.button( 'Retrieve Collection', key='retrieve_collection' ):
+						if not sel_id:
+							st.warning( 'No Collection Selected.' )
 						else:
 							try:
-								if hasattr( vector, 'create' ):
-									res = vector.create( new_store_name )
-									st.success( f"Create call submitted for '{new_store_name}'." )
+								client = getattr( collector, 'client', None )
+								if ( client and hasattr( client, 'collections' )
+										and hasattr( client.collections, 'retrieve' ) ):
+									vs = client.collections.retrieve( collection_id=sel_id )
+									st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
 								else:
-									st.warning( 'create() not available on VectorStores wrapper.' )
+									st.warning( 'collections.retrieve() not available.' )
 							except Exception as exc:
-								st.error( f'Create store failed: {exc}' )
-			
-			with stores_right:
-				# --------------------------------------------------------------
-				# Discover vector stores
-				# --------------------------------------------------------------
-				with st.expander( 'Retreive:', expanded=False ):
-					options: List[ tuple ] = [ ]
-					if vs_map and isinstance( vs_map, dict ):
-						options = list( vs_map.items( ) )
-					
-					if not options:
-						try:
-							openai_client = st.session_state.get( 'openai_client' )
-							if ( openai_client and hasattr( openai_client, 'vector_stores' )
-									and hasattr( openai_client.vector_stores, 'list' ) ):
-								api_list = openai_client.vector_stores.list( )
-								temp: List[ tuple ] = [ ]
-								for item in getattr( api_list, 'data', [ ] ) or api_list:
-									nm = getattr( item, 'name', None ) or (
-											item.get( 'name' ) if isinstance( item, dict ) else None )
-									vid = getattr( item, 'id', None ) or (
-											item.get( 'id' ) if isinstance( item, dict ) else None )
-									if nm and vid:
-										temp.append( (nm, vid) )
-								if temp:
-									options = temp
-						except Exception:
-							options = [ ]
-						
-					# --------------------------------------------------------------
-					# Select / Retrieve / Delete
-					# --------------------------------------------------------------
-					if options:
-						names = [ f'{n} — {i}' for n, i in options ]
-						sel = st.selectbox( 'Select Vector Store', options=names,
-							key='select_vectorstore' )
-						
-						sel_id: Optional[ str ] = None
-						for n, i in options:
-							if f'{n} — {i}' == sel:
-								sel_id = i
-								break
-						
-						c1, c2 = st.columns( [ 1, 1 ] )
-						
-						with c1:
-							if st.button( 'Retrieve Store', key='retrieve_store' ):
-								if not sel_id:
-									st.warning( 'No vector store selected.' )
+								st.error( f'retrieve() failed: {exc}' )
+				
+				with c2:
+					if st.button( '❌ Delete Collection',  key='delete_collection' ):
+						if not sel_id:
+							st.warning( 'No collection selected.' )
+						else:
+							try:
+								client = getattr( collector, 'client', None )
+								if ( client and hasattr( client, 'collections' )
+										and hasattr( client.collections, 'delete' ) ):
+									res = client.collections.delete( collection_id=sel_id )
+									st.success( f'Delete returned: {res}' )
 								else:
-									try:
-										openai_client = st.session_state[ 'openai_client' ]
-										vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
-										st.write( 'Name:', vs.name)
-										st.write( 'Files:', vs.file_counts )
-										st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
-									except Exception as exc:
-										st.error( f'retrieve() failed: {exc}' )
-						
-						with c2:
-							if st.button( '❌ Delete', key='delete_store' ):
-								if not sel_id:
-									st.warning( 'No vector store selected.' )
-								else:
-									try:
-										openai_client = st.session_state.get( 'openai_client' )
-										if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
-											res = openai_client.vector_stores.delete( vector_store_id=sel_id )
-											st.success( f'Delete returned: {res}' )
-										else:
-											st.warning( 'vector_stores.delete() not available.' )
-									except Exception as exc:
-										st.error( f'Delete failed: {exc}' )
+									st.warning( 'collections.delete() not available.' )
+							except Exception as exc:
+								st.error( f'Delete failed: {exc}' )
 					else:
-						st.info( 'No vector stores discovered' )
-					
+						st.info(
+							'No collections discovered. Create one or confirm '
+							'collections exist for this account.' )
+							
+		elif provider_name == 'Gemini':
+			provider_module = get_provider_module( )
+			searcher = provider_module.VectorStores( )
+		
+			st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
+			st.divider( )
+			
+			# --------------------------------------------------------------
+			# Local mapping (if maintained by wrapper)
+			# --------------------------------------------------------------
+			vs_map = getattr( searcher, 'collections', None )
+			if vs_map and isinstance( vs_map, dict ):
+				st.markdown( 'Local File Search Stores' )
+				for name, vid in vs_map.items( ):
+					st.write( f'- **{name}** — {vid}' )
+				st.divider( )
+			
+			# --------------------------------------------------------------
+			# Create File Search Store
+			# --------------------------------------------------------------
+			with st.expander( 'Create:', expanded=False ):
+				new_store_name = st.text_input( 'New File Search Store name' )
+				if st.button( '➕ Create File Search Store' ):
+					if not new_store_name:
+						st.warning( 'Enter a File Search Store Name.' )
+					else:
+						try:
+							if hasattr( provider_module, 'create' ):
+								res = provider_module.create( new_store_name )
+								st.success( f"Create call submitted for '{new_store_name}'." )
+							else:
+								st.warning( 'create() not available on Gemini provider.' )
+						except Exception as exc:
+							st.error( f'Create store failed: {exc}' )
+			
+			# --------------------------------------------------------------
+			# Discover file search stores (local → API fallback)
+			# --------------------------------------------------------------
+			options: List[ tuple ] = [ ]
+			if vs_map and isinstance( vs_map, dict ):
+				options = list( vs_map.items( ) )
+			
+			if not options:
+				try:
+					client = getattr( searcher, 'client', None )
+					if ( client and hasattr( client, 'file_search_stores' )
+							and hasattr( client.file_search_stores, 'list' ) ):
+						api_list = client.file_search_stores.list( )
+						temp: List[ tuple ] = [ ]
+						for item in getattr( api_list, 'data', [ ] ) or api_list:
+							nm = getattr( item, 'name', None ) or (
+									item.get( 'name' ) if isinstance( item, dict ) else None )
+							vid = getattr( item, 'id', None ) or (
+									item.get( 'id' ) if isinstance( item, dict ) else None )
+							if nm and vid:
+								temp.append( (nm, vid) )
+						if temp:
+							options = temp
+				except Exception:
+					options = [ ]
+			
+			# --------------------------------------------------------------
+			# Select / Retrieve / Delete
+			# --------------------------------------------------------------
+			if options:
+				names = [ f'{n} — {i}' for n, i in options ]
+				sel = st.selectbox( 'Select a File Search Store', options=names )
+				
+				sel_id: Optional[ str ] = None
+				for n, i in options:
+					if f'{n} — {i}' == sel:
+						sel_id = i
+						break
+				
+				c1, c2 = st.columns( [ 1,  1 ] )
+				
+				with c1:
+					if st.button( 'Retrieve File Store' ):
+						if not sel_id:
+							st.warning( 'No file search store selected.' )
+						else:
+							try:
+								client = getattr( searcher, 'client', None )
+								if ( client and hasattr( client, 'file_search_stores' )
+										and hasattr( client.file_search_stores, 'retrieve' ) ):
+									vs = client.file_search_stores.retrieve(
+										file_search_store_id=sel_id )
+									st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
+								else:
+									st.warning( 'file_search_stores.retrieve() not available.' )
+							except Exception as exc:
+								st.error( f'retrieve() failed: {exc}' )
+				
+				with c2:
+					if st.button( '❌ Delete File Store' ):
+						if not sel_id:
+							st.warning( 'No file search store selected.' )
+						else:
+							try:
+								client = getattr( searcher, 'client', None )
+								if ( client and hasattr( client, 'file_search_stores' )
+										and hasattr( client.file_search_stores, 'delete' ) ):
+									res = client.file_search_stores.delete(
+										file_search_store_id=sel_id )
+									st.success( f'Delete returned: {res}' )
+								else:
+									st.warning( 'file_search_stores.delete() not available.' )
+							except Exception as exc:
+								st.error( f'Delete failed: {exc}' )
+					else:
+						st.info( 'No file search stores discovered' )
+				
+		elif provider_name == 'GPT':
+			provider_module = get_provider_module( )
+			vector = provider_module.VectorStores( )
+			st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
+			st.divider( )
+			
+			# --------------------------------------------------------------
+			# Local mapping
+			# --------------------------------------------------------------
+			vs_map = getattr( vector, 'collections', None )
+			st.caption( 'Store Management')
+			# ------------------------------------------------------------------
+			# Main Chat UI
+			# ------------------------------------------------------------------
+			left, center, right = st.columns( [ 0.025, 0.95, 0.055 ] )
+			with center:
+				stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
+				with stores_left:
+					# --------------------------------------------------------------
+					# Expander - Create Vector Store
+					# --------------------------------------------------------------
+					with st.expander( 'Create:', expanded=False ):
+						new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
+						if st.button( '➕ Create Store', key='create_store' ):
+							if not new_store_name:
+								st.warning( 'Enter a Vector Store Name.' )
+							else:
+								try:
+									if hasattr( vector, 'create' ):
+										res = vector.create( new_store_name )
+										st.success( f"Create call submitted for '{new_store_name}'." )
+									else:
+										st.warning( 'create() not available on VectorStores wrapper.' )
+								except Exception as exc:
+									st.error( f'Create store failed: {exc}' )
+				
+				with stores_right:
+					# --------------------------------------------------------------
+					# Discover vector stores
+					# --------------------------------------------------------------
+					with st.expander( 'Retreive:', expanded=False ):
+						options: List[ tuple ] = [ ]
+						if vs_map and isinstance( vs_map, dict ):
+							options = list( vs_map.items( ) )
+						
+						if not options:
+							try:
+								openai_client = st.session_state.get( 'openai_client' )
+								if ( openai_client and hasattr( openai_client, 'vector_stores' )
+										and hasattr( openai_client.vector_stores, 'list' ) ):
+									api_list = openai_client.vector_stores.list( )
+									temp: List[ tuple ] = [ ]
+									for item in getattr( api_list, 'data', [ ] ) or api_list:
+										nm = getattr( item, 'name', None ) or (
+												item.get( 'name' ) if isinstance( item, dict ) else None )
+										vid = getattr( item, 'id', None ) or (
+												item.get( 'id' ) if isinstance( item, dict ) else None )
+										if nm and vid:
+											temp.append( (nm, vid) )
+									if temp:
+										options = temp
+							except Exception:
+								options = [ ]
+							
+						# --------------------------------------------------------------
+						# Select / Retrieve / Delete
+						# --------------------------------------------------------------
+						if options:
+							names = [ f'{n} — {i}' for n, i in options ]
+							sel = st.selectbox( 'Select Vector Store', options=names,
+								key='select_vectorstore' )
+							
+							sel_id: Optional[ str ] = None
+							for n, i in options:
+								if f'{n} — {i}' == sel:
+									sel_id = i
+									break
+							
+							c1, c2 = st.columns( [ 1, 1 ] )
+							
+							with c1:
+								if st.button( 'Retrieve Store', key='retrieve_store' ):
+									if not sel_id:
+										st.warning( 'No vector store selected.' )
+									else:
+										try:
+											openai_client = st.session_state[ 'openai_client' ]
+											vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
+											st.write( 'Name:', vs.name)
+											st.write( 'Files:', vs.file_counts )
+											st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
+										except Exception as exc:
+											st.error( f'retrieve() failed: {exc}' )
+							
+							with c2:
+								if st.button( '❌ Delete', key='delete_store' ):
+									if not sel_id:
+										st.warning( 'No vector store selected.' )
+									else:
+										try:
+											openai_client = st.session_state.get( 'openai_client' )
+											if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
+												res = openai_client.vector_stores.delete( vector_store_id=sel_id )
+												st.success( f'Delete returned: {res}' )
+											else:
+												st.warning( 'vector_stores.delete() not available.' )
+										except Exception as exc:
+											st.error( f'Delete failed: {exc}' )
+						else:
+							st.info( 'No vector stores discovered' )
+						
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
@@ -4225,9 +4213,9 @@ elif mode == 'Files':
 		files = get_provider_module( ).Files( )
 	
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
-	st.divider( )
-	left, center, right = st.columns( [ 0.25,  3.5, 0.25 ] )
+	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
+		st.divider( )
 		list_method = None
 		if hasattr( files, 'list' ):
 			list_method = getattr( files, 'list' )
@@ -4301,738 +4289,740 @@ elif mode == 'Prompt Engineering':
 	PAGE_SIZE = 10
 	
 	st.subheader( '📝 Prompt Engineering', help=cfg.PROMPT_ENGINEERING )
-	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	
 	st.session_state.setdefault( 'pe_cascade_enabled', False )
-	st.checkbox( 'Cascade selection into System Instructions', key='pe_cascade_enabled' )
-	
-	# ------------------------------------------------------------------
-	# Session state
-	# ------------------------------------------------------------------
-	st.session_state.setdefault( 'pe_page', 1 )
-	st.session_state.setdefault( 'pe_search', '' )
-	st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
-	st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
-	st.session_state.setdefault( 'pe_selected_id', None )
-	st.session_state.setdefault( 'pe_name', '' )
-	st.session_state.setdefault( 'pe_text', '' )
-	st.session_state.setdefault( 'pe_version', 1 )
-	
-	# ------------------------------------------------------------------
-	# DB helpers
-	# ------------------------------------------------------------------
-	def get_conn( ):
-		return sqlite3.connect( cfg.DB_PATH )
-	
-	def reset_selection( ):
-		st.session_state.pe_selected_id = None
-		st.session_state.pe_name = ''
-		st.session_state.pe_text =''
-		st.session_state.pe_version = 1
-	
-	def load_prompt( pid: int ) -> None:
-		with get_conn( ) as conn:
-			cur = conn.execute(
-				f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
-				(pid,), )
-			row = cur.fetchone( )
-			if not row:
-				return
-			st.session_state.pe_name = row[ 0 ]
-			st.session_state.pe_text = row[ 1 ]
-			st.session_state.pe_version = row[ 2 ]
-	
-	# ------------------------------------------------------------------
-	# Filters
-	# ------------------------------------------------------------------
-	c1, c2, c3, c4 = st.columns( [ 4,  2, 2,  3 ] )
-	
-	with c1:
-		st.text_input( 'Search (Name/Text contains)', key='pe_search' )
-	
-	with c2:
-		st.selectbox( 'Sort by', [ 'PromptsId', 'Name', 'Version' ], key='pe_sort_col', )
-	
-	with c3:
-		st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir' )
-	
-	with c4:
-		st.markdown(
-			"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
-			unsafe_allow_html=True,
-		)
-		a1, a2, a3 = st.columns( [ 2, 1,  1 ] )
+	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+	with center:
+		st.checkbox( 'Cascade selection into System Instructions', key='pe_cascade_enabled' )
 		
-		with a1:
-			jump_id = st.number_input( 'Go to ID', min_value=1,
-				step=1, label_visibility='collapsed', )
+		# ------------------------------------------------------------------
+		# Session state
+		# ------------------------------------------------------------------
+		st.session_state.setdefault( 'pe_page', 1 )
+		st.session_state.setdefault( 'pe_search', '' )
+		st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
+		st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
+		st.session_state.setdefault( 'pe_selected_id', None )
+		st.session_state.setdefault( 'pe_name', '' )
+		st.session_state.setdefault( 'pe_text', '' )
+		st.session_state.setdefault( 'pe_version', 1 )
 		
-		with a2:
-			if st.button( 'Go' ):
-				st.session_state.pe_selected_id = int( jump_id )
-				load_prompt( int( jump_id ) )
+		# ------------------------------------------------------------------
+		# DB helpers
+		# ------------------------------------------------------------------
+		def get_conn( ):
+			return sqlite3.connect( cfg.DB_PATH )
 		
-		with a3:
-			st.button( 'Clear', on_click=reset_selection )
-	
-	# ------------------------------------------------------------------
-	# Load prompt table
-	# ------------------------------------------------------------------
-	where = ""
-	params = [ ]
-	
-	if st.session_state.pe_search:
-		where = 'WHERE Name LIKE ? OR Text LIKE ?'
-		s = f"%{st.session_state.pe_search}%"
-		params.extend( [ s, s ] )
-	
-	offset = (st.session_state.pe_page - 1) * PAGE_SIZE
-	query = f"""
-        SELECT PromptsId, Name, Text, Version, ID
-        FROM {TABLE}
-        {where}
-        ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
-        LIMIT {PAGE_SIZE} OFFSET {offset}
-    """
-	
-	count_query = f"SELECT COUNT(*) FROM {TABLE} {where}"
-	
-	with get_conn( ) as conn:
-		rows = conn.execute( query, params ).fetchall( )
-		total_rows = conn.execute( count_query, params ).fetchone( )[ 0 ]
-	
-	total_pages = max( 1, math.ceil( total_rows / PAGE_SIZE ) )
-	
-	# ------------------------------------------------------------------
-	# Prompt table
-	# ------------------------------------------------------------------
-	table_rows = [ ]
-	for r in rows:
-		table_rows.append(
-		{
-				'Selected': r[ 0 ] == st.session_state.pe_selected_id,
-				'PromptsId': r[ 0 ],
-				'Name': r[ 1 ],
-				'Version': r[ 3 ],
-				'ID': r[ 4 ],
-		} )
-	
-	edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
-		key="prompt_table", )
-	
-	# ------------------------------------------------------------------
-	# SELECTION PROCESSING (must run BEFORE widgets below)
-	# ------------------------------------------------------------------
-	selected = [ r for r in edited if isinstance( r, dict ) and r.get( 'Selected' ) ]
-	if len( selected ) == 1:
-		pid = int( selected[ 0 ][ 'PromptsId' ] )
-		if pid != st.session_state.pe_selected_id:
-			st.session_state.pe_selected_id = pid
-			load_prompt( pid )
-	
-	elif len( selected ) == 0:
-		reset_selection( )
-	
-	elif len( selected ) > 1:
-		st.warning( 'Select exactly one prompt row.' )
-	
-	# ------------------------------------------------------------------
-	# Paging
-	# ------------------------------------------------------------------
-	p1, p2, p3 = st.columns( [ 0.25,  3.5, 0.25 ] )
-	with p1:
-		if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
-			st.session_state.pe_page -= 1
-	
-	with p2:
-		st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
-	
-	with p3:
-		if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
-			st.session_state.pe_page += 1
-	
-	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	
-	# ------------------------------------------------------------------
-	# Edit Prompt
-	# ------------------------------------------------------------------
-	with st.expander( "🖊️ Edit Prompt", expanded=False ):
-		st.text_input(
-			"PromptsId",
-			value=st.session_state.pe_selected_id or "",
-			disabled=True,
-		)
+		def reset_selection( ):
+			st.session_state.pe_selected_id = None
+			st.session_state.pe_name = ''
+			st.session_state.pe_text =''
+			st.session_state.pe_version = 1
 		
-		st.text_input( 'Name', key='pe_name' )
-		st.text_area( 'Text', key='pe_text', height=260 )
-		st.number_input( 'Version', min_value=1, key='pe_version' )
-		c1, c2, c3 = st.columns( 3 )
+		def load_prompt( pid: int ) -> None:
+			with get_conn( ) as conn:
+				cur = conn.execute(
+					f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
+					(pid,), )
+				row = cur.fetchone( )
+				if not row:
+					return
+				st.session_state.pe_name = row[ 0 ]
+				st.session_state.pe_text = row[ 1 ]
+				st.session_state.pe_version = row[ 2 ]
+		
+		# ------------------------------------------------------------------
+		# Filters
+		# ------------------------------------------------------------------
+		c1, c2, c3, c4 = st.columns( [ 4,  2, 2,  3 ] )
 		
 		with c1:
-			if st.button( '💾 Save Changes'
-					if st.session_state.pe_selected_id
-					else '➕ Create Prompt' ):
-				with get_conn( ) as conn:
-					if st.session_state.pe_selected_id:
-						conn.execute(
-							f"""
-                            UPDATE {TABLE}
-                            SET Name=?, Text=?, Version=?
-                            WHERE PromptsId=?
-                            """,
-							(
-									st.session_state.pe_name,
-									st.session_state.pe_text,
-									st.session_state.pe_version,
-									st.session_state.pe_selected_id,
-							), )
-					else:
-						conn.execute(
-							f"""
-                            INSERT INTO {TABLE} (Name, Text, Version)
-                            VALUES (?, ?, ?)
-                            """,
-							(
-									st.session_state.pe_name,
-									st.session_state.pe_text,
-									st.session_state.pe_version,
-							),
-						)
-					conn.commit( )
-				
-				st.success( 'Saved.' )
-				reset_selection( )
+			st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 		
 		with c2:
-			if st.session_state.pe_selected_id and st.button( 'Delete' ):
-				with get_conn( ) as conn:
-					conn.execute(
-						f'DELETE FROM {TABLE} WHERE PromptsId=?',
-						(st.session_state.pe_selected_id,), )
-					conn.commit( )
-				reset_selection( )
-				st.success( 'Deleted.' )
+			st.selectbox( 'Sort by', [ 'PromptsId', 'Name', 'Version' ], key='pe_sort_col', )
 		
 		with c3:
-			st.button( '🧹 Clear Selection', on_click=reset_selection )
+			st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir' )
+		
+		with c4:
+			st.markdown(
+				"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
+				unsafe_allow_html=True, )
+			
+			a1, a2, a3 = st.columns( [ 2, 1,  1 ] )
+			
+			with a1:
+				jump_id = st.number_input( 'Go to ID', min_value=1,
+					step=1, label_visibility='collapsed', )
+			
+			with a2:
+				if st.button( 'Go' ):
+					st.session_state.pe_selected_id = int( jump_id )
+					load_prompt( int( jump_id ) )
+			
+			with a3:
+				st.button( 'Clear', on_click=reset_selection )
+		
+		# ------------------------------------------------------------------
+		# Load prompt table
+		# ------------------------------------------------------------------
+		where = ""
+		params = [ ]
+		
+		if st.session_state.pe_search:
+			where = 'WHERE Name LIKE ? OR Text LIKE ?'
+			s = f"%{st.session_state.pe_search}%"
+			params.extend( [ s, s ] )
+		
+		offset = (st.session_state.pe_page - 1) * PAGE_SIZE
+		query = f"""
+	        SELECT PromptsId, Name, Text, Version, ID
+	        FROM {TABLE}
+	        {where}
+	        ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
+	        LIMIT {PAGE_SIZE} OFFSET {offset}
+	    """
+		
+		count_query = f"SELECT COUNT(*) FROM {TABLE} {where}"
+		
+		with get_conn( ) as conn:
+			rows = conn.execute( query, params ).fetchall( )
+			total_rows = conn.execute( count_query, params ).fetchone( )[ 0 ]
+		
+		total_pages = max( 1, math.ceil( total_rows / PAGE_SIZE ) )
+		
+		# ------------------------------------------------------------------
+		# Prompt table
+		# ------------------------------------------------------------------
+		table_rows = [ ]
+		for r in rows:
+			table_rows.append(
+			{
+					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
+					'PromptsId': r[ 0 ],
+					'Name': r[ 1 ],
+					'Version': r[ 3 ],
+					'ID': r[ 4 ],
+			} )
+		
+		edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
+			key="prompt_table", )
+		
+		# ------------------------------------------------------------------
+		# SELECTION PROCESSING (must run BEFORE widgets below)
+		# ------------------------------------------------------------------
+		selected = [ r for r in edited if isinstance( r, dict ) and r.get( 'Selected' ) ]
+		if len( selected ) == 1:
+			pid = int( selected[ 0 ][ 'PromptsId' ] )
+			if pid != st.session_state.pe_selected_id:
+				st.session_state.pe_selected_id = pid
+				load_prompt( pid )
+		
+		elif len( selected ) == 0:
+			reset_selection( )
+		
+		elif len( selected ) > 1:
+			st.warning( 'Select exactly one prompt row.' )
+		
+		# ------------------------------------------------------------------
+		# Paging
+		# ------------------------------------------------------------------
+		p1, p2, p3 = st.columns( [ 0.25,  3.5, 0.25 ] )
+		with p1:
+			if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
+				st.session_state.pe_page -= 1
+		
+		with p2:
+			st.markdown( f"Page **{st.session_state.pe_page}** of **{total_pages}**" )
+		
+		with p3:
+			if st.button( "Next ▶" ) and st.session_state.pe_page < total_pages:
+				st.session_state.pe_page += 1
+		
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		
+		# ------------------------------------------------------------------
+		# Edit Prompt
+		# ------------------------------------------------------------------
+		with st.expander( "🖊️ Edit Prompt", expanded=False ):
+			st.text_input(
+				"PromptsId",
+				value=st.session_state.pe_selected_id or "",
+				disabled=True,
+			)
+			
+			st.text_input( 'Name', key='pe_name' )
+			st.text_area( 'Text', key='pe_text', height=260 )
+			st.number_input( 'Version', min_value=1, key='pe_version' )
+			c1, c2, c3 = st.columns( 3 )
+			
+			with c1:
+				if st.button( '💾 Save Changes'
+						if st.session_state.pe_selected_id
+						else '➕ Create Prompt' ):
+					with get_conn( ) as conn:
+						if st.session_state.pe_selected_id:
+							conn.execute(
+								f"""
+	                            UPDATE {TABLE}
+	                            SET Name=?, Text=?, Version=?
+	                            WHERE PromptsId=?
+	                            """,
+								(
+										st.session_state.pe_name,
+										st.session_state.pe_text,
+										st.session_state.pe_version,
+										st.session_state.pe_selected_id,
+								), )
+						else:
+							conn.execute(
+								f"""
+	                            INSERT INTO {TABLE} (Name, Text, Version)
+	                            VALUES (?, ?, ?)
+	                            """,
+								(
+										st.session_state.pe_name,
+										st.session_state.pe_text,
+										st.session_state.pe_version,
+								),
+							)
+						conn.commit( )
+					
+					st.success( 'Saved.' )
+					reset_selection( )
+			
+			with c2:
+				if st.session_state.pe_selected_id and st.button( 'Delete' ):
+					with get_conn( ) as conn:
+						conn.execute(
+							f'DELETE FROM {TABLE} WHERE PromptsId=?',
+							(st.session_state.pe_selected_id,), )
+						conn.commit( )
+					reset_selection( )
+					st.success( 'Deleted.' )
+			
+			with c3:
+				st.button( '🧹 Clear Selection', on_click=reset_selection )
 
 # ==============================================================================
 # EXPORT MODE
 # ==============================================================================
 elif mode == 'Data Export':
 	st.subheader( '📭  Export' )
-	st.divider( )
-	
-	# -----------------------------------
-	# Prompt export (System Instructions)
-	st.caption( 'System Prompt' )
-	
-	export_format = st.radio( 'Export Format', options=[ 'XML-Delimited', 'Markdown' ],
-		horizontal=True, help='Choose how system instructions should be exported.' )
-	prompt_text: str = st.session_state.get( 'system_prompt', '' )
-	
-	if export_format == 'Markdown':
-		try:
-			export_text: str = convert_xml( prompt_text )
-			export_filename: str = 'Buddy_Instructions.md'
-		except Exception as exc:
-			st.error( f'Markdown conversion failed: {exc}' )
-			export_text = ''
-			export_filename = ''
-	else:
-		export_text = prompt_text
-		export_filename = 'Buddy_System_Instructions.xml'
-	
-	st.download_button( label='Download System Instructions', data=export_text,
-		file_name=export_filename, mime='text/plain', disabled=not bool( export_text.strip( ) ) )
-	
-	# -----------------------------
-	# Existing chat history export
-	st.divider( )
-	st.markdown( '###### Chat History' )
-	
-	hist = load_history( )
-	md_history = '\n\n'.join(
-		[ f'**{role.upper( )}**\n{content}' for role, content in hist ]
-	)
-	
-	st.download_button( 'Download Chat History (Markdown)', md_history,
-		'buddy_chat.md', mime='text/markdown' )
-	
-	buf = io.BytesIO( )
-	pdf = canvas.Canvas( buf, pagesize=LETTER )
-	y = 750
-	
-	for role, content in hist:
-		pdf.drawString( 40, y, f'{role.upper( )}: {content[ :90 ]}' )
-		y -= 14
-		if y < 50:
-			pdf.showPage( )
-			y = 750
-	
-	pdf.save( )
-	
-	st.download_button( 'Download Chat History (PDF)', buf.getvalue( ),
-		'buddy_chat.pdf', mime='application/pdf' )
+	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+	with center:
+		st.divider( )
+		
+		# -----------------------------------
+		# Prompt export (System Instructions)
+		st.caption( 'System Prompt' )
+		
+		export_format = st.radio( 'Export Format', options=[ 'XML-Delimited', 'Markdown' ],
+			horizontal=True, help='Choose how system instructions should be exported.' )
+		prompt_text: str = st.session_state.get( 'system_prompt', '' )
+		
+		if export_format == 'Markdown':
+			try:
+				export_text: str = convert_xml( prompt_text )
+				export_filename: str = 'Buddy_Instructions.md'
+			except Exception as exc:
+				st.error( f'Markdown conversion failed: {exc}' )
+				export_text = ''
+				export_filename = ''
+		else:
+			export_text = prompt_text
+			export_filename = 'Buddy_System_Instructions.xml'
+		
+		st.download_button( label='Download System Instructions', data=export_text,
+			file_name=export_filename, mime='text/plain', disabled=not bool( export_text.strip( ) ) )
+		
+		# -----------------------------
+		# Existing chat history export
+		st.divider( )
+		st.markdown( '###### Chat History' )
+		
+		hist = load_history( )
+		md_history = '\n\n'.join(
+			[ f'**{role.upper( )}**\n{content}' for role, content in hist ]
+		)
+		
+		st.download_button( 'Download Chat History (Markdown)', md_history,
+			'buddy_chat.md', mime='text/markdown' )
+		
+		buf = io.BytesIO( )
+		pdf = canvas.Canvas( buf, pagesize=LETTER )
+		y = 750
+		
+		for role, content in hist:
+			pdf.drawString( 40, y, f'{role.upper( )}: {content[ :90 ]}' )
+			y -= 14
+			if y < 50:
+				pdf.showPage( )
+				y = 750
+		
+		pdf.save( )
+		
+		st.download_button( 'Download Chat History (PDF)', buf.getvalue( ),
+			'buddy_chat.pdf', mime='application/pdf' )
 
 # ==============================================================================
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
 	st.subheader( "🏛️ Data Management", help=cfg.DATA_MANAGEMENT )
-	tabs = st.tabs( [ "📥 Import", "🗂 Browse", "💉 CRUD", "📊 Explore", "🔎 Filter",
-			"🧮 Aggregate", "📈 Visualize", "⚙ Admin", "🧠 SQL" ] )
-	
-	st.divider( )
-	
-	tables = list_tables( )
-	if not tables:
-		st.info( "No tables available." )
-	else:
-		table = st.selectbox( "Table", tables )
-		df_full = read_table( table )
-	
-	# ------------------------------------------------------------------------------
-	# UPLOAD TAB
-	# ------------------------------------------------------------------------------
-	with tabs[ 0 ]:
-		uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
-		overwrite = st.checkbox( 'Overwrite existing tables', value=True )
-		if uploaded_file:
-			try:
-				sheets = pd.read_excel( uploaded_file, sheet_name=None )
-				with create_connection( ) as conn:
-					conn.execute( 'BEGIN' )
-					for sheet_name, df in sheets.items( ):
-						table_name = create_identifier( sheet_name )
-						if overwrite:
-							conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
-						
-						# --- Create Table ---
-						columns = [ ]
-						df.columns = [ create_identifier( c ) for c in df.columns ]
-						for col in df.columns:
-							sql_type = get_sqlite_type( df[ col ].dtype )
-							columns.append( f'"{col}" {sql_type}' )
-						
-						create_stmt = (
-								f'CREATE TABLE "{table_name}" '
-								f'({", ".join( columns )});'
-						)
-						
-						conn.execute( create_stmt )
-						
-						# --- Insert Data ---
-						placeholders = ", ".join( [ "?" ] * len( df.columns ) )
-						insert_stmt = (
-								f'INSERT INTO "{table_name}" '
-								f'VALUES ({placeholders});'
-						)
-						
-						conn.executemany(
-							insert_stmt,
-							df.where( pd.notnull( df ), None ).values.tolist( )
-						)
-					
-					conn.commit( )
-				
-				st.success( 'Import completed successfully (transaction committed).' )
-				st.rerun( )
-			
-			except Exception as e:
-				try:
-					conn.rollback( )
-				except:
-					pass
-				st.error( f'Import failed — transaction rolled back.\n\n{e}' )
+	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+	with center:
+		tabs = st.tabs( [ "📥 Import", "🗂 Browse", "💉 CRUD", "📊 Explore", "🔎 Filter",
+				"🧮 Aggregate", "📈 Visualize", "⚙ Admin", "🧠 SQL" ] )
 		
-	# ------------------------------------------------------------------------------
-	# BROWSE TAB
-	# ------------------------------------------------------------------------------
-	with tabs[ 1 ]:
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Table', tables, key='table_name' )
-			df = read_table( table )
-			st.dataframe( df, use_container_width=True )
-		else:
-			st.info( 'No tables available.' )
-
-	# ------------------------------------------------------------------------------
-	# CRUD (Schema-Aware)
-	# ------------------------------------------------------------------------------
-	with tabs[ 2 ]:
 		tables = list_tables( )
 		if not tables:
-			st.info( 'No tables available.' )
+			st.info( "No tables available." )
 		else:
-			table = st.selectbox( 'Select Table', tables, key='crud_table' )
-			df = read_table( table )
-			schema = create_schema( table )
-			
-			# Build type map
-			type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != 'rowid' }
-			
-			# ------------------------------------------------------------------
-			# INSERT
-			# ------------------------------------------------------------------
-			st.subheader( 'Insert Row' )
-			insert_data = { }
-			for column, col_type in type_map.items( ):
-				if 'INT' in col_type:
-					insert_data[ column ] = st.number_input( column, step=1, key=f'ins_{column}' )
-				
-				elif 'REAL' in col_type:
-					insert_data[
-						column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
-				
-				elif 'BOOL' in col_type:
-					insert_data[ column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
-				
-				else:
-					insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
-			
-			if st.button( 'Insert Row' ):
-				cols = list( insert_data.keys( ) )
-				placeholders = ', '.join( [ '?' ] * len( cols ) )
-				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
-				
-				with create_connection( ) as conn:
-					conn.execute( stmt, list( insert_data.values( ) ) )
-					conn.commit( )
-				
-				st.success( 'Row inserted.' )
-				st.rerun( )
-			
-			# ------------------------------------------------------------------
-			# UPDATE
-			# ------------------------------------------------------------------
-			st.subheader( 'Update Row' )
-			rowid = st.number_input( 'Row ID', min_value=1, step=1 )
-			update_data = { }
-			for column, col_type in type_map.items( ):
-				if 'INT' in col_type:
-					val = st.number_input( column, step=1, key=f'upd_{column}' )
-					update_data[ column ] = val
-				
-				elif 'REAL' in col_type:
-					val = st.number_input( column, format='%.6f', key=f'upd_{column}' )
-					update_data[ column ] = val
-				
-				elif 'BOOL' in col_type:
-					val = 1 if st.checkbox( column, key=f'upd_{column}' ) else 0
-					update_data[ column ] = val
-				
-				else:
-					val = st.text_input( column, key=f"upd_{column}" )
-					update_data[ column ] = val
-			
-			if st.button( 'Update Row' ):
-				set_clause = ', '.join( [ f'{c}=?' for c in update_data ] )
-				stmt = f'UPDATE {table} SET {set_clause} WHERE rowid=?;'
-				
-				with create_connection( ) as conn:
-					conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
-					conn.commit( )
-				
-				st.success( 'Row updated.' )
-				st.rerun( )
-			
-			# ------------------------------------------------------------------
-			# DELETE
-			# ------------------------------------------------------------------
-			st.subheader( 'Delete Row' )
-			delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
-			if st.button( 'Delete Row' ):
-				with create_connection( ) as conn:
-					conn.execute( f'DELETE FROM {table} WHERE rowid=?;', (delete_id,) )
-					conn.commit( )
-				
-				st.success( 'Row deleted.' )
-				st.rerun( )
-	
-	# ------------------------------------------------------------------------------
-	# EXPLORE
-	# ------------------------------------------------------------------------------
-	with tabs[ 3 ]:
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Table', tables, key='explore_table' )
-			page_size = st.slider( 'Rows per page', 10, 500, 50 )
-			page = st.number_input( 'Page', min_value=1, step=1 )
-			offset = (page - 1) * page_size
-			df_page = read_table( table, page_size, offset )
-			st.dataframe( df_page, use_container_width=True )
+			table = st.selectbox( "Table", tables )
+			df_full = read_table( table )
 		
-	# ------------------------------------------------------------------------------
-	# FILTER
-	# ------------------------------------------------------------------------------
-	with tabs[ 4 ]:
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Table', tables, key='filter_table' )
-			df = read_table( table )
-			column = st.selectbox( 'Column', df.columns )
-			value = st.text_input( 'Contains' )
-			if value:
-				df = df[ df[ column ].astype( str ).str.contains( value ) ]
-			st.dataframe( df, use_container_width=True )
-		
-	# ------------------------------------------------------------------------------
-	# AGGREGATE
-	# ------------------------------------------------------------------------------
-	with tabs[ 5 ]:
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Table', tables, key='agg_table' )
-			df = read_table( table )
-			numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
-			if numeric_cols:
-				col = st.selectbox( 'Column', numeric_cols )
-				agg = st.selectbox( 'Function', [ 'SUM',  'AVG', 'COUNT' ] )
-				if agg == 'SUM':
-					st.metric( 'Result', df[ col ].sum( ) )
-				elif agg == 'AVG':
-					st.metric( 'Result', df[ col ].mean( ) )
-				elif agg == 'COUNT':
-					st.metric( 'Result', df[ col ].count( ) )
-		
-	# ------------------------------------------------------------------------------
-	# VISUALIZE
-	# ------------------------------------------------------------------------------
-	with tabs[ 6 ]:
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Table', tables, key='viz_table' )
-			df = read_table( table )
-			numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
-			if numeric_cols:
-				col = st.selectbox( 'Column', numeric_cols )
-				fig = px.histogram( df, x=col )
-				st.plotly_chart( fig, use_container_width=True )
-		
-	# ------------------------------------------------------------------------------
-	# ADMIN
-	# ------------------------------------------------------------------------------
-	with tabs[ 7 ]:
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Table', tables, key='admin_table' )
-		
-		st.divider( )
-		
-		st.subheader( 'Data Profiling' )
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Select Table', tables, key='profile_table' )
-			if st.button( 'Generate Profile' ):
-				profile_df = create_profile_table( table )
-				st.dataframe( profile_df, use_container_width=True )
-				
-		st.subheader( 'Drop Table' )
-
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
-			
-			# Initialize confirmation state
-			if 'dm_confirm_drop' not in st.session_state:
-				st.session_state.dm_confirm_drop = False
-			
-			# Step 1: Initial Drop click
-			if st.button( 'Drop Table', key='admin_drop_button' ):
-				st.session_state.dm_confirm_drop = True
-			
-			# Step 2: Confirmation UI
-			if st.session_state.dm_confirm_drop:
-				st.warning( f'You are about to permanently delete table {table}. '
-					'This action cannot be undone.' )
-				
-				col1, col2 = st.columns( 2 )
-				
-				if col1.button( 'Confirm Drop', key='admin_confirm_drop' ):
-					try:
-						drop_table( table )
-						st.success( f'Table {table} dropped successfully.' )
-					except Exception as e:
-						st.error( f'Drop failed: {e}' )
-					
-					st.session_state.dm_confirm_drop = False
-					st.rerun( )
-				
-				if col2.button( 'Cancel', key='admin_cancel_drop' ):
-					st.session_state.dm_confirm_drop = False
-					st.rerun( )
-			
-			df = read_table( table )
-			col = st.selectbox( 'Create Index On', df.columns )
-			
-			if st.button( 'Create Index' ):
-				create_index( table, col )
-				st.success( 'Index created.' )
-				
-		st.divider( )
-		
-		st.subheader( 'Create Custom Table' )
-		new_table_name = st.text_input( 'Table Name' )
-		column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
-		columns = [ ]
-		for i in range( column_count ):
-			st.markdown( f'### Column {i + 1}' )
-			col_name = st.text_input( 'Column Name', key=f'col_name_{i}' )
-			col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ],
-				key=f'col_type_{i}' )
-			
-			not_null = st.checkbox( 'NOT NULL', key=f'not_null_{i}' )
-			primary_key = st.checkbox( 'PRIMARY KEY', key=f'pk_{i}' )
-			auto_inc = st.checkbox( 'AUTOINCREMENT (INTEGER only)', key=f'ai_{i}' )
-			
-			columns.append( {
-					'name': col_name,
-					'type': col_type,
-					'not_null': not_null,
-					'primary_key': primary_key,
-					'auto_increment': auto_inc } )
-		
-		if st.button( 'Create Table' ):
-			try:
-				create_custom_table( new_table_name, columns )
-				st.success( 'Table created successfully.' )
-				st.rerun( )
-			
-			except Exception as e:
-				st.error( f'Error: {e}' )
-		
-		st.divider( )
-		st.subheader( 'Schema Viewer' )
-		
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Select Table', tables, key='schema_view_table' )
-			
-			# Column schema
-			schema = create_schema( table )
-			schema_df = pd.DataFrame(
-				schema,
-				columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
-			
-			st.markdown( "### Columns" )
-			st.dataframe( schema_df, use_container_width=True )
-			
-			# Row count
-			with create_connection( ) as conn:
-				count = conn.execute(
-					f'SELECT COUNT(*) FROM "{table}"'
-				).fetchone( )[ 0 ]
-			
-			st.metric( "Row Count", f"{count:,}" )
-			
-			# Indexes
-			indexes = get_indexes( table )
-			if indexes:
-				idx_df = pd.DataFrame(
-					indexes,
-					columns=[ 'seq', 'name',  'unique',  'origin', 'partial' ]
-				)
-				st.markdown( "### Indexes" )
-				st.dataframe( idx_df, use_container_width=True )
-			else:
-				st.info( "No indexes defined." )
-		
-		st.divider( )
-		st.subheader( "ALTER TABLE Operations" )
-		
-		tables = list_tables( )
-		if tables:
-			table = st.selectbox( 'Select Table', tables, key='alter_table_select' )
-			operation = st.selectbox( 'Operation',
-				[ 'Add Column', 'Rename Column', 'Rename Table', 'Drop Column' ] )
-			
-			if operation == 'Add Column':
-				new_col = st.text_input( 'Column Name' )
-				col_type = st.selectbox( 'Column Type', [ 'INTEGER',  'REAL',  'TEXT' ] )
-				
-				if st.button( 'Add Column' ):
-					add_column( table, new_col, col_type )
-					st.success( 'Column added.' )
-					st.rerun( )
-			
-			elif operation == 'Rename Column':
-				schema = create_schema( table )
-				col_names = [ col[ 1 ] for col in schema ]
-				
-				old_col = st.selectbox( 'Column to Rename', col_names )
-				new_col = st.text_input( 'New Column Name' )
-				
-				if st.button( 'Rename Column' ):
-					dm_rename_column( table, old_col, new_col )
-					st.success( 'Column renamed.' )
-					st.rerun( )
-			
-			elif operation == 'Rename Table':
-				new_name = st.text_input( 'New Table Name' )
-				
-				if st.button( 'Rename Table' ):
-					dm_rename_table( table, new_name )
-					st.success( 'Table renamed.' )
-					st.rerun( )
-			
-			elif operation == 'Drop Column':
-				schema = create_schema( table )
-				col_names = [ col[ 1 ] for col in schema ]
-				
-				drop_col = st.selectbox( 'Column to Drop', col_names )
-				
-				if st.button( 'Drop Column' ):
-					drop_column( table, drop_col )
-					st.success( 'Column dropped.' )
-					st.rerun( )
-					
-	# ------------------------------------------------------------------------------
-	# SQL
-	# ------------------------------------------------------------------------------
-	with tabs[ 8 ]:
-		st.subheader( 'SQL Console' )
-		query = st.text_area( 'Enter SQL Query' )
-		if st.button( 'Run Query' ):
-			if not is_safe_query( query ):
-				st.error( 'Query blocked: Only read-only SELECT statements are allowed.' )
-			else:
+		# ------------------------------------------------------------------------------
+		# UPLOAD TAB
+		# ------------------------------------------------------------------------------
+		with tabs[ 0 ]:
+			uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
+			overwrite = st.checkbox( 'Overwrite existing tables', value=True )
+			if uploaded_file:
 				try:
-					start_time = time.perf_counter( )
+					sheets = pd.read_excel( uploaded_file, sheet_name=None )
 					with create_connection( ) as conn:
-						result = pd.read_sql_query( query, conn )
+						conn.execute( 'BEGIN' )
+						for sheet_name, df in sheets.items( ):
+							table_name = create_identifier( sheet_name )
+							if overwrite:
+								conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
+							
+							# --- Create Table ---
+							columns = [ ]
+							df.columns = [ create_identifier( c ) for c in df.columns ]
+							for col in df.columns:
+								sql_type = get_sqlite_type( df[ col ].dtype )
+								columns.append( f'"{col}" {sql_type}' )
+							
+							create_stmt = (
+									f'CREATE TABLE "{table_name}" '
+									f'({", ".join( columns )});'
+							)
+							
+							conn.execute( create_stmt )
+							
+							# --- Insert Data ---
+							placeholders = ", ".join( [ "?" ] * len( df.columns ) )
+							insert_stmt = (
+									f'INSERT INTO "{table_name}" '
+									f'VALUES ({placeholders});'
+							)
+							
+							conn.executemany(
+								insert_stmt,
+								df.where( pd.notnull( df ), None ).values.tolist( )
+							)
+						
+						conn.commit( )
 					
-					end_time = time.perf_counter( )
-					elapsed = end_time - start_time
-					
-					# ----------------------------------------------------------
-					# Display Results
-					# ----------------------------------------------------------
-					st.dataframe( result, use_container_width=True )
-					row_count = len( result )
-					
-					# ----------------------------------------------------------
-					# Execution Metrics
-					# ----------------------------------------------------------
-					col1, col2 = st.columns( 2 )
-					col1.metric( 'Rows Returned', f'{row_count:,}' )
-					col2.metric( 'Execution Time (seconds)', f'{elapsed:.6f}' )
-					
-					# Optional slow query warning
-					if elapsed > 2.0:
-						st.warning( 'Slow query detected (> 2 seconds). Consider indexing.' )
-					
-					# ----------------------------------------------------------
-					# Download
-					# ----------------------------------------------------------
-					if not result.empty:
-						csv = result.to_csv( index=False ).encode( 'utf-8' )
-						st.download_button( 'Download CSV', csv,
-							'query_results.csv', 'text/csv' )
+					st.success( 'Import completed successfully (transaction committed).' )
+					st.rerun( )
 				
 				except Exception as e:
-					st.error( f'Execution failed: {e}' )
+					try:
+						conn.rollback( )
+					except:
+						pass
+					st.error( f'Import failed — transaction rolled back.\n\n{e}' )
+			
+		# ------------------------------------------------------------------------------
+		# BROWSE TAB
+		# ------------------------------------------------------------------------------
+		with tabs[ 1 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='table_name' )
+				df = read_table( table )
+				st.dataframe( df, use_container_width=True )
+			else:
+				st.info( 'No tables available.' )
+	
+		# ------------------------------------------------------------------------------
+		# CRUD (Schema-Aware)
+		# ------------------------------------------------------------------------------
+		with tabs[ 2 ]:
+			tables = list_tables( )
+			if not tables:
+				st.info( 'No tables available.' )
+			else:
+				table = st.selectbox( 'Select Table', tables, key='crud_table' )
+				df = read_table( table )
+				schema = create_schema( table )
+				
+				# Build type map
+				type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != 'rowid' }
+				
+				# ------------------------------------------------------------------
+				# INSERT
+				# ------------------------------------------------------------------
+				st.subheader( 'Insert Row' )
+				insert_data = { }
+				for column, col_type in type_map.items( ):
+					if 'INT' in col_type:
+						insert_data[ column ] = st.number_input( column, step=1, key=f'ins_{column}' )
+					
+					elif 'REAL' in col_type:
+						insert_data[
+							column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
+					
+					elif 'BOOL' in col_type:
+						insert_data[ column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
+					
+					else:
+						insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
+				
+				if st.button( 'Insert Row' ):
+					cols = list( insert_data.keys( ) )
+					placeholders = ', '.join( [ '?' ] * len( cols ) )
+					stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+					
+					with create_connection( ) as conn:
+						conn.execute( stmt, list( insert_data.values( ) ) )
+						conn.commit( )
+					
+					st.success( 'Row inserted.' )
+					st.rerun( )
+				
+				# ------------------------------------------------------------------
+				# UPDATE
+				# ------------------------------------------------------------------
+				st.subheader( 'Update Row' )
+				rowid = st.number_input( 'Row ID', min_value=1, step=1 )
+				update_data = { }
+				for column, col_type in type_map.items( ):
+					if 'INT' in col_type:
+						val = st.number_input( column, step=1, key=f'upd_{column}' )
+						update_data[ column ] = val
+					
+					elif 'REAL' in col_type:
+						val = st.number_input( column, format='%.6f', key=f'upd_{column}' )
+						update_data[ column ] = val
+					
+					elif 'BOOL' in col_type:
+						val = 1 if st.checkbox( column, key=f'upd_{column}' ) else 0
+						update_data[ column ] = val
+					
+					else:
+						val = st.text_input( column, key=f"upd_{column}" )
+						update_data[ column ] = val
+				
+				if st.button( 'Update Row' ):
+					set_clause = ', '.join( [ f'{c}=?' for c in update_data ] )
+					stmt = f'UPDATE {table} SET {set_clause} WHERE rowid=?;'
+					
+					with create_connection( ) as conn:
+						conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
+						conn.commit( )
+					
+					st.success( 'Row updated.' )
+					st.rerun( )
+				
+				# ------------------------------------------------------------------
+				# DELETE
+				# ------------------------------------------------------------------
+				st.subheader( 'Delete Row' )
+				delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
+				if st.button( 'Delete Row' ):
+					with create_connection( ) as conn:
+						conn.execute( f'DELETE FROM {table} WHERE rowid=?;', (delete_id,) )
+						conn.commit( )
+					
+					st.success( 'Row deleted.' )
+					st.rerun( )
+		
+		# ------------------------------------------------------------------------------
+		# EXPLORE
+		# ------------------------------------------------------------------------------
+		with tabs[ 3 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='explore_table' )
+				page_size = st.slider( 'Rows per page', 10, 500, 50 )
+				page = st.number_input( 'Page', min_value=1, step=1 )
+				offset = (page - 1) * page_size
+				df_page = read_table( table, page_size, offset )
+				st.dataframe( df_page, use_container_width=True )
+			
+		# ------------------------------------------------------------------------------
+		# FILTER
+		# ------------------------------------------------------------------------------
+		with tabs[ 4 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='filter_table' )
+				df = read_table( table )
+				column = st.selectbox( 'Column', df.columns )
+				value = st.text_input( 'Contains' )
+				if value:
+					df = df[ df[ column ].astype( str ).str.contains( value ) ]
+				st.dataframe( df, use_container_width=True )
+			
+		# ------------------------------------------------------------------------------
+		# AGGREGATE
+		# ------------------------------------------------------------------------------
+		with tabs[ 5 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='agg_table' )
+				df = read_table( table )
+				numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+				if numeric_cols:
+					col = st.selectbox( 'Column', numeric_cols )
+					agg = st.selectbox( 'Function', [ 'SUM',  'AVG', 'COUNT' ] )
+					if agg == 'SUM':
+						st.metric( 'Result', df[ col ].sum( ) )
+					elif agg == 'AVG':
+						st.metric( 'Result', df[ col ].mean( ) )
+					elif agg == 'COUNT':
+						st.metric( 'Result', df[ col ].count( ) )
+			
+		# ------------------------------------------------------------------------------
+		# VISUALIZE
+		# ------------------------------------------------------------------------------
+		with tabs[ 6 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='viz_table' )
+				df = read_table( table )
+				numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+				if numeric_cols:
+					col = st.selectbox( 'Column', numeric_cols )
+					fig = px.histogram( df, x=col )
+					st.plotly_chart( fig, use_container_width=True )
+			
+		# ------------------------------------------------------------------------------
+		# ADMIN
+		# ------------------------------------------------------------------------------
+		with tabs[ 7 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='admin_table' )
+			
+			st.divider( )
+			
+			st.subheader( 'Data Profiling' )
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table', tables, key='profile_table' )
+				if st.button( 'Generate Profile' ):
+					profile_df = create_profile_table( table )
+					st.dataframe( profile_df, use_container_width=True )
+					
+			st.subheader( 'Drop Table' )
+	
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
+				
+				# Initialize confirmation state
+				if 'dm_confirm_drop' not in st.session_state:
+					st.session_state.dm_confirm_drop = False
+				
+				# Step 1: Initial Drop click
+				if st.button( 'Drop Table', key='admin_drop_button' ):
+					st.session_state.dm_confirm_drop = True
+				
+				# Step 2: Confirmation UI
+				if st.session_state.dm_confirm_drop:
+					st.warning( f'You are about to permanently delete table {table}. '
+						'This action cannot be undone.' )
+					
+					col1, col2 = st.columns( 2 )
+					
+					if col1.button( 'Confirm Drop', key='admin_confirm_drop' ):
+						try:
+							drop_table( table )
+							st.success( f'Table {table} dropped successfully.' )
+						except Exception as e:
+							st.error( f'Drop failed: {e}' )
+						
+						st.session_state.dm_confirm_drop = False
+						st.rerun( )
+					
+					if col2.button( 'Cancel', key='admin_cancel_drop' ):
+						st.session_state.dm_confirm_drop = False
+						st.rerun( )
+				
+				df = read_table( table )
+				col = st.selectbox( 'Create Index On', df.columns )
+				
+				if st.button( 'Create Index' ):
+					create_index( table, col )
+					st.success( 'Index created.' )
+					
+			st.divider( )
+			
+			st.subheader( 'Create Custom Table' )
+			new_table_name = st.text_input( 'Table Name' )
+			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
+			columns = [ ]
+			for i in range( column_count ):
+				st.markdown( f'### Column {i + 1}' )
+				col_name = st.text_input( 'Column Name', key=f'col_name_{i}' )
+				col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ],
+					key=f'col_type_{i}' )
+				
+				not_null = st.checkbox( 'NOT NULL', key=f'not_null_{i}' )
+				primary_key = st.checkbox( 'PRIMARY KEY', key=f'pk_{i}' )
+				auto_inc = st.checkbox( 'AUTOINCREMENT (INTEGER only)', key=f'ai_{i}' )
+				
+				columns.append( {
+						'name': col_name,
+						'type': col_type,
+						'not_null': not_null,
+						'primary_key': primary_key,
+						'auto_increment': auto_inc } )
+			
+			if st.button( 'Create Table' ):
+				try:
+					create_custom_table( new_table_name, columns )
+					st.success( 'Table created successfully.' )
+					st.rerun( )
+				
+				except Exception as e:
+					st.error( f'Error: {e}' )
+			
+			st.divider( )
+			st.subheader( 'Schema Viewer' )
+			
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table', tables, key='schema_view_table' )
+				
+				# Column schema
+				schema = create_schema( table )
+				schema_df = pd.DataFrame(
+					schema,
+					columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
+				
+				st.markdown( "### Columns" )
+				st.dataframe( schema_df, use_container_width=True )
+				
+				# Row count
+				with create_connection( ) as conn:
+					count = conn.execute(
+						f'SELECT COUNT(*) FROM "{table}"'
+					).fetchone( )[ 0 ]
+				
+				st.metric( "Row Count", f"{count:,}" )
+				
+				# Indexes
+				indexes = get_indexes( table )
+				if indexes:
+					idx_df = pd.DataFrame(
+						indexes,
+						columns=[ 'seq', 'name',  'unique',  'origin', 'partial' ]
+					)
+					st.markdown( "### Indexes" )
+					st.dataframe( idx_df, use_container_width=True )
+				else:
+					st.info( "No indexes defined." )
+			
+			st.divider( )
+			st.subheader( "ALTER TABLE Operations" )
+			
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table', tables, key='alter_table_select' )
+				operation = st.selectbox( 'Operation',
+					[ 'Add Column', 'Rename Column', 'Rename Table', 'Drop Column' ] )
+				
+				if operation == 'Add Column':
+					new_col = st.text_input( 'Column Name' )
+					col_type = st.selectbox( 'Column Type', [ 'INTEGER',  'REAL',  'TEXT' ] )
+					
+					if st.button( 'Add Column' ):
+						add_column( table, new_col, col_type )
+						st.success( 'Column added.' )
+						st.rerun( )
+				
+				elif operation == 'Rename Column':
+					schema = create_schema( table )
+					col_names = [ col[ 1 ] for col in schema ]
+					
+					old_col = st.selectbox( 'Column to Rename', col_names )
+					new_col = st.text_input( 'New Column Name' )
+					
+					if st.button( 'Rename Column' ):
+						dm_rename_column( table, old_col, new_col )
+						st.success( 'Column renamed.' )
+						st.rerun( )
+				
+				elif operation == 'Rename Table':
+					new_name = st.text_input( 'New Table Name' )
+					
+					if st.button( 'Rename Table' ):
+						dm_rename_table( table, new_name )
+						st.success( 'Table renamed.' )
+						st.rerun( )
+				
+				elif operation == 'Drop Column':
+					schema = create_schema( table )
+					col_names = [ col[ 1 ] for col in schema ]
+					
+					drop_col = st.selectbox( 'Column to Drop', col_names )
+					
+					if st.button( 'Drop Column' ):
+						drop_column( table, drop_col )
+						st.success( 'Column dropped.' )
+						st.rerun( )
+						
+		# ------------------------------------------------------------------------------
+		# SQL
+		# ------------------------------------------------------------------------------
+		with tabs[ 8 ]:
+			st.subheader( 'SQL Console' )
+			query = st.text_area( 'Enter SQL Query' )
+			if st.button( 'Run Query' ):
+				if not is_safe_query( query ):
+					st.error( 'Query blocked: Only read-only SELECT statements are allowed.' )
+				else:
+					try:
+						start_time = time.perf_counter( )
+						with create_connection( ) as conn:
+							result = pd.read_sql_query( query, conn )
+						
+						end_time = time.perf_counter( )
+						elapsed = end_time - start_time
+						
+						# ----------------------------------------------------------
+						# Display Results
+						# ----------------------------------------------------------
+						st.dataframe( result, use_container_width=True )
+						row_count = len( result )
+						
+						# ----------------------------------------------------------
+						# Execution Metrics
+						# ----------------------------------------------------------
+						col1, col2 = st.columns( 2 )
+						col1.metric( 'Rows Returned', f'{row_count:,}' )
+						col2.metric( 'Execution Time (seconds)', f'{elapsed:.6f}' )
+						
+						# Optional slow query warning
+						if elapsed > 2.0:
+							st.warning( 'Slow query detected (> 2 seconds). Consider indexing.' )
+						
+						# ----------------------------------------------------------
+						# Download
+						# ----------------------------------------------------------
+						if not result.empty:
+							csv = result.to_csv( index=False ).encode( 'utf-8' )
+							st.download_button( 'Download CSV', csv,
+								'query_results.csv', 'text/csv' )
+					
+					except Exception as e:
+						st.error( f'Execution failed: {e}' )
 
 # ======================================================================================
 # FOOTER — SECTION
