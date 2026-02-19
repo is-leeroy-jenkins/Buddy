@@ -4062,7 +4062,7 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
-	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
+	st.subheader( '📘 Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = st.session_state.get( 'files' )
@@ -4075,12 +4075,12 @@ elif mode == 'Document Q&A':
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	left, center, right = st.columns( [ 0.5, 0.9, 0.5 ] )
 	with center:
 		# ------------------------------------------------------------------
 		# Expander — DocQA Inference Parameters
 		# ------------------------------------------------------------------
-		with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
+		with st.expander( '🧠 Inference Settings', expanded=True, width='stretch' ):
 			stores_c1, stores_c2, stores_c3, stores_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 				border=True, gap='medium' )
 			
@@ -4122,7 +4122,7 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		# Expander — DocQA System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( '💻 System Instructions', expanded=False, width='stretch' ):
+		with st.expander( '💻 System Instructions', expanded=True, width='stretch' ):
 			left_inst, right_inst = st.columns( [ 0.6, 0.4 ], vertical_alignment='center', border=True )
 			
 			with left_inst:
