@@ -3730,335 +3730,333 @@ elif mode == 'Vector Stores':
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	vec_left, vec_center, vec_right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with vec_center:
-		if provider_name == 'Grok':
-			provider_module = get_provider_module( )
-			collector = provider_module.VectorStores( )
+	if provider_name == 'Grok':
+		provider_module = get_provider_module( )
+		collector = provider_module.VectorStores( )
+		
+		# --------------------------------------------------------------
+		# Local mapping (if maintained by wrapper)
+		# --------------------------------------------------------------
+		vs_map = getattr( collector, 'collections', None )
+		if vs_map and isinstance( vs_map, dict ):
+			st.markdown( '**Known Collections (local mapping)**' )
+			for name, vid in vs_map.items( ):
+				st.write( f"- **{name}** — `{vid}`" )
+			st.markdown( "---" )
+		
+		# --------------------------------------------------------------
+		# Create Collection
+		# --------------------------------------------------------------
+		with st.expander( 'Create:', expanded=False ):
+			new_store_name = st.text_input( 'Enter Collection Name' )
+			if st.button( '➕ Create Collection', key='create_collection' ):
+				if not new_store_name:
+					st.warning( 'Enter a Collection Name.' )
+				else:
+					try:
+						if hasattr( collector, "create" ):
+							res = provider_module.create( new_store_name )
+							st.success( f"Create call submitted for '{new_store_name}'." )
+						else:
+							st.warning( 'create() not available on Grok provider.' )
+					except Exception as exc:
+						st.error( f'Create collection failed: {exc}' )
+		
+		# --------------------------------------------------------------
+		# Discover collections ( API fallback )
+		# --------------------------------------------------------------
+		options: List[ tuple ] = [ ]
+		if vs_map and isinstance( vs_map, dict ):
+			options = list( vs_map.items( ) )
+		
+		if not options:
+			try:
+				client = getattr( collector, 'client', None )
+				if ( client and hasattr( client, 'collections' )
+						and hasattr( client.collections, 'list' ) ):
+					api_list = client.collections.list( )
+					temp: List[ tuple ] = [ ]
+					for item in getattr( api_list, 'data', [ ] ) or api_list:
+						nm = getattr( item, 'name', None ) or (
+								item.get( 'name' ) if isinstance( item, dict ) else None )
+						vid = getattr( item, 'id', None ) or (
+								item.get( 'id' ) if isinstance( item, dict ) else None )
+						if nm and vid:
+							temp.append( (nm, vid) )
+					if temp:
+						options = temp
+			except Exception:
+				options = [ ]
+		
+		# --------------------------------------------------------------
+		# Select / Retrieve / Delete
+		# --------------------------------------------------------------
+		if options:
+			names = [ f"{n} — {i}" for n, i in options ]
+			sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
 			
-			# --------------------------------------------------------------
-			# Local mapping (if maintained by wrapper)
-			# --------------------------------------------------------------
-			vs_map = getattr( collector, 'collections', None )
-			if vs_map and isinstance( vs_map, dict ):
-				st.markdown( '**Known Collections (local mapping)**' )
-				for name, vid in vs_map.items( ):
-					st.write( f"- **{name}** — `{vid}`" )
-				st.markdown( "---" )
+			sel_id: Optional[ str ] = None
+			for n, i in options:
+				if f"{n} — {i}" == sel:
+					sel_id = i
+					break
 			
-			# --------------------------------------------------------------
-			# Create Collection
-			# --------------------------------------------------------------
-			with st.expander( 'Create:', expanded=False ):
-				new_store_name = st.text_input( 'Enter Collection Name' )
-				if st.button( '➕ Create Collection', key='create_collection' ):
-					if not new_store_name:
-						st.warning( 'Enter a Collection Name.' )
+			c1, c2 = st.columns( [ 1,  1 ] )
+			with c1:
+				if st.button( 'Retrieve Collection', key='retrieve_collection' ):
+					if not sel_id:
+						st.warning( 'No Collection Selected.' )
 					else:
 						try:
-							if hasattr( collector, "create" ):
-								res = provider_module.create( new_store_name )
-								st.success( f"Create call submitted for '{new_store_name}'." )
+							client = getattr( collector, 'client', None )
+							if ( client and hasattr( client, 'collections' )
+									and hasattr( client.collections, 'retrieve' ) ):
+								vs = client.collections.retrieve( collection_id=sel_id )
+								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
 							else:
-								st.warning( 'create() not available on Grok provider.' )
+								st.warning( 'collections.retrieve() not available.' )
 						except Exception as exc:
-							st.error( f'Create collection failed: {exc}' )
+							st.error( f'retrieve() failed: {exc}' )
 			
-			# --------------------------------------------------------------
-			# Discover collections ( API fallback )
-			# --------------------------------------------------------------
-			options: List[ tuple ] = [ ]
-			if vs_map and isinstance( vs_map, dict ):
-				options = list( vs_map.items( ) )
-			
-			if not options:
-				try:
-					client = getattr( collector, 'client', None )
-					if ( client and hasattr( client, 'collections' )
-							and hasattr( client.collections, 'list' ) ):
-						api_list = client.collections.list( )
-						temp: List[ tuple ] = [ ]
-						for item in getattr( api_list, 'data', [ ] ) or api_list:
-							nm = getattr( item, 'name', None ) or (
-									item.get( 'name' ) if isinstance( item, dict ) else None )
-							vid = getattr( item, 'id', None ) or (
-									item.get( 'id' ) if isinstance( item, dict ) else None )
-							if nm and vid:
-								temp.append( (nm, vid) )
-						if temp:
-							options = temp
-				except Exception:
-					options = [ ]
-			
-			# --------------------------------------------------------------
-			# Select / Retrieve / Delete
-			# --------------------------------------------------------------
-			if options:
-				names = [ f"{n} — {i}" for n, i in options ]
-				sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
-				
-				sel_id: Optional[ str ] = None
-				for n, i in options:
-					if f"{n} — {i}" == sel:
-						sel_id = i
-						break
-				
-				c1, c2 = st.columns( [ 1,  1 ] )
-				with c1:
-					if st.button( 'Retrieve Collection', key='retrieve_collection' ):
-						if not sel_id:
-							st.warning( 'No Collection Selected.' )
-						else:
-							try:
-								client = getattr( collector, 'client', None )
-								if ( client and hasattr( client, 'collections' )
-										and hasattr( client.collections, 'retrieve' ) ):
-									vs = client.collections.retrieve( collection_id=sel_id )
-									st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
-								else:
-									st.warning( 'collections.retrieve() not available.' )
-							except Exception as exc:
-								st.error( f'retrieve() failed: {exc}' )
-				
-				with c2:
-					if st.button( '❌ Delete Collection',  key='delete_collection' ):
-						if not sel_id:
-							st.warning( 'No collection selected.' )
-						else:
-							try:
-								client = getattr( collector, 'client', None )
-								if ( client and hasattr( client, 'collections' )
-										and hasattr( client.collections, 'delete' ) ):
-									res = client.collections.delete( collection_id=sel_id )
-									st.success( f'Delete returned: {res}' )
-								else:
-									st.warning( 'collections.delete() not available.' )
-							except Exception as exc:
-								st.error( f'Delete failed: {exc}' )
-					else:
-						st.info(
-							'No collections discovered. Create one or confirm '
-							'collections exist for this account.' )
-							
-		elif provider_name == 'Gemini':
-			provider_module = get_provider_module( )
-			searcher = provider_module.VectorStores( )
-			st.divider( )
-			
-			# --------------------------------------------------------------
-			# Local mapping (if maintained by wrapper)
-			# --------------------------------------------------------------
-			vs_map = getattr( searcher, 'collections', None )
-			if vs_map and isinstance( vs_map, dict ):
-				st.markdown( 'Local File Search Stores' )
-				for name, vid in vs_map.items( ):
-					st.write( f'- **{name}** — {vid}' )
-				st.divider( )
-			
-			# --------------------------------------------------------------
-			# Create File Search Store
-			# --------------------------------------------------------------
-			with st.expander( 'Create:', expanded=False ):
-				new_store_name = st.text_input( 'New File Search Store name' )
-				if st.button( '➕ Create File Search Store' ):
-					if not new_store_name:
-						st.warning( 'Enter a File Search Store Name.' )
+			with c2:
+				if st.button( '❌ Delete Collection',  key='delete_collection' ):
+					if not sel_id:
+						st.warning( 'No collection selected.' )
 					else:
 						try:
-							if hasattr( provider_module, 'create' ):
-								res = provider_module.create( new_store_name )
-								st.success( f"Create call submitted for '{new_store_name}'." )
+							client = getattr( collector, 'client', None )
+							if ( client and hasattr( client, 'collections' )
+									and hasattr( client.collections, 'delete' ) ):
+								res = client.collections.delete( collection_id=sel_id )
+								st.success( f'Delete returned: {res}' )
 							else:
-								st.warning( 'create() not available on Gemini provider.' )
+								st.warning( 'collections.delete() not available.' )
 						except Exception as exc:
-							st.error( f'Create store failed: {exc}' )
-			
-			# --------------------------------------------------------------
-			# Discover file search stores (local → API fallback)
-			# --------------------------------------------------------------
-			options: List[ tuple ] = [ ]
-			if vs_map and isinstance( vs_map, dict ):
-				options = list( vs_map.items( ) )
-			
-			if not options:
-				try:
-					client = getattr( searcher, 'client', None )
-					if ( client and hasattr( client, 'file_search_stores' )
-							and hasattr( client.file_search_stores, 'list' ) ):
-						api_list = client.file_search_stores.list( )
-						temp: List[ tuple ] = [ ]
-						for item in getattr( api_list, 'data', [ ] ) or api_list:
-							nm = getattr( item, 'name', None ) or (
-									item.get( 'name' ) if isinstance( item, dict ) else None )
-							vid = getattr( item, 'id', None ) or (
-									item.get( 'id' ) if isinstance( item, dict ) else None )
-							if nm and vid:
-								temp.append( (nm, vid) )
-						if temp:
-							options = temp
-				except Exception:
-					options = [ ]
-			
-			# --------------------------------------------------------------
-			# Select / Retrieve / Delete
-			# --------------------------------------------------------------
-			if options:
-				names = [ f'{n} — {i}' for n, i in options ]
-				sel = st.selectbox( 'Select a File Search Store', options=names )
-				
-				sel_id: Optional[ str ] = None
-				for n, i in options:
-					if f'{n} — {i}' == sel:
-						sel_id = i
-						break
-				
-				c1, c2 = st.columns( [ 1,  1 ] )
-				
-				with c1:
-					if st.button( 'Retrieve File Store' ):
-						if not sel_id:
-							st.warning( 'No file search store selected.' )
-						else:
-							try:
-								client = getattr( searcher, 'client', None )
-								if ( client and hasattr( client, 'file_search_stores' )
-										and hasattr( client.file_search_stores, 'retrieve' ) ):
-									vs = client.file_search_stores.retrieve(
-										file_search_store_id=sel_id )
-									st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
-								else:
-									st.warning( 'file_search_stores.retrieve() not available.' )
-							except Exception as exc:
-								st.error( f'retrieve() failed: {exc}' )
-				
-				with c2:
-					if st.button( '❌ Delete File Store' ):
-						if not sel_id:
-							st.warning( 'No file search store selected.' )
-						else:
-							try:
-								client = getattr( searcher, 'client', None )
-								if ( client and hasattr( client, 'file_search_stores' )
-										and hasattr( client.file_search_stores, 'delete' ) ):
-									res = client.file_search_stores.delete(
-										file_search_store_id=sel_id )
-									st.success( f'Delete returned: {res}' )
-								else:
-									st.warning( 'file_search_stores.delete() not available.' )
-							except Exception as exc:
-								st.error( f'Delete failed: {exc}' )
-					else:
-						st.info( 'No file search stores discovered' )
-				
-		elif provider_name == 'GPT':
-			provider_module = get_provider_module( )
-			vector = provider_module.VectorStores( )
-			st.divider( )
-			
-			# --------------------------------------------------------------
-			# Local mapping
-			# --------------------------------------------------------------
-			vs_map = getattr( vector, 'collections', None )
-			st.caption( 'Store Management')
-			# ------------------------------------------------------------------
-			# Main Chat UI
-			# ------------------------------------------------------------------
-			left, center, right = st.columns( [ 0.025, 0.95, 0.055 ] )
-			with center:
-				stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
-				with stores_left:
-					# --------------------------------------------------------------
-					# Expander - Create Vector Store
-					# --------------------------------------------------------------
-					with st.expander( 'Create:', expanded=False ):
-						new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
-						if st.button( '➕ Create Store', key='create_store' ):
-							if not new_store_name:
-								st.warning( 'Enter a Vector Store Name.' )
-							else:
-								try:
-									if hasattr( vector, 'create' ):
-										res = vector.create( new_store_name )
-										st.success( f"Create call submitted for '{new_store_name}'." )
-									else:
-										st.warning( 'create() not available on VectorStores wrapper.' )
-								except Exception as exc:
-									st.error( f'Create store failed: {exc}' )
-				
-				with stores_right:
-					# --------------------------------------------------------------
-					# Discover vector stores
-					# --------------------------------------------------------------
-					with st.expander( 'Retreive:', expanded=False ):
-						options: List[ tuple ] = [ ]
-						if vs_map and isinstance( vs_map, dict ):
-							options = list( vs_map.items( ) )
+							st.error( f'Delete failed: {exc}' )
+				else:
+					st.info(
+						'No collections discovered. Create one or confirm '
+						'collections exist for this account.' )
 						
-						if not options:
-							try:
-								openai_client = st.session_state.get( 'openai_client' )
-								if ( openai_client and hasattr( openai_client, 'vector_stores' )
-										and hasattr( openai_client.vector_stores, 'list' ) ):
-									api_list = openai_client.vector_stores.list( )
-									temp: List[ tuple ] = [ ]
-									for item in getattr( api_list, 'data', [ ] ) or api_list:
-										nm = getattr( item, 'name', None ) or (
-												item.get( 'name' ) if isinstance( item, dict ) else None )
-										vid = getattr( item, 'id', None ) or (
-												item.get( 'id' ) if isinstance( item, dict ) else None )
-										if nm and vid:
-											temp.append( (nm, vid) )
-									if temp:
-										options = temp
-							except Exception:
-								options = [ ]
-							
-						# --------------------------------------------------------------
-						# Select / Retrieve / Delete
-						# --------------------------------------------------------------
-						if options:
-							names = [ f'{n} — {i}' for n, i in options ]
-							sel = st.selectbox( 'Select Vector Store', options=names,
-								key='select_vectorstore' )
-							
-							sel_id: Optional[ str ] = None
-							for n, i in options:
-								if f'{n} — {i}' == sel:
-									sel_id = i
-									break
-							
-							c1, c2 = st.columns( [ 1, 1 ] )
-							
-							with c1:
-								if st.button( 'Retrieve Store', key='retrieve_store' ):
-									if not sel_id:
-										st.warning( 'No vector store selected.' )
-									else:
-										try:
-											openai_client = st.session_state[ 'openai_client' ]
-											vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
-											st.write( 'Name:', vs.name)
-											st.write( 'Files:', vs.file_counts )
-											st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
-										except Exception as exc:
-											st.error( f'retrieve() failed: {exc}' )
-							
-							with c2:
-								if st.button( '❌ Delete', key='delete_store' ):
-									if not sel_id:
-										st.warning( 'No vector store selected.' )
-									else:
-										try:
-											openai_client = st.session_state.get( 'openai_client' )
-											if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
-												res = openai_client.vector_stores.delete( vector_store_id=sel_id )
-												st.success( f'Delete returned: {res}' )
-											else:
-												st.warning( 'vector_stores.delete() not available.' )
-										except Exception as exc:
-											st.error( f'Delete failed: {exc}' )
+	elif provider_name == 'Gemini':
+		provider_module = get_provider_module( )
+		searcher = provider_module.VectorStores( )
+		st.divider( )
+		
+		# --------------------------------------------------------------
+		# Local mapping (if maintained by wrapper)
+		# --------------------------------------------------------------
+		vs_map = getattr( searcher, 'collections', None )
+		if vs_map and isinstance( vs_map, dict ):
+			st.markdown( 'Local File Search Stores' )
+			for name, vid in vs_map.items( ):
+				st.write( f'- **{name}** — {vid}' )
+			st.divider( )
+		
+		# --------------------------------------------------------------
+		# Create File Search Store
+		# --------------------------------------------------------------
+		with st.expander( 'Create:', expanded=False ):
+			new_store_name = st.text_input( 'New File Search Store name' )
+			if st.button( '➕ Create File Search Store' ):
+				if not new_store_name:
+					st.warning( 'Enter a File Search Store Name.' )
+				else:
+					try:
+						if hasattr( provider_module, 'create' ):
+							res = provider_module.create( new_store_name )
+							st.success( f"Create call submitted for '{new_store_name}'." )
 						else:
-							st.info( 'No vector stores discovered' )
+							st.warning( 'create() not available on Gemini provider.' )
+					except Exception as exc:
+						st.error( f'Create store failed: {exc}' )
+		
+		# --------------------------------------------------------------
+		# Discover file search stores (local → API fallback)
+		# --------------------------------------------------------------
+		options: List[ tuple ] = [ ]
+		if vs_map and isinstance( vs_map, dict ):
+			options = list( vs_map.items( ) )
+		
+		if not options:
+			try:
+				client = getattr( searcher, 'client', None )
+				if ( client and hasattr( client, 'file_search_stores' )
+						and hasattr( client.file_search_stores, 'list' ) ):
+					api_list = client.file_search_stores.list( )
+					temp: List[ tuple ] = [ ]
+					for item in getattr( api_list, 'data', [ ] ) or api_list:
+						nm = getattr( item, 'name', None ) or (
+								item.get( 'name' ) if isinstance( item, dict ) else None )
+						vid = getattr( item, 'id', None ) or (
+								item.get( 'id' ) if isinstance( item, dict ) else None )
+						if nm and vid:
+							temp.append( (nm, vid) )
+					if temp:
+						options = temp
+			except Exception:
+				options = [ ]
+		
+		# --------------------------------------------------------------
+		# Select / Retrieve / Delete
+		# --------------------------------------------------------------
+		if options:
+			names = [ f'{n} — {i}' for n, i in options ]
+			sel = st.selectbox( 'Select a File Search Store', options=names )
+			
+			sel_id: Optional[ str ] = None
+			for n, i in options:
+				if f'{n} — {i}' == sel:
+					sel_id = i
+					break
+			
+			c1, c2 = st.columns( [ 1,  1 ] )
+			
+			with c1:
+				if st.button( 'Retrieve File Store' ):
+					if not sel_id:
+						st.warning( 'No file search store selected.' )
+					else:
+						try:
+							client = getattr( searcher, 'client', None )
+							if ( client and hasattr( client, 'file_search_stores' )
+									and hasattr( client.file_search_stores, 'retrieve' ) ):
+								vs = client.file_search_stores.retrieve(
+									file_search_store_id=sel_id )
+								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
+							else:
+								st.warning( 'file_search_stores.retrieve() not available.' )
+						except Exception as exc:
+							st.error( f'retrieve() failed: {exc}' )
+			
+			with c2:
+				if st.button( '❌ Delete File Store' ):
+					if not sel_id:
+						st.warning( 'No file search store selected.' )
+					else:
+						try:
+							client = getattr( searcher, 'client', None )
+							if ( client and hasattr( client, 'file_search_stores' )
+									and hasattr( client.file_search_stores, 'delete' ) ):
+								res = client.file_search_stores.delete(
+									file_search_store_id=sel_id )
+								st.success( f'Delete returned: {res}' )
+							else:
+								st.warning( 'file_search_stores.delete() not available.' )
+						except Exception as exc:
+							st.error( f'Delete failed: {exc}' )
+				else:
+					st.info( 'No file search stores discovered' )
+			
+	elif provider_name == 'GPT':
+		provider_module = get_provider_module( )
+		vector = provider_module.VectorStores( )
+		st.divider( )
+		
+		# --------------------------------------------------------------
+		# Local mapping
+		# --------------------------------------------------------------
+		vs_map = getattr( vector, 'collections', None )
+		st.caption( 'Store Management')
+		# ------------------------------------------------------------------
+		# Main Chat UI
+		# ------------------------------------------------------------------
+		left, center, right = st.columns( [ 0.025, 0.95, 0.055 ] )
+		with center:
+			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
+			with stores_left:
+				# --------------------------------------------------------------
+				# Expander - Create Vector Store
+				# --------------------------------------------------------------
+				with st.expander( 'Create:', expanded=False ):
+					new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
+					if st.button( '➕ Create Store', key='create_store' ):
+						if not new_store_name:
+							st.warning( 'Enter a Vector Store Name.' )
+						else:
+							try:
+								if hasattr( vector, 'create' ):
+									res = vector.create( new_store_name )
+									st.success( f"Create call submitted for '{new_store_name}'." )
+								else:
+									st.warning( 'create() not available on VectorStores wrapper.' )
+							except Exception as exc:
+								st.error( f'Create store failed: {exc}' )
+			
+			with stores_right:
+				# --------------------------------------------------------------
+				# Discover vector stores
+				# --------------------------------------------------------------
+				with st.expander( 'Retreive:', expanded=False ):
+					options: List[ tuple ] = [ ]
+					if vs_map and isinstance( vs_map, dict ):
+						options = list( vs_map.items( ) )
+					
+					if not options:
+						try:
+							openai_client = st.session_state.get( 'openai_client' )
+							if ( openai_client and hasattr( openai_client, 'vector_stores' )
+									and hasattr( openai_client.vector_stores, 'list' ) ):
+								api_list = openai_client.vector_stores.list( )
+								temp: List[ tuple ] = [ ]
+								for item in getattr( api_list, 'data', [ ] ) or api_list:
+									nm = getattr( item, 'name', None ) or (
+											item.get( 'name' ) if isinstance( item, dict ) else None )
+									vid = getattr( item, 'id', None ) or (
+											item.get( 'id' ) if isinstance( item, dict ) else None )
+									if nm and vid:
+										temp.append( (nm, vid) )
+								if temp:
+									options = temp
+						except Exception:
+							options = [ ]
+						
+					# --------------------------------------------------------------
+					# Select / Retrieve / Delete
+					# --------------------------------------------------------------
+					if options:
+						names = [ f'{n} — {i}' for n, i in options ]
+						sel = st.selectbox( 'Select Vector Store', options=names,
+							key='select_vectorstore' )
+						
+						sel_id: Optional[ str ] = None
+						for n, i in options:
+							if f'{n} — {i}' == sel:
+								sel_id = i
+								break
+						
+						c1, c2 = st.columns( [ 1, 1 ] )
+						
+						with c1:
+							if st.button( 'Retrieve Store', key='retrieve_store' ):
+								if not sel_id:
+									st.warning( 'No vector store selected.' )
+								else:
+									try:
+										openai_client = st.session_state[ 'openai_client' ]
+										vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
+										st.write( 'Name:', vs.name)
+										st.write( 'Files:', vs.file_counts )
+										st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
+									except Exception as exc:
+										st.error( f'retrieve() failed: {exc}' )
+						
+						with c2:
+							if st.button( '❌ Delete', key='delete_store' ):
+								if not sel_id:
+									st.warning( 'No vector store selected.' )
+								else:
+									try:
+										openai_client = st.session_state.get( 'openai_client' )
+										if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
+											res = openai_client.vector_stores.delete( vector_store_id=sel_id )
+											st.success( f'Delete returned: {res}' )
+										else:
+											st.warning( 'vector_stores.delete() not available.' )
+									except Exception as exc:
+										st.error( f'Delete failed: {exc}' )
+					else:
+						st.info( 'No vector stores discovered' )
 						
 # ======================================================================================
 # DOCUMENTS MODE
