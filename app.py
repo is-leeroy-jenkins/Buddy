@@ -3659,7 +3659,6 @@ elif mode == 'Embeddings':
 				st.rerun( )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-		
 		# ------------------------------------------------------------------
 		# TEXT METRICS (Render Above Buttons – Safe Append)
 		# ------------------------------------------------------------------
@@ -3675,7 +3674,6 @@ elif mode == 'Embeddings':
 			ttr = (unique_words / total_words) if total_words > 0 else 0.0
 			
 			col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns( 5, border=True )
-			
 			col_m1.metric( "Tokens", token_count )
 			col_m2.metric( "Words", total_words )
 			col_m3.metric( "Unique Words", unique_words )
@@ -3729,6 +3727,7 @@ elif mode == 'Vector Stores':
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
+	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	vec_left, vec_center, vec_right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with vec_center:
 		if provider_name == 'Grok':
@@ -4067,7 +4066,6 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
-	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = st.session_state.get( 'files' )
@@ -4076,6 +4074,7 @@ elif mode == 'Document Q&A':
 	doc_active_docs = st.session_state.get( 'doc_active_docs' )
 	doc_source = st.session_state.get( 'doc_source' )
 	doc_multi_mode = st.session_state.get( 'doc_multi_mode' )
+	st.subheader( '❓ Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
