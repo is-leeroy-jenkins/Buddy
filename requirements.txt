@@ -4,9 +4,10 @@ google-genai
 google-cloud-storage
 numpy>=1.26.0
 openpyxl
-openai>=1.40
+openai==2.21.0
 pydantic>=2.7,<3
 pymupdf
+httpx>=0.28.1
 reportlab>=4.0.8
 sentence-transformers>=2.6.1
 tiktoken

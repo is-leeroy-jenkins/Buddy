@@ -61,6 +61,7 @@ import os
 import sqlite3
 import time
 import typing_extensions
+import tiktoken
 from typing import Any, Dict, List, Tuple, Optional
 import tempfile
 import re
@@ -196,11 +197,90 @@ def encode_image_base64( path: str ) -> str:
 	data = Path( path ).read_bytes( )
 	return base64.b64encode( data ).decode( "utf-8" )
 
-def chunk_text( text: str, size: int=1200, overlap: int=200 ) -> List[ str ]:
-	chunks, i = [ ], 0
-	while i < len( text ):
-		chunks.append( text[ i:i + size ] )
-		i += size - overlap
+def normalize_text( text: str ) -> str:
+	"""
+		
+		Purpose
+		-------
+		Normalize text by:
+			• Converting to lowercase
+			• Removing punctuation except sentence delimiters (. ! ?)
+			• Ensuring clean sentence boundary spacing
+			• Collapsing whitespace
+	
+		Parameters
+		----------
+		text: str
+	
+		Returns
+		-------
+		str
+		
+	"""
+	if not text:
+		return ""
+	
+	# Lowercase
+	text = text.lower( )
+	
+	# Remove punctuation except . ! ?
+	text = re.sub( r"[^\w\s\.\!\?]", "", text )
+	
+	# Ensure single space after sentence delimiters
+	text = re.sub( r"([.!?])\s*", r"\1 ", text )
+	
+	# Normalize whitespace
+	text = re.sub( r"\s+", " ", text ).strip( )
+	
+	return text
+
+def chunk_text( text: str, max_tokens: int = 400 ) -> list[ str ]:
+	"""
+		
+		Purpose
+		-------
+		Segment normalized text into chunks by:
+			1. Sentence boundaries
+			2. Fallback to token windowing if needed
+	
+		Parameters
+		----------
+		text: str
+		max_tokens: int
+	
+		Returns
+		-------
+		list[str]
+		
+	"""
+	if not text:
+		return [ ]
+	
+	# Sentence-based segmentation
+	sentences = re.split( r"(?<=[.!?])\s+", text )
+	sentences = [ s.strip( ) for s in sentences if s.strip( ) ]
+	
+	if len( sentences ) > 1:
+		return sentences
+	
+	# Fallback: token window segmentation
+	words = text.split( )
+	chunks = [ ]
+	current_chunk = [ ]
+	token_count = 0
+	
+	for word in words:
+		current_chunk.append( word )
+		token_count += 1
+		
+		if token_count >= max_tokens:
+			chunks.append( " ".join( current_chunk ) )
+			current_chunk = [ ]
+			token_count = 0
+	
+	if current_chunk:
+		chunks.append( " ".join( current_chunk ) )
+	
 	return chunks
 
 def cosine_sim( a: np.ndarray, b: np.ndarray ) -> float:
@@ -1635,7 +1715,7 @@ def summarize_active_document( ) -> str:
 # ==============================================================================
 # Page Setup / Configuration
 # ==============================================================================
-openai_client = OpenAI( )
+openai_client = OpenAI(  )
 st.session_state[ 'openai_client' ] = openai_client
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
 st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
@@ -1804,9 +1884,6 @@ if 'store' not in st.session_state:
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
-if 'input' not in st.session_state:
-	st.session_state[ 'input' ] = None
-
 if 'response_format' not in st.session_state:
 	st.session_state[ 'response_format' ] = None
 
@@ -1842,7 +1919,7 @@ if 'text_include' not in st.session_state:
 	st.session_state[ 'text_include' ] = [ ]
 
 if 'text_domains' not in st.session_state:
-	st.session_state[ 'text_domains' ] = None
+	st.session_state[ 'text_domains' ] = [ ]
 
 if 'text_parallel_tools' not in st.session_state:
 	st.session_state[ 'text_parallel_tools' ] = False
@@ -2341,16 +2418,23 @@ elif mode == "Text":
 	text_parallel_tools = st.session_state.get( 'text_parallel_tools', None )
 	text_max_calls = st.session_state.get( 'text_max_calls', None )
 	text_store = st.session_state.get( 'text_store', None )
-	text_tools = st.session_state.get( 'text_tools', None )
+	text_tools = st.session_state.get( 'text_tools', [ ] )
 	text_include = st.session_state.get( 'text_include', None )
-	text_domains = st.session_state.get( 'text_domains', None )
+	text_domains = st.session_state.get( 'text_domains', [ ] )
+	text_stops = st.session_state.get( 'text_stops', [ ] )
 	text_input = st.session_state.get( 'text_input', None )
 	text_choice = st.session_state.get( 'text_tool_choice', None )
 	text_background = st.session_state.get( 'text_background', None )
-	text_messages = st.session_state.get( 'text_messages', None )
+	text_messages = st.session_state.get( 'text_messages', [ ] )
 	text_tokens = st.session_state.get( 'text_max_tokens', None )
 	text = provider_module.Chat( )
 	
+	for key in [ 'text_domains', 'text_stops' ]:
+		if key in st.session_state and isinstance( st.session_state[ key ], str ):
+			st.session_state[ key ] = [ v.strip( )
+					for v in st.session_state[ key ].split( ',' )
+					if v.strip( ) ]
+		
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
@@ -2392,13 +2476,10 @@ elif mode == "Text":
 					
 					with llm_c3:
 						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains_input',
-						value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
+						value=','.join( st.session_state.get( 'text_domains', [ ] )  ),
 						help=cfg.ALLOWED_DOMAINS, width='stretch' )
-						text_domains = [
-								d.strip( )
-								for d in set_text_domains.split( ',' )
-								if d.strip( )
-						]
+						text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
+								if d.strip( ) ]
 						
 						st.session_state[ 'text_domains' ] = text_domains
 
@@ -2505,12 +2586,8 @@ elif mode == "Text":
 					# Remove Tool Settings session keys
 					# ----------------------------------------------------------
 					
-					for key in [
-							'text_parallel_tools',
-							'text_max_tools',
-							'text_tool_choice',
-							'text_tools',
-					]:
+					for key in [ 'text_parallel_tools', 'text_max_tools', 'text_tool_choice',
+							'text_tools', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -2540,7 +2617,8 @@ elif mode == "Text":
 						set_text_stops = st.text_input( 'Stop Sequences', key='text_stops',
 							value='\n'.join( st.session_state.get( 'text_stops', [ ] ) ),
 							help=cfg.STOP_SEQUENCE, width='stretch' )
-						text_stops = st.session_state[ 'text_stops' ]
+						text_stops = [ d.strip( ) for d in set_text_domains.split( ',' )
+						               if d.strip( ) ]
 					
 					with res_five:
 						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
@@ -2551,13 +2629,8 @@ elif mode == "Text":
 						# ----------------------------------------------------------
 						# Remove Response Settings session keys
 						# ----------------------------------------------------------
-						for key in [
-								'text_stream',
-								'text_store',
-								'text_background',
-								'text_stops',
-								'text_max_tokens',
-						]:
+						for key in [ 'text_stream', 'text_store', 'text_background',
+								'text_stops', 'text_max_tokens', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						# If using separated UI key for stops
@@ -2676,6 +2749,12 @@ elif mode == "Images":
 	image_background = st.session_state.get( 'image_background', None)
 	image = provider_module.Images( )
 	
+	for key in [ 'image_domains', 'image_stops' ]:
+		if key in st.session_state and isinstance( st.session_state[ key ], str ):
+			st.session_state[ key ] = [ v.strip( )
+					for v in st.session_state[ key ].split( ',' )
+					if v.strip( ) ]
+			
 	# ------------------------------------------------------------------
 	# Sidebar — Image Settings
 	# ------------------------------------------------------------------
@@ -3352,7 +3431,7 @@ elif mode == 'Embeddings':
 		# Expander — Embedding LLM Configuration
 		# ------------------------------------------------------------------
 		with st.expander( 'Configuration', expanded=False, width='stretch' ):
-			llm_c1, llm_c2, llm_c3  = st.columns( [ 0.33, 0.33, 0.33 ],
+			llm_c1, llm_c2, llm_c3, llm_c4  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 				border=True, gap='medium' )
 			
 			with llm_c1:
@@ -3376,38 +3455,84 @@ elif mode == 'Embeddings':
 					width='stretch' )
 				embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
 			
+			with llm_c4:
+				st.number_input(
+					"Chunk Size (tokens)",
+					min_value=50,
+					max_value=2000,
+					step=50,
+					key="embedding_chunk_size",
+					help="Maximum tokens per chunk for embedding segmentation." )
+
 			if st.button( 'Reset', key='embedding_reset', width='stretch' ):
+				
 				# ----------------------------------------------------------
 				# Remove Embedding Configuration session keys
 				# ----------------------------------------------------------
-				
-				for key in [ 'embedding_model', 'embedding_dimensions', 'embedding_format',
+				for key in [ 'embedding_model', 'embedding_dimensions', 'embedding_encoding_format',
 						'embedding_input_text', ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
 				
 				st.rerun( )
 
-
 		# ------------------------------------------------------------------
 		# Main UI — Embedding execution (unchanged behavior)
 		# ------------------------------------------------------------------
 		set_input_text = st.text_area( 'Text to embed', key='embedding_input_text' )
-		col_left, col_right = st.columns( [ 0.5, 0.5 ]  )
-		with col_left:
-			st.button( 'Embed', width='stretch', key='embedding_set' )
-			input_text = st.session_state[ 'embedding_input_text' ]
-			if input_text is not '' and st.session_state[ 'embedding_input_text' ]:
+		btn_left, btn_right = st.columns( [ 0.50, 0.50 ] )
+		
+		with btn_left:
+			embed_clicked = st.button( 'Embed', width='stretch', key='embedding_set' )
+			if embed_clicked and input_text and input_text.strip( ):
 				with st.spinner( 'Embedding…' ):
 					try:
+						# ----------------------------------------------------------
+						# Normalize + Chunk
+						# ----------------------------------------------------------
+						chunk_size = st.session_state.get( 'embedding_chunk_size', 400 )
+						normalized_text = normalize_text( input_text )
+						chunks = chunk_text( normalized_text, max_tokens=chunk_size )
+						
+						# ----------------------------------------------------------
+						# Create Embeddings
+						# ----------------------------------------------------------
 						if embedding_dimensions is not None:
-							vector = embedding.create( input_text, model=embedding_model,
-								dimensions=embedding_dimensions )
+							vectors = embedding.create(
+								text=chunks,
+								model=embedding_model,
+								dimensions=embedding_dimensions
+							)
 						else:
-							vector = embedding.create( input_text, model=embedding_model, )
+							vectors = embedding.create(
+								text=chunks,
+								model=embedding_model
+							)
 						
-						st.write( 'Vector length:', len( vector ) )
+						# ----------------------------------------------------------
+						# Persist Results
+						# ----------------------------------------------------------
+						st.session_state[ 'embeddings' ] = vectors
+						st.session_state[ 'embedding_chunks' ] = chunks
 						
+						# ----------------------------------------------------------
+						# Display Summary
+						# ----------------------------------------------------------
+						try:
+							if isinstance( vectors, list ) and vectors and isinstance( vectors[ 0 ], list ):
+								vector_dimension = len( vectors[ 0 ] )
+								st.write( 'Chunks:', len( vectors ) )
+								st.write( 'Vector dimension:', vector_dimension )
+							elif isinstance( vectors, list ):
+								st.write( 'Vector dimension:', len( vectors ) )
+							else:
+								st.write( 'Vector result type:', type( vectors ) )
+						except Exception:
+							st.write( 'Vector length:', len( vectors ) )
+						
+						# ----------------------------------------------------------
+						# Token Counters
+						# ----------------------------------------------------------
 						try:
 							_update_token_counters( getattr( embedding, 'response', None ) )
 						except Exception:
@@ -3416,9 +3541,69 @@ elif mode == 'Embeddings':
 					except Exception as exc:
 						st.error( f'Embedding failed: {exc}' )
 		
-		with col_right:
-			st.button( 'Reset', width='stretch', key='input_text_reset' )
+		with btn_right:
+			if st.button( 'Reset', width='stretch', key='input_text_reset' ):
+				# ----------------------------------------------------------
+				# Clear Embedding State
+				# ----------------------------------------------------------
+				for key in [ 'embeddings', 'embedding_chunks', 'embedding_df',
+						'embedding_input_text' ]:
+					if key in st.session_state:
+						del st.session_state[ key ]
+				
+				st.rerun( )
+		
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		
+		# ------------------------------------------------------------------
+		# TEXT METRICS (Render Above Buttons – Safe Append)
+		# ------------------------------------------------------------------
+		if st.session_state.get( 'embedding_input_text' ):
+			text_value: str = st.session_state.get( 'embedding_input_text', '' ).strip( )
 			
+		if text_value:
+			words = text_value.split( )
+			total_words = len( words )
+			unique_words = len( set( words ) )
+			char_count = len( text_value )
+			token_count = count_tokens( text_value )
+			ttr = (unique_words / total_words) if total_words > 0 else 0.0
+			
+			col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns( 5, border=True )
+			
+			col_m1.metric( "Tokens", token_count )
+			col_m2.metric( "Words", total_words )
+			col_m3.metric( "Unique Words", unique_words )
+			col_m4.metric( "TTR", f"{ttr:.3f}" )
+			col_m5.metric( "Characters", char_count )
+			
+			st.session_state[ 'embedding_metrics' ] = {
+					'tokens': token_count,
+					'words': total_words,
+					'unique_words': unique_words,
+					'ttr': ttr,
+					'characters': char_count
+			}
+				
+
+		# ------------------------------------------------------------------
+		# EMBEDDING DATAFRAME (Dimension-Safe)
+		# ------------------------------------------------------------------
+		if 'embeddings' in st.session_state:
+			embedding_vectors = st.session_state[ 'embeddings' ]
+			
+			# Normalize to 2D structure
+			if isinstance( embedding_vectors, list ) and embedding_vectors:
+				if isinstance( embedding_vectors[ 0 ], float ):
+					embedding_vectors = [ embedding_vectors ]
+				
+				df_embedding = pd.DataFrame( embedding_vectors,
+					columns=[ f"dim_{i}" for i in range( len( embedding_vectors[ 0 ] ) ) ] )
+				
+				st.data_editor( df_embedding, use_container_width=True, hide_index=True,
+					key='embedding_vectors' )
+					
+
 # ======================================================================================
 # VECTOR MODE
 # ======================================================================================

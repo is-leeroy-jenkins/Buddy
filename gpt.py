@@ -1949,8 +1949,8 @@ class Embeddings( GPT ):
 		return [ 'float',
 		         'base64' ]
 	
-	def create( self, text: str, model: str='text-embedding-3-large', format: str='float',
-			dimensions: int=None ) ->  List[ float ] | None:
+	def create( self, text: str | List[ str ], model: str='text-embedding-3-large', format: str='float',
+			dimensions: int=None ) -> List[ float ] | List[ List[ float ] ] | None:
 		"""
 	
 	        Purpose
@@ -1975,20 +1975,21 @@ class Embeddings( GPT ):
 			self.encoding_format = format
 			self.dimensions = dimensions
 			if self.model == 'text-embedding-3-large' and self.dimensions is not None:
-				self.response = self.client.embeddings.create( input=self.input, model=self.model,
+				self.response = self.client.embeddings.create( input=self.input_text, model=self.model,
 					encoding_format=self.encoding_format, dimensions=self.dimensions )
 			else:
-				self.response = self.client.embeddings.create( input=self.input, model=self.model,
+				self.response = self.client.embeddings.create( input=self.input_text, model=self.model,
 					encoding_format=self.encoding_format )
-			self.embedding = self.response.data[ 0 ].embedding
-			return self.embedding
+			if isinstance( self.input_text, list ):
+				return [ item.embedding for item in self.response.data ]
+			else:
+				return self.response.data[ 0 ].embedding
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Embedding'
 			exception.method = 'create( self, text: str, model: str ) -> List[ float ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def count_tokens( self, text: str, coding: str='cl100k_base' ) -> int:
 		'''
