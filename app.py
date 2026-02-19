@@ -55,7 +55,6 @@ import fitz
 import io
 from pathlib import Path
 import plotly.express as px
-
 import multiprocessing
 import os
 import sqlite3
@@ -127,7 +126,7 @@ def extract_response_text( response: object ) -> str:
 	
 	return "".join( text_chunks ).strip( )
 
-def xml_converter( text: str ) -> str:
+def convert_xml( text: str ) -> str:
 	"""
 		
 			Purpose:
@@ -840,10 +839,9 @@ def count_tokens( text: str ) -> int:
 # ==============================================================================
 def fetch_prompts_df( ) -> pd.DataFrame:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		df = pd.read_sql_query(
+		df = pd.read_sql_query( 
 			"SELECT PromptsId, Name, Version, ID FROM Prompts ORDER BY PromptsId DESC",
-			conn
-		)
+			conn )
 	df.insert( 0, "Selected", False )
 	return df
 
@@ -908,7 +906,7 @@ os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
 # ==============================================================================
 # DATABASE UTILITIES
 # ==============================================================================
-def ensure_db( ) -> None:
+def initialize_database( ) -> None:
 	Path( "stores/sqlite" ).mkdir( parents=True, exist_ok=True )
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( """
@@ -969,25 +967,24 @@ def ensure_db( ) -> None:
                           )
 		              """ )
 
-def dm_conn( ) -> sqlite3.Connection:
+def create_connection( ) -> sqlite3.Connection:
 	return sqlite3.connect( DM_DB_PATH )
 
-def dm_tables( ) -> List[ str ]:
-	with dm_conn( ) as conn:
-		rows = conn.execute(
-			"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
-		).fetchall( )
+def list_tables( ) -> List[ str ]:
+	with create_connection( ) as conn:
+		_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+		rows = conn.execute( _query ).fetchall( )
 		return [ r[ 0 ] for r in rows ]
 
-def dm_schema( table: str ) -> List[ Tuple ]:
-	with dm_conn( ) as conn:
+def create_schema( table: str ) -> List[ Tuple ]:
+	with create_connection( ) as conn:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
 def read_table( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
 	query = f'SELECT rowid, * FROM "{table}"'
 	if limit:
 		query += f" LIMIT {limit} OFFSET {offset}"
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		return pd.read_sql_query( query, conn )
 
 def drop_table( table: str ) -> None:
@@ -1004,7 +1001,7 @@ def drop_table( table: str ) -> None:
 	if not table:
 		return
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		conn.execute( f'DROP TABLE IF EXISTS "{table}";' )
 		conn.commit( )
 
@@ -1034,14 +1031,14 @@ def create_index( table: str, column: str ) -> None:
 	# ------------------------------------------------------------------
 	# Validate table exists
 	# ------------------------------------------------------------------
-	tables = dm_tables( )
+	tables = list_tables( )
 	if table not in tables:
 		raise ValueError( "Invalid table name." )
 	
 	# ------------------------------------------------------------------
 	# Validate column exists
 	# ------------------------------------------------------------------
-	schema = dm_schema( table )
+	schema = create_schema( table )
 	valid_columns = [ col[ 1 ] for col in schema ]
 	
 	if column not in valid_columns:
@@ -1057,7 +1054,7 @@ def create_index( table: str, column: str ) -> None:
 	# ------------------------------------------------------------------
 	sql = f'CREATE INDEX IF NOT EXISTS "{safe_index_name}" ON "{table}"("{column}");'
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		conn.execute( sql )
 		conn.commit( )
 
@@ -1169,18 +1166,18 @@ def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
 	
 	create_stmt = f'CREATE TABLE IF NOT EXISTS {table_name} ({", ".join( columns )});'
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		conn.execute( create_stmt )
 		conn.commit( )
 
-def dm_insert_df( table_name: str, df: pd.DataFrame ):
+def insert_data( table_name: str, df: pd.DataFrame ):
 	df = df.copy( )
 	df.columns = [ c.replace( ' ', '_' ) for c in df.columns ]
 	
 	placeholders = ', '.join( [ '?' ] * len( df.columns ) )
 	stmt = f'INSERT INTO {table_name} VALUES ({placeholders});'
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		conn.executemany( stmt, df.values.tolist( ) )
 		conn.commit( )
 
@@ -1237,7 +1234,7 @@ def get_sqlite_type( dtype ) -> str:
 	# ------------------------------------------------------------------
 	return "TEXT"
 
-def dm_create_custom_table( table_name: str, columns: list ) -> None:
+def create_custom_table( table_name: str, columns: list ) -> None:
 	"""
 		Purpose:
 		--------
@@ -1289,12 +1286,13 @@ def dm_create_custom_table( table_name: str, columns: list ) -> None:
 	
 	sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join( col_defs )});'
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		conn.execute( sql )
 		conn.commit( )
 
-def dm_is_safe_read_query( query: str ) -> bool:
+def is_safe_query( query: str ) -> bool:
 	"""
+	
 		Purpose:
 		--------
 		Determine whether a SQL query is read-only and safe to execute.
@@ -1308,8 +1306,8 @@ def dm_is_safe_read_query( query: str ) -> bool:
 		Blocks:
 			INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, ATTACH,
 			DETACH, VACUUM, REPLACE, TRIGGER, and multiple statements.
-	"""
-	
+			
+	"""	
 	if not query or not isinstance( query, str ):
 		return False
 	
@@ -1318,7 +1316,7 @@ def dm_is_safe_read_query( query: str ) -> bool:
 	# ------------------------------------------------------------------
 	# Block multiple statements
 	# ------------------------------------------------------------------
-	if ";" in q[ :-1 ]:
+	if ';' in q[ :-1 ]:
 		return False
 	
 	# ------------------------------------------------------------------
@@ -1326,33 +1324,20 @@ def dm_is_safe_read_query( query: str ) -> bool:
 	# ------------------------------------------------------------------
 	q = re.sub( r"--.*?$", "", q, flags=re.MULTILINE )
 	q = re.sub( r"/\*.*?\*/", "", q, flags=re.DOTALL )
-	
 	q = q.strip( )
 	
 	# ------------------------------------------------------------------
 	# Allowed starting keywords
 	# ------------------------------------------------------------------
-	allowed_starts = ("select", "with", "explain", "pragma")
-	
+	allowed_starts = ('select', 'with', 'explain', 'pragma')
 	if not q.startswith( allowed_starts ):
 		return False
 	
 	# ------------------------------------------------------------------
 	# Block dangerous keywords anywhere
 	# ------------------------------------------------------------------
-	blocked_keywords = (
-			"insert ",
-			"update ",
-			"delete ",
-			"drop ",
-			"alter ",
-			"create ",
-			"attach ",
-			"detach ",
-			"vacuum ",
-			"replace ",
-			"trigger "
-	)
+	blocked_keywords = ( 'insert ', 'update ', 'delete ', 'drop ', 'alter ',
+			'create ', 'attach ', 'detach ', 'vacuum ', 'replace ', 'trigger ' )
 	
 	for keyword in blocked_keywords:
 		if keyword in q:
@@ -1360,8 +1345,9 @@ def dm_is_safe_read_query( query: str ) -> bool:
 	
 	return True
 
-def dm_safe_identifier( name: str ) -> str:
+def create_identifier( name: str ) -> str:
 	"""
+	
 		Purpose:
 		--------
 		Sanitize a string into a safe SQLite identifier.
@@ -1369,29 +1355,30 @@ def dm_safe_identifier( name: str ) -> str:
 		- Replaces invalid characters with underscores
 		- Ensures it starts with a letter or underscore
 		- Prevents empty names
+		
 	"""
 	if not name or not isinstance( name, str ):
-		raise ValueError( "Invalid identifier." )
+		raise ValueError( 'Invalid Identifier.' )
 
-	safe = re.sub( r"[^0-9a-zA-Z_]", "_", name.strip( ) )
-	if not re.match( r"^[A-Za-z_]", safe ):
-		safe = f"_{safe}"
+	safe = re.sub( r'[^0-9a-zA-Z_]', '_', name.strip( ) )
+	if not re.match( r'^[A-Za-z_]', safe ):
+		safe = f'_{safe}'
 
 	if not safe:
-		raise ValueError( "Invalid identifier after sanitization." )
+		raise ValueError( 'Invalid identifier after sanitization.' )
 	
 	return safe
 
-def dm_get_indexes( table: str ):
-	with dm_conn( ) as conn:
+def get_indexes( table: str ):
+	with create_connection( ) as conn:
 		rows = conn.execute(f'PRAGMA index_list("{table}");').fetchall( )
 		return rows
 
 def add_column( table: str, column: str, col_type: str ):
-	column = dm_safe_identifier( column )
+	column = create_identifier( column )
 	col_type = col_type.upper( )
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		conn.execute(
 			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};')
 		conn.commit( )
@@ -1428,7 +1415,7 @@ def drop_column( table: str, column: str ):
 	if not table or not column:
 		raise ValueError( "Table and column required." )
 	
-	with dm_conn( ) as conn:
+	with create_connection( ) as conn:
 		# ------------------------------------------------------------
 		# Fetch original CREATE TABLE statement
 		# ------------------------------------------------------------
@@ -4546,7 +4533,7 @@ elif mode == 'Data Export':
 	
 	if export_format == 'Markdown':
 		try:
-			export_text: str = xml_converter( prompt_text )
+			export_text: str = convert_xml( prompt_text )
 			export_filename: str = 'Buddy_Instructions.md'
 		except Exception as exc:
 			st.error( f'Markdown conversion failed: {exc}' )
@@ -4598,7 +4585,7 @@ elif mode == 'Data Management':
 	
 	st.divider( )
 	
-	tables = dm_tables( )
+	tables = list_tables( )
 	if not tables:
 		st.info( "No tables available." )
 	else:
@@ -4614,16 +4601,16 @@ elif mode == 'Data Management':
 		if uploaded_file:
 			try:
 				sheets = pd.read_excel( uploaded_file, sheet_name=None )
-				with dm_conn( ) as conn:
+				with create_connection( ) as conn:
 					conn.execute( 'BEGIN' )
 					for sheet_name, df in sheets.items( ):
-						table_name = dm_safe_identifier( sheet_name )
+						table_name = create_identifier( sheet_name )
 						if overwrite:
 							conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
 						
 						# --- Create Table ---
 						columns = [ ]
-						df.columns = [ dm_safe_identifier( c ) for c in df.columns ]
+						df.columns = [ create_identifier( c ) for c in df.columns ]
 						for col in df.columns:
 							sql_type = get_sqlite_type( df[ col ].dtype )
 							columns.append( f'"{col}" {sql_type}' )
@@ -4663,7 +4650,7 @@ elif mode == 'Data Management':
 	# BROWSE TAB
 	# ------------------------------------------------------------------------------
 	with tabs[ 1 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='table_name' )
 			df = read_table( table )
@@ -4675,13 +4662,13 @@ elif mode == 'Data Management':
 	# CRUD (Schema-Aware)
 	# ------------------------------------------------------------------------------
 	with tabs[ 2 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if not tables:
 			st.info( 'No tables available.' )
 		else:
 			table = st.selectbox( 'Select Table', tables, key='crud_table' )
 			df = read_table( table )
-			schema = dm_schema( table )
+			schema = create_schema( table )
 			
 			# Build type map
 			type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != 'rowid' }
@@ -4710,7 +4697,7 @@ elif mode == 'Data Management':
 				placeholders = ', '.join( [ '?' ] * len( cols ) )
 				stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
 				
-				with dm_conn( ) as conn:
+				with create_connection( ) as conn:
 					conn.execute( stmt, list( insert_data.values( ) ) )
 					conn.commit( )
 				
@@ -4744,7 +4731,7 @@ elif mode == 'Data Management':
 				set_clause = ', '.join( [ f'{c}=?' for c in update_data ] )
 				stmt = f'UPDATE {table} SET {set_clause} WHERE rowid=?;'
 				
-				with dm_conn( ) as conn:
+				with create_connection( ) as conn:
 					conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
 					conn.commit( )
 				
@@ -4757,7 +4744,7 @@ elif mode == 'Data Management':
 			st.subheader( 'Delete Row' )
 			delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
 			if st.button( 'Delete Row' ):
-				with dm_conn( ) as conn:
+				with create_connection( ) as conn:
 					conn.execute( f'DELETE FROM {table} WHERE rowid=?;', (delete_id,) )
 					conn.commit( )
 				
@@ -4768,7 +4755,7 @@ elif mode == 'Data Management':
 	# EXPLORE
 	# ------------------------------------------------------------------------------
 	with tabs[ 3 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='explore_table' )
 			page_size = st.slider( 'Rows per page', 10, 500, 50 )
@@ -4781,7 +4768,7 @@ elif mode == 'Data Management':
 	# FILTER
 	# ------------------------------------------------------------------------------
 	with tabs[ 4 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='filter_table' )
 			df = read_table( table )
@@ -4795,7 +4782,7 @@ elif mode == 'Data Management':
 	# AGGREGATE
 	# ------------------------------------------------------------------------------
 	with tabs[ 5 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='agg_table' )
 			df = read_table( table )
@@ -4814,7 +4801,7 @@ elif mode == 'Data Management':
 	# VISUALIZE
 	# ------------------------------------------------------------------------------
 	with tabs[ 6 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='viz_table' )
 			df = read_table( table )
@@ -4828,14 +4815,14 @@ elif mode == 'Data Management':
 	# ADMIN
 	# ------------------------------------------------------------------------------
 	with tabs[ 7 ]:
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Table', tables, key='admin_table' )
 		
 		st.divider( )
 		
 		st.subheader( 'Data Profiling' )
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Select Table', tables, key='profile_table' )
 			if st.button( 'Generate Profile' ):
@@ -4844,7 +4831,7 @@ elif mode == 'Data Management':
 				
 		st.subheader( 'Drop Table' )
 
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
 			
@@ -4909,7 +4896,7 @@ elif mode == 'Data Management':
 		
 		if st.button( 'Create Table' ):
 			try:
-				dm_create_custom_table( new_table_name, columns )
+				create_custom_table( new_table_name, columns )
 				st.success( 'Table created successfully.' )
 				st.rerun( )
 			
@@ -4919,12 +4906,12 @@ elif mode == 'Data Management':
 		st.divider( )
 		st.subheader( 'Schema Viewer' )
 		
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Select Table', tables, key='schema_view_table' )
 			
 			# Column schema
-			schema = dm_schema( table )
+			schema = create_schema( table )
 			schema_df = pd.DataFrame(
 				schema,
 				columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
@@ -4933,7 +4920,7 @@ elif mode == 'Data Management':
 			st.dataframe( schema_df, use_container_width=True )
 			
 			# Row count
-			with dm_conn( ) as conn:
+			with create_connection( ) as conn:
 				count = conn.execute(
 					f'SELECT COUNT(*) FROM "{table}"'
 				).fetchone( )[ 0 ]
@@ -4941,7 +4928,7 @@ elif mode == 'Data Management':
 			st.metric( "Row Count", f"{count:,}" )
 			
 			# Indexes
-			indexes = dm_get_indexes( table )
+			indexes = get_indexes( table )
 			if indexes:
 				idx_df = pd.DataFrame(
 					indexes,
@@ -4955,7 +4942,7 @@ elif mode == 'Data Management':
 		st.divider( )
 		st.subheader( "ALTER TABLE Operations" )
 		
-		tables = dm_tables( )
+		tables = list_tables( )
 		if tables:
 			table = st.selectbox( 'Select Table', tables, key='alter_table_select' )
 			operation = st.selectbox( 'Operation',
@@ -4971,7 +4958,7 @@ elif mode == 'Data Management':
 					st.rerun( )
 			
 			elif operation == 'Rename Column':
-				schema = dm_schema( table )
+				schema = create_schema( table )
 				col_names = [ col[ 1 ] for col in schema ]
 				
 				old_col = st.selectbox( 'Column to Rename', col_names )
@@ -4991,7 +4978,7 @@ elif mode == 'Data Management':
 					st.rerun( )
 			
 			elif operation == 'Drop Column':
-				schema = dm_schema( table )
+				schema = create_schema( table )
 				col_names = [ col[ 1 ] for col in schema ]
 				
 				drop_col = st.selectbox( 'Column to Drop', col_names )
@@ -5008,12 +4995,12 @@ elif mode == 'Data Management':
 		st.subheader( 'SQL Console' )
 		query = st.text_area( 'Enter SQL Query' )
 		if st.button( 'Run Query' ):
-			if not dm_is_safe_read_query( query ):
+			if not is_safe_query( query ):
 				st.error( 'Query blocked: Only read-only SELECT statements are allowed.' )
 			else:
 				try:
 					start_time = time.perf_counter( )
-					with dm_conn( ) as conn:
+					with create_connection( ) as conn:
 						result = pd.read_sql_query( query, conn )
 					
 					end_time = time.perf_counter( )
