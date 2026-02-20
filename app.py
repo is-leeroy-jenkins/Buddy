@@ -2865,7 +2865,7 @@ elif mode == "Images":
 	
 	if isinstance( st.session_state.get( 'image_domains' ), str ):
 		del st.session_state[ 'image_domains' ]
-	a
+		
 	# ------------------------------------------------------------------
 	# EXPANDER — IMAGE SETTINGS
 	# ------------------------------------------------------------------
@@ -2884,13 +2884,12 @@ elif mode == "Images":
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# Expander - Image Model Parameter
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
-				llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20 ],
-					border=True, gap='xsmall' )
+				llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					border=True, gap='xxsmall' )
 				
 				with llm_c1:
 					set_image_model = st.selectbox( 'Select Model', image.model_options,
-						help='REQUIRED. Images Generation model used by the AI',
-						key='image_model',
+						help='REQUIRED. Images Generation model used by the AI', key='image_model',
 						index=(image.model_options.index( st.session_state[ 'image_model' ] )
 						       if st.session_state.get( 'image_model' ) in image.model_options else 0), )
 					image_model = st.session_state[ 'image_model' ]
@@ -2915,9 +2914,11 @@ elif mode == "Images":
 					image_reasoning = st.session_state[ 'image_reasoning' ]
 				
 				with llm_c5:
-					set_image_reponse = st.multiselect( 'Include:', options=image.format_options,
-						key='image_response_format', help=cfg.INCLUDE )
-					image_response_format = st.session_state[ 'image_response_format' ]
+					set_image_reponse = st.selectbox( 'Response Format:', image.format_options,
+						key='image_response_format', help=cfg.IMAGE_RESPONSE,
+						index = (image.format_options.index( st.session_state[ 'image_format_options' ] )
+					         if st.session_state.get( 'image_reponse_format' ) in image.format_options else 0), )
+					image_respose_format = st.session_state[ 'image_response_format' ]
 				
 				if st.button( 'Reset', key='image_model_reset', width='stretch' ):
 					# ----------------------------------------------------------
@@ -3097,9 +3098,9 @@ elif mode == "Images":
 						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
 					image_quality = st.session_state[ 'image_quality' ]
 				
-				# ------------ Image Background Color
+				# ------------ Image Backcolor
 				with img_c4:
-					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
+					set_image_backcolor = st.selectbox( 'Image Background', image.backcolor_options,
 						help='Optional. Background Color. Only used with the Dalle-3 model',
 						key='image_backcolor',
 						index=(
@@ -3121,7 +3122,7 @@ elif mode == "Images":
 					# Remove Image Response session keys
 					# ----------------------------------------------------------
 					for key in [ 'image_detail', 'image_backcolor', 'image_style',
-					             'image_szie', 'image_output_format', ]:
+					             'image_size', 'image_output_format', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -3167,7 +3168,7 @@ elif mode == "Images":
 				
 				# ------------ Image Detail
 				with img_c1:
-					set_image_deatil = st.selectbox( 'Image Detail', image.detail_options,
+					set_image_detail = st.selectbox( 'Image Detail', image.detail_options,
 						help='Optional. Image detail',
 						key='image_detail',
 						index=(image.detail_options.index( st.session_state[ 'image_detail' ] )
@@ -3192,15 +3193,15 @@ elif mode == "Images":
 						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
 					image_quality = st.session_state[ 'image_quality' ]
 				
-				# ------------ Image Background Color
+				# ------------ Image Backcolor
 				with img_c4:
-					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
+					set_image_backcolor = st.selectbox( 'Image Background', image.backcolor_options,
 						help='Optional. Background Color. Only used with the Dalle-3 model',
 						key='image_backcolor',
 						index=(
-								image.background_options.index(
+								image.backcolor_options.index(
 									st.session_state[ 'image_backcolor' ] )
-								if st.session_state.get( 'image_backcolor' ) in image.background_options else 0), )
+								if st.session_state.get( 'image_backcolor' ) in image.backcolor_options else 0), )
 					image_backcolor = st.session_state[ 'image_backcolor' ]
 				
 				# ------------ Image Output Format
