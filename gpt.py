@@ -216,7 +216,7 @@ class Chat( GPT ):
 		self.reasoning = None
 		self.parallel_tools = None
 		self.background = None
-		self.tool_choice = 'auto'
+		self.tool_choice = None
 		self.prompt = None
 		self.response = None
 		self.file = None
@@ -416,9 +416,10 @@ class Chat( GPT ):
 			self.size = size
 			self.quality = quality
 			self.response_format = fmt
+			self.client = OpenAI( api_key=self.api_key )
 			self.response = self.client.images.generate( model=self.model, prompt=self.prompt,
-				size=self.size, quality=self.quality,
-				response_format=self.response_format, n=self.number )
+				size=self.size, quality=self.quality, response_format=self.response_format,
+				n=self.number )
 			return self.response.data[ 0 ].url
 		except Exception as e:
 			exception = Error( e )
@@ -463,6 +464,7 @@ class Chat( GPT ):
 				}, ],
 			} ]
 			
+			self.client = OpenAI( api_key=self.api_key )
 			self.response = self.client.responses.create( model=self.model, input=self.input )
 			return self.response.output_text
 		except Exception as e:
@@ -496,6 +498,7 @@ class Chat( GPT ):
 			throw_if( 'src_url', src_url )
 			throw_if( 'dest_path', dest_path )
 			self.prompt = prompt
+			self.client = OpenAI( api_key=self.api_key )
 			_source = src_url
 			_url = dest_path
 			
@@ -615,7 +618,7 @@ class Chat( GPT ):
 			self.filepath = filepath
 			self.purpose = purpose
 			self.client = OpenAI( api_key=self.api_key )
-			self.file = self.client.files.create( file=open( file=filepath, mode='rb' ), 
+			self.file = self.client.files.create( file=open( file=filepath, mode='rb' ),
 				purpose=self.purpose )
 			return self.file.id
 		except Exception as e:
@@ -884,8 +887,8 @@ class Images( GPT ):
 	backcolor: Optional[ str ]
 	
 	def __init__( self, temperture: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=False, stream: bool=False,
-			background: bool=False, backcolor: str= None, instruct: str=None ):
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=False,
+			background: bool=False, backcolor: str=None, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
@@ -899,11 +902,11 @@ class Images( GPT ):
 		self.stream = stream
 		self.instruct = instruct
 		self.tools = [ ]
-		self.tool_choice = 'auto'
+		self.tool_choice = None
 		self.input = [ ]
 		self.messages = [ ]
 		self.background = background
-		self.backcolor = None
+		self.backcolor = backcolor
 		self.input_text = None
 		self.file_path = None
 		self.image_url = None
@@ -965,9 +968,13 @@ class Images( GPT ):
 	        - For dall-e-3, the sie must be one of '1024x1024', '1792x1024', or '1024x1792'
 
         '''
-		return [ '256x256',
+		return [ 'auto',
+				 '256x256',
 		         '512x512',
-		         '1024x1024' ]
+		         '1024x1024',
+		         '1792x1024',
+		         '1024x1792',
+		         '1536x1024', '1024x1536' ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:
@@ -1091,7 +1098,7 @@ class Images( GPT ):
 		         'xhigh' ]
 	
 	def generate( self, prompt: str, model: str, quality: str, size: str,
-			style: str='natural', format: str='png', instruct: str=None ) -> str:
+			style: str='natural', output: str='png', instruct: str=None, backcolor: str=None ) -> str:
 		"""
 
                 Purpose
@@ -1114,16 +1121,16 @@ class Images( GPT ):
 			throw_if( 'model', model )
 			throw_if( 'quality', quality )
 			throw_if( 'size', size )
-			self.client = OpenAI( api_key=self.api_key )
 			self.input_text = prompt
 			self.model = model
 			self.quality = quality
 			self.size = size
 			self.style = style
-			self.backcolor = None
-			self.output_format = format
+			self.backcolor = backcolor
+			self.output_format = output
 			self.tools.append( { 'type': 'image_generation' } )
 			self.instruct = instruct
+			self.client = OpenAI( api_key=self.api_key )
 			self.response = self.client.responses.create( model=self.model, input=self.input_text,
 				size=self.size, style=self.style, response_format=self.response_format,
 				tools=self.tools, quality=self.quality )
@@ -1156,7 +1163,6 @@ class Images( GPT ):
 		try:
 			throw_if( 'text', text )
 			throw_if( 'path', path )
-			self.client = OpenAI( api_key=self.api_key )
 			self.input_text = text
 			self.model = model
 			self.file_path = path
@@ -1169,6 +1175,7 @@ class Images( GPT ):
 							],
 					} ]
 			
+			self.client = OpenAI( api_key=self.api_key )
 			self.response = self.client.responses.create( model=self.model, input=self.input,
 				max_output_tokens=self.max_completion_tokens, temperature=self.temperature,
 				tool_choice=self.tool_choice, stream=self.stream, store=self.store )
@@ -1181,7 +1188,7 @@ class Images( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def edit( self, prompt: str, path: str, size: str = '1024x1024' ) -> str:
+	def edit( self, prompt: str, path: str, size: str='1024x1024' ) -> str:
 		"""
 
 	        Purpose
@@ -1201,10 +1208,10 @@ class Images( GPT ):
 		try:
 			throw_if( 'input', prompt )
 			throw_if( 'path', path )
-			self.client = OpenAI( api_key=self.api_key )
 			self.input_text = prompt
 			self.file_path = path
 			self.size = size
+			self.client = OpenAI( api_key=self.api_key )
 			self.response = self.client.images.edit( model=self.model,
 				image=open( self.file_path, 'rb' ), prompt=self.input_text, n=self.number,
 				size=self.size, )
@@ -1545,7 +1552,6 @@ class Transcription( GPT ):
 			store: bool=True, language: str='english', instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
-		self.client = OpenAI( api_key=self.api_key )
 		self.temperature = temperature
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
@@ -1569,10 +1575,11 @@ class Transcription( GPT ):
 	        Methods that returns a list of small_model names
 
         '''
-		return [ 'gpt-4o-mini-transcribe' ]
+		return [ 'gpt-4o-transcribe', 'gpt-4o-mini-transcribe', 'whisper-1',
+		         'gpt-4o-transcribe-diarize', 'gpt-4o-transcribe-diarize' ]
 	
 	@property
-	def format_options( self ) -> List[ str ] | None:
+	def output_options( self ) -> List[ str ] | None:
 		'''
 
 	        Purpose:
@@ -1588,7 +1595,7 @@ class Transcription( GPT ):
 		         'pcm' ]
 	
 	@property
-	def output_options( self ) -> List[ str ] | None:
+	def format_options( self ) -> List[ str ] | None:
 		'''
 			
 			Returns:
@@ -1630,7 +1637,7 @@ class Transcription( GPT ):
 		         'vietnamese'
 		         'thai' ]
 	
-	def transcribe( self, path: str, model: str='gpt-4o-mini-transcribe', language: str='en' ) -> str:
+	def transcribe( self, path: str, model: str='gpt-4o-mini-transcribe', language: str='english' ) -> str:
 		"""
 		
 			Purpose:
@@ -1840,6 +1847,7 @@ class Translation( GPT ):
 			self.stream = stream
 			self.instruct = instruct
 			self.target_language = language
+			self.client = OpenAI( api_key=self.api_key )
 			with open( filepath, 'rb' ) as audio_file:
 				self.response = self.client.audio.translations.create( model=self.model,
 					file=audio_file )

@@ -111,6 +111,8 @@ GPT_MODES = [ 'Chat',
               'Data Management',
               'Export' ]
 
+GPT_IMAGE_MODES = [ 'Generation', 'Analysis', 'Editing' ]
+
 GPT_VECTORSTORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0',
                      'vs_712r5W5833G6aLxIYIbuvVcK']
 
@@ -370,3 +372,12 @@ IMAGE_STYLE = r'''Optional. The style of the generated images. This parameter is
 		less hyper-real looking images.
 '''
 
+IMAGE_QUALITY = r'''Optional. The quality of the image that will be generated: "standard" or "hd"
+or "low". auto (default value) will automatically select the best quality for the given model. high,
+medium and low are supported for the GPT image models. hd and standard are supported for dall-e-3.
+standard is the only option for dall-e-2.
+'''
+
+IMAGE_DETAIL = r'''The detail parameter tells the model what level of detail to use when processing
+		and understanding the image (low, high, or auto to let the model decide). If you skip the
+		parameter, the model will use auto.'''
