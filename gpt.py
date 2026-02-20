@@ -879,11 +879,13 @@ class Images( GPT ):
 	style: Optional[ str ]
 	allowed_domains: Optional[ List[ str ] ]
 	response_format: Optional[ str ]
-	background: Optional[ str ]
+	output_format: Optional[ str ]
+	background: Optional[ bool ]
+	backcolor: Optional[ str ]
 	
 	def __init__( self, temperture: float=0.8, top_p: float=0.9, frequency: float=0.0,
 			presence: float=0.0, max_tokens: int=10000, store: bool=False, stream: bool=False,
-			instruct: str=None ):
+			background: bool=False, backcolor: str= None, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
@@ -900,7 +902,8 @@ class Images( GPT ):
 		self.tool_choice = 'auto'
 		self.input = [ ]
 		self.messages = [ ]
-		self.background = None
+		self.background = background
+		self.backcolor = None
 		self.input_text = None
 		self.file_path = None
 		self.image_url = None
@@ -910,6 +913,7 @@ class Images( GPT ):
 		self.size = None
 		self.style = None
 		self.response_format = None
+		self.output_format = None
 	
 	@property
 	def style_options( self ) -> List[ str ]:
@@ -966,7 +970,7 @@ class Images( GPT ):
 		         '1024x1024' ]
 	
 	@property
-	def input_options( self ) -> List[ str ]:
+	def format_options( self ) -> List[ str ]:
 		'''
 	
 	        Purpose:
@@ -974,11 +978,7 @@ class Images( GPT ):
 	        Method that returns a  list of format options
 
         '''
-		return [ 'png',
-		         'jpeg',
-		         'jpg',
-		         'webp',
-		         'gif' ]
+		return [ 'url', 'b64_json' ]
 	
 	@property
 	def output_options( self ) -> List[ str ]:
@@ -1038,7 +1038,7 @@ class Images( GPT ):
 		return [ 'auto', 'required', 'none' ]
 	
 	@property
-	def background_options( self ) -> List[ str ]:
+	def backcolor_options( self ) -> List[ str ]:
 		'''
 	
 	        Purpose:
@@ -1120,7 +1120,8 @@ class Images( GPT ):
 			self.quality = quality
 			self.size = size
 			self.style = style
-			self.response_format = format
+			self.backcolor = None
+			self.output_format = format
 			self.tools.append( { 'type': 'image_generation' } )
 			self.instruct = instruct
 			self.response = self.client.responses.create( model=self.model, input=self.input_text,
@@ -1134,7 +1135,7 @@ class Images( GPT ):
 			exception.method = 'generate( self, path: str ) -> str'
 			raise exception
 	
-	def analyze( self, text: str, path: str, model: str = 'gpt-4o-mini', ) -> str:
+	def analyze( self, text: str, path: str, model: str='gpt-4o-mini', ) -> str:
 		'''
 	
 	        Purpose:

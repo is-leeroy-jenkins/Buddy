@@ -2128,37 +2128,30 @@ if 'image_messages' not in st.session_state:
 
 if 'image_domains' not in st.session_state:
 	st.session_state[ 'image_domains' ] = [ ]
-
-if 'image_detail' not in st.session_state:
-	st.session_state[ 'image_detail' ] = None
-
-if 'image_style' not in st.session_state:
-	st.session_state[ 'image_style' ] = None
-
+	
 if 'image_quality' not in st.session_state:
 	st.session_state[ 'image_quality' ] = None
-
-if 'image_backcolor' not in st.session_state:
-	st.session_state[ 'image_backcolor' ] = None
-
 if 'image_format' not in st.session_state:
 	st.session_state[ 'image_format' ] = None
 
 # ------- IMAGE-SPECIFIC PARAMETER---------------
-if 'size' not in st.session_state:
-	st.session_state[ 'size' ] = None
+if 'image_size' not in st.session_state:
+	st.session_state[ 'image_size' ] = None
 
-if 'style' not in st.session_state:
-	st.session_state[ 'style' ] = None
+if 'iamge_style' not in st.session_state:
+	st.session_state[ 'image_style' ] = None
 
-if 'detail' not in st.session_state:
-	st.session_state[ 'detail' ] = None
+if 'image_detail' not in st.session_state:
+	st.session_state[ 'image)detail' ] = None
 
-if 'quality' not in st.session_state:
-	st.session_state[ 'quality' ] = None
+if 'image_backcolor' not in st.session_state:
+	st.session_state[ 'image_backcolor' ] = None
 
-if 'image_format' not in st.session_state:
-	st.session_state[ 'image_format' ] = None
+if 'image_quality' not in st.session_state:
+	st.session_state[ 'image_quality' ] = None
+
+if 'image_output' not in st.session_state:
+	st.session_state[ 'image_output' ] = None
 
 if 'image_url' not in st.session_state:
 	st.session_state[ 'image_url' ] = None
@@ -2851,15 +2844,13 @@ elif mode == "Images":
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	image_model = st.session_state.get( 'image_model', None )
-	image_size = st.session_state.get( 'image_size', None )
-	image_style = st.session_state.get( 'image_style', None )
-	image_quality = st.session_state.get( 'image_quality', None )
-	image_format = st.session_state.get( 'image_format', None )
+	image_response_format = st.session_state.get( 'image_response_format', None )
 	image_detail = st.session_state.get( 'image_detail', None )
 	image_style = st.session_state.get( 'image_style', None )
 	image_quality = st.session_state.get( 'image_quality', None )
 	image_backcolor = st.session_state.get( 'image_backcolor', None )
 	image_size = st.session_state.get( 'image_size', None )
+	image_output = st.session_state.get( 'image_output', None )
 	image_stops = st.session_state.get( 'image_stops', None )
 	image_domains = st.session_state.get( 'image_domains', None )
 	image_top_p = st.session_state.get( 'image_top_percent', None)
@@ -2893,8 +2884,8 @@ elif mode == "Images":
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# Expander - Image Model Parameter
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
-				llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-					border=True, gap='medium' )
+				llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20 ],
+					border=True, gap='xsmall' )
 				
 				with llm_c1:
 					set_image_model = st.selectbox( 'Select Model', image.model_options,
@@ -2922,13 +2913,18 @@ elif mode == "Images":
 					set_image_reasoning = st.multiselect( 'Reasoning:', options=image.reasoning_options,
 						key='image_reasoning', help=cfg.REASONING )
 					image_reasoning = st.session_state[ 'image_reasoning' ]
-					
+				
+				with llm_c5:
+					set_image_reponse = st.multiselect( 'Include:', options=image.format_options,
+						key='image_response_format', help=cfg.INCLUDE )
+					image_response_format = st.session_state[ 'image_response_format' ]
+				
 				if st.button( 'Reset', key='image_model_reset', width='stretch' ):
 					# ----------------------------------------------------------
 					# Remove Image Model Settings session keys
 					# ----------------------------------------------------------
 					for key in [ 'image_model', 'image_include', 'image_domains', 'image_stops',
-					             'image_reasoning', ]:
+					             'image_reasoning', 'image_response_format' ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 							
@@ -3054,65 +3050,6 @@ elif mode == "Images":
 					
 					st.rerun( )
 			
-			# Expander — Image Settings Parameters
-			with st.expander( 'Image Settings', expanded=False, width='stretch' ):
-				img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-				
-				with img_c1:
-					set_image_deatil = st.selectbox( 'Image Detail', image.detail_options,
-						help='Optional. Image detail',
-						key='image_detail',
-						index=(image.detail_options.index( st.session_state[ 'image_detail' ] )
-						       if st.session_state.get( 'image_detail' ) in image.detail_options else 0), )
-					image_detail = st.session_state[ 'image_detail' ]
-				
-				with img_c2:
-					set_image_size = st.selectbox( 'Image Size', image.size_options,
-						help='Optional. Image size',
-						key='image_size',
-						index=(image.size_options.index( st.session_state[ 'image_size' ] )
-						       if st.session_state.get( 'image_size' ) in image.size_options else 0), )
-					image_size = st.session_state[ 'image_size' ]
-				
-				with img_c3:
-					set_image_quality = st.selectbox( 'Image quality', image.quality_options,
-						help='Optional. Image Quality',
-						key='image_quality',
-						index=(image.quality_opotions.index( st.session_state[ 'image_quality' ] )
-						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
-					image_quality = st.session_state[ 'image_quality' ]
-				
-				with img_c4:
-					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
-						help='Optional. Image Background Color',
-						key='image_backcolor',
-						index=(image.background_options.index( st.session_state[ 'image_backcolor' ] )
-						       if st.session_state.get( 'image_backcolor' ) in image.background_options else 0), )
-					image_backcolor = st.session_state[ 'image_backcolor' ]
-				
-				with img_c5:
-					set_image_format = st.selectbox( 'Image Format', image.output_options,
-						help='Optional. Image Background Color',
-						key='image_format',
-						index=(image.output_options.index( st.session_state[ 'image_format' ] )
-							if st.session_state.get( 'image_format' ) in image.output_options else 0), )
-					image_format = st.session_state[ 'image_format' ]
-				
-				if st.button( 'Reset', key='image_response_reset', width='stretch' ):
-					# ----------------------------------------------------------
-					# Remove Image Response session keys
-					# ----------------------------------------------------------
-					for key in [ 'image_stream', 'image_store', 'image_background',
-					             'image_stops', 'image_max_tokens', ]:
-						if key in st.session_state:
-							del st.session_state[ key ]
-					# If canonical separation used
-					if 'image_stops_input' in st.session_state:
-						del st.session_state[ 'image_stops_input' ]
-					
-					st.rerun( )
-		
 		# ------------------------------------------------------------------
 		# Expander — Image System Instructions
 		# ------------------------------------------------------------------
@@ -3126,6 +3063,70 @@ elif mode == "Images":
 		
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 		with tab_gen:
+			# ------------------------------------------------------------------
+			# Expander — Image Generation Options
+			# ------------------------------------------------------------------
+			with st.expander( 'Image Settings', expanded=False, width='stretch' ):
+				img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				
+				# ------------ Image Detail
+				with img_c1:
+					set_image_deatil = st.selectbox( 'Image Detail', image.detail_options,
+						help='Optional. Image detail',
+						key='image_detail',
+						index=(image.detail_options.index( st.session_state[ 'image_detail' ] )
+						       if st.session_state.get( 'image_detail' ) in image.detail_options else 0), )
+					image_detail = st.session_state[ 'image_detail' ]
+				
+				# ------------ Image Style
+				with img_c2:
+					set_image_size = st.selectbox( 'Image Size', image.size_options,
+						help='Optional. Image size',
+						key='image_size',
+						index=(image.size_options.index( st.session_state[ 'image_size' ] )
+						       if st.session_state.get( 'image_size' ) in image.size_options else 0), )
+					image_size = st.session_state[ 'image_size' ]
+				
+				# ------------ Image Quality
+				with img_c3:
+					set_image_quality = st.selectbox( 'Image quality', image.quality_options,
+						help='Optional. Image Quality',
+						key='image_quality',
+						index=(image.quality_opotions.index( st.session_state[ 'image_quality' ] )
+						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
+					image_quality = st.session_state[ 'image_quality' ]
+				
+				# ------------ Image Background Color
+				with img_c4:
+					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
+						help='Optional. Background Color. Only used with the Dalle-3 model',
+						key='image_backcolor',
+						index=(
+							image.background_options.index( st.session_state[ 'image_backcolor' ] )
+							if st.session_state.get( 'image_backcolor' ) in image.background_options else 0), )
+					image_backcolor = st.session_state[ 'image_backcolor' ]
+				
+				# ------------ Image Output Format
+				with img_c5:
+					set_image_format = st.selectbox( 'Image Format', image.output_options,
+						help='Optional. Format of the image output',
+						key='image_format',
+						index=(image.output_options.index( st.session_state[ 'image_format' ] )
+						       if st.session_state.get( 'image_format' ) in image.output_options else 0), )
+					image_format = st.session_state[ 'image_format' ]
+				
+				if st.button( 'Reset', key='image_response_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Response session keys
+					# ----------------------------------------------------------
+					for key in [ 'image_detail', 'image_backcolor', 'image_style',
+					             'image_szie', 'image_output_format', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+			
 			prompt = st.chat_input( 'Prompt' )
 			if st.button( 'Generate Image' ):
 				with st.spinner( 'Generating…' ):
@@ -3157,6 +3158,71 @@ elif mode == "Images":
 						st.error( f'Image generation failed: {exc}' )
 		
 		with tab_analyze:
+			# ------------------------------------------------------------------
+			# Expander — Image Generation Options
+			# ------------------------------------------------------------------
+			with st.expander( 'Image Settings', expanded=False, width='stretch' ):
+				img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				
+				# ------------ Image Detail
+				with img_c1:
+					set_image_deatil = st.selectbox( 'Image Detail', image.detail_options,
+						help='Optional. Image detail',
+						key='image_detail',
+						index=(image.detail_options.index( st.session_state[ 'image_detail' ] )
+						       if st.session_state.get( 'image_detail' ) in image.detail_options else 0), )
+					image_detail = st.session_state[ 'image_detail' ]
+				
+				# ------------ Image Style
+				with img_c2:
+					set_image_size = st.selectbox( 'Image Size', image.size_options,
+						help='Optional. Image size',
+						key='image_size',
+						index=(image.size_options.index( st.session_state[ 'image_size' ] )
+						       if st.session_state.get( 'image_size' ) in image.size_options else 0), )
+					image_size = st.session_state[ 'image_size' ]
+				
+				# ------------ Image Quality
+				with img_c3:
+					set_image_quality = st.selectbox( 'Image quality', image.quality_options,
+						help='Optional. Image Quality',
+						key='image_quality',
+						index=(image.quality_opotions.index( st.session_state[ 'image_quality' ] )
+						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
+					image_quality = st.session_state[ 'image_quality' ]
+				
+				# ------------ Image Background Color
+				with img_c4:
+					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
+						help='Optional. Background Color. Only used with the Dalle-3 model',
+						key='image_backcolor',
+						index=(
+								image.background_options.index(
+									st.session_state[ 'image_backcolor' ] )
+								if st.session_state.get( 'image_backcolor' ) in image.background_options else 0), )
+					image_backcolor = st.session_state[ 'image_backcolor' ]
+				
+				# ------------ Image Output Format
+				with img_c5:
+					set_image_format = st.selectbox( 'Image Format', image.output_options,
+						help='Optional. Format of the image output',
+						key='image_format',
+						index=(image.output_options.index( st.session_state[ 'image_format' ] )
+						       if st.session_state.get( 'image_format' ) in image.output_options else 0), )
+					image_format = st.session_state[ 'image_format' ]
+				
+				if st.button( 'Reset', key='image_response_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Response session keys
+					# ----------------------------------------------------------
+					for key in [ 'image_detail', 'image_backcolor', 'image_style',
+					             'image_szie', 'image_output_format', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+			
 			uploaded_img = st.file_uploader(
 				'Upload an image for analysis',
 				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
@@ -3230,6 +3296,71 @@ elif mode == "Images":
 							st.error( f"Analysis Failed: {exc}" )
 		
 		with tab_edit:
+			# ------------------------------------------------------------------
+			# Expander — Image Editing Options
+			# ------------------------------------------------------------------
+			with st.expander( 'Image Settings', expanded=False, width='stretch' ):
+				img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				
+				# ------------ Image Detail
+				with img_c1:
+					set_image_deatil = st.selectbox( 'Image Detail', image.detail_options,
+						help='Optional. Image detail',
+						key='image_detail',
+						index=(image.detail_options.index( st.session_state[ 'image_detail' ] )
+						       if st.session_state.get( 'image_detail' ) in image.detail_options else 0), )
+					image_detail = st.session_state[ 'image_detail' ]
+				
+				# ------------ Image Style
+				with img_c2:
+					set_image_size = st.selectbox( 'Image Size', image.size_options,
+						help='Optional. Image size',
+						key='image_size',
+						index=(image.size_options.index( st.session_state[ 'image_size' ] )
+						       if st.session_state.get( 'image_size' ) in image.size_options else 0), )
+					image_size = st.session_state[ 'image_size' ]
+				
+				# ------------ Image Quality
+				with img_c3:
+					set_image_quality = st.selectbox( 'Image quality', image.quality_options,
+						help='Optional. Image Quality',
+						key='image_quality',
+						index=(image.quality_opotions.index( st.session_state[ 'image_quality' ] )
+						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
+					image_quality = st.session_state[ 'image_quality' ]
+				
+				# ------------ Image Background Color
+				with img_c4:
+					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
+						help='Optional. Background Color. Only used with the Dalle-3 model',
+						key='image_backcolor',
+						index=(
+								image.background_options.index(
+									st.session_state[ 'image_backcolor' ] )
+								if st.session_state.get( 'image_backcolor' ) in image.background_options else 0), )
+					image_backcolor = st.session_state[ 'image_backcolor' ]
+				
+				# ------------ Image Output Format
+				with img_c5:
+					set_image_format = st.selectbox( 'Image Format', image.output_options,
+						help='Optional. Format of the image output',
+						key='image_format',
+						index=(image.output_options.index( st.session_state[ 'image_format' ] )
+						       if st.session_state.get( 'image_format' ) in image.output_options else 0), )
+					image_format = st.session_state[ 'image_format' ]
+				
+				if st.button( 'Reset', key='image_response_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Response session keys
+					# ----------------------------------------------------------
+					for key in [ 'image_detail', 'image_backcolor', 'image_style',
+					             'image_szie', 'image_output_format', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+			
 			uploaded_img = st.file_uploader( 'Upload Image for Edit',
 				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 				accept_multiple_files=False,

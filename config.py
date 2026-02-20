@@ -341,3 +341,32 @@ DATA_MANAGEMENT = r'''Structured handling, organization, processing of
 		Management provides the foundational infrastructure that transforms raw files into structured,
 		searchable, and model-ready assets, ensuring that Buddy’s intelligence features operate
 		on reliable, well-governed data rather than unmanaged documents.  '''
+
+IMAGE_BACKGROUND = r'''Optional. Allows to set transparency for the background of the generated image(s).
+		This parameter is only supported for the GPT image models. Must be one of transparent,
+		opaque or auto (default value). When auto is used, the model will automatically determine
+		the best background for the image
+'''
+
+IMAGE_OUPUT = r'''Optional. The format in which the generated images are returned. This parameter is only
+		supported for the GPT image models. Must be one of png, jpeg, or webp.
+'''
+
+IMAGE_RESPONSE = r'''Optional. The format in which generated images with dall-e-2 and dall-e-3 are
+		returned. Must be one of url or b64_json. URLs are only valid for 60 minutes after the
+		image has been generated. This parameter isn't supported for models which
+		always return base64-encoded images.
+'''
+
+IMAGE_SIZE = r'''Optional. The size of the generated images. Must be one of 1024x1024,
+		1536x1024 (landscape), 1024x1536 (portrait), or auto (default value) for the GPT image
+		models, one of 256x256, 512x512, or 1024x1024 for dall-e-2, and one of 1024x1024,
+		1792x1024, or 1024x1792 for dall-e-3.
+'''
+
+IMAGE_STYLE = r'''Optional. The style of the generated images. This parameter is only supported for
+		dall-e-3. Must be one of vivid or natural. Vivid causes the model to lean towards generating
+		hyper-real and dramatic images. Natural causes the model to produce more natural,
+		less hyper-real looking images.
+'''
+
