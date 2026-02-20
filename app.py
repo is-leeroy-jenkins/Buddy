@@ -2415,7 +2415,6 @@ with st.sidebar:
 if mode == 'Chat':
 	st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
 	st.divider( )
-	st.header( '' )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	chat_model = st.session_state.get( 'model', None )
@@ -2520,6 +2519,7 @@ if mode == 'Chat':
 # ======================================================================================
 elif mode == "Text":
 	st.subheader( "💬 Text Generation", help=cfg.TEXT_GENERATION )
+	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	text_model = st.session_state.get( 'text_model', None )
@@ -2545,9 +2545,8 @@ elif mode == "Text":
 	
 	for key in [ 'text_domains', 'text_stops' ]:
 		if key in st.session_state and isinstance( st.session_state[ key ], str ):
-			st.session_state[ key ] = [ v.strip( )
-					for v in st.session_state[ key ].split( ',' )
-					if v.strip( ) ]
+			st.session_state[ key ] = [ v.strip( ) for v in st.session_state[ key ].split( ',' )
+			                            if v.strip( ) ]
 		
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
@@ -2619,7 +2618,7 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-					border=True, gap='xsmall' )
+					border=True, gap='xxsmall' )
 				
 				with prm_c1:
 					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
@@ -2706,7 +2705,7 @@ elif mode == "Text":
 			# ------------------------------------------------------------------
 			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xsmall' )
+						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					with resp_c1:
 						set_text_stream = st.toggle( 'Stream', key='text_stream', value=False, help=cfg.STREAM )
@@ -2758,9 +2757,7 @@ elif mode == "Text":
 				st.session_state[ 'do_clear_instructions' ] = True
 				st.rerun( )
 		
-		# ------------------------------------------------------------------
-		# ----------- MESSAGES ---------------------------------------------
-		# ------------------------------------------------------------------
+		# ----------- MESSAGES ---------------------------------
 		for msg in st.session_state.messages:
 			with st.chat_message( msg[ 'role' ], avatar="" ):
 				st.markdown( msg[ 'content' ] )
@@ -2839,6 +2836,7 @@ elif mode == "Text":
 # ======================================================================================
 elif mode == "Images":
 	st.subheader( '📷 Images API', help=cfg.IMAGES_API )
+	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	image_model = st.session_state.get( 'image_model', None )
@@ -2870,16 +2868,16 @@ elif mode == "Images":
 		st.text( '⚙️ Image Settings' )
 	
 	# ------------------------------------------------------------------
-	# Image Main  UI
-	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	# ------------------------------------------------------------------
 	# EXPANDER — IMAGE SETTINGS
 	# ------------------------------------------------------------------
 	if st.session_state.get( 'clear_image_instructions', False ):
 		st.session_state[ 'image_system_instructions' ] = ''
 		st.session_state[ 'clear_image_instructions' ] = False
 	
+	# ------------------------------------------------------------------
+	# Image Main  UI
+	# ------------------------------------------------------------------
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
 		# Expander — Image LLM Configuration
@@ -3056,7 +3054,6 @@ elif mode == "Images":
 			if st.button( 'Clear Instructions', width='stretch' ):
 				st.session_state[ 'clear_image_instructions' ] = True
 				st.rerun( )
-	
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 		with tab_gen:
 			prompt = st.chat_input( 'Prompt' )
@@ -3239,6 +3236,8 @@ elif mode == "Images":
 # AUDIO MODE
 # ======================================================================================
 elif mode == "Audio":
+	st.subheader( '🔉 Audio API', help=cfg.AUDIO_API )
+	st.divider( )
 	# ------------------------------------------------------------------
 	# Provider-aware Audio instantiation
 	# ------------------------------------------------------------------
@@ -3265,7 +3264,6 @@ elif mode == "Audio":
 	audio_loop = st.session_state.get( 'audio_loop', False )
 	auto_play = st.session_state.get( 'auto_play', False )
 	voice = st.session_state.get( 'voice', None )
-	st.subheader( '🔉 Audio API', help=cfg.AUDIO_API )
 	transcriber = None
 	translator = None
 	tts = None
@@ -3519,6 +3517,8 @@ elif mode == "Audio":
 # EMBEDDINGS MODE
 # ======================================================================================
 elif mode == 'Embeddings':
+	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
+	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	embedding_model = st.session_state.get( 'embedding_model' )
@@ -3526,7 +3526,6 @@ elif mode == 'Embeddings':
 	encoding = st.session_state.get( 'embedding_encoding_format' )
 	input_text = st.session_state.get( 'embedding_input_text' )
 	embedding = provider_module.Embeddings( )
-	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -3722,10 +3721,13 @@ elif mode == 'Vector Stores':
 	searcher = None
 	if provider_name == 'Grok':
 		st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
+		st.divider( )
 	elif provider_name == 'Gemini':
 		st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
+		st.divider( )
 	elif provider_name == 'GPT':
 		st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
+		st.divider( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -3841,7 +3843,6 @@ elif mode == 'Vector Stores':
 	elif provider_name == 'Gemini':
 		provider_module = get_provider_module( )
 		searcher = provider_module.VectorStores( )
-		st.divider( )
 		
 		# --------------------------------------------------------------
 		# Local mapping (if maintained by wrapper)
@@ -3951,7 +3952,6 @@ elif mode == 'Vector Stores':
 	elif provider_name == 'GPT':
 		provider_module = get_provider_module( )
 		vector = provider_module.VectorStores( )
-		st.divider( )
 		
 		# --------------------------------------------------------------
 		# Local mapping
@@ -4062,7 +4062,8 @@ elif mode == 'Vector Stores':
 # DOCUMENTS MODE
 # ======================================================================================
 elif mode == 'Document Q&A':
-	st.subheader( '📘 Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
+	st.subheader( '📚 Document Q & A', help=cfg.DOCUMENT_Q_AND_A )
+	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = st.session_state.get( 'files' )
@@ -4075,7 +4076,7 @@ elif mode == 'Document Q&A':
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.5, 0.9, 0.5 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
 		# Expander — DocQA Inference Parameters
@@ -4198,6 +4199,7 @@ elif mode == 'Document Q&A':
 # ======================================================================================
 elif mode == 'Files':
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
+	st.divider( )
 	purpose = st.session_state.get( 'purpose' )
 	file_type = st.session_state.get( 'file_type' )
 	file_id = st.session_state.get( 'file_id' )
@@ -4277,13 +4279,13 @@ elif mode == 'Files':
 # PROMPT ENGINEERING MODE
 # ======================================================================================
 elif mode == 'Prompt Engineering':
+	st.subheader( '📝 Prompt Engineering', help=cfg.PROMPT_ENGINEERING )
+	st.divider( )
 	import sqlite3
 	import math
 	
 	TABLE = 'Prompts'
 	PAGE_SIZE = 10
-	
-	st.subheader( '📝 Prompt Engineering', help=cfg.PROMPT_ENGINEERING )
 	st.session_state.setdefault( 'pe_cascade_enabled', False )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
@@ -4504,6 +4506,7 @@ elif mode == 'Prompt Engineering':
 # ==============================================================================
 elif mode == 'Data Export':
 	st.subheader( '📭  Export' )
+	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		st.divider( )
@@ -4511,11 +4514,9 @@ elif mode == 'Data Export':
 		# -----------------------------------
 		# Prompt export (System Instructions)
 		st.caption( 'System Prompt' )
-		
 		export_format = st.radio( 'Export Format', options=[ 'XML-Delimited', 'Markdown' ],
 			horizontal=True, help='Choose how system instructions should be exported.' )
 		prompt_text: str = st.session_state.get( 'system_prompt', '' )
-		
 		if export_format == 'Markdown':
 			try:
 				export_text: str = convert_xml( prompt_text )
@@ -4565,6 +4566,7 @@ elif mode == 'Data Export':
 # ==============================================================================
 elif mode == 'Data Management':
 	st.subheader( "🏛️ Data Management", help=cfg.DATA_MANAGEMENT )
+	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		tabs = st.tabs( [ "📥 Import", "🗂 Browse", "💉 CRUD", "📊 Explore", "🔎 Filter",
