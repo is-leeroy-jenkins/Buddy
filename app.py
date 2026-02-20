@@ -2117,9 +2117,6 @@ if 'image_store' not in st.session_state:
 if 'image_stream' not in st.session_state:
 	st.session_state[ 'image_stream' ] = False
 
-if 'image_input' not in st.session_state:
-	st.session_state[ 'image_input' ] = None
-
 if 'image_response_format' not in st.session_state:
 	st.session_state[ 'image_response_format' ] = None
 
@@ -2128,6 +2125,24 @@ if 'image_tools' not in st.session_state:
 
 if 'image_messages' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+
+if 'image_domains' not in st.session_state:
+	st.session_state[ 'image_domains' ] = [ ]
+
+if 'image_detail' not in st.session_state:
+	st.session_state[ 'image_detail' ] = None
+
+if 'image_style' not in st.session_state:
+	st.session_state[ 'image_style' ] = None
+
+if 'image_quality' not in st.session_state:
+	st.session_state[ 'image_quality' ] = None
+
+if 'image_backcolor' not in st.session_state:
+	st.session_state[ 'image_backcolor' ] = None
+
+if 'image_format' not in st.session_state:
+	st.session_state[ 'image_format' ] = None
 
 # ------- IMAGE-SPECIFIC PARAMETER---------------
 if 'size' not in st.session_state:
@@ -2532,21 +2547,20 @@ elif mode == "Text":
 	text_parallel_tools = st.session_state.get( 'text_parallel_tools', None )
 	text_max_calls = st.session_state.get( 'text_max_calls', None )
 	text_store = st.session_state.get( 'text_store', None )
-	text_tools = st.session_state.get( 'text_tools', [ ] )
+	text_tools = st.session_state.get( 'text_tools', None )
 	text_include = st.session_state.get( 'text_include', None )
-	text_domains = st.session_state.get( 'text_domains', [ ] )
-	text_stops = st.session_state.get( 'text_stops', [ ] )
+	text_domains = st.session_state.get( 'text_domains', None )
+	text_stops = st.session_state.get( 'text_stops', None )
 	text_input = st.session_state.get( 'text_input', None )
 	text_choice = st.session_state.get( 'text_tool_choice', None )
 	text_background = st.session_state.get( 'text_background', None )
-	text_messages = st.session_state.get( 'text_messages', [ ] )
+	text_messages = st.session_state.get( 'text_messages', None )
 	text_tokens = st.session_state.get( 'text_max_tokens', None )
 	text = provider_module.Chat( )
 	
 	for key in [ 'text_domains', 'text_stops' ]:
-		if key in st.session_state and isinstance( st.session_state[ key ], str ):
-			st.session_state[ key ] = [ v.strip( ) for v in st.session_state[ key ].split( ',' )
-			                            if v.strip( ) ]
+		if key in st.session_state and isinstance( st.session_state[ key ], list ):
+			del st.session_state[ key ]
 		
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
@@ -2605,8 +2619,7 @@ elif mode == "Text":
 						# ----------------------------------------------------------
 						# Remove Model Settings session keys
 						# ----------------------------------------------------------
-						
-						for key in [ 'text_model', 'text_include', 'text_domains',
+						for key in [ 'text_model', 'text_include', 'text_domains', 'text_stops',
 						             'text_reasoning', 'text_domains_input' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
@@ -2692,7 +2705,6 @@ elif mode == "Text":
 					# ----------------------------------------------------------
 					# Remove Tool Settings session keys
 					# ----------------------------------------------------------
-					
 					for key in [ 'text_parallel_tools', 'text_max_tools', 'text_tool_choice',
 							'text_tools', ]:
 						if key in st.session_state:
@@ -2785,15 +2797,14 @@ elif mode == "Text":
 					gen_kwargs[ 'presence' ] = st.session_state[ 'text_presense_penalty' ]
 					
 					if st.session_state[ 'text_stops' ]:
-						gen_kwargs[ 'text_stops' ] = st.session_state[ 'text_stops' ]
+						gen_kwargs[ 'stops' ] = st.session_state[ 'text_stops' ]
 					
 					response = None
 					
 					try:
 						mdl = str( gen_kwargs[ 'text_model' ] )
 						if mdl.startswith( 'gpt-5' ):
-							response = chat.generate_text( prompt=prompt, model=gen_kwargs[ 'text_model' ]
-							)
+							response = chat.generate_text( prompt=prompt, model=gen_kwargs[ 'text_model' ] )
 						else:
 							response = chat.generate_text( )
 					
@@ -2806,7 +2817,7 @@ elif mode == "Text":
 						st.markdown( response )
 						st.session_state.messages.append( { 'role': 'assistant', 'content': response } )
 					else:
-						st.error( 'Generation returned no content.' )
+						st.error( 'Generation Failed!.' )
 			
 						try:
 							_update_token_counters( getattr( chat, 'response', None ) or response )
@@ -2845,6 +2856,12 @@ elif mode == "Images":
 	image_quality = st.session_state.get( 'image_quality', None )
 	image_format = st.session_state.get( 'image_format', None )
 	image_detail = st.session_state.get( 'image_detail', None )
+	image_style = st.session_state.get( 'image_style', None )
+	image_quality = st.session_state.get( 'image_quality', None )
+	image_backcolor = st.session_state.get( 'image_backcolor', None )
+	image_size = st.session_state.get( 'image_size', None )
+	image_stops = st.session_state.get( 'image_stops', None )
+	image_domains = st.session_state.get( 'image_domains', None )
 	image_top_p = st.session_state.get( 'image_top_percent', None)
 	image_freq = st.session_state.get( 'image_frequency_penalty', None )
 	image_presense = st.session_state.get( 'image_presense_penalty', None)
@@ -2855,25 +2872,16 @@ elif mode == "Images":
 	image_background = st.session_state.get( 'image_background', None)
 	image = provider_module.Images( )
 	
-	for key in [ 'image_domains', 'image_stops' ]:
-		if key in st.session_state and isinstance( st.session_state[ key ], str ):
-			st.session_state[ key ] = [ v.strip( )
-					for v in st.session_state[ key ].split( ',' )
-					if v.strip( ) ]
-			
-	# ------------------------------------------------------------------
-	# Sidebar — Image Settings
-	# ------------------------------------------------------------------
-	with st.sidebar:
-		st.text( '⚙️ Image Settings' )
-	
+	if isinstance( st.session_state.get( 'image_domains' ), str ):
+		del st.session_state[ 'image_domains' ]
+	a
 	# ------------------------------------------------------------------
 	# EXPANDER — IMAGE SETTINGS
 	# ------------------------------------------------------------------
 	if st.session_state.get( 'clear_image_instructions', False ):
 		st.session_state[ 'image_system_instructions' ] = ''
 		st.session_state[ 'clear_image_instructions' ] = False
-	
+		
 	# ------------------------------------------------------------------
 	# Image Main  UI
 	# ------------------------------------------------------------------
@@ -2883,7 +2891,7 @@ elif mode == "Images":
 		# Expander — Image LLM Configuration
 		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
-			# Expander - Image Generation Model Parameter
+			# Expander - Image Model Parameter
 			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
 				llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 					border=True, gap='medium' )
@@ -2902,10 +2910,13 @@ elif mode == "Images":
 					image_includes = st.session_state[ 'image_include' ]
 				
 				with llm_c3:
-					set_image_domains = st.text_input( 'Allowed Domains', key='image_domains',
-						value='\n'.join( st.session_state.get( 'image_domains', [ ] ) ),
+					set_image_domains = st.text_input( 'Allowed Domains', key='set_image_domains',
+						value=','.join( st.session_state.get( 'image_domains', [ ] ) ),
 						help=cfg.ALLOWED_DOMAINS, width='stretch' )
-					image_domains = st.session_state[ 'image_domains' ]
+					
+					image_domains = [ d.strip( ) for d in set_image_domains.split( ',' )
+							if d.strip( ) ]
+					st.session_state[ 'image_domains' ] = image_domains
 				
 				with llm_c4:
 					set_image_reasoning = st.multiselect( 'Reasoning:', options=image.reasoning_options,
@@ -2916,8 +2927,8 @@ elif mode == "Images":
 					# ----------------------------------------------------------
 					# Remove Image Model Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'image_model', 'image_include', 'image_domains',
-							'image_reasoning', ]:
+					for key in [ 'image_model', 'image_include', 'image_domains', 'image_stops',
+					             'image_reasoning', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 							
@@ -2926,7 +2937,7 @@ elif mode == "Images":
 						
 						st.rerun( )
 
-			# Expander - Image Generation Inference Parameters
+			# Expander - Image Inference Parameters
 			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 					border=True, gap='xxsmall' )
@@ -2963,7 +2974,7 @@ elif mode == "Images":
 					
 				st.button( 'Reset', key='image_inference_reset', width='stretch' )
 				
-			# Expander - Image Generation Tool Options
+			# Expander - Image Tool Options
 			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
 				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 					border=True, gap='medium' )
@@ -2998,9 +3009,8 @@ elif mode == "Images":
 							del st.session_state[ key ]
 					
 					st.rerun( )
-				
-				
-			# Expander — Image Generation Response
+					
+			# Expander — Image Response Parameters
 			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
 				res_one, res_two, res_three, res_four, res_five = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
@@ -3043,7 +3053,66 @@ elif mode == "Images":
 						del st.session_state[ 'image_stops_input' ]
 					
 					st.rerun( )
-
+			
+			# Expander — Image Settings Parameters
+			with st.expander( 'Image Settings', expanded=False, width='stretch' ):
+				img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				
+				with img_c1:
+					set_image_deatil = st.selectbox( 'Image Detail', image.detail_options,
+						help='Optional. Image detail',
+						key='image_detail',
+						index=(image.detail_options.index( st.session_state[ 'image_detail' ] )
+						       if st.session_state.get( 'image_detail' ) in image.detail_options else 0), )
+					image_detail = st.session_state[ 'image_detail' ]
+				
+				with img_c2:
+					set_image_size = st.selectbox( 'Image Size', image.size_options,
+						help='Optional. Image size',
+						key='image_size',
+						index=(image.size_options.index( st.session_state[ 'image_size' ] )
+						       if st.session_state.get( 'image_size' ) in image.size_options else 0), )
+					image_size = st.session_state[ 'image_size' ]
+				
+				with img_c3:
+					set_image_quality = st.selectbox( 'Image quality', image.quality_options,
+						help='Optional. Image Quality',
+						key='image_quality',
+						index=(image.quality_opotions.index( st.session_state[ 'image_quality' ] )
+						       if st.session_state.get( 'image_quality' ) in image.quality_options else 0), )
+					image_quality = st.session_state[ 'image_quality' ]
+				
+				with img_c4:
+					set_image_backcolor = st.selectbox( 'Image Background', image.background_options,
+						help='Optional. Image Background Color',
+						key='image_backcolor',
+						index=(image.background_options.index( st.session_state[ 'image_backcolor' ] )
+						       if st.session_state.get( 'image_backcolor' ) in image.background_options else 0), )
+					image_backcolor = st.session_state[ 'image_backcolor' ]
+				
+				with img_c5:
+					set_image_format = st.selectbox( 'Image Format', image.output_options,
+						help='Optional. Image Background Color',
+						key='image_format',
+						index=(image.output_options.index( st.session_state[ 'image_format' ] )
+							if st.session_state.get( 'image_format' ) in image.output_options else 0), )
+					image_format = st.session_state[ 'image_format' ]
+				
+				if st.button( 'Reset', key='image_response_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Image Response session keys
+					# ----------------------------------------------------------
+					for key in [ 'image_stream', 'image_store', 'image_background',
+					             'image_stops', 'image_max_tokens', ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					# If canonical separation used
+					if 'image_stops_input' in st.session_state:
+						del st.session_state[ 'image_stops_input' ]
+					
+					st.rerun( )
+		
 		# ------------------------------------------------------------------
 		# Expander — Image System Instructions
 		# ------------------------------------------------------------------
@@ -3054,6 +3123,7 @@ elif mode == "Images":
 			if st.button( 'Clear Instructions', width='stretch' ):
 				st.session_state[ 'clear_image_instructions' ] = True
 				st.rerun( )
+		
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 		with tab_gen:
 			prompt = st.chat_input( 'Prompt' )

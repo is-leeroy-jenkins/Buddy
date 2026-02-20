@@ -966,7 +966,7 @@ class Images( GPT ):
 		         '1024x1024' ]
 	
 	@property
-	def format_options( self ) -> List[ str ]:
+	def input_options( self ) -> List[ str ]:
 		'''
 	
 	        Purpose:
@@ -1310,9 +1310,9 @@ class TTS( GPT ):
 	reasoning: Optional[ Dict[ str, str ] ]
 	response: Optional[ openai.types.responses.Response ]
 	
-	def __init__( self, number: int = 1, temperature: float = 0.8, top_p: float = 0.9,
-			frequency: float = 0.0, presence: float = 0.0, max_tokens: int = 10000,
-			store: bool = True, stream: bool = True, instruct: str = None ):
+	def __init__( self, number: int=1, temperature: float=0.8, top_p: float=0.9,
+			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, stream: bool=True, instruct: str=None ):
 		'''
 
 	        Purpose:
@@ -1396,8 +1396,8 @@ class TTS( GPT ):
         '''
 		return [ 0.25, 1.0, 4.0 ]
 	
-	def create_audio( self, text: str, filepath: str, format: str = 'mp3',
-			speed: float = 1.0, voice: str = 'aria' ) -> str:
+	def create_audio( self, text: str, filepath: str, format: str='mp3',
+			speed: float=1.0, voice: str='aria' ) -> str:
 		"""
 	
 	        Purpose
@@ -1540,8 +1540,8 @@ class Transcription( GPT ):
 	reasoning: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self, model: str = 'gpt-4o-mini-transcribe', temperature: float = 0.8,
-			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0, max_tokens: int = 10000,
-			store: bool = True, language: str = 'en', instruct: str = None ):
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+			store: bool=True, language: str='english', instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=self.api_key )
@@ -1611,15 +1611,25 @@ class Transcription( GPT ):
 	        Method that returns a list of voice names
 
         '''
-		return [ 'en',
-		         'sp',
-		         'fr',
-		         'jp',
-		         'de',
-		         'it',
-		         'zh', 'pt', 'ru', 'uk', 'el', 'he', 'ar', 'hi', 'ko', 'vi', 'th' ]
+		return [ 'english'
+		         'spanish'
+		         'french'
+		         'german'
+		         'italian'
+		         'portuguese'
+		         'russian'
+		         'ukrainian'
+		         'greek'
+		         'hebrew'
+		         'arabic'
+		         'hindi'
+		         'chinese'
+		         'japanese'
+		         'korean'
+		         'vietnamese'
+		         'thai' ]
 	
-	def transcribe( self, path: str, model: str = 'gpt-4o-mini-transcribe', language: str = 'en' ) -> str:
+	def transcribe( self, path: str, model: str='gpt-4o-mini-transcribe', language: str='en' ) -> str:
 		"""
 		
 			Purpose:
@@ -1723,8 +1733,8 @@ class Translation( GPT ):
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, model: str = 'gpt-5-mini', temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, store: bool = True, stream: bool = True, instruct: str = None ):
+	def __init__( self, model: str='gpt-5-mini', temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=False, instruct: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
@@ -1807,17 +1817,17 @@ class Translation( GPT ):
 		         'sage',
 		         'shiver', ]
 	
-	def translate( self, prompt: str, path: str, model: str = 'gpt-5-mini',
-			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000,
-			store: bool = True, stream: bool = True, instruct: str = None ) -> str | None:
+	def translate( self, prompt: str, filepath: str, model: str='gpt-5-mini',
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, language: str='english',
+			store: bool=True, stream: bool=True, instruct: str=None ) -> str | None:
 		"""
 		
             Translate non-English speech to English with Whisper.
         
         """
 		try:
-			throw_if( 'path', path )
+			throw_if( 'path', filepath )
 			throw_if( 'prompt', prompt )
 			self.model = model
 			self.temperature = temperature
@@ -1828,7 +1838,8 @@ class Translation( GPT ):
 			self.store = store
 			self.stream = stream
 			self.instruct = instruct
-			with open( path, 'rb' ) as audio_file:
+			self.target_language = language
+			with open( filepath, 'rb' ) as audio_file:
 				self.response = self.client.audio.translations.create( model=self.model,
 					file=audio_file )
 			return resp.text
