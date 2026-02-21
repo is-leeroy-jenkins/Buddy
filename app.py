@@ -84,6 +84,60 @@ from grok import ( Chat, Images, Files, Transcription, TTS, Translation, VectorS
 # ==============================================================================
 # RESPONSE/CHAT UTILITIES
 # ==============================================================================
+def fetch_prompt_names( db_path: str ) -> list[ str ]:
+	"""
+		Purpose:
+		--------
+		Retrieve template names from Prompts table.
+	
+		Parameters:
+		-----------
+		db_path : str
+			SQLite database path.
+	
+		Returns:
+		--------
+		list[str]
+			Sorted prompt names.
+	"""
+	try:
+		conn = sqlite3.connect( db_path )
+		cur = conn.cursor( )
+		cur.execute( "SELECT Name FROM Prompts ORDER BY Name;" )
+		rows = cur.fetchall( )
+		conn.close( )
+		return [ r[ 0 ] for r in rows if r and r[ 0 ] is not None ]
+	except Exception:
+		return [ ]
+
+def fetch_prompt_text( db_path: str, name: str ) -> str | None:
+	"""
+		Purpose:
+		--------
+		Retrieve template text by name.
+	
+		Parameters:
+		-----------
+		db_path : str
+			SQLite database path.
+		name : str
+			Template name.
+	
+		Returns:
+		--------
+		str | None
+			Prompt text if found.
+	"""
+	try:
+		conn = sqlite3.connect( db_path )
+		cur = conn.cursor( )
+		cur.execute( "SELECT Text FROM Prompts WHERE Name = ?;", (name,) )
+		row = cur.fetchone( )
+		conn.close( )
+		return str( row[ 0 ] ) if row and row[ 0 ] is not None else None
+	except Exception:
+		return None
+
 def extract_response_text( response: object ) -> str:
 	"""
 		
@@ -1946,8 +2000,8 @@ if 'image_system_instructions' not in st.session_state:
 if 'audio_system_instructions' not in st.session_state:
 	st.session_state[ 'audio_system_instructions' ] = ''
 
-if 'doc_instructions' not in st.session_state:
-	st.session_state.doc_instructions = ''
+if 'docqa_system_instructions' not in st.session_state:
+	st.session_state.docqa_systems_instructions = ''
 
 #--------CHAT-GENERATION PARAMETERS--------------------
 if 'execution_mode' not in st.session_state:
@@ -2139,7 +2193,7 @@ if 'image_mode' not in st.session_state:
 if 'image_size' not in st.session_state:
 	st.session_state[ 'image_size' ] = None
 
-if 'iamge_style' not in st.session_state:
+if 'image_style' not in st.session_state:
 	st.session_state[ 'image_style' ] = None
 
 if 'image_detail' not in st.session_state:
@@ -2567,8 +2621,9 @@ elif mode == "Text":
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
-		if st.session_state.get( 'do_clear_instructions', False ):
+		if st.session_state.get( 'do_clear_instructions' ):
 			st.session_state[ 'text_system_instructions' ] = ''
+			st.session_state[ 'instructions_last_loaded' ] = None
 			st.session_state[ 'do_clear_instructions' ] = False
 		
 		# ------------------------------------------------------------------
@@ -2756,12 +2811,30 @@ elif mode == "Text":
 		# Expander — Text System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-			st.text_area( 'Prompt Text', height=150, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
-			text_instructions = st.session_state[ 'text_system_instructions' ]
-			if st.button( 'Clear Instructions', width='stretch' ):
-				st.session_state[ 'do_clear_instructions' ] = True
-				st.rerun( )
+			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			prompt_names = fetch_prompt_names( cfg.DB_PATH )
+			if not prompt_names:
+				prompt_names = [ 'No Templates Found' ]
+
+			with in_left:
+				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
+			
+			def _on_template_change( ) -> None:
+				name = st.session_state.get( 'instructions' )
+				if name and name != 'No Templates Found':
+					text = fetch_prompt_text( cfg.DB_PATH, name )
+					if text is not None:
+						st.session_state[ 'text_system_instructions' ] = text
+			
+			with in_right:
+				st.selectbox( 'Select Template', prompt_names,
+					key='instructions', on_change=_on_template_change )
+			
+			def _on_clear( ) -> None:
+				st.session_state[ 'text_system_instructions' ] = ''
+			
+			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
 		# ----------- MESSAGES ---------------------------------
 		for msg in st.session_state.messages:
@@ -2878,9 +2951,10 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	# EXPANDER — IMAGE SETTINGS
 	# ------------------------------------------------------------------
-	if st.session_state.get( 'clear_image_instructions', False ):
+	if st.session_state.get( 'do_clear_instructions' ):
 		st.session_state[ 'image_system_instructions' ] = ''
 		st.session_state[ 'clear_image_instructions' ] = False
+		st.session_state[ 'do_clear_instructions' ] = False
 		
 	# ------------------------------------------------------------------
 	# Image Main  UI
@@ -3142,18 +3216,37 @@ elif mode == "Images":
 							del st.session_state[ key ]
 					
 					st.rerun( )
-			
+		
 		# ------------------------------------------------------------------
 		# Expander — Image System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-			st.text_area( 'Prompt Text', height=100, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
+			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			prompt_names = fetch_prompt_names( cfg.DB_PATH )
+			if not prompt_names:
+				prompt_names = [ 'No Templates Found' ]
 			
-			if st.button( 'Clear Instructions', width='stretch' ):
-				st.session_state[ 'clear_image_instructions' ] = True
-				st.rerun( )
+			with in_left:
+				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
+			
+			def _on_template_change( ) -> None:
+				name = st.session_state.get( 'instructions' )
+				if name and name != 'No Templates Found':
+					text = fetch_prompt_text( cfg.DB_PATH, name )
+					if text is not None:
+						st.session_state[ 'image_system_instructions' ] = text
+			
+			with in_right:
+				st.selectbox( 'Select Template', prompt_names,
+					key='instructions', on_change=_on_template_change )
+			
+			def _on_clear( ) -> None:
+				st.session_state[ 'image_system_instructions' ] = ''
+			
+			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
+		# Image Modes
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 		with tab_gen:
 			prompt = st.chat_input( 'Prompt' )
@@ -3391,9 +3484,10 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	#  AUDIO SETTINGS
 	# ------------------------------------------------------------------
-	if st.session_state.get( 'clear_audio_instructions', False ):
+	if st.session_state.get( 'do_clear_instructions' ):
 		st.session_state[ 'audio_system_instructions' ] = ''
 		st.session_state[ 'clear_audio_instructions' ] = False
+		st.session_state[ 'do_clear_instructions' ] = False
 		
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -3401,7 +3495,7 @@ elif mode == "Audio":
 	left, center, right = st.columns( [ 0.05, 0.9,  0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander —Audio LLM Configuration
+		# Expander — Audio LLM Configuration
 		# ------------------------------------------------------------------
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# Expander — Audio Model
@@ -3535,13 +3629,31 @@ elif mode == "Audio":
 		# Expander — Audio System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
-			st.text_area( 'Prompt Text', height=100, width='stretch',
-				help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
+			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			prompt_names = fetch_prompt_names( cfg.DB_PATH )
+			if not prompt_names:
+				prompt_names = [ 'No Templates Found' ]
 			
-			if st.button( 'Clear Instructions', width='stretch' ):
-				st.session_state[ 'clear_audio_instructions' ] = True
-				st.rerun( )
-
+			with in_left:
+				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
+			
+			def _on_template_change( ) -> None:
+				name = st.session_state.get( 'instructions' )
+				if name and name != 'No Templates Found':
+					text = fetch_prompt_text( cfg.DB_PATH, name )
+					if text is not None:
+						st.session_state[ 'auido_system_instructions' ] = text
+			
+			with in_right:
+				st.selectbox( 'Select Template', prompt_names,
+					key='instructions', on_change=_on_template_change )
+			
+			def _on_clear( ) -> None:
+				st.session_state[ 'audio_system_instructions' ] = ''
+			
+			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
+		
 		left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
 		
 		# -----------UPLOAD AUDIO----------------------
@@ -4174,6 +4286,14 @@ elif mode == 'Document Q&A':
 	doc_multi_mode = st.session_state.get( 'doc_multi_mode' )
 	
 	# ------------------------------------------------------------------
+	#  DOCQA SETTINGS
+	# ------------------------------------------------------------------
+	if st.session_state.get( 'do_clear_instructions' ):
+		st.session_state[ 'docqa_system_instructions' ] = ''
+		st.session_state[ 'clear_docqa_instructions' ] = False
+		st.session_state[ 'do_clear_instructions' ] = False
+	
+	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
@@ -4219,47 +4339,36 @@ elif mode == 'Document Q&A':
 						del st.session_state[ key ]
 				
 				st.rerun( )
-
+		
 		# ------------------------------------------------------------------
 		# Expander — DocQA System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( '💻 System Instructions', expanded=True, width='stretch' ):
-			left_inst, right_inst = st.columns( [ 0.6, 0.4 ], vertical_alignment='center', border=True )
+		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			prompt_names = fetch_prompt_names( cfg.DB_PATH )
+			if not prompt_names:
+				prompt_names = [ 'No Templates Found' ]
 			
-			with left_inst:
-				st.text_area( 'Enter Text', height=100, width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS, key='doc_system_instruction' )
-				instructions = st.session_state.get( 'doc_system_instruction', '' )
-				
-			with right_inst:
-				source = st.radio( 'Source', [ 'Upload Local', 'Files API', 'Vector Store' ] )
-				st.session_state.doc_source = source.lower( ).replace( ' ', '' )
+			with in_left:
+				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='docqa_system_instructions' )
 			
-			left_btn, center_btn, right_btn = st.columns( [ 0.6,  0.2, 0.2 ] )
-			with left_btn:
-				if st.button( 'Clear Conversation', width='stretch' ):
-					st.session_state.doc_messages = [ ]
-					st.rerun( )
+			def _on_template_change( ) -> None:
+				name = st.session_state.get( 'instructions' )
+				if name and name != 'No Templates Found':
+					text = fetch_prompt_text( cfg.DB_PATH, name )
+					if text is not None:
+						st.session_state[ 'docqa_system_instructions' ] = text
 			
-			with center_btn:
-				reset_doc_ins = st.button( 'Clear Instructions', width='stretch',
-					key='clear_doc_instructions' )
-				if reset_doc_ins:
-					st.session_state.doc_system_instruction = ''
-					
-			with right_btn:
-				if st.button( 'Summarize Document', width='stretch' ):
-					if not st.session_state.get( 'doc_active_docs' ):
-						st.warning( 'No document loaded.' )
-					else:
-						st.session_state.doc_messages.append({'role': 'user',
-						                                      'content': 'Summarize this document.'})
-					
-					summary = summarize_active_document( )
-					st.session_state.doc_messages.append({'role': 'assistant','content': summary})
-					
-					st.rerun( )
+			with in_right:
+				st.selectbox( 'Select Template', prompt_names,
+					key='instructions', on_change=_on_template_change )
 			
+			def _on_clear( ) -> None:
+				st.session_state[ 'docqa_system_instructions' ] = ''
+			
+			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
+		
 		doc_left, doc_right = st.columns( [ 0.2, 0.8 ], border=True )
 		with doc_left:
 			uploaded = st.file_uploader( 'Upload', type=[ 'pdf', 'txt', 'md', 'docx' ],
