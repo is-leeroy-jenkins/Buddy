@@ -189,7 +189,7 @@ class Chat( GPT ):
 	file: Optional[ openai.types.file_object.FileObject ]
 	purpose: Optional[ str ]
 	
-	def __init__( self, model: str='gpt-5-nano', temperature: float=0.8, top_p: float=0.9,
+	def __init__( self, model: str='gpt-5-nano', temperature: float=0.0, top_p: float=0.0,
 			frequency: float=0.0, presence: float=0.0, max_tokens: int=10000, stream: bool=False,
 			store: bool=True, stops: List[str]=None, instruct: str=None ):
 		super( ).__init__( )
@@ -335,8 +335,8 @@ class Chat( GPT ):
 		         'minimal',
 		         'xhigh' ]
 	
-	def generate_text( self, prompt: str, model: str='gpt-5-nano', temperature: float=0.8,
-			top_p: float=0.9, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
+	def generate_text( self, prompt: str, model: str='gpt-5-nano', temperature: float=0.0,
+			top_p: float=0.0, frequency: float=0.0, presence: float=0.0, max_tokens: int=10000,
 			store: bool=True, stream: bool=True, instruct: str=None, background: bool=False,
 			reasoning: str='low', include: str=None  ) -> str | None:
 		"""
@@ -1097,49 +1097,43 @@ class Images( GPT ):
 		         'minimal',
 		         'xhigh' ]
 	
-	def generate( self, prompt: str, model: str, quality: str, size: str,
-			style: str='natural', output: str='png', instruct: str=None, backcolor: str=None ) -> str:
-		"""
+	def generate( self, prompt: str, number: int=1, model: str ='dall-e-3',
+			size: str='1024x1024', quality: str='standard', fmt: str = '.png' ) -> str | None:
+		'''
+	
+	        Purpose
+	        _______
+	        Generates an image given a prompt
+	
+	
+	        Parameters
+	        ----------
+	        prompt: str
 
-                Purpose
-                _______
-                Generate an image from a text prompt.
+	
+	        Returns
+	        -------
+	        str | None
 
-
-                Parameters
-                ----------
-                prompt: str
-
-
-                Returns
-                -------
-                Image object
-
-        """
+        '''
 		try:
-			throw_if( 'text', prompt )
-			throw_if( 'model', model )
-			throw_if( 'quality', quality )
-			throw_if( 'size', size )
-			self.input_text = prompt
+			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.number = number
 			self.model = model
-			self.quality = quality
 			self.size = size
-			self.style = style
-			self.backcolor = backcolor
-			self.output_format = output
-			self.tools.append( { 'type': 'image_generation' } )
-			self.instruct = instruct
+			self.quality = quality
+			self.response_format = fmt
 			self.client = OpenAI( api_key=self.api_key )
-			self.response = self.client.responses.create( model=self.model, input=self.input_text,
-				size=self.size, style=self.style, response_format=self.response_format,
-				tools=self.tools, quality=self.quality )
+			self.response = self.client.images.generate( model=self.model, prompt=self.prompt,
+				size=self.size, quality=self.quality, response_format=self.response_format,
+				n=self.number )
 			return self.response.data[ 0 ].url
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Images'
-			exception.method = 'generate( self, path: str ) -> str'
+			exception.cause = 'Chat'
+			exception.method = ('generate_image( self, prompt: str ) -> str | None')
 			raise exception
 	
 	def analyze( self, text: str, path: str, model: str='gpt-4o-mini', ) -> str:

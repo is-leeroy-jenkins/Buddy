@@ -257,7 +257,7 @@ class Payload( ):
 		
 	'''
 	temperature: Optional[ float ]
-	top_p: Optional[ float ]
+	top_percent: Optional[ float ]
 	max_tokens: Optional[ int ]
 	presence_penalty: Optional[ float ]
 	fequency_penalty: Optional[ float ]
@@ -272,7 +272,7 @@ class Payload( ):
 			store: bool=True, frequency: float=0.0, stream: bool=False, stops: List[ str ]=None,
 			format: str=None, max_tokens: int=10000, asynchronous: bool=False ):
 		self.temperature = temperature
-		self.top_p = top_p
+		self.top_percent = top_p
 		self.presense = presense
 		self.store = store
 		self.stream = stream
@@ -295,7 +295,7 @@ class Payload( ):
 			List[ str ]
 		
 		'''
-		return [ 'temperature', 'top_p', 'presense', 'store', 'stream', 'stop_sequence',
+		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence',
 		         'response_format', 'number', 'max_tokens', 'asynchronous' ]
 
 class TextParam( Payload ):
@@ -373,33 +373,42 @@ class TextParam( Payload ):
 	file_path: Optional[ str ]
 	previous_id: Optional[ str ]
 	instructions: Optional[ str ]
+	background: Optional[ bool ]
 	input: Optional[ List[ Dict[ str, str ] ] ] | str
 	messages: Optional[ List[ Dict[ str, str ] ] ] | str
 	content: Optional[ List[ Dict[ str, str ] ] ] | str
 	
-	def __init__( self, temperature: float=None, top_p: float=None, presense: float=None,
-			store: bool=None, stream: bool=None, stops: List[ str ]=None, format: str=None ):
+	def __init__( self, model: str=None, temperature: float=None, top_p: float=None, presense: float=None,
+			store: bool=None, stream: bool=None, stops: List[ str ]=None, format: str=None,
+			instruct: str=None, message: List[ Dict[ str, str ] ]=None, domains: List[str ]=None,
+			include: List[ Dict[ str, str ] ]=None, tools: List[ Dict[ str, str ] ]=None,
+			max_tools: Optional[ int ]=None, tool_choice: Optional[str ]=None, file_path: str=None,
+			background: bool=None, is_parallel: bool=None,
+			input: List[ Dict[ str, str ] ]=None, previous_id: str=None,
+			reasoning: Dict[ str, str ]=None, content: List[ Dict[ str, str ] ]=None ):
 		super( ).__init__( )
 		self.temperature = temperature
-		self.top_p = top_p
+		self.top_percent = top_p
 		self.presense = presense
 		self.store = store
 		self.stream = stream
 		self.stop_sequence = stops
 		self.response_format = format
-		self.model = None
-		self.previous_id = None
-		self.instructions = None
-		self.include = [ ]
-		self.reasoning = { }
-		self.domains = [ ]
-		self.tools = [ ]
-		self.input = [ ]
-		self.messages = [ ]
-		self.content = [ ]
-		self.max_tools = 0
-		self.file_path = None
-		self.tool_choice = None
+		self.model = model
+		self.allow_parallel = is_parallel
+		self.previous_id = previous_id
+		self.instructions = instruct
+		self.include = include
+		self.reasoning = reasoning
+		self.domains = domains
+		self.tools = tools
+		self.background = background
+		self.input = input
+		self.messages = message
+		self.content = content
+		self.max_tools = max_tools
+		self.file_path = file_path
+		self.tool_choice = tool_choice
 		
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -413,7 +422,7 @@ class TextParam( Payload ):
 			List[ str ]
 		
 		'''
-		return [ 'temperature', 'top_p', 'presense', 'store', 'stream', 'stop_sequence', 'content',
+		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence', 'content',
 		         'response_format', 'number', 'max_tokens', 'background', 'include', 'reasoning',
 		         'domains', 'tools', 'allow_parallel', 'max_tools', 'messages', 'input', 'previous_id' ]
 
@@ -496,40 +505,49 @@ class ImageParam( Payload ):
 	messages: Optional[ List[ Dict[ str, str ] ] ] | str
 	content: Optional[ List[ Dict[ str, str ] ] ] | str
 	size: Optional[ str ]
-	detail: Optionan[ str ]
-	style: Optionan[ str ]
+	detail: Optional[ str ]
+	style: Optional[ str ]
 	output_format: Optional[ str ]
-	quality: Optionan[ str ]
-	background: Optionan[ str ]
+	quality: Optional[ str ]
+	background: Optional[ bool ]
+	backcolor: Optional[ str ]
 	
-	def __init__( self, temperature: float=None, top_p: float=None, presense: float=None,
-			store: bool=None, stream: bool=None, stops: List[ str ]=None, format: str=None ):
+	def __init__( self, model: str=None, temperature: float=None, top_p: float=None, presense: float=None,
+			store: bool=None, stream: bool=None, stops: List[ str ]=None, format: str=None,
+			instruct: str=None,  message: List[ Dict[ str, str ] ]=None, domains: List[ str ]=None,
+			include: List[ Dict[ str, str ] ]=None, tools: List[ Dict[ str, str ] ] = None,
+			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, image_path: str=None,
+			image_url: str=None, size: str=None, detail: str=None, style: str=None, quality: str=None,
+			background: bool=None, output_format: str=None, is_parallel: bool=None,
+			previous_id: str=None, reasoning: Dict[ str, str ]=None, backcolor: str=None,):
 		super( ).__init__( )
 		self.temperature = temperature
-		self.top_p = top_p
+		self.top_percent = top_p
 		self.presense = presense
 		self.store = store
 		self.stream = stream
 		self.stop_sequence = stops
 		self.response_format = format
-		self.messages = [ ]
-		self.include = [ ]
-		self.reasoning = { }
-		self.domains = [ ]
-		self.tools = [ ]
-		self.max_tools = 0
-		self.model = None
-		self.instructions = None
-		self.tool_choice = None
-		self.image_path = None
-		self.image_url = None
-		self.size = None
-		self.detail = None
-		self.quality = None
-		self.output_format = None
-		self.background = None
-		self.previous_id = None
-		self.style = None
+		self.messages = message
+		self.include = include
+		self.reasoning = reasoning
+		self.domains = domains
+		self.tools = tools
+		self.allow_parallel = is_parallel
+		self.max_tools = max_tools
+		self.model = model
+		self.instructions = instruct
+		self.tool_choice = tool_choice
+		self.image_path = image_path
+		self.image_url = image_url
+		self.size = size
+		self.detail = detail
+		self.quality = quality
+		self.output_format = output_format
+		self.background = background
+		self.previous_id = previous_id
+		self.style = style
+		self.backcolor = backcolor
 		
 	
 	def __dir__( self ) -> List[ str ]:
@@ -544,10 +562,11 @@ class ImageParam( Payload ):
 			List[ str ]
 		
 		'''
-		return [ 'temperature', 'top_p', 'presense', 'store', 'stream', 'stop_sequence',
+		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence',
 		         'response_format', 'number', 'max_tokens', 'background', 'include', 'reasoning',
 		         'domains', 'tools', 'allow_parallel', 'max_tools', 'tool_choice', 'image_path',
-		         'image_url', 'messages', 'size', 'detail', 'output_format', 'quality' ]
+		         'image_url', 'messages', 'size', 'detail', 'output_format', 'quality', 'reasoning',
+		         'style', 'backcolor', 'output_format' ]
 
 class SpeechParam( Payload ):
 	'''
@@ -614,7 +633,7 @@ class SpeechParam( Payload ):
 		
 	'''
 	temperature: Optional[ float ]
-	top_p: Optional[ float ]
+	top_percent: Optional[ float ]
 	max_tokens: Optional[ int ]
 	presence_penalty: Optional[ float ]
 	fequency_penalty: Optional[ float ]
@@ -630,10 +649,10 @@ class SpeechParam( Payload ):
 	
 	def __init__( self, temperature: float=0.8, top_p: float=0.9, presense: float=0.0, number: int=1,
 			store: bool=True, frequency: float=0.0, stream: bool=False, stops: List[ str ]=None,
-			format: str=None, max_tokens: int=10000, asynchronous: bool=False ):
+			format: str=None, max_tokens: int=10000, asynchronous: bool=False, sample: int=0 ):
 		super( ).__init__( )
 		self.temperature = temperature
-		self.top_p = top_p
+		self.top_percent = top_p
 		self.presense = presense
 		self.store = store
 		self.stream = stream
@@ -643,9 +662,9 @@ class SpeechParam( Payload ):
 		self.number = number
 		self.max_tokens = max_tokens
 		self.asynchronous = asynchronous
+		self.sample_rate = sample
 		self.model = None
 		self.voice = None
-		self.sample_rate = 0
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -659,10 +678,10 @@ class SpeechParam( Payload ):
 			List[ str ]
 		
 		'''
-		return [ 'temperature', 'top_p', 'presense', 'store', 'stream', 'stop_sequence', 'model',
+		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence', 'model',
 		         'response_format', 'number', 'max_tokens', 'background', 'voice', 'sample_rate' ]
 	
-class TranscriptionParam( Payload):
+class TranscriptionParam( Payload ):
 	'''
 
 		Purpose:
@@ -727,7 +746,7 @@ class TranscriptionParam( Payload):
 		
 	'''
 	temperature: Optional[ float ]
-	top_p: Optional[ float ]
+	top_percent: Optional[ float ]
 	max_tokens: Optional[ int ]
 	presence_penalty: Optional[ float ]
 	fequency_penalty: Optional[ float ]
@@ -741,12 +760,12 @@ class TranscriptionParam( Payload):
 	language: Optional[ str ]
 	model: Optional[ str ]
 	
-	def __init__( self, temperature: float=0.8, top_p: float=0.9, presense: float=0.0, number: int=1,
+	def __init__( self, temperature: float=0.0, top_p: float=0.0, presense: float=0.0, number: int=1,
 			store: bool=True, frequency: float=0.0, stream: bool=False, stops: List[ str ]=None,
-			format: str=None, max_tokens: int=10000, asynchronous: bool=False ):
+			format: str=None, max_tokens: int=10000, asynchronous: bool=False, sample: int=0 ):
 		super( ).__init__( )
 		self.temperature = temperature
-		self.top_p = top_p
+		self.top_percent = top_p
 		self.presense = presense
 		self.store = store
 		self.stream = stream
@@ -756,9 +775,9 @@ class TranscriptionParam( Payload):
 		self.number = number
 		self.max_tokens = max_tokens
 		self.asynchronous = asynchronous
+		self.sample_rate = sample
 		self.model = None
 		self.language = None
-		self.sample_rate = 0
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -772,8 +791,9 @@ class TranscriptionParam( Payload):
 			List[ str ]
 		
 		'''
-		return [ 'temperature', 'top_p', 'presense', 'store', 'stream', 'stop_sequence', 'model'
-		         'response_format', 'number', 'max_tokens', 'background', 'language', 'sample_rate' ]
+		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence',
+		         'model', 'response_format', 'number', 'max_tokens', 'background',
+		         'language', 'sample_rate' ]
 
 class TranslationParam( Payload ):
 	'''
@@ -840,7 +860,7 @@ class TranslationParam( Payload ):
 		
 	'''
 	temperature: Optional[ float ]
-	top_p: Optional[ float ]
+	top_percent: Optional[ float ]
 	max_tokens: Optional[ int ]
 	presence_penalty: Optional[ float ]
 	fequency_penalty: Optional[ float ]
@@ -861,7 +881,7 @@ class TranslationParam( Payload ):
 			format: str=None, max_tokens: int=10000, asynchronous: bool=False ):
 		super( ).__init__( )
 		self.temperature = temperature
-		self.top_p = top_p
+		self.top_percent = top_p
 		self.presense = presense
 		self.store = store
 		self.stream = stream
@@ -890,11 +910,11 @@ class TranslationParam( Payload ):
 			List[ str ]
 		
 		'''
-		return [ 'temperature', 'top_p', 'presense', 'store', 'stream', 'stop_sequence', 'model',
+		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence', 'model',
 		         'response_format', 'number', 'max_tokens', 'asynchronous', 'target_language',
 		         'output_formant', 'sample_rate', 'source_language' ]
 
-class TensorParam( ):
+class EmbeddingParam( ):
 	'''
 
 		Purpose:

@@ -111,7 +111,7 @@ GPT_MODES = [ 'Chat',
               'Data Management',
               'Export' ]
 
-GPT_GENERATION = [ 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini' ]
+GPT_GENERATION = [ 'gpt-image-1.5', 'dall-e-2', 'dall-e-3', 'gpt-image-1', 'gpt-image-1-mini' ]
 
 GPT_ANALYSIS = [ 'gpt-5.2', 'gpt-5.1', 'gpt-5', 'gpt-5-nano', 'gpt-image-1', 'gpt-image-1-mini',
                  'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1-mini', 'gpt-4.1-nano', ]

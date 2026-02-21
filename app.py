@@ -103,7 +103,7 @@ def fetch_prompt_names( db_path: str ) -> list[ str ]:
 	try:
 		conn = sqlite3.connect( db_path )
 		cur = conn.cursor( )
-		cur.execute( "SELECT Name FROM Prompts ORDER BY Name;" )
+		cur.execute( "SELECT Name FROM Prompts ORDER BY PromptsId;" )
 		rows = cur.fetchall( )
 		conn.close( )
 		return [ r[ 0 ] for r in rows if r and r[ 0 ] is not None ]
@@ -1979,7 +1979,7 @@ if 'embedding_model' not in st.session_state:
 	st.session_state[ 'embedding_model' ] = None
 
 if 'docqna_model' not in st.session_state:
-	st.session_state[ 'docqa_docqna' ] = None
+	st.session_state[ 'docqna_model' ] = None
 
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
@@ -2820,7 +2820,7 @@ elif mode == 'Text':
 				prompt_names = [ 'No Templates Found' ]
 
 			with in_left:
-				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+				st.text_area( 'Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
 			
 			def _on_template_change( ) -> None:
@@ -2860,7 +2860,7 @@ elif mode == 'Text':
 				
 				with st.spinner( 'Thinking…' ):
 					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
-					gen_kwargs[ 'top_p' ] = st.session_state[ 'text_top_percent' ]
+					gen_kwargs[ 'top_percent' ] = st.session_state[ 'text_top_percent' ]
 					gen_kwargs[ 'background' ] = st.session_state[ 'text_background' ]
 					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'text_max_tokens' ]
 					gen_kwargs[ 'frequency' ] = st.session_state[ 'text_frequency_penalty' ]
@@ -3230,7 +3230,7 @@ elif mode == "Images":
 				prompt_names = [ 'No Templates Found' ]
 			
 			with in_left:
-				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+				st.text_area( 'Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
 			
 			def _on_template_change( ) -> None:
@@ -3638,7 +3638,7 @@ elif mode == "Audio":
 				prompt_names = [ 'No Templates Found' ]
 			
 			with in_left:
-				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+				st.text_area( 'Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
 			
 			def _on_template_change( ) -> None:
@@ -4353,7 +4353,7 @@ elif mode == 'Document Q&A':
 				prompt_names = [ 'No Templates Found' ]
 			
 			with in_left:
-				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
+				st.text_area( 'Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='docqna_system_instructions' )
 			
 			def _on_template_change( ) -> None:
