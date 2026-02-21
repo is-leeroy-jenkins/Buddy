@@ -566,7 +566,7 @@ class ImageParam( Payload ):
 		         'response_format', 'number', 'max_tokens', 'background', 'include', 'reasoning',
 		         'domains', 'tools', 'allow_parallel', 'max_tools', 'tool_choice', 'image_path',
 		         'image_url', 'messages', 'size', 'detail', 'output_format', 'quality', 'reasoning',
-		         'style', 'backcolor', 'output_format' ]
+		         'style', 'backcolor', 'output_format', 'instructions', 'previous_id' ]
 
 class SpeechParam( Payload ):
 	'''
@@ -639,7 +639,7 @@ class SpeechParam( Payload ):
 	fequency_penalty: Optional[ float ]
 	store: Optional[ bool ]
 	stream: Optional[ bool ]
-	asynchronous: Optional[ bool ]
+	background: Optional[ bool ]
 	stop_sequence: Optional[ List[ str ] ]
 	response_format: Optional[ str ]
 	number: Optional[ int ]
@@ -647,9 +647,10 @@ class SpeechParam( Payload ):
 	voice: Optional[ str ]
 	model: Optional[ str ]
 	
-	def __init__( self, temperature: float=0.8, top_p: float=0.9, presense: float=0.0, number: int=1,
-			store: bool=True, frequency: float=0.0, stream: bool=False, stops: List[ str ]=None,
-			format: str=None, max_tokens: int=10000, asynchronous: bool=False, sample: int=0 ):
+	def __init__( self, model: str=None, temperature: float=None, top_p: float= None, presense: float=None,
+			number: int=None, store: bool=None, frequency: float=None, stream: bool=None,
+			stops: List[ str ]=None, format: str=None, max_tokens: int=None, voice: str=None,
+			background: bool=None, sample: int=None, ):
 		super( ).__init__( )
 		self.temperature = temperature
 		self.top_percent = top_p
@@ -661,10 +662,10 @@ class SpeechParam( Payload ):
 		self.response_format = format
 		self.number = number
 		self.max_tokens = max_tokens
-		self.asynchronous = asynchronous
+		self.background = background
 		self.sample_rate = sample
-		self.model = None
-		self.voice = None
+		self.model = model
+		self.voice = voice
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
