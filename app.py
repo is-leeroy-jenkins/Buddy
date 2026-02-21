@@ -3961,7 +3961,7 @@ elif mode == 'Vector Stores':
 		# --------------------------------------------------------------
 		# Create Collection
 		# --------------------------------------------------------------
-		with st.expander( 'Create:', expanded=False ):
+		with st.expander( 'Create:', expanded=True ):
 			new_store_name = st.text_input( 'Enter Collection Name' )
 			if st.button( '➕ Create Collection', key='create_collection' ):
 				if not new_store_name:
@@ -4069,7 +4069,7 @@ elif mode == 'Vector Stores':
 		# --------------------------------------------------------------
 		# Create File Search Store
 		# --------------------------------------------------------------
-		with st.expander( 'Create:', expanded=False ):
+		with st.expander( 'Create:', expanded=True ):
 			new_store_name = st.text_input( 'New File Search Store name' )
 			if st.button( '➕ Create File Search Store' ):
 				if not new_store_name:
@@ -4180,7 +4180,7 @@ elif mode == 'Vector Stores':
 				# --------------------------------------------------------------
 				# Expander - Create Vector Store
 				# --------------------------------------------------------------
-				with st.expander( 'Create:', expanded=False ):
+				with st.expander( 'Create:', expanded=True ):
 					new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
 					if st.button( '➕ Create Store', key='create_store' ):
 						if not new_store_name:
@@ -4199,7 +4199,7 @@ elif mode == 'Vector Stores':
 				# --------------------------------------------------------------
 				# Discover vector stores
 				# --------------------------------------------------------------
-				with st.expander( 'Retreive:', expanded=False ):
+				with st.expander( 'Retreive:', expanded=True ):
 					options: List[ tuple ] = [ ]
 					if vs_map and isinstance( vs_map, dict ):
 						options = list( vs_map.items( ) )
@@ -4421,7 +4421,6 @@ elif mode == 'Files':
 	
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
-		st.divider( )
 		list_method = None
 		if hasattr( files, 'list' ):
 			list_method = getattr( files, 'list' )
@@ -4431,21 +4430,21 @@ elif mode == 'Files':
 		if uploaded_file:
 			tmp_path = save_temp( uploaded_file )
 			upload_fn = None
-			for name in ("upload_file", "upload", "files_upload"):
+			for name in ('upload_file', 'upload', 'files_upload'):
 				if hasattr( files, name ):
 					upload_fn = getattr( files, name )
 					break
 			if not upload_fn:
-				st.warning( "No upload function found on chat object (upload_file)." )
+				st.warning( 'No upload function found on chat object (upload_file).' )
 			else:
-				with st.spinner( "Uploading to Files API..." ):
+				with st.spinner( 'Uploading to Files API...' ):
 					try:
 						fid = upload_fn( tmp_path )
 						st.success( f"Uploaded; file id: {fid}" )
 					except Exception as exc:
 						st.error( f"Upload failed: {exc}" )
 	
-		if st.button( "List files" ):
+		if st.button( 'List files' ):
 			try:
 				files_resp = list_method( )
 				rows = [ ]

@@ -2450,8 +2450,9 @@ class VectorStores( GPT ):
 		self.file_path = None
 		self.collections = \
 		{
-			'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
-			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
+			'Financial Regulations': 'vs_712r5W5833G6aLxIYIbuvVcK',
+			'Public Laws': 'vs_699506f7d5348191990e0557c717fa9d',
+			'Explanatory Statements': 'vs_699505df9ac48191a525c0ecb86fef66',
 		}
 		self.documents = \
 		{
