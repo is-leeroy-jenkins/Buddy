@@ -2321,64 +2321,64 @@ if 'file_url' not in st.session_state:
 	st.session_state[ 'file_url' ] = None
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
-if 'vectorstores_temperature' not in st.session_state:
-	st.session_state[ 'vectorstores_temperature' ] = 0.8
+if 'stores_temperature' not in st.session_state:
+	st.session_state[ 'stores_temperature' ] = 0.8
 
-if 'vectorstores_top_percent' not in st.session_state:
-	st.session_state[ 'vectorstores_top_percent' ] = 1.0
+if 'stores_top_percent' not in st.session_state:
+	st.session_state[ 'stores_top_percent' ] = 1.0
 
-if 'vectorstores_input' not in st.session_state:
-	st.session_state[ 'vectorstores_input' ] = [ ]
+if 'stores_input' not in st.session_state:
+	st.session_state[ 'stores_input' ] = [ ]
 
-if 'vectorstores_max_tokens' not in st.session_state:
-	st.session_state[ 'vectorstores_max_tokens' ] = 8064
+if 'stores_max_tokens' not in st.session_state:
+	st.session_state[ 'stores_max_tokens' ] = 8064
 
-if 'vectorstores_frequency_penalty' not in st.session_state:
-	st.session_state[ 'vectorstores_frequency_penalty' ] = 0.0
+if 'stores_frequency_penalty' not in st.session_state:
+	st.session_state[ 'stores_frequency_penalty' ] = 0.0
 
-if 'vectorstores_presense_penalty' not in st.session_state:
-	st.session_state[ 'vectorstores_presense_penalty' ] = 0.0
+if 'stores_presense_penalty' not in st.session_state:
+	st.session_state[ 'stores_presense_penalty' ] = 0.0
 
-if 'vectorstores_stops' not in st.session_state:
-	st.session_state[ 'vectorstores_stops' ] = [ ]
+if 'stores_stops' not in st.session_state:
+	st.session_state[ 'stores_stops' ] = [ ]
 
-if 'vectorstores_include' not in st.session_state:
-	st.session_state[ 'vectorstores_include' ] = [ ]
+if 'stores_include' not in st.session_state:
+	st.session_state[ 'stores_include' ] = [ ]
 
-if 'vectorstores_parallel_tools' not in st.session_state:
-	st.session_state[ 'vectorstores_parallel_tools' ] = False
+if 'stores_parallel_tools' not in st.session_state:
+	st.session_state[ 'stores_parallel_tools' ] = False
 
-if 'vectorstores_max_calls' not in st.session_state:
-	st.session_state[ 'vectorstores_max_calls' ] = None
+if 'stores_max_calls' not in st.session_state:
+	st.session_state[ 'stores_max_calls' ] = None
 
-if 'vectorstores_tool_choice' not in st.session_state:
-	st.session_state[ 'vectorstores_tool_choice' ] = 'auto'
+if 'stores_tool_choice' not in st.session_state:
+	st.session_state[ 'stores_tool_choice' ] = 'auto'
 
-if 'vectorstores_reasoning' not in st.session_state:
-	st.session_state[ 'vectorstores_reasoning' ] = 'low'
+if 'stores_reasoning' not in st.session_state:
+	st.session_state[ 'stores_reasoning' ] = 'low'
 
-if 'vectorstores_background' not in st.session_state:
-	st.session_state[ 'vectorstores_background' ] = False
+if 'stores_background' not in st.session_state:
+	st.session_state[ 'stores_background' ] = False
 
-if 'vectorstores_store' not in st.session_state:
-	st.session_state[ 'vectorstores_store' ] = True
+if 'stores_store' not in st.session_state:
+	st.session_state[ 'stores_store' ] = True
 
-if 'vectorstores_stream' not in st.session_state:
-	st.session_state[ 'vectorstores_stream' ] = False
+if 'stores_stream' not in st.session_state:
+	st.session_state[ 'stores_stream' ] = False
 
-if 'vectorstores_response_format' not in st.session_state:
-	st.session_state[ 'vectorstores_response_format' ] = None
+if 'stores_response_format' not in st.session_state:
+	st.session_state[ 'stores_response_format' ] = None
 
-if 'vectorstores_tools' not in st.session_state:
-	st.session_state[ 'vectorstores_tools' ] = [ ]
+if 'stores_tools' not in st.session_state:
+	st.session_state[ 'stores_tools' ] = [ ]
 
-if 'vectorstores_messages' not in st.session_state:
-	st.session_state[ 'vectorstores_messages' ] = [ ]
+if 'stores_messages' not in st.session_state:
+	st.session_state[ 'stores_messages' ] = [ ]
 
 # ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
 
-if 'vectorstores_id' not in st.session_state:
-	st.session_state[ 'vectorstores_id' ] = None
+if 'stores_id' not in st.session_state:
+	st.session_state[ 'stores_id' ] = None
 
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'files' not in st.session_state:
@@ -3915,19 +3915,19 @@ elif mode == 'Embeddings':
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	vectorstores_model = st.session_state.get( 'vectorstores_model', None )
-	vectorstores_format = st.session_state.get( 'vectorstores_response_format', None )
-	vectorstores_top_p = st.session_state.get( 'vectorstores_top_percent', None )
-	vectorstores_freq = st.session_state.get( 'vectorstores_frequency_penalty', None )
-	vectorstores_presense = st.session_state.get( 'vectorstores_presense_penalty', None )
+	vectorstores_format = st.session_state.get( 'stores_response_format', None )
+	vectorstores_top_p = st.session_state.get( 'stores_top_percent', None )
+	vectorstores_freq = st.session_state.get( 'stores_frequency_penalty', None )
+	vectorstores_presense = st.session_state.get( 'stores_presense_penalty', None )
 	vectorstores_number = st.session_state.get( 'vectorstores_number', None )
-	vectorstores_temperature = st.session_state.get( 'vectorstores_temperature', None )
-	vectorstores_stream = st.session_state.get( 'vectorstores_stream', None )
-	vectorstores_store = st.session_state.get( 'vectorstores_store', None )
-	vectorstores_input = st.session_state.get( 'vectorstores_input', None )
-	vectorstores_reasoning = st.session_state.get( 'vectorstores_reasoning', None )
-	vectorstores_choice = st.session_state.get( 'vectorstores_tool_choice', None )
-	vectorstores_messages = st.session_state.get( 'vectorstores_messages', None )
-	vectorstores_background = st.session_state.get( 'vectorstores_background', None )
+	stores_temperature = st.session_state.get( 'stores_temperature', None )
+	stores_stream = st.session_state.get( 'stores_stream', None )
+	stores_store = st.session_state.get( 'stores_store', None )
+	stores_input = st.session_state.get( 'stores_input', None )
+	stores_reasoning = st.session_state.get( 'stores_reasoning', None )
+	vectorstores_choice = st.session_state.get( 'stores_tool_choice', None )
+	stores_messages = st.session_state.get( 'stores_messages', None )
+	stores_background = st.session_state.get( 'stores_background', None )
 	vector = None
 	collector  = None
 	searcher = None
@@ -5502,19 +5502,19 @@ elif mode == 'Files':
 
 elif mode == 'VectorStores':
 	model = st.session_state.get( 'vectorstores_model' )
-	fmt = st.session_state.get( 'vectorstores_response_format' )
-	temperature = st.session_state.get( 'vectorstores_temperature' )
-	top_p = st.session_state.get( 'vectorstores_top_percent' )
-	freq = st.session_state.get( 'vectorstores_frequency_penalty' )
-	presence = st.session_state.get( 'vectorstores_presense_penalty' )
+	fmt = st.session_state.get( 'stores_response_format' )
+	temperature = st.session_state.get( 'stores_temperature' )
+	top_p = st.session_state.get( 'stores_top_percent' )
+	freq = st.session_state.get( 'stores_frequency_penalty' )
+	presence = st.session_state.get( 'stores_presense_penalty' )
 	number = st.session_state.get( 'vectorstores_number' )
-	stream = st.session_state.get( 'vectorstores_stream' )
-	store = st.session_state.get( 'vectorstores_store' )
-	input_data = st.session_state.get( 'vectorstores_input' )
-	reasoning = st.session_state.get( 'vectorstores_reasoning' )
-	tool_choice = st.session_state.get( 'vectorstores_tool_choice' )
-	messages = st.session_state.get( 'vectorstores_messages' )
-	background = st.session_state.get( 'vectorstores_background' )
+	stream = st.session_state.get( 'stores_stream' )
+	store = st.session_state.get( 'stores_store' )
+	input_data = st.session_state.get( 'stores_input' )
+	reasoning = st.session_state.get( 'stores_reasoning' )
+	tool_choice = st.session_state.get( 'stores_tool_choice' )
+	messages = st.session_state.get( 'stores_messages' )
+	background = st.session_state.get( 'stores_background' )
 	
 	if model is not None:
 		right_parts.append( f'Model: {model}' )
