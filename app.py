@@ -954,7 +954,7 @@ def build_prompt( user_input: str ) -> str:
 	prompt += f"<|user|>\n{user_input}\n</s>\n<|assistant|>\n"
 	return prompt
 
-DM_DB_PATH = os.path.join( "stores", "sqlite", "Data.db" )
+DM_DB_PATH = os.path.join( 'stores', 'sqlite', 'Data.db' )
 os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
 
 # ==============================================================================
@@ -1978,6 +1978,9 @@ if 'audio_model' not in st.session_state:
 if 'embedding_model' not in st.session_state:
 	st.session_state[ 'embedding_model' ] = None
 
+if 'docqna_model' not in st.session_state:
+	st.session_state[ 'docqa_docqna' ] = None
+
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = None
 
@@ -2000,8 +2003,8 @@ if 'image_system_instructions' not in st.session_state:
 if 'audio_system_instructions' not in st.session_state:
 	st.session_state[ 'audio_system_instructions' ] = ''
 
-if 'docqa_system_instructions' not in st.session_state:
-	st.session_state.docqa_systems_instructions = ''
+if 'docqna_system_instructions' not in st.session_state:
+	st.session_state.docqna_systems_instructions = ''
 
 #--------CHAT-GENERATION PARAMETERS--------------------
 if 'execution_mode' not in st.session_state:
@@ -2586,7 +2589,7 @@ elif mode == 'Text':
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	text_model = st.session_state.get( 'text_model', None )
-	text_top_p = st.session_state.get( 'text_top_percent', None )
+	text_top_percent = st.session_state.get( 'text_top_percent', None )
 	text_freq = st.session_state.get( 'text_frequency_penalty', None )
 	text_presense = st.session_state.get( 'text_presense_penalty', None )
 	text_number = st.session_state.get( 'text_number', None )
@@ -2684,9 +2687,9 @@ elif mode == 'Text':
 				
 				with prm_c1:
 					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'text_top_p', 1.0 ) ), 0.01,
-						help=cfg.TOP_P, key='text_top_p' )
-					text_top_p = st.session_state[ 'text_top_p' ]
+						float( st.session_state.get( 'text_top_percent', 1.0 ) ), 0.01,
+						help=cfg.TOP_P, key='text_top_percent' )
+					text_top_percent = st.session_state[ 'text_top_percent' ]
 				
 				with prm_c2:
 					set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
@@ -2716,7 +2719,7 @@ elif mode == 'Text':
 					# ----------------------------------------------------------
 					# Remove Inference Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'text_top_p', 'text_frequency_penalty', 'text_presense_penalty',
+					for key in [ 'text_top_percent', 'text_frequency_penalty', 'text_presense_penalty',
 							'text_temperature', 'text_number', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
@@ -2857,7 +2860,7 @@ elif mode == 'Text':
 				
 				with st.spinner( 'Thinking…' ):
 					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
-					gen_kwargs[ 'top_p' ] = st.session_state[ 'text_top_p' ]
+					gen_kwargs[ 'top_p' ] = st.session_state[ 'text_top_percent' ]
 					gen_kwargs[ 'background' ] = st.session_state[ 'text_background' ]
 					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'text_max_tokens' ]
 					gen_kwargs[ 'frequency' ] = st.session_state[ 'text_frequency_penalty' ]
@@ -3914,12 +3917,12 @@ elif mode == 'Embeddings':
 # ======================================================================================
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	vectorstores_model = st.session_state.get( 'vectorstores_model', None )
-	vectorstores_format = st.session_state.get( 'stores_response_format', None )
-	vectorstores_top_p = st.session_state.get( 'stores_top_percent', None )
-	vectorstores_freq = st.session_state.get( 'stores_frequency_penalty', None )
-	vectorstores_presense = st.session_state.get( 'stores_presense_penalty', None )
-	vectorstores_number = st.session_state.get( 'vectorstores_number', None )
+	stores_model = st.session_state.get( 'stores_model', None )
+	stores_format = st.session_state.get( 'stores_response_format', None )
+	stores_top_percent = st.session_state.get( 'stores_top_percent', None )
+	stores_frequency = st.session_state.get( 'stores_frequency_penalty', None )
+	stores_presense = st.session_state.get( 'stores_presense_penalty', None )
+	stores_number = st.session_state.get( 'stores_number', None )
 	stores_temperature = st.session_state.get( 'stores_temperature', None )
 	stores_stream = st.session_state.get( 'stores_stream', None )
 	stores_store = st.session_state.get( 'stores_store', None )
@@ -4289,7 +4292,7 @@ elif mode == 'Document Q&A':
 	#  DOCQA SETTINGS
 	# ------------------------------------------------------------------
 	if st.session_state.get( 'do_clear_instructions' ):
-		st.session_state[ 'docqa_system_instructions' ] = ''
+		st.session_state[ 'docqna_system_instructions' ] = ''
 		st.session_state[ 'clear_docqa_instructions' ] = False
 		st.session_state[ 'do_clear_instructions' ] = False
 	
@@ -4308,12 +4311,12 @@ elif mode == 'Document Q&A':
 			with stores_c1:
 				set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
 					float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
-					help=cfg.TOP_P, key='text_top_p' )
-				text_top_p = st.session_state[ 'text_top_p' ]
+					help=cfg.TOP_P, key='text_top_percent' )
+				text_top_percent = st.session_state[ 'text_top_percent' ]
 			
 			with stores_c2:
 				set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
-					float( st.session_state.get( 'freq_penalty', 0.0 ) ),
+					float( st.session_state.get( 'text_frequency_penalty', 0.0 ) ),
 					0.01, help=cfg.FREQUENCY_PENALTY )
 				text_fequency = st.session_state[ 'text_frequency_penalty' ]
 			
@@ -4351,21 +4354,21 @@ elif mode == 'Document Q&A':
 			
 			with in_left:
 				st.text_area( 'Enter Prompt Text', height=50, width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS, key='docqa_system_instructions' )
+					help=cfg.SYSTEM_INSTRUCTIONS, key='docqna_system_instructions' )
 			
 			def _on_template_change( ) -> None:
 				name = st.session_state.get( 'instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
-						st.session_state[ 'docqa_system_instructions' ] = text
+						st.session_state[ 'docqna_system_instructions' ] = text
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
 					key='instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
-				st.session_state[ 'docqa_system_instructions' ] = ''
+				st.session_state[ 'docqna_system_instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -5499,13 +5502,13 @@ elif mode == 'Files':
 		right_parts.append( 'URL: Set' )
 
 elif mode == 'VectorStores':
-	model = st.session_state.get( 'vectorstores_model' )
+	model = st.session_state.get( 'stores_model' )
 	fmt = st.session_state.get( 'stores_response_format' )
 	temperature = st.session_state.get( 'stores_temperature' )
 	top_p = st.session_state.get( 'stores_top_percent' )
 	freq = st.session_state.get( 'stores_frequency_penalty' )
 	presence = st.session_state.get( 'stores_presense_penalty' )
-	number = st.session_state.get( 'vectorstores_number' )
+	number = st.session_state.get( 'stores_number' )
 	stream = st.session_state.get( 'stores_stream' )
 	store = st.session_state.get( 'stores_store' )
 	input_data = st.session_state.get( 'stores_input' )
