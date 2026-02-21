@@ -2558,9 +2558,9 @@ if mode == 'Chat':
 					# -------------------------------
 					output_text = ""
 					for item in response.output:
-						if item.type == "message":
+						if item.type == 'message':
 							for part in item.content:
-								if part.type == "output_text":
+								if part.type == 'output_text':
 									output_text += part.text
 					
 					if output_text.strip( ):
@@ -2574,13 +2574,13 @@ if mode == 'Chat':
 					st.session_state.chat_history.append({'role': 'user', 'content': user_input})
 					st.session_state.chat_history.append({'role':'assistant', 'content':output_text})
 				except Exception as e:
-					st.error( "An error occurred while running the prompt." )
+					st.error( 'An error occurred while running the prompt.' )
 					st.exception( e )
 
 # ======================================================================================
 # TEXT MODE
 # ======================================================================================
-elif mode == "Text":
+elif mode == 'Text':
 	st.subheader( "💬 Text Generation", help=cfg.TEXT_GENERATION )
 	st.divider( )
 	provider_module = get_provider_module( )
