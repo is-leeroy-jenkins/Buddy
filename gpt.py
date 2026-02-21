@@ -2166,8 +2166,8 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'upload_file( self, filepath: str, purpose: str=user_data ) -> str'
+			exception.cause = 'Files'
+			exception.method = 'upload( self, filepath: str, purpose: str=user_data ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2197,8 +2197,8 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'retrieve_file( self, id: str ) -> str'
+			exception.cause = 'Files'
+			exception.method = 'retrieve( self, id: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2227,30 +2227,17 @@ class Files( GPT ):
 			self.file_path = pdf_path
 			self.file = self.client.files.create( file=open( file=self.file_path, mode='rb' ),
 				purpose='user_data' )
-			self.messages = [
-					{
-							'role': 'user',
-							'content': [
-									{
-											'type': 'file',
-											'file':
-												{
-														'file_id': self.file.id,
-												},
-									},
-									{
-											'type': 'text',
-											'text': self.prompt,
-									}, ],
-					} ]
+			self.messages = [{'role': 'user', 'content': [{ 'type': 'file',
+											'file': { 'file_id': self.file.id, }, },
+									{ 'type': 'text', 'text': self.prompt, }, ], } ]
 			
 			self.response = self.client.responses.create( model=self.model, input=self.messages )
 			return self.response.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
+			exception.cause = 'Files'
+			exception.method = 'summarize( self, prompt: str, path: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2291,8 +2278,8 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'search_files( self, prompt: str ) -> str'
+			exception.cause = 'Files'
+			exception.method = 'search( self, prompt: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2319,12 +2306,8 @@ class Files( GPT ):
 			self.model = model
 			self.client = OpenAI( api_key=self.api_key )
 			self.vector_store_ids = list( self.vector_stores.values( ) )
-			self.tools = [
-					{
-							'text': 'file_search',
-							'vector_store_ids': self.vector_store_ids,
-							'max_num_results': self.max_search_results,
-					} ]
+			self.tools = [ { 'text': 'file_search', 'vector_store_ids': self.vector_store_ids,
+							'max_num_results': self.max_search_results, } ]
 			
 			self.response = self.client.responses.create( model=self.model, tools=self.tools,
 				input=self.prompt )
@@ -2332,26 +2315,31 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'search_files( self, prompt: str ) -> str'
+			exception.cause = 'Files'
+			exception.method = 'survey( self, prompt: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def list( self, purpose: str="user_data" ):
-		self.purpose = purpose
-		self.client = OpenAI( api_key=self.api_key )
-		page = self.client.files.list( purpose=self.purpose )  # no purpose arg
-		files = getattr( page, "data", None ) or page
-		out = [ ]
-		for f in files:
-			if purpose and getattr( f, "purpose", None ) != purpose:
-				continue
-			out.append( {
-					"id": str( getattr( f, "id", "" ) ),
-					"filename": str( getattr( f, "filename", "" ) ),
-					"purpose": str( getattr( f, "purpose", "" ) ),
-			} )
-		return out
+	def list( self, purpose: str='user_data' ):
+		try:
+			self.purpose = purpose
+			self.client = OpenAI( api_key=self.api_key )
+			page = self.client.files.list( purpose=self.purpose )  # no purpose arg
+			files = getattr( page, "data", None ) or page
+			out = [ ]
+			for f in files:
+				if purpose and getattr( f, "purpose", None ) != purpose:
+					continue
+				out.append( { "id": str( getattr( f, "id", "" ) ),
+				              "filename": str( getattr( f, "filename", "" ) ),
+				              "purpose": str( getattr( f, "purpose", "" ) ), } )
+			return out
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'list( self, prompt: str ) -> str'
+			raise exception
 	
 	def extract( self, id: str ) -> str | None:
 		'''
@@ -2369,8 +2357,8 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'retrieve_file( self, id: str ) -> str'
+			exception.cause = 'Files'
+			exception.method = 'extract( self, id: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2390,8 +2378,8 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'delete_file( self, id: str ) -> FileDeleted '
+			exception.cause = 'Files'
+			exception.method = 'delete( self, id: str ) -> FileDeleted '
 			error = ErrorDialog( exception )
 			error.show( )
 	
