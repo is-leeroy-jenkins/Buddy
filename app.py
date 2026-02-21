@@ -2897,19 +2897,38 @@ elif mode == "Images":
 					border=True, gap='xxsmall' )
 				
 				with llm_c1:
-					set_image_mode = st.selectbox( 'Image Mode:', cfg.GPT_IMAGE_MODES,
+					_modes = [ 'Generation', 'Analysis', 'Editing' ]
+					set_image_mode = st.selectbox( 'Image Mode:', options=_modes,
 						key='image_mode', help='Available Image API modes',
-						index=(
-							image.format_options.index( st.session_state[ 'image_mode' ] )
-							if st.session_state.get( 'image_mode' ) in cfg.GPT_IMAGE_MODES else 0), )
+						index=(_modes.index( st.session_state[ 'image_mode' ] )
+						       if st.session_state.get( 'image_mode' ) in _modes else 0), )
 					image_mode = st.session_state[ 'image_mode' ]
 					
 				with llm_c2:
-					set_image_model = st.selectbox( 'Select Model', image.model_options,
+					if st.session_state[ 'image_mode' ] == 'Generation':
+						set_image_model = st.selectbox( 'Select Model', cfg.GPT_GENERATION,
 						help='REQUIRED. Images Generation model used by the AI', key='image_model',
 						index=(image.model_options.index( st.session_state[ 'image_model' ] )
 						       if st.session_state.get( 'image_model' ) in image.model_options else 0), )
-					image_model = st.session_state[ 'image_model' ]
+						image_model = st.session_state[ 'image_model' ]
+					elif st.session_state[ 'image_mode' ] == 'Analysis':
+						set_image_model = st.selectbox( 'Select Model', cfg.GPT_ANALYSIS,
+							help='REQUIRED. Images Generation model used by the AI', key='image_model',
+							index=(image.model_options.index( st.session_state[ 'image_model' ] )
+							       if st.session_state.get( 'image_model' ) in image.model_options else 0), )
+						image_model = st.session_state[ 'image_model' ]
+					elif st.session_state[ 'image_mode' ] == 'Editing':
+						set_image_model = st.selectbox( 'Select Model', cfg.GPT_EDITING,
+						help='REQUIRED. Images Generation model used by the AI', key = 'image_model',
+						index = (image.model_options.index( st.session_state[ 'image_model' ] )
+						         if st.session_state.get( 'image_model' ) in image.model_options else 0), )
+						image_model = st.session_state[ 'image_model' ]
+					else:
+						set_image_model = st.selectbox( 'Select Model', [ 'gpt-5-nano' ],
+							help='REQUIRED. Images Generation model used by the AI', key='image_model',
+							index=(image.model_options.index( st.session_state[ 'image_model' ] )
+							       if st.session_state.get( 'image_model' ) in image.model_options else 0), )
+						image_model = st.session_state[ 'image_model' ]
 				
 				with llm_c3:
 					set_image_includes = st.multiselect( 'Include:', options=image.include_options,

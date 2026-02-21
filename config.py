@@ -111,7 +111,14 @@ GPT_MODES = [ 'Chat',
               'Data Management',
               'Export' ]
 
-GPT_IMAGE_MODES = [ 'Generation', 'Analysis', 'Editing' ]
+GPT_GENERATION = [ 'gpt-5', 'gpt-5-nano', 'gpt-4.1', 'gpt-4o', 'gpt-image-1.5', 'gpt-image-1',
+                   'gpt-image-1-mini', 'dall-e-2', 'dall-e-3' ]
+
+GPT_ANALYSIS = [ 'gpt-5.2', 'gpt-5.1', 'gpt-5', 'gpt-5-nano', 'gpt-image-1', 'gpt-image-1-mini',
+                 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1-mini', 'gpt-4.1-nano', ]
+
+GPT_EDITING = [ 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini', 'chatgpt-image-latest',
+                'dall-e-2' ]
 
 GPT_VECTORSTORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0',
                      'vs_712r5W5833G6aLxIYIbuvVcK']
