@@ -1034,7 +1034,7 @@ def create_schema( table: str ) -> List[ Tuple ]:
 	with create_connection( ) as conn:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
-def read_table( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
+def read_table( table: str, limit: int = None, offset: int=0 ) -> pd.DataFrame:
 	query = f'SELECT rowid, * FROM "{table}"'
 	if limit:
 		query += f" LIMIT {limit} OFFSET {offset}"
