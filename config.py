@@ -8,7 +8,7 @@
       Last Modified By:        Terry D. Eppler
       Last Modified On:        05-01-2025
   ******************************************************************************************
-  <copyright file="config.py" company="Terry D. Eppler">
+  <copyright file='config.py' company='Terry D. Eppler'>
 
 	     Buddy
 	     Copyright ©  2022  Terry Eppler
@@ -52,11 +52,11 @@ CRS = r'https://www.congress.gov/crs-appropriations-status-table'
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 APP_TITLE = 'Buddy'
 APP_SUBTITLE = 'Budget Execution AI'
-OPEN_TAG = re.compile( r"<([A-Za-z0-9_\-:.]+)>" )
-CLOSE_TAG = re.compile( r"</([A-Za-z0-9_\-:.]+)>" )
-MARKDOWN_HEADING_PATTERN = re.compile( r"^##\s+(?P<title>.+?)\s*$" )
-XML_BLOCK_PATTERN = re.compile( r"<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>", re.DOTALL )
-DB_PATH = "stores/sqlite/Data.db"
+OPEN_TAG = re.compile( r'<([A-Za-z0-9_\-:.]+)>' )
+CLOSE_TAG = re.compile( r'</([A-Za-z0-9_\-:.]+)>' )
+MARKDOWN_HEADING_PATTERN = re.compile( r'^##\s+(?P<title>.+?)\s*$' )
+XML_BLOCK_PATTERN = re.compile( r'<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>', re.DOTALL )
+DB_PATH = 'stores/sqlite/Data.db'
 ANALYST = '❓'
 BUDDY = '🧠'
 GPT_AVATAR = r'resources/images/gpt_avatar.png'
@@ -111,8 +111,7 @@ GPT_MODES = [ 'Chat',
               'Data Management',
               'Export' ]
 
-GPT_GENERATION = [ 'gpt-5', 'gpt-5-nano', 'gpt-4.1', 'gpt-4o', 'gpt-image-1.5', 'gpt-image-1',
-                   'gpt-image-1-mini', 'dall-e-2', 'dall-e-3' ]
+GPT_GENERATION = [ 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini' ]
 
 GPT_ANALYSIS = [ 'gpt-5.2', 'gpt-5.1', 'gpt-5', 'gpt-5-nano', 'gpt-image-1', 'gpt-image-1-mini',
                  'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1-mini', 'gpt-4.1-nano', ]
@@ -132,6 +131,9 @@ GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
                  'file-32s641QK1Xb5QUatY3zfWF' ]
 
 GPT_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov' ]
+
+GPT_REASONING_MODELS = [ 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4o', 'gpt-4.1', 'gpt-4.1-mini' ]
+
 
 # ---------------- GROK CONFIG ------------------
 GROK_LOGO = r'resources/grok_logo.png'
@@ -379,8 +381,8 @@ IMAGE_STYLE = r'''Optional. The style of the generated images. This parameter is
 		less hyper-real looking images.
 '''
 
-IMAGE_QUALITY = r'''Optional. The quality of the image that will be generated: "standard" or "hd"
-or "low". auto (default value) will automatically select the best quality for the given model. high,
+IMAGE_QUALITY = r'''Optional. The quality of the image that will be generated: 'standard' or 'hd'
+or 'low'. auto (default value) will automatically select the best quality for the given model. high,
 medium and low are supported for the GPT image models. hd and standard are supported for dall-e-3.
 standard is the only option for dall-e-2.
 '''
