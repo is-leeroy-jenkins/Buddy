@@ -4435,53 +4435,52 @@ elif mode == 'Files':
 					upload_fn = getattr( files, name )
 					break
 			if not upload_fn:
-				st.warning( 'No upload function found on chat object (upload_file).' )
+				st.warning( 'No upload function found on chat object.' )
 			else:
 				with st.spinner( 'Uploading to Files API...' ):
 					try:
 						fid = upload_fn( tmp_path )
-						st.success( f"Uploaded; file id: {fid}" )
+						st.success( f'Uploaded; file id: {fid}' )
 					except Exception as exc:
 						st.error( f"Upload failed: {exc}" )
 	
-		if st.button( 'List files' ):
+		if st.button( 'List Files' ):
 			try:
 				files_resp = list_method( )
 				rows = [ ]
-				
-				files_list = ( files_resp.data if hasattr( files_resp, "data" ) else files_resp
+				files_list = ( files_resp.data if hasattr( files_resp, 'data' ) else files_resp
 						if isinstance( files_resp, list ) else [ ] )
 				
 				for f in files_list:
-					rows.append( { "id": str( getattr( f, "id", "" ) ),
-							"filename": str( getattr( f, "filename", "" ) ),
-							"purpose": str( getattr( f, "purpose", "" ) ), } )
+					rows.append( { 'id': str( getattr( f, 'id', "" ) ),
+							'filename': str( getattr( f, 'filename', "" ) ),
+							'purpose': str( getattr( f, 'purpose', "" ) ), } )
 				
 				st.session_state.files_table = rows
 			
 			except Exception as exc:
 				st.session_state.files_table = None
-				st.error( f"List files failed: {exc}" )
+				st.error( f'List files failed: {exc}' )
 		
-			if "files_list" in locals( ) and files_list:
-					file_ids = [ r.get( "filename" ) if isinstance( r, dict )
-					             else getattr( r, "id", None ) for r in files_list ]
-					sel = st.selectbox( "Select file name to delete", options=file_ids )
-					if st.button( "Delete selected file" ):
+			if 'files_list' in locals( ) and files_list:
+					file_ids = [ r.get( 'filename' ) if isinstance( r, dict )
+					             else getattr( r, 'id', None ) for r in files_list ]
+					sel = st.selectbox( 'Select File to Delete', options=file_ids )
+					if st.button( 'Delete File' ):
 						del_fn = None
-						for name in ("delete_file", "delete", "files_delete"):
+						for name in ( 'delete_file', 'delete', 'files_delete' ):
 							if hasattr( files, name ):
 								del_fn = getattr( files, name )
 								break
 						if not del_fn:
-							st.warning( "No delete function found on chat object." )
+							st.warning( 'No delete function found on chat object.' )
 						else:
-							with st.spinner( "Deleting file..." ):
+							with st.spinner( 'Deleting file...' ):
 								try:
 									res = del_fn( sel )
-									st.success( f"Delete result: {res}" )
+									st.success( f'Delete result: {res}' )
 								except Exception as exc:
-									st.error( f"Delete failed: {exc}" )
+									st.error( f'Delete failed: {exc}' )
 
 # ======================================================================================
 # PROMPT ENGINEERING MODE

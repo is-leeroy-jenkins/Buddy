@@ -2241,7 +2241,7 @@ class Files( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def search( self, prompt: str, store_id: str, model: str = 'gpt-4.1-nano-2025-04-14' ) -> str | None:
+	def search( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
 
 	        Purpose:
@@ -2283,7 +2283,7 @@ class Files( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def survey( self, prompt: str, model: str = 'gpt-4.1-nano-2025-04-14' ) -> str | None:
+	def survey( self, prompt: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
 
 	        Purpose:
