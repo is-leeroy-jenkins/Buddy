@@ -894,7 +894,7 @@ def count_tokens( text: str ) -> int:
 def fetch_prompts_df( ) -> pd.DataFrame:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		df = pd.read_sql_query( 
-			"SELECT PromptsId, Name, Version, ID FROM Prompts ORDER BY PromptsId DESC",
+			"SELECT PromptsId, Name, Text FROM Prompts ORDER BY PromptsId DESC",
 			conn )
 	df.insert( 0, "Selected", False )
 	return df
@@ -902,7 +902,7 @@ def fetch_prompts_df( ) -> pd.DataFrame:
 def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
-			"SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE PromptsId=?",
+			"SELECT PromptsId, Name, Text  FROM Prompts WHERE PromptsId=?",
 			(pid,)
 		)
 		row = cur.fetchone( )
@@ -911,7 +911,7 @@ def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
-			"SELECT PromptsId, Name, Text, Version, ID FROM Prompts WHERE Name=?",
+			"SELECT PromptsId, Name, Text FROM Prompts WHERE Name=?",
 			(name,)
 		)
 		row = cur.fetchone( )
@@ -919,14 +919,14 @@ def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 
 def insert_prompt( data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		conn.execute( 'INSERT INTO Prompts (Name, Text, Version, ID) VALUES (?, ?, ?, ?)',
-			(data[ 'Name' ], data[ 'Text' ], data[ 'Version' ], data[ 'ID' ]) )
+		conn.execute( 'INSERT INTO Prompts (Name, Text) VALUES (?, ?, ?, ?)',
+			(data[ 'Name' ], data[ 'Text' ]) )
 
 def update_prompt( pid: int, data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute(
-			"UPDATE Prompts SET Name=?, Text=?, Version=?, ID=? WHERE PromptsId=?",
-			(data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ], pid)
+			"UPDATE Prompts SET Name=?, Text=?  WHERE PromptsId=?",
+			(data[ "Name" ], data[ "Text" ], pid)
 		)
 
 def delete_prompt( pid: int ) -> None:
@@ -2011,25 +2011,25 @@ if 'execution_mode' not in st.session_state:
 	st.session_state[ 'execution_mode' ] = None
 	
 if 'temperature' not in st.session_state:
-	st.session_state[ 'temperature' ] = 0.8
+	st.session_state[ 'temperature' ] = None
 	
 if 'top_percent' not in st.session_state:
-	st.session_state[ 'top_percent' ] = 1.0
+	st.session_state[ 'top_percent' ] = None
 
 if 'input' not in st.session_state:
-	st.session_state[ 'input' ] = [ ]
+	st.session_state[ 'input' ] = None
 
 if 'max_tokens' not in st.session_state:
-	st.session_state[ 'max_tokens' ] = 8064
+	st.session_state[ 'max_tokens' ] = None
 	
 if 'frequency_penalty' not in st.session_state:
-	st.session_state[ 'frequency_penalty' ] = 0.0
+	st.session_state[ 'frequency_penalty' ] = None
 	
 if 'presense_penalty' not in st.session_state:
-	st.session_state[ 'presense_penalty' ] = 0.0
+	st.session_state[ 'presense_penalty' ] = None
 
 if 'stops' not in st.session_state:
-	st.session_state[ 'stops' ] = [ ]
+	st.session_state[ 'stops' ] = None
 
 if 'includes' not in st.session_state:
 	st.session_state[ 'includes' ] = [ ]
@@ -2102,10 +2102,10 @@ if 'text_max_calls' not in st.session_state:
 	st.session_state[ 'text_max_calls' ] = None
 
 if 'text_tool_choice' not in st.session_state:
-	st.session_state[ 'text_tool_choice' ] = 'auto'
+	st.session_state[ 'text_tool_choice' ] = ''
 
 if 'text_reasoning' not in st.session_state:
-	st.session_state[ 'text_reasoning' ] = 'low'
+	st.session_state[ 'text_reasoning' ] = None
 
 if 'text_background' not in st.session_state:
 	st.session_state[ 'text_background' ] = False
@@ -4556,7 +4556,7 @@ elif mode == 'Prompt Engineering':
 			st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 		
 		with c2:
-			st.selectbox( 'Sort by', [ 'PromptsId', 'Name', 'Version' ], key='pe_sort_col', )
+			st.selectbox( 'Sort by', [ 'PromptsId', 'Name' ], key='pe_sort_col', )
 		
 		with c3:
 			st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir' )
@@ -4593,7 +4593,7 @@ elif mode == 'Prompt Engineering':
 		
 		offset = (st.session_state.pe_page - 1) * PAGE_SIZE
 		query = f"""
-	        SELECT PromptsId, Name, Text, Version, ID
+	        SELECT PromptsId, Name, Text
 	        FROM {TABLE}
 	        {where}
 	        ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
@@ -4618,8 +4618,7 @@ elif mode == 'Prompt Engineering':
 					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
 					'PromptsId': r[ 0 ],
 					'Name': r[ 1 ],
-					'Version': r[ 3 ],
-					'ID': r[ 4 ],
+					'Text': r[ 2 ]
 			} )
 		
 		edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
@@ -4670,7 +4669,6 @@ elif mode == 'Prompt Engineering':
 			
 			st.text_input( 'Name', key='pe_name' )
 			st.text_area( 'Text', key='pe_text', height=260 )
-			st.number_input( 'Version', min_value=1, key='pe_version' )
 			c1, c2, c3 = st.columns( 3 )
 			
 			with c1:
@@ -4682,25 +4680,23 @@ elif mode == 'Prompt Engineering':
 							conn.execute(
 								f"""
 	                            UPDATE {TABLE}
-	                            SET Name=?, Text=?, Version=?
+	                            SET Name=?, Text=?
 	                            WHERE PromptsId=?
 	                            """,
 								(
 										st.session_state.pe_name,
 										st.session_state.pe_text,
-										st.session_state.pe_version,
 										st.session_state.pe_selected_id,
 								), )
 						else:
 							conn.execute(
 								f"""
-	                            INSERT INTO {TABLE} (Name, Text, Version)
-	                            VALUES (?, ?, ?)
+	                            INSERT INTO {TABLE} (Name, Text)
+	                            VALUES (?, ?)
 	                            """,
 								(
 										st.session_state.pe_name,
 										st.session_state.pe_text,
-										st.session_state.pe_version,
 								),
 							)
 						conn.commit( )
