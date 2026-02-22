@@ -200,8 +200,9 @@ class Chat( GPT ):
 	purpose: Optional[ str ]
 	domains: Optional[ str ]
 	
-	def __init__( self, model: str, prompt: str, temperature: float=None, top_p: float=None, presense: float=None,
-			store: bool=None, stream: bool=None, stops: List[ str ]=[ ], format: str=None, number: int=None,
+	def __init__( self, model: str='gpt-5', prompt: str=None, temperature: float=None,
+			top_p: float=None, presense: float=None, store: bool=None, stream: bool=None,
+			stops: List[ str ]=[ ], format: str=None, number: int=None,
 			instruct: str=None, messages: List[ Dict[ str, str ] ]=[ ], domains: List[ str ]=[ ],
 			include: List[ Dict[ str, str ] ]=[ ], tools: List[ Dict[ str, str ] ]=[ ],
 			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, file_path: str=None,
@@ -909,13 +910,14 @@ class Images( GPT ):
 	background: Optional[ bool ]
 	backcolor: Optional[ str ]
 	
-	def __init__( self, prompt: str, model: str, temperature: float=None, top_p: float=None,
-			presence: float=None, frequency: float=None, max_tokens: int = None, store: bool=None,
-			stream: bool=False,  backcolor: str=None, instruct: str=None, background: bool=None,
-			messages: List[ Dict[ str, str ] ]=[ ], format: str=None,  number: int=None,
-			include: List[ Dict[ str, str ] ]=[ ], tools: List[ Dict[ str, str ] ]=[ ],
-			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, image_path: str=None,
-			is_parallel: bool=None, input: List[ Dict[ str, str ] ]=[ ], previous_id: str=None,
+	def __init__( self, prompt: str=None, model: str='gpt-image-1', temperature: float=None,
+			top_p: float=None, presence: float=None, frequency: float=None,
+			max_tokens: int=None, store: bool=None, stream: bool=False,  backcolor: str=None,
+			instruct: str=None, background: bool=None, messages: List[ Dict[ str, str ] ]=[ ],
+			format: str=None,  number: int=None, include: List[ Dict[ str, str ] ]=[ ],
+			tools: List[ Dict[ str, str ] ]=[ ], max_tools: Optional[ int ]=None,
+			tool_choice: Optional[ str ]=None, image_path: str=None, is_parallel: bool=None,
+			input: List[ Dict[ str, str ] ]=[ ], previous_id: str=None,
 			reasoning: Dict[ str, str ]=[ ],  input_text: str=None, image_url: str=None,
 			content: List[ Dict[ str, str ] ]=[ ], quality: str=None, size: str=None,
 			detail: str=None, style: str=None ):
