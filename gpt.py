@@ -84,7 +84,7 @@ class GPT:
 	messages: Optional[ List[ Dict[ str, str ] ] ]
 	instructions: Optional[ str ]
 	
-	def __init__( self, model: str='gpt-5', prompt: str=None, temperature: float=None,
+	def __init__( self, model: str='gpt-5-nano', prompt: str=None, temperature: float=None,
 			top_p: float=None, presence: float=None, store: bool=None, stream: bool=None,
 			stops: List[ str ]=[ ], format: str=None, number: int=None, instruct: str=None,
 			messages: List[ Dict[ str, str ] ]=[ ], background: bool=None,

@@ -2836,7 +2836,6 @@ elif mode == 'Text':
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'text_system_instructions' ] = ''
-				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 			
@@ -3247,7 +3246,6 @@ elif mode == "Images":
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'image_system_instructions' ] = ''
-				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -3658,7 +3656,7 @@ elif mode == "Audio":
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
-						st.session_state[ 'auido_system_instructions' ] = text
+						st.session_state[ 'audio_system_instructions' ] = text
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
@@ -3666,7 +3664,6 @@ elif mode == "Audio":
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'audio_system_instructions' ] = ''
-				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
