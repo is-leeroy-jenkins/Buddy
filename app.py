@@ -3890,7 +3890,7 @@ elif mode == 'Embeddings':
 			words = input_text.split( )
 			total_words = len( words )
 			unique_words = len( set( words ) )
-			char_count = len( text_value )
+			char_count = len( input_text )
 			token_count = count_tokens( input_text )
 			ttr = (unique_words / total_words) if total_words > 0 else 0.0
 			

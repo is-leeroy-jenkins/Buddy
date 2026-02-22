@@ -1950,8 +1950,7 @@ class Embeddings( GPT ):
 			List[ str ] of available format options
 
 		'''
-		return [ 'float',
-		         'base64' ]
+		return [ 'float', 'base64' ]
 	
 	def create( self, text: str | List[ str ], model: str='text-embedding-3-large', format: str='float',
 			dimensions: int=None ) -> List[ float ] | List[ List[ float ] ] | None:
