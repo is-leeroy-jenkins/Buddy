@@ -3585,7 +3585,7 @@ elif mode == "Audio":
 					audio_presense = st.session_state[ 'audio_presense_penalty' ]
 				
 				with prm_four:
-					set_audiotemperature = st.slider( 'Temperature', 0.0, 1.0,
+					set_audio_temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'audio_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
 					audio_temperature = st.session_state[ 'audio_temperature' ]
