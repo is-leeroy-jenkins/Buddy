@@ -49,7 +49,7 @@ from pathlib import Path
 import tiktoken
 from openai import OpenAI
 from typing import TYPE_CHECKING
-
+from typing import Optional, List, Dict
 
 if TYPE_CHECKING:
 	import openai.types.responses
@@ -87,9 +87,9 @@ class GPT:
 	messages: Optional[ List[ Dict[ str, str ] ] ]
 	instructions: Optional[ str ]
 	
-	def __init__( self, model: str, prompt: str, temperature: float=None, top_p: float=None,
-			presence: float=None, store: bool=None, stream: bool=None, stops: List[ str ]=[ ],
-			format: str=None, number: int=None, instruct: str=None,
+	def __init__( self, model: str='gpt-5', prompt: str=None, temperature: float=None,
+			top_p: float=None, presence: float=None, store: bool=None, stream: bool=None,
+			stops: List[ str ]=[ ], format: str=None, number: int=None, instruct: str=None,
 			messages: List[ Dict[ str, str ] ]=[ ], background: bool=None,
 			max_tokens: int=None, frequency: float=None ):
 		self.api_key = cfg.OPENAI_API_KEY
