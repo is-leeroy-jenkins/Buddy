@@ -84,60 +84,6 @@ from grok import ( Chat, Images, Files, Transcription, TTS, Translation, VectorS
 # ==============================================================================
 # RESPONSE/CHAT UTILITIES
 # ==============================================================================
-def fetch_prompt_names( db_path: str ) -> list[ str ]:
-	"""
-		Purpose:
-		--------
-		Retrieve template names from Prompts table.
-	
-		Parameters:
-		-----------
-		db_path : str
-			SQLite database path.
-	
-		Returns:
-		--------
-		list[str]
-			Sorted prompt names.
-	"""
-	try:
-		conn = sqlite3.connect( db_path )
-		cur = conn.cursor( )
-		cur.execute( "SELECT Name FROM Prompts ORDER BY PromptsId;" )
-		rows = cur.fetchall( )
-		conn.close( )
-		return [ r[ 0 ] for r in rows if r and r[ 0 ] is not None ]
-	except Exception:
-		return [ ]
-
-def fetch_prompt_text( db_path: str, name: str ) -> str | None:
-	"""
-		Purpose:
-		--------
-		Retrieve template text by name.
-	
-		Parameters:
-		-----------
-		db_path : str
-			SQLite database path.
-		name : str
-			Template name.
-	
-		Returns:
-		--------
-		str | None
-			Prompt text if found.
-	"""
-	try:
-		conn = sqlite3.connect( db_path )
-		cur = conn.cursor( )
-		cur.execute( "SELECT Text FROM Prompts WHERE Name = ?;", (name,) )
-		row = cur.fetchone( )
-		conn.close( )
-		return str( row[ 0 ] ) if row and row[ 0 ] is not None else None
-	except Exception:
-		return None
-
 def extract_response_text( response: object ) -> str:
 	"""
 		
@@ -891,6 +837,60 @@ def count_tokens( text: str ) -> int:
 # ==============================================================================
 # PROMPT ENGINEERING UTILITIES
 # ==============================================================================
+def fetch_prompt_names( db_path: str ) -> list[ str ]:
+	"""
+		Purpose:
+		--------
+		Retrieve template names from Prompts table.
+	
+		Parameters:
+		-----------
+		db_path : str
+			SQLite database path.
+	
+		Returns:
+		--------
+		list[str]
+			Sorted prompt names.
+	"""
+	try:
+		conn = sqlite3.connect( db_path )
+		cur = conn.cursor( )
+		cur.execute( "SELECT Caption FROM Prompts ORDER BY PromptsId;" )
+		rows = cur.fetchall( )
+		conn.close( )
+		return [ r[ 0 ] for r in rows if r and r[ 0 ] is not None ]
+	except Exception:
+		return [ ]
+
+def fetch_prompt_text( db_path: str, name: str ) -> str | None:
+	"""
+		Purpose:
+		--------
+		Retrieve template text by name.
+	
+		Parameters:
+		-----------
+		db_path : str
+			SQLite database path.
+		name : str
+			Template name.
+	
+		Returns:
+		--------
+		str | None
+			Prompt text if found.
+	"""
+	try:
+		conn = sqlite3.connect( db_path )
+		cur = conn.cursor( )
+		cur.execute( "SELECT Text FROM Prompts WHERE Caption = ?;", (name,) )
+		row = cur.fetchone( )
+		conn.close( )
+		return str( row[ 0 ] ) if row and row[ 0 ] is not None else None
+	except Exception:
+		return None
+
 def fetch_prompts_df( ) -> pd.DataFrame:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		df = pd.read_sql_query(
@@ -911,7 +911,7 @@ def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
-			"SELECT PromptsId, Caption, Name, Text, Version, ID FROM Prompts WHERE Name=?",
+			"SELECT PromptsId, Caption, Name, Text, Version, ID FROM Prompts WHERE Caption=?",
 			(name,)
 		)
 		row = cur.fetchone( )
@@ -2831,13 +2831,15 @@ elif mode == 'Text':
 						st.session_state[ 'text_system_instructions' ] = text
 			
 			with in_right:
-				st.selectbox( 'Select Template', prompt_names,
+				st.selectbox( 'Use Template', prompt_names,
 					key='instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'text_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
+			
 		
 		# ----------- MESSAGES ---------------------------------
 		for msg in st.session_state.messages:
@@ -2877,7 +2879,6 @@ elif mode == 'Text':
 							response = chat.generate_text( prompt=prompt, model=gen_kwargs[ 'text_model' ] )
 						else:
 							response = chat.generate_text( )
-					
 					except Exception as exc:
 						err = Error( exc )
 						st.error( f'Generation Failed: {err.info}' )
@@ -3246,6 +3247,7 @@ elif mode == "Images":
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'image_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -3664,6 +3666,7 @@ elif mode == "Audio":
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'audio_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -4379,6 +4382,7 @@ elif mode == 'Document Q&A':
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'docqna_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -4522,8 +4526,8 @@ elif mode == 'Prompt Engineering':
 		st.session_state.setdefault( 'pe_caption', '' )
 		st.session_state.setdefault( 'pe_name', '' )
 		st.session_state.setdefault( 'pe_text', '' )
-		st.session_state.setdefault( 'pe_version', 1 )
-		st.session_state.setdefault( 'pe_id', '' )
+		st.session_state.setdefault( 'pe_version', '' )
+		st.session_state.setdefault( 'pe_id', 0 )
 		
 		# ------------------------------------------------------------------
 		# DB helpers
@@ -4536,14 +4540,13 @@ elif mode == 'Prompt Engineering':
 			st.session_state.pe_caption = ''
 			st.session_state.pe_name = ''
 			st.session_state.pe_text = ''
-			st.session_state.pe_version = 1
-			st.session_state.pe_id = ''
+			st.session_state.pe_version = ''
+			st.session_state.pe_id = 0
 		
 		def load_prompt( pid: int ) -> None:
 			with get_conn( ) as conn:
-				cur = conn.execute(
-					f"SELECT Caption, Name, Text, Version, ID FROM {TABLE} WHERE PromptsId=?",
-					(pid,), )
+				_select = f"SELECT Caption, Name, Text, Version, ID FROM {TABLE} WHERE PromptsId=?"
+				cur = conn.execute( _select, (pid,), )
 				row = cur.fetchone( )
 				if not row:
 					return
@@ -4562,7 +4565,8 @@ elif mode == 'Prompt Engineering':
 			st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 		
 		with c2:
-			st.selectbox( 'Sort by', [ 'PromptsId', 'Caption', 'Name', 'Text', 'Version', 'ID' ], key='pe_sort_col', )
+			st.selectbox( 'Sort by', [ 'PromptsId', 'Caption', 'Name', 'Text', 'Version', 'ID' ],
+				key='pe_sort_col', )
 		
 		with c3:
 			st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir' )
@@ -4591,7 +4595,6 @@ elif mode == 'Prompt Engineering':
 		# ------------------------------------------------------------------
 		where = ""
 		params = [ ]
-		
 		if st.session_state.pe_search:
 			where = 'WHERE Name LIKE ? OR Text LIKE ?'
 			s = f"%{st.session_state.pe_search}%"
@@ -4620,15 +4623,15 @@ elif mode == 'Prompt Engineering':
 		table_rows = [ ]
 		for r in rows:
 			table_rows.append(
-				{
-						'Selected': r[ 0 ] == st.session_state.pe_selected_id,
-						'PromptsId': r[ 0 ],
-						'Caption': r[ 1 ],
-						'Name': r[ 2 ],
-						'Text': r[ 3 ],
-						'Version': r[ 4 ],
-						'ID': r[ 5 ],
-				} )
+			{
+					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
+					'PromptsId': r[ 0 ],
+					'Caption': r[ 1 ],
+					'Name': r[ 2 ],
+					'Text': r[ 3 ],
+					'Version': r[ 4 ],
+					'ID': r[ 5 ],
+			} )
 		
 		edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
 			key="prompt_table", )
@@ -4665,20 +4668,18 @@ elif mode == 'Prompt Engineering':
 				st.session_state.pe_page += 1
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-		
+
+				
 		# ------------------------------------------------------------------
 		# Edit Prompt
 		# ------------------------------------------------------------------
 		with st.expander( "🖊️ Edit Prompt", expanded=False ):
-			st.text_input(
-				"PromptsId",
-				value=st.session_state.pe_selected_id or "",
-				disabled=True,
-			)
-			
+			st.text_input( "PromptsId", value=st.session_state.pe_selected_id or "",
+				disabled=True, )
 			st.text_input( 'Name', key='pe_name' )
+	
 			st.text_area( 'Text', key='pe_text', height=260 )
-			st.number_input( 'Version', min_value=1, key='pe_version' )
+			st.text_input( 'Version', key='pe_version' )
 			c1, c2, c3 = st.columns( 3 )
 			
 			with c1:
@@ -4698,14 +4699,14 @@ elif mode == 'Prompt Engineering':
 										st.session_state.pe_name,
 										st.session_state.pe_text,
 										st.session_state.pe_version,
-										st.session_state.pe_selected_id,
 										st.session_state.pe_id,
+										st.session_state.pe_selected_id
 								), )
 						else:
 							conn.execute(
 								f"""
 	                            INSERT INTO {TABLE} (Caption, Name, Text, Version, ID)
-	                            VALUES (?, ?, ?)
+	                            VALUES (?, ?, ?, ? , ?)
 	                            """,
 								(
 										st.session_state.pe_caption,
@@ -5306,12 +5307,7 @@ _mode_to_model_key = {
 
 provider_val = st.session_state.get( "provider", "—" )
 mode_val = mode or "—"
-
-active_model = st.session_state.get(
-	_mode_to_model_key.get( mode, "" ),
-	None,
-)
-
+active_model = st.session_state.get( _mode_to_model_key.get( mode, "" ), None )
 right_parts = [ ]
 
 if active_model is not None:

@@ -197,7 +197,7 @@ class Chat( GPT ):
 	purpose: Optional[ str ]
 	domains: Optional[ str ]
 	
-	def __init__( self, model: str='gpt-5', prompt: str=None, temperature: float=None,
+	def __init__( self, model: str='gpt-5-mini', prompt: str=None, temperature: float=None,
 			top_p: float=None, presense: float=None, store: bool=None, stream: bool=None,
 			stops: List[ str ]=[ ], format: str=None, number: int=None,
 			instruct: str=None, messages: List[ Dict[ str, str ] ]=[ ], domains: List[ str ]=[ ],
@@ -1420,7 +1420,7 @@ class TTS(  ):
         '''
 		return [ 0.25, 1.0, 4.0 ]
 	
-	def create_speech( self, text: str, file_path: str, format: str=None,
+	def create_speech( self, text: str, file_path: str, model: str='gpt-4o-tts', format: str=None,
 			speed: float=None, voice: str=None, ):
 		"""
 	
@@ -1444,8 +1444,10 @@ class TTS(  ):
 		try:
 			throw_if( 'text', text )
 			throw_if( 'file_pat', file_path )
+			
 			self.input = text
 			self.speed = speed
+			self.model = model
 			self.response_format = format
 			self.voice = voice
 			self.file_path = file_path
@@ -1527,9 +1529,9 @@ class Transcription( GPT ):
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, model: str=None, temperature: float=None, prompt: str=None, number: int=None,
-			top_p: float=None, frequency: float=None, presence: float=None, max_tokens: int=None,
-			stream: bool=None, store: bool=None, language: str=None,
+	def __init__( self, model: str='gpt-4o-transcribe', temperature: float=None, prompt: str=None,
+			number: int=None, top_p: float=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, stream: bool=None, store: bool=None, language: str=None,
 			instruct: str=None, format: str=None,  background: bool=None,
 			messages: List[ Dict[ str, str ] ]=None, stops: List[ str ]=None  ):
 		super( ).__init__( model, prompt, temperature, top_p, presence, store, stream, stops,
@@ -1620,7 +1622,7 @@ class Transcription( GPT ):
 		         'vietnamese',
 		         'thai' ]
 	
-	def transcribe( self, path: str, model: str=None, language: str=None, ) -> str:
+	def transcribe( self, path: str, model: str='gpt-4o-transcribe', language: str=None, ) -> str:
 		"""
 		
 			Purpose:
