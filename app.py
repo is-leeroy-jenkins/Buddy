@@ -893,8 +893,8 @@ def count_tokens( text: str ) -> int:
 # ==============================================================================
 def fetch_prompts_df( ) -> pd.DataFrame:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		df = pd.read_sql_query( 
-			"SELECT PromptsId, Name, Text FROM Prompts ORDER BY PromptsId DESC",
+		df = pd.read_sql_query(
+			"SELECT PromptsId, Caption,  Name, Version, ID FROM Prompts ORDER BY PromptsId DESC",
 			conn )
 	df.insert( 0, "Selected", False )
 	return df
@@ -902,7 +902,7 @@ def fetch_prompts_df( ) -> pd.DataFrame:
 def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
-			"SELECT PromptsId, Name, Text  FROM Prompts WHERE PromptsId=?",
+			"SELECT PromptsId, Caption, Name, Text, Version, ID FROM Prompts WHERE PromptsId=?",
 			(pid,)
 		)
 		row = cur.fetchone( )
@@ -911,7 +911,7 @@ def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
-			"SELECT PromptsId, Name, Text FROM Prompts WHERE Name=?",
+			"SELECT PromptsId, Caption, Name, Text, Version, ID FROM Prompts WHERE Name=?",
 			(name,)
 		)
 		row = cur.fetchone( )
@@ -919,14 +919,14 @@ def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 
 def insert_prompt( data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		conn.execute( 'INSERT INTO Prompts (Name, Text) VALUES (?, ?, ?, ?)',
-			(data[ 'Name' ], data[ 'Text' ]) )
+		conn.execute( 'INSERT INTO Prompts (Caption, Name, Text, Version, ID) VALUES (?, ?, ?, ?)',
+			(data[ 'Caption' ], data[ 'Name' ], data[ 'Text' ], data[ 'Version' ], data[ 'ID' ]) )
 
 def update_prompt( pid: int, data: Dict[ str, Any ] ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute(
-			"UPDATE Prompts SET Name=?, Text=?  WHERE PromptsId=?",
-			(data[ "Name" ], data[ "Text" ], pid)
+			"UPDATE Prompts SET Caption=?, Name=?, Text=?, Version=?, ID=? WHERE PromptsId=?",
+			(data[ "Caption" ], data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ], pid)
 		)
 
 def delete_prompt( pid: int ) -> None:
@@ -4519,9 +4519,11 @@ elif mode == 'Prompt Engineering':
 		st.session_state.setdefault( 'pe_sort_col', 'PromptsId' )
 		st.session_state.setdefault( 'pe_sort_dir', 'ASC' )
 		st.session_state.setdefault( 'pe_selected_id', None )
+		st.session_state.setdefault( 'pe_caption', '' )
 		st.session_state.setdefault( 'pe_name', '' )
 		st.session_state.setdefault( 'pe_text', '' )
 		st.session_state.setdefault( 'pe_version', 1 )
+		st.session_state.setdefault( 'pe_id', '' )
 		
 		# ------------------------------------------------------------------
 		# DB helpers
@@ -4531,32 +4533,36 @@ elif mode == 'Prompt Engineering':
 		
 		def reset_selection( ):
 			st.session_state.pe_selected_id = None
+			st.session_state.pe_caption = ''
 			st.session_state.pe_name = ''
-			st.session_state.pe_text =''
+			st.session_state.pe_text = ''
 			st.session_state.pe_version = 1
+			st.session_state.pe_id = ''
 		
 		def load_prompt( pid: int ) -> None:
 			with get_conn( ) as conn:
 				cur = conn.execute(
-					f"SELECT Name, Text, Version FROM {TABLE} WHERE PromptsId=?",
+					f"SELECT Caption, Name, Text, Version, ID FROM {TABLE} WHERE PromptsId=?",
 					(pid,), )
 				row = cur.fetchone( )
 				if not row:
 					return
-				st.session_state.pe_name = row[ 0 ]
-				st.session_state.pe_text = row[ 1 ]
-				st.session_state.pe_version = row[ 2 ]
+				st.session_state.pe_caption = row[ 0 ]
+				st.session_state.pe_name = row[ 1 ]
+				st.session_state.pe_text = row[ 2 ]
+				st.session_state.pe_version = row[ 3 ]
+				st.session_state.pe_id = row[ 4 ]
 		
 		# ------------------------------------------------------------------
 		# Filters
 		# ------------------------------------------------------------------
-		c1, c2, c3, c4 = st.columns( [ 4,  2, 2,  3 ] )
+		c1, c2, c3, c4 = st.columns( [ 4, 2, 2, 3 ] )
 		
 		with c1:
 			st.text_input( 'Search (Name/Text contains)', key='pe_search' )
 		
 		with c2:
-			st.selectbox( 'Sort by', [ 'PromptsId', 'Name' ], key='pe_sort_col', )
+			st.selectbox( 'Sort by', [ 'PromptsId', 'Caption', 'Name', 'Text', 'Version', 'ID' ], key='pe_sort_col', )
 		
 		with c3:
 			st.selectbox( 'Direction', [ 'ASC', 'DESC' ], key='pe_sort_dir' )
@@ -4566,7 +4572,7 @@ elif mode == 'Prompt Engineering':
 				"<div style='font-size:0.95rem;font-weight:600;margin-bottom:0.25rem;'>Go to ID</div>",
 				unsafe_allow_html=True, )
 			
-			a1, a2, a3 = st.columns( [ 2, 1,  1 ] )
+			a1, a2, a3 = st.columns( [ 2, 1, 1 ] )
 			
 			with a1:
 				jump_id = st.number_input( 'Go to ID', min_value=1,
@@ -4593,7 +4599,7 @@ elif mode == 'Prompt Engineering':
 		
 		offset = (st.session_state.pe_page - 1) * PAGE_SIZE
 		query = f"""
-	        SELECT PromptsId, Name, Text
+	        SELECT PromptsId, Caption, Name, Text, Version, ID
 	        FROM {TABLE}
 	        {where}
 	        ORDER BY {st.session_state.pe_sort_col} {st.session_state.pe_sort_dir}
@@ -4614,12 +4620,15 @@ elif mode == 'Prompt Engineering':
 		table_rows = [ ]
 		for r in rows:
 			table_rows.append(
-			{
-					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
-					'PromptsId': r[ 0 ],
-					'Name': r[ 1 ],
-					'Text': r[ 2 ]
-			} )
+				{
+						'Selected': r[ 0 ] == st.session_state.pe_selected_id,
+						'PromptsId': r[ 0 ],
+						'Caption': r[ 1 ],
+						'Name': r[ 2 ],
+						'Text': r[ 3 ],
+						'Version': r[ 4 ],
+						'ID': r[ 5 ],
+				} )
 		
 		edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
 			key="prompt_table", )
@@ -4643,7 +4652,7 @@ elif mode == 'Prompt Engineering':
 		# ------------------------------------------------------------------
 		# Paging
 		# ------------------------------------------------------------------
-		p1, p2, p3 = st.columns( [ 0.25,  3.5, 0.25 ] )
+		p1, p2, p3 = st.columns( [ 0.25, 3.5, 0.25 ] )
 		with p1:
 			if st.button( "◀ Prev" ) and st.session_state.pe_page > 1:
 				st.session_state.pe_page -= 1
@@ -4669,34 +4678,41 @@ elif mode == 'Prompt Engineering':
 			
 			st.text_input( 'Name', key='pe_name' )
 			st.text_area( 'Text', key='pe_text', height=260 )
+			st.number_input( 'Version', min_value=1, key='pe_version' )
 			c1, c2, c3 = st.columns( 3 )
 			
 			with c1:
 				if st.button( '💾 Save Changes'
-						if st.session_state.pe_selected_id
-						else '➕ Create Prompt' ):
+				if st.session_state.pe_selected_id
+				else '➕ Create Prompt' ):
 					with get_conn( ) as conn:
 						if st.session_state.pe_selected_id:
 							conn.execute(
 								f"""
 	                            UPDATE {TABLE}
-	                            SET Name=?, Text=?
+	                            SET Caption=?, Name=?, Text=?, Version=?, ID=?
 	                            WHERE PromptsId=?
 	                            """,
 								(
+										st.session_state.pe_caption,
 										st.session_state.pe_name,
 										st.session_state.pe_text,
+										st.session_state.pe_version,
 										st.session_state.pe_selected_id,
+										st.session_state.pe_id,
 								), )
 						else:
 							conn.execute(
 								f"""
-	                            INSERT INTO {TABLE} (Name, Text)
-	                            VALUES (?, ?)
+	                            INSERT INTO {TABLE} (Caption, Name, Text, Version, ID)
+	                            VALUES (?, ?, ?)
 	                            """,
 								(
+										st.session_state.pe_caption,
 										st.session_state.pe_name,
 										st.session_state.pe_text,
+										st.session_state.pe_version,
+										st.session_state.pe_id
 								),
 							)
 						conn.commit( )
@@ -4716,7 +4732,7 @@ elif mode == 'Prompt Engineering':
 			
 			with c3:
 				st.button( '🧹 Clear Selection', on_click=reset_selection )
-
+				
 # ==============================================================================
 # EXPORT MODE
 # ==============================================================================
