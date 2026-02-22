@@ -44,16 +44,13 @@
 '''
 from __future__ import annotations
 import os
-from openai.pagination import SyncCursorPage
 from pathlib import Path
 import tiktoken
 from openai import OpenAI
-from typing import TYPE_CHECKING
 from typing import Optional, List, Dict
 
-if TYPE_CHECKING:
-	import openai.types.responses
-	from openai.types import CreateEmbeddingResponse, VectorStore
+from openai.types.responses import Response
+from openai.types import CreateEmbeddingResponse, VectorStore
 	
 from boogr import Error
 import config as cfg
@@ -402,7 +399,7 @@ class Chat( GPT ):
 					reasoning=self.reasoning )
 			else:
 				self.response = self.client.responses.create( model=self.model, input=self.input,
-					max_output_tokens=self.max_completion_tokens, temperature=self.temperature,
+					max_output_tokens=self.max_tokens, temperature=self.temperature,
 					top_p=self.top_percent )
 			return self.response.output_text
 		except Exception as e:
@@ -1303,7 +1300,7 @@ class Images( GPT ):
 				'analyze',
 				'edit', ]
 
-class TTS( GPT ):
+class TTS(  ):
 	"""
 	
 	    Purpose
@@ -1338,17 +1335,20 @@ class TTS( GPT ):
 	    create_small_embedding( self, prompt: str, path: str )
 
     """
+	api_key: Optional[ str ]
 	client: Optional[ OpenAI ]
 	speed: Optional[ float ]
 	voice: Optional[ str ]
-	input: Optional[ List[ Dict[ str, str ] ] ] | str
+	input: Optional[ str ]
 	instructions: Optional[ str ]
+	response: Optional[ Response ]
+	streamed_response: Optional[ SpeechWithStreamingResponse ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
-	reasoning: Optional[ Dict[ str, str ] ]
-	response: Optional[ openai.types.responses.Response ]
+	response_format: Optional[ str ]
+	file_path: Optional[ str ]
 	
 	def __init__( self, input: str=None, model: str='gpt-4o-mini-tts',  format: str=None,
-			instruct: str=None, voice: str=None, speed: float=None  ):
+			instruct: str=None, voice: str=None, speed: float=None, file_path: str=None  ):
 		'''
 
 	        Purpose:
@@ -1356,8 +1356,6 @@ class TTS( GPT ):
 	        Constructor to  create_small_embedding TTS objects
 
         '''
-		super( ).__init__( temperature, top_p, presence, store, stream,
-			format, number, instruct,  frequency )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.input = input
@@ -1365,7 +1363,7 @@ class TTS( GPT ):
 		self.instructions = instruct
 		self.response_format = format
 		self.voice = voice
-		self.response = None
+		self.file_path = file_path
 		self.speed = speed
 	
 	@property
@@ -1422,8 +1420,8 @@ class TTS( GPT ):
         '''
 		return [ 0.25, 1.0, 4.0 ]
 	
-	def create_audio( self, text: str, filepath: str, format: str=None,
-			speed: float=None, voice: str=None, ) -> str:
+	def create_speech( self, text: str, file_path: str, format: str=None,
+			speed: float=None, voice: str=None, ):
 		"""
 	
 	        Purpose
@@ -1445,24 +1443,22 @@ class TTS( GPT ):
         """
 		try:
 			throw_if( 'text', text )
-			throw_if( 'filepath', filepath )
-			self.input_text = text
+			throw_if( 'file_pat', file_path )
+			self.input = text
 			self.speed = speed
 			self.response_format = format
 			self.voice = voice
-			out_path = Path( filepath )
-			if not out_path.parent.exists( ):
-				out_path.parent.mkdir( parents=True, exist_ok=True )
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			with self.client.audio.speech.with_streaming_response.create( model=self.model, speed=self.speed,
-					voice=self.voice, response_format=self.response_format, input=self.input_text ) as resp:
-				resp.stream_to_file( str( out_path ) )
-			return str( out_path )
+			self.file_path = file_path
+			self.client = OpenAI( api_key=self.api_key )
+			with self.client.audio.speech.with_streaming_response.create( model=self.model,
+					speed=self.speed, voice=self.voice, response_format=self.response_format,
+					input=self.input ) as response:
+				response.stream_to_file( self.file_path )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'TTS'
-			exception.method = 'create_audio( self, prompt: str, path: str ) -> str'
+			exception.method = 'create_speech( self, prompt: str, path: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -1482,42 +1478,8 @@ class TTS( GPT ):
 	        List[ str ] | None
 
         '''
-		return [ 'num',
-		         'temperature',
-		         'top_percent',
-		         'frequency_penalty',
-		         'presence_penalty',
-		         'max_completion_tokens',
-		         'system_instructions',
-		         'store',
-		         'stream',
-		         'modalities',
-		         'stops',
-		         'content',
-		         'prompt',
-		         'response',
-		         'completion',
-		         'file',
-		         'path',
-		         'messages',
-		         'image_url',
-		         'response_format',
-		         'tools',
-		         'vector_store_ids',
-		         'name',
-		         'id',
-		         'description',
-		         'generate_text',
-		         'get_format_options',
-		         'get_model_options',
-		         'reasoning_effort',
-		         'get_effort_options',
-		         'get_speed_options',
-		         'input_text',
-		         'metadata',
-		         'get_files',
-		         'get_data',
-		         'dump', ]
+		return [ 'input', 'file_path', 'voice', 'client', 'response_formaat',
+		         'speed', 'model', 'instructions', 'create_speech' ]
 
 class Transcription( GPT ):
 	"""
@@ -1565,16 +1527,19 @@ class Transcription( GPT ):
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, model: str=None, temperature: float=None,
+	def __init__( self, model: str=None, temperature: float=None, prompt: str=None, number: int=None,
 			top_p: float=None, frequency: float=None, presence: float=None, max_tokens: int=None,
-			store: bool=True, language: str=None, instruct: str=None ):
-		super( ).__init__( )
+			stream: bool=None, store: bool=None, language: str=None,
+			instruct: str=None, format: str=None,  background: bool=None,
+			messages: List[ Dict[ str, str ] ]=None, stops: List[ str ]=None  ):
+		super( ).__init__( model, prompt, temperature, top_p, presence, store, stream, stops,
+			format, number, instruct, messages, background, max_tokens, frequency )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.temperature = temperature
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
 		self.presence_penalty = presence
-		self.max_completion_tokens = max_tokens
+		self.max_tokens = max_tokens
 		self.store = store
 		self.language = language
 		self.instructions = instruct
@@ -1583,7 +1548,6 @@ class Transcription( GPT ):
 		self.audio_file = None
 		self.transcript = None
 		self.response = None
-		self.voice = None
 	
 	@property
 	def model_options( self ) -> str:
@@ -1759,10 +1723,12 @@ class Translation( GPT ):
 	instructions: Optional[ str ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
+	response_format: Optional[ str ]
 	
 	def __init__( self, model: str=None, temperature: float=None, top_p: float=None,
 			frequency: float=None, presence: float=None, max_tokens: int=None, store: bool=None,
-			stream: bool=None, instruct: str=None, audio_file: str=None ):
+			stream: bool=None, instruct: str=None, audio_file: str=None, format: str=None,
+			language: str=None ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
@@ -1771,13 +1737,14 @@ class Translation( GPT ):
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
 		self.presence_penalty = presence
-		self.max_completion_tokens = max_tokens
+		self.max_tokens = max_tokens
 		self.store = store
 		self.stream = stream
 		self.instructions = instruct
 		self.audio_file = audio_file
 		self.response = None
-		self.voice = None
+		self.response_format = format
+		self.target_language = language
 	
 	@property
 	def model_options( self ) -> str:
@@ -1825,9 +1792,25 @@ class Translation( GPT ):
 		         'vietnamese',
 		         'thai' ]
 	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+			
+			Returns:
+			-------
+			List[ str ] output  format options
+			
+		'''
+		return [ 'json',
+		         'text',
+		         'srt',
+		         'verbose_json',
+		         'vtt',
+		         'diarized_json' ]
+	
 	def translate( self, prompt: str, filepath: str, model: str=None,
 			temperature: float=None, top_p: float=None, frequency: float=None,
-			presence: float=None, max_tokens: int=None, language: str=None,
+			presence: float=None, max_tokens: int=None, format: str=None, language: str=None,
 			store: bool=True, stream: bool=True, instruct: str=None ) -> str | None:
 		"""
 		
@@ -1842,10 +1825,11 @@ class Translation( GPT ):
 			self.top_percent = top_p
 			self.frequency_penalty = frequency
 			self.presence_penalty = presence
-			self.max_completion_tokens = max_tokens
+			self.max_tokens = max_tokens
 			self.store = store
 			self.stream = stream
 			self.instruct = instruct
+			self.response_format = format
 			self.target_language = language
 			self.client = OpenAI( api_key=self.api_key )
 			with open( filepath, 'rb' ) as audio_file:
@@ -1854,7 +1838,7 @@ class Translation( GPT ):
 			return resp.text
 		except Exception as e:
 			ex = Error( e )
-			ex.module = 'boo'
+			ex.module = 'gpt'
 			ex.cause = 'Translation'
 			ex.method = 'translate(self, path)'
 			error = ErrorDialog( ex )

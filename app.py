@@ -3504,7 +3504,7 @@ elif mode == "Audio":
 			# Expander — Audio Model
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				aud_one, aud_two, aud_three, aud_four, aud_five = st.columns(
-					[ 0.2, 0.2, 0.2, 0.2, .2 ], gap='xxsmall', border=True )
+					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
 				
 				# ---------------- Task ---------------
 				with aud_one:
@@ -3547,9 +3547,19 @@ elif mode == "Audio":
 				
 				# ---------------- Format ----------------
 				with aud_five:
-					audio_format = st.selectbox( label='Format',
-						options=[ 'audio/mp3', 'audio/wav', 'audio/aac',
-						          'audio/flac', 'audio/opus', 'audio/pcm' ] )
+					if task == 'Transcribe' and transcriber and hasattr( transcriber, 'format_options' ):
+						format_options = transcriber.format_options
+					elif task == 'Translate' and translator and hasattr( translator, 'format_options' ):
+						format_options = translator.format_options
+					elif task == 'Text-to-Speech' and tts and hasattr( tts, 'format_options' ):
+						format_options = tts.format_options
+					
+					if format_options:
+						audio_format = st.selectbox( 'Format', format_options,
+							index=(format_options.index( st.session_state.get( 'audio_format' ) )
+							       if st.session_state.get( 'audio_format' ) in format_options
+							       else 0), )
+						st.session_state[ 'audio_format' ] = audio_format
 				
 				if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
 					# ----------------------------------------------------------
