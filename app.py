@@ -5423,17 +5423,17 @@ elif mode == 'Images':
 	image_detail = st.session_state.get( 'image_detail' )
 	image_number = st.session_state.get( 'image_number' )
 	image_stream = st.session_state.get( 'image_stream' )
-	store = st.session_state.get( 'image_store' )
+	image_store = st.session_state.get( 'image_store' )
 	image_background = st.session_state.get( 'image_background' )
 	image_include = st.session_state.get( 'image_include' )
 	image_parallel_tools = st.session_state.get( 'image_parallel_tools' )
 	image_max_calls = st.session_state.get( 'text_max_tools' )
 	image_tools = st.session_state.get( 'image_tools' )
 	
-	if aspect is not None:
-		right_parts.append( f'Aspect: {aspect}' )
-	elif size is not None:
-		right_parts.append( f'Size: {size}' )
+	if image_aspect is not None:
+		right_parts.append( f'Aspect: {image_aspect}' )
+	elif image_size is not None:
+		right_parts.append( f'Size: {image_size}' )
 	
 	if image_mode is not None:
 		right_parts.append( f'Mode: {image_mode}' )
