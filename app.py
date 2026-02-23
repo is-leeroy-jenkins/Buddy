@@ -443,7 +443,8 @@ def init_state( ) -> None:
 		
 	for k in ( 'audio_system_instructions',
 				'image_system_instructions',
-				'text_system_instructions', ):
+				'docqna_system_instructions',
+				'text_system_instructions' ):
 		st.session_state.setdefault( k, "" )
 
 def reset_state( ) -> None:
@@ -2031,8 +2032,8 @@ if 'presense_penalty' not in st.session_state:
 if 'stops' not in st.session_state:
 	st.session_state[ 'stops' ] = [ ]
 
-if 'includes' not in st.session_state:
-	st.session_state[ 'includes' ] = [ ]
+if 'include' not in st.session_state:
+	st.session_state[ 'include' ] = [ ]
 
 if 'tool_choice' not in st.session_state:
 	st.session_state[ 'tool_choice' ] = ''
@@ -2086,11 +2087,17 @@ if 'text_presense_penalty' not in st.session_state:
 if 'text_max_calls' not in st.session_state:
 	st.session_state[ 'text_max_calls' ] = 0
 
+if 'text_response_format' not in st.session_state:
+	st.session_state[ 'text_response_format' ] = ''
+
 if 'text_tool_choice' not in st.session_state:
 	st.session_state[ 'text_tool_choice' ] = ''
 
 if 'text_reasoning' not in st.session_state:
 	st.session_state[ 'text_reasoning' ] = ''
+
+if 'text_content' not in st.session_state:
+	st.session_state[ 'text_content' ] = ''
 
 if 'text_parallel_tools' not in st.session_state:
 	st.session_state[ 'text_parallel_tools' ] = False
@@ -2103,9 +2110,6 @@ if 'text_store' not in st.session_state:
 
 if 'text_stream' not in st.session_state:
 	st.session_state[ 'text_stream' ] = False
-
-if 'text_response_format' not in st.session_state:
-	st.session_state[ 'text_response_format' ] = ''
 
 if 'text_stops' not in st.session_state:
 	st.session_state[ 'text_stops' ] = [ ]
@@ -2124,9 +2128,6 @@ if 'text_tools' not in st.session_state:
 
 if 'text_messages' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
-
-if 'text_content' not in st.session_state:
-	st.session_state[ 'text_content' ] = [ ]
 
 # --------IMAGE-GENERATION PARAMETERS--------------------
 if 'image_temperature' not in st.session_state:
@@ -2594,28 +2595,30 @@ elif mode == 'Text':
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	text_model = st.session_state.get( 'text_model', '' )
+	text_reasoning = st.session_state.get( 'text_reasoning', '' )
+	text_choice = st.session_state.get( 'text_tool_choice', '' )
+	text_content = st.session_state.get( 'text_content', '' )
 	text_top_percent = st.session_state.get( 'text_top_percent', 0.0 )
 	text_freq = st.session_state.get( 'text_frequency_penalty', 0.0 )
 	text_presense = st.session_state.get( 'text_presense_penalty', 0.0 )
 	text_number = st.session_state.get( 'text_number', 0 )
+	text_max_calls = st.session_state.get( 'text_max_calls', 0 )
 	text_temperature = st.session_state.get( 'text_temperature', 0.0 )
 	text_stream = st.session_state.get( 'text_stream', False )
 	text_parallel_tools = st.session_state.get( 'text_parallel_tools', False )
-	text_max_calls = st.session_state.get( 'text_max_calls', 0 )
 	text_store = st.session_state.get( 'text_store', False )
 	text_tools = st.session_state.get( 'text_tools', [ ] )
 	text_include = st.session_state.get( 'text_include', [ ] )
 	text_domains = st.session_state.get( 'text_domains', [ ] )
 	text_stops = st.session_state.get( 'text_stops', [ ] )
 	text_input = st.session_state.get( 'text_input', [ ] )
-	text_choice = st.session_state.get( 'text_tool_choice', '' )
 	text_background = st.session_state.get( 'text_background', False )
 	text_messages = st.session_state.get( 'text_messages', [ ] )
 	text_tokens = st.session_state.get( 'text_max_tokens', 0 )
 	text = provider_module.Chat( )
 	
 	for key in [ 'text_domains', 'text_stops', 'text_tools',
-	             'text_includes', 'text_input', 'tools_messages' ]:
+	             'text_includes', 'text_input', 'text_messages', 'text_content' ]:
 		if key in st.session_state and isinstance( st.session_state[ key ], list ):
 			del st.session_state[ key ]
 		
@@ -2649,9 +2652,7 @@ elif mode == 'Text':
 					with llm_c1:
 						set_text_model = st.selectbox( 'Select Model', text.model_options,
 							help='REQUIRED. Text Generation model used by the AI',
-							key='text_model',
-							index=(text.model_options.index( st.session_state[ 'text_model' ] )
-							       if st.session_state.get( 'text_model' ) in text.model_options else 0),)
+							key='text_model')
 						text_model = st.session_state[ 'text_model' ]
 					
 					with llm_c2:
@@ -2717,7 +2718,7 @@ elif mode == 'Text':
 				
 				with prm_c5:
 					set_text_number = st.number_input( 'Number', min_value=0, max_value=4,
-						value=0, help='Optional. Upper limit on the responses returned by the model',
+						help='Optional. Upper limit on the responses returned by the model',
 						key='text_number' )
 					text_number = st.session_state[ 'text_number' ]
 				
@@ -2741,12 +2742,12 @@ elif mode == 'Text':
 				
 				with tool_c1:
 					set_text_parallel = st.toggle( 'Allow Parallel', key='text_parallel_tools',
-						value=False, help=cfg.PARALLEL_TOOL_CALLS )
+						help=cfg.PARALLEL_TOOL_CALLS )
 					text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 				
 				with tool_c2:
 					set_text_calls = st.number_input( 'Max Tools', min_value=0, max_value=4,
-						value=0, help=cfg.MAX_TOOL_CALLS, key='text_max_tools' )
+						help=cfg.MAX_TOOL_CALLS, key='text_max_tools' )
 					text_max_tools = st.session_state[ 'text_max_tools' ]
 				
 				with tool_c3:
@@ -2779,22 +2780,21 @@ elif mode == 'Text':
 					
 					with resp_c1:
 						set_text_stream = st.toggle( 'Stream', key='text_stream',
-							value=False, help=cfg.STREAM )
+							help=cfg.STREAM )
 						text_stream = st.session_state[ 'text_stream' ]
 						
 					with resp_c2:
 						set_text_store = st.toggle( 'Store', key='text_store',
-							value=True, help=cfg.STORE )
+							help=cfg.STORE )
 						text_store = st.session_state[ 'text_store' ]
 						
 					with resp_c3:
 						set_text_background = st.toggle( 'Background', key='text_background',
-							value=False, help=cfg.BACKGROUND_MODE )
+							 help=cfg.BACKGROUND_MODE )
 						text_background = st.session_state[ 'text_background' ]
 						
 					with resp_c4:
 						set_text_stops = st.text_input( 'Stop Sequences', key='text_stops',
-							value='\n'.join( st.session_state.get( 'text_stops', [ ] ) ),
 							help=cfg.STOP_SEQUENCE, width='stretch' )
 						text_stops = [ d.strip( ) for d in set_text_domains.split( ',' )
 						               if d.strip( ) ]
