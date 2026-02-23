@@ -2995,7 +2995,7 @@ elif mode == "Images":
 	# Image Main  UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with center:
+	with (center):
 		# ------------------------------------------------------------------
 		# Expander — Image LLM Configuration
 		# ------------------------------------------------------------------
@@ -3014,35 +3014,39 @@ elif mode == "Images":
 					
 				with llm_c2:
 					if st.session_state[ 'image_mode' ] == 'Generation':
-						set_image_model = st.selectbox( label='Select Model', options=cfg.GPT_GENERATION,
+						generation = cfg.GPT_GENERATION
+						set_image_model = st.selectbox( label='Select Model', options=generation,
 						help='REQUIRED. Images Generation model used by the AI', key='image_model',
 						placeholder='Options' )
 						
 						image_model = st.session_state[ 'image_model' ]
 						
 					elif st.session_state[ 'image_mode' ] == 'Analysis':
-						set_image_model = st.selectbox( label='Select Model', options=cfg.GPT_ANALYSIS,
+						analysis = cfg.GPT_ANALYSIS
+						set_image_model = st.selectbox( label='Select Model', options=analysis,
 							help='REQUIRED. Images Generation model used by the AI', key='image_model',
 							placeholder='Options' )
 						
 						image_model = st.session_state[ 'image_model' ]
 						
 					elif st.session_state[ 'image_mode' ] == 'Editing':
-						set_image_model = st.selectbox( label='Select Model', options=cfg.GPT_EDITING,
+						editing = cfg.GPT_EDITING
+						set_image_model = st.selectbox( label='Select Model', options=editing,
 						help='REQUIRED. Images Generation model used by the AI', key = 'image_model',
 						placeholder='Options' )
-						
 						image_model = st.session_state[ 'image_model' ]
 					else:
-						set_image_model = st.selectbox( label='Select Model',
+						all = cfg.GPT_GENERATION
+						set_image_model = st.selectbox( label='Select Model', options=all,
 							help='REQUIRED. Images Generation model used by the AI', key='image_model',
 							placeholder='Options' )
 						
 						image_model = st.session_state[ 'image_model' ]
 				
 				with llm_c3:
+					includes = image.include_options
 					set_image_include = st.multiselect( label='Include:',
-						options=image.include_options, key='image_include',
+						options=includes, key='image_include',
 						help=cfg.INCLUDE, placeholder='Options' )
 					
 					image_include = st.session_state[ 'image_include' ]
@@ -3058,8 +3062,9 @@ elif mode == "Images":
 					image_domains = st.session_state[ 'image_domains' ]
 				
 				with llm_c5:
+					reasonings = image.reasoning_options
 					set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
-						options=image.reasoning_options, key='image_reasoning', help=cfg.REASONING )
+						options=reasonings, key='image_reasoning', help=cfg.REASONING )
 					
 					image_reasoning = st.session_state[ 'image_reasoning' ]
 				
@@ -3143,7 +3148,8 @@ elif mode == "Images":
 					image_max_tools = st.session_state[ 'image_max_tools' ]
 				
 				with tool_c3:
-					set_image_choice = st.selectbox( label='Tool Choice:', options=image.choice_options,
+					choices = image.choice_options
+					set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
 						key='image_choice', help=cfg.CHOICE, placeholder='Options')
 					
 					image_tool_choice = st.session_state[ 'image_choice' ]
@@ -3186,8 +3192,9 @@ elif mode == "Images":
 					image_background = st.session_state[ 'image_background' ]
 				
 				with res_four:
+					formats = image.format_options
 					set_image_reponse = st.selectbox( label='Response Format:',
-						options=image.format_options, key='image_response_format',
+						options=formats, key='image_response_format',
 						help=cfg.IMAGE_RESPONSE, placeholder='Options' )
 					
 					image_respose_format = st.session_state[ 'image_response_format' ]
@@ -3218,37 +3225,42 @@ elif mode == "Images":
 				
 				# ------------ Image Detail
 				with img_c1:
-					set_image_deatil = st.selectbox( label='Image Detail', options=image.detail_options,
+					details = image.detail_options
+					set_image_detail = st.selectbox( label='Image Detail', options=details,
 						help='Optional. Image detail', key='image_detail', placeholder='Options' )
 					
 					image_detail = st.session_state[ 'image_detail' ]
 				
 				# ------------ Image Style
 				with img_c2:
-					set_image_size = st.selectbox( label='Image Size', options=image.size_options,
+					sizes = image.size_options
+					set_image_size = st.selectbox( label='Image Size', options=sizes,
 						help='Optional. Image size', key='image_size', placeholder='Options' )
 					
 					image_size = st.session_state[ 'image_size' ]
 				
 				# ------------ Image Quality
 				with img_c3:
+					qualities = image.quality_options
 					set_image_quality = st.selectbox( label='Image Quality',
-						options=image.quality_options, help='Optional. Image Quality',
+						options=qualities, help='Optional. Image Quality',
 						key='image_quality', placeholder='Options' )
 					
 					image_quality = st.session_state[ 'image_quality' ]
 				
 				# ------------ Image Backcolor
 				with img_c4:
+					colors = image.backcolor_options
 					set_image_backcolor = st.selectbox( label='Image Backcolor',
-						options=image.backcolor_options,
+						options=colors,
 						help=cfg.IMAGE_BACKGROUND, key='image_backcolor', placeholder='Options' )
 					
 					image_backcolor = st.session_state[ 'image_backcolor' ]
 				
 				# ------------ Image Output Format
 				with img_c5:
-					set_image_output = st.selectbox( label='Image Format', options=image.output_options,
+					outputs = image.output_options
+					set_image_output = st.selectbox( label='Image Format', options=outputs,
 						help=cfg.IMAGE_RESPONSE, key='image_output', placeholder='Options' )
 					
 					image_output = st.session_state[ 'image_output' ]

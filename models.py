@@ -42,6 +42,7 @@
   ******************************************************************************************
 '''
 from typing import Any, Dict, List, Optional
+import config as cfg
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -190,7 +191,7 @@ class Message( ):
 			
 		'''
 		return self.content
-		
+	
 class Payload( ):
 	'''
 
@@ -255,6 +256,8 @@ class Payload( ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
+	api_key: Optional[ str ]
+	model: Optional[ str ]
 	temperature: Optional[ float ]
 	top_percent: Optional[ float ]
 	max_tokens: Optional[ int ]
@@ -262,25 +265,25 @@ class Payload( ):
 	fequency_penalty: Optional[ float ]
 	store: Optional[ bool ]
 	stream: Optional[ bool ]
-	asynchronous: Optional[ bool ]
+	background: Optional[ bool ]
 	stop_sequence: Optional[ List[ str ] ]
 	response_format: Optional[ str ]
 	number: Optional[ int ]
 	
-	def __init__( self, temperature: float=None, top_p: float=None, presense: float=None, number: int=None,
-			store: bool=None, frequency: float=None, stream: bool=None, stops: List[ str ]=None,
-			format: str=None, max_tokens: int=None, asynchronous: bool=None, ):
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.presense = presense
-		self.store = store
-		self.stream = stream
-		self.fequency_penalty = frequency
-		self.stop_sequence = stops
-		self.response_format = format
-		self.number = number
-		self.max_tokens = max_tokens
-		self.asynchronous = asynchronous
+	def __init__( self  ):
+		self.api_key = None
+		self.model = None
+		self.temperature = None
+		self.top_percent = None
+		self.presense = None
+		self.store = None
+		self.stream = None
+		self.fequency_penalty = None
+		self.stop_sequence = None
+		self.response_format = None
+		self.number = None
+		self.max_tokens = None
+		self.background = None
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -296,6 +299,76 @@ class Payload( ):
 		'''
 		return [ 'temperature', 'top_percent', 'presense', 'store', 'stream', 'stop_sequence',
 		         'response_format', 'number', 'max_tokens', 'asynchronous' ]
+
+class GemmaConfig( Payload ):
+	'''
+		
+		Purpose:
+		--------
+		
+		Attributes:
+		----------
+		
+	'''
+	instructions: Optional[ str ]
+	
+	def __init__( self ):
+		api_key = cfg.GEMINI_API_KEY
+		model = None
+		self.temperature = None
+		self.top_percent = None
+		self.presense = None
+		self.store = None
+		self.stream = None
+		self.fequency_penalty = None
+		self.stop_sequence = None
+		self.response_format = None
+		self.number = None
+		self.max_tokens = None
+		self.background = None
+
+class GrokConfig( Payload ):
+	'''
+		
+		Purpose:
+		--------
+		
+		Attributes:
+		----------
+		
+	'''
+	instructions: Optional[ str ]
+	
+	def __init__( self ):
+		self.api_key = cfg.GROQ_API_KEY
+		sself.model = None
+		self.temperature = None
+		self.top_percent = None
+		self.presense = None
+		self.store = None
+		self.stream = None
+		self.fequency_penalty = None
+		self.stop_sequence = None
+		self.response_format = None
+		self.number = None
+		self.max_tokens = None
+		self.background = None
+
+class GptConfig( Payload ):
+	'''
+		
+		Purpose:
+		--------
+		
+		Attributes:
+		----------
+		
+	'''
+	instructions: Optional[ str ]
+	
+	def __init__( self ):
+		api_key = cfg.OPENAI_API_KEY
+		model = None
 
 class TextConfig( Payload ):
 	'''
@@ -361,56 +434,36 @@ class TextConfig( Payload ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	model: Optional[ str ]
 	include: Optional[ List[ str ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	domains: Optional[ List[ str ] ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
 	allow_parallel: Optional[ bool ]
 	tool_choice: Optional[ bool ]
-	max_tokens: Optional[ int ]
 	max_tools: Optional[ int ]
 	file_path: Optional[ str ]
 	previous_id: Optional[ str ]
-	instructions: Optional[ str ]
-	background: Optional[ bool ]
 	input: Optional[ List[ Dict[ str, str ] ] ] | str
 	messages: Optional[ List[ Dict[ str, str ] ] ] | str
 	content: Optional[ List[ Dict[ str, str ] ] ] | str
 	
-	def __init__( self, model: str=None, temperature: float=None, top_p: float=None,
-			presense: float=None, frequency: float=None, store: bool=None, stream: bool=None,
-			stops: List[ str ]=None, format: str=None, instruct: str=None,
-			messages: List[ Dict[ str, str ] ]=None, domains: List[str ]=None,
-			include: List[ Dict[ str, str ] ]=None, tools: List[ Dict[ str, str ] ]=None,
-			max_tools: Optional[ int ]=None, tool_choice: Optional[str ]=None, file_path: str=None,
-			background: bool=None, is_parallel: bool=None, number: int=None, max_tokens: int=None,
-			input: List[ Dict[ str, str ] ]=None, previous_id: str=None,
-			reasoning: Dict[ str, str ]=None, content: List[ Dict[ str, str ] ]=None ):
-		super( ).__init__( model, temperature, top_p, presense, store, stream, stops,
-			format, number, instruct, messages, background, max_tokens, frequency )
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.presense = presense
-		self.store = store
-		self.stream = stream
-		self.stop_sequence = stops
-		self.response_format = format
-		self.model = model
-		self.allow_parallel = is_parallel
-		self.previous_id = previous_id
-		self.instructions = instruct
-		self.include = include
-		self.reasoning = reasoning
-		self.domains = domains
-		self.tools = tools
-		self.background = background
-		self.input = input
-		self.messages = message
-		self.content = content
-		self.max_tools = max_tools
-		self.file_path = file_path
-		self.tool_choice = tool_choice
+	def __init__( self ):
+		super( ).__init__(  )
+		self.response_format = None
+		self.model = None
+		self.allow_parallel = None
+		self.previous_id = None
+		self.include = [ ]
+		self.reasoning = { }
+		self.domains = [ ]
+		self.tools = [ ]
+		self.background = None
+		self.input = None
+		self.messages = [ ]
+		self.content = None
+		self.max_tools = None
+		self.file_path = None
+		self.tool_choice = None
 		
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -492,7 +545,6 @@ class ImageConfig( Payload ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	model: Optional[ str ]
 	previous_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
@@ -503,56 +555,34 @@ class ImageConfig( Payload ):
 	max_tools: Optional[ int ]
 	image_path: Optional[ str ]
 	image_url: Optional[ str ]
-	instructions: Optional[ str ]
-	messages: Optional[ List[ Dict[ str, str ] ] ] | str
 	content: Optional[ List[ Dict[ str, str ] ] ] | str
 	size: Optional[ str ]
 	detail: Optional[ str ]
 	style: Optional[ str ]
 	output_format: Optional[ str ]
 	quality: Optional[ str ]
-	background: Optional[ bool ]
 	backcolor: Optional[ str ]
 	
-	def __init__( self, model: str=None, temperature: float=None, top_p: float=None, presense: float=None,
-			store: bool=None, stream: bool=None, stops: List[ str ]=None, format: str=None,
-			max_tokens: int=None, frequency: float=None, instruct: str=None,
-			messages: List[ Dict[ str, str ] ]=None, domains: List[ str ]=None,
-			include: List[ Dict[ str, str ] ]=None, tools: List[ Dict[ str, str ] ]=None,
-			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, image_path: str=None,
-			image_url: str=None, size: str=None, detail: str=None, style: str=None, quality: str=None,
-			background: bool=None, output_format: str=None, is_parallel: bool=None, number: int=None,
-			previous_id: str=None, reasoning: Dict[ str, str ]=None, backcolor: str=None ):
-		super( ).__init__( model, temperature, top_p, presense, store, stream, stops,
-			format, number, instruct, messages, background, max_tokens, frequency )
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.presense = presense
-		self.store = store
-		self.stream = stream
-		self.stop_sequence = stops
-		self.response_format = format
-		self.messages = messages
-		self.include = include
-		self.reasoning = reasoning
-		self.domains = domains
-		self.tools = tools
-		self.allow_parallel = is_parallel
-		self.max_tools = max_tools
-		self.model = model
-		self.instructions = instruct
-		self.tool_choice = tool_choice
-		self.image_path = image_path
-		self.image_url = image_url
-		self.size = size
-		self.detail = detail
-		self.quality = quality
-		self.output_format = output_format
-		self.background = background
-		self.previous_id = previous_id
-		self.style = style
-		self.backcolor = backcolor
-		
+	def __init__( self ):
+		super( ).__init__(  )
+		self.include = [ ]
+		self.reasoning = { }
+		self.domains = [ ]
+		self.tools = [ ]
+		self.allow_parallel = None
+		self.max_tools = None
+		self.instructions = None
+		self.tool_choice = None
+		self.image_path = None
+		self.image_url = None
+		self.size = None
+		self.detail = None
+		self.quality = None
+		self.output_format = None
+		self.background = None
+		self.previous_id = None
+		self.style = None
+		self.backcolor = None
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -636,41 +666,15 @@ class SpeechConfig( Payload ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	temperature: Optional[ float ]
-	top_percent: Optional[ float ]
-	max_tokens: Optional[ int ]
-	presence_penalty: Optional[ float ]
-	fequency_penalty: Optional[ float ]
-	store: Optional[ bool ]
-	stream: Optional[ bool ]
-	background: Optional[ bool ]
-	stop_sequence: Optional[ List[ str ] ]
-	response_format: Optional[ str ]
-	number: Optional[ int ]
 	sample_rate: Optional[ int ]
 	voice: Optional[ str ]
 	model: Optional[ str ]
 	
-	def __init__( self, model: str=None, temperature: float=None, top_p: float= None, presense: float=None,
-			number: int=None, store: bool=None, frequency: float=None, stream: bool=None,
-			stops: List[ str ]=None, format: str=None, max_tokens: int=None, voice: str=None,
-			background: bool=None, sample: int=None, instruct: str=None, messages: str=None ):
-		super( ).__init__( model, temperature, top_p, presense, store, stream, stops,
-			format, number, instruct, messages, background, max_tokens, frequency )
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.presense = presense
-		self.store = store
-		self.stream = stream
-		self.fequency_penalty = frequency
-		self.stop_sequence = stops
-		self.response_format = format
-		self.number = number
-		self.max_tokens = max_tokens
-		self.background = background
-		self.sample_rate = sample
-		self.model = model
-		self.voice = voice
+	def __init__( self  ):
+		super( ).__init__( )
+		self.sample_rate = None
+		self.model = None
+		self.voice = None
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -751,37 +755,12 @@ class TranscriptConfig( Payload ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	temperature: Optional[ float ]
-	top_percent: Optional[ float ]
-	max_tokens: Optional[ int ]
-	presence_penalty: Optional[ float ]
-	fequency_penalty: Optional[ float ]
-	store: Optional[ bool ]
-	stream: Optional[ bool ]
-	asynchronous: Optional[ bool ]
-	stop_sequence: Optional[ List[ str ] ]
-	response_format: Optional[ str ]
-	number: Optional[ int ]
 	sample_rate: Optional[ int ]
 	language: Optional[ str ]
-	model: Optional[ str ]
 	
-	def __init__( self, temperature: float=0.0, top_p: float=0.0, presense: float=0.0, number: int=1,
-			store: bool=True, frequency: float=0.0, stream: bool=False, stops: List[ str ]=None,
-			format: str=None, max_tokens: int=10000, asynchronous: bool=False, sample: int=0 ):
+	def __init__( self ):
 		super( ).__init__( )
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.presense = presense
-		self.store = store
-		self.stream = stream
-		self.fequency_penalty = frequency
-		self.stop_sequence = stops
-		self.response_format = format
-		self.number = number
-		self.max_tokens = max_tokens
-		self.asynchronous = asynchronous
-		self.sample_rate = sample
+		self.sample_rate = None
 		self.model = None
 		self.language = None
 	
@@ -865,39 +844,14 @@ class TranslateConfig( Payload ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	temperature: Optional[ float ]
-	top_percent: Optional[ float ]
-	max_tokens: Optional[ int ]
-	presence_penalty: Optional[ float ]
-	fequency_penalty: Optional[ float ]
-	store: Optional[ bool ]
-	stream: Optional[ bool ]
-	asynchronous: Optional[ bool ]
-	stop_sequence: Optional[ List[ str ] ]
 	output_format: Optional[ str ]
-	number: Optional[ int ]
 	sample_rate: Optional[ int ]
 	voice: Optional[ str ]
 	source_language: Optional[ str ]
 	target_language: Optional[ str ]
-	model: Optional[ str ]
 	
-	def __init__( self, temperature: float=0.8, top_p: float=0.9, presense: float=0.0, number: int=1,
-			store: bool=True, frequency: float=0.0, stream: bool=False, stops: List[ str ]=None,
-			format: str=None, max_tokens: int=10000, asynchronous: bool=False ):
+	def __init__( self ):
 		super( ).__init__( )
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.presense = presense
-		self.store = store
-		self.stream = stream
-		self.fequency_penalty = frequency
-		self.stop_sequence = stops
-		self.response_format = format
-		self.number = number
-		self.max_tokens = max_tokens
-		self.asynchronous = asynchronous
-		self.model = None
 		self.source_language = None
 		self.target_language = None
 		self.output_format = None
@@ -1008,7 +962,7 @@ class FilesConig(  ):
 		'''
 		return [ 'purpose', 'file_id', 'files', 'model', 'file_path' ]
 
-class StorageConfig(  ):
+class StoreConfig(  ):
 	'''
 
 		Purpose:
