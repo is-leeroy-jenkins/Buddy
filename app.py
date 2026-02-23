@@ -2005,7 +2005,7 @@ if 'audio_system_instructions' not in st.session_state:
 	st.session_state[ 'audio_system_instructions' ] = ''
 
 if 'docqna_system_instructions' not in st.session_state:
-	st.session_state.docqna_systems_instructions = ''
+	st.session_state[ 'docqna_systems_instructions' ] = ''
 
 #--------CHAT-GENERATION PARAMETERS--------------------
 
@@ -2125,10 +2125,10 @@ if 'text_input' not in st.session_state:
 	st.session_state[ 'text_input' ] = [ ]
 
 if 'text_tools' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state.text_tools: List[ Dict[ str, Any ] ] = [ ]
 
 if 'text_messages' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state.text_messages: List[ Dict[ str, Any ] ] = [ ]
 
 # --------IMAGE-GENERATION PARAMETERS--------------------
 if 'image_max_tokens' not in st.session_state:
@@ -2183,10 +2183,10 @@ if 'image_include' not in st.session_state:
 	st.session_state[ 'image_include' ] = [ ]
 
 if 'image_tools' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state.image_tools: List[ Dict[ str, Any ] ] = [ ]
 
 if 'image_messages' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state.image_messages: List[ Dict[ str, Any ] ] = [ ]
 
 if 'image_domains' not in st.session_state:
 	st.session_state[ 'image_domains' ] = [ ]
@@ -2266,10 +2266,10 @@ if 'audio_includes' not in st.session_state:
 	st.session_state[ 'audio_includes' ] = [ ]
 
 if 'audio_tools' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state.audio_tools: List[ Dict[ str, Any ] ] = [ ]
 
-if 'messages' not in st.session_state:
-	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+if 'audio_messages' not in st.session_state:
+	st.session_state.audio_messages: List[ Dict[ str, Any ] ] = [ ]
 
 #-------AUDIO-SECIFIC PARAMETERS--------------
 if 'audio_file' not in st.session_state:
@@ -2642,40 +2642,45 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		# Expander — Text LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
+		with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# Text Generation Model Parameter
 			# ------------------------------------------------------------------
-			with st.expander( 'Model Settings', expanded=False, width='stretch' ):
+			with st.expander( label='Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
 					with llm_c1:
-						set_text_model = st.selectbox( 'Select Model', text.model_options,
+						set_text_model = st.selectbox( label='Select Model', options=text.model_options,
 							help='REQUIRED. Text Generation model used by the AI',
-							key='text_model')
+							key='text_model', placeholder='Options')
+						
 						text_model = st.session_state[ 'text_model' ]
 					
 					with llm_c2:
-						set_text_includes = st.multiselect( 'Include:', options=text.include_options,
-							key='text_include', help=cfg.INCLUDE )
+						set_text_includes = st.multiselect( label='Include:', options=text.include_options,
+							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
+						
 						text_includes = st.session_state[ 'text_include' ]
 					
 					with llm_c3:
-						set_text_domains = st.text_input( 'Allowed Domains', key='text_domains_input',
+						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
 						value=','.join( st.session_state.get( 'text_domains', [ ] )  ),
-						help=cfg.ALLOWED_DOMAINS, width='stretch' )
+						help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						
 						text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
 								if d.strip( ) ]
 						
 						st.session_state[ 'text_domains' ] = text_domains
 
 					with llm_c4:
-						set_text_reasoning = st.selectbox( 'Reasoning Effort:', text.reasoning_options,
-							key='text_reasoning', help=cfg.REASONING )
+						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
+							options=text.reasoning_options, key='text_reasoning',
+							help=cfg.REASONING, placeholder='Options' )
+						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
-					if st.button( 'Reset', key='text_model_reset', width='stretch' ):
+					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
 						# ----------------------------------------------------------
 						# Remove Model Settings session keys
 						# ----------------------------------------------------------
@@ -2689,41 +2694,42 @@ elif mode == 'Text':
 			# ------------------------------------------------------------------
 			# Text Generation Inference Parameters
 			# ------------------------------------------------------------------
-			with st.expander( 'Inference Settings', expanded=False, width='stretch' ):
+			with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 					border=True, gap='xxsmall' )
 				
 				with prm_c1:
-					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'text_top_percent', 0.0 ) ), 0.01,
+					set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+						value=float( st.session_state.get( 'text_top_percent', 0.0 ) ), step=0.01,
 						help=cfg.TOP_P, key='text_top_percent' )
 					text_top_percent = st.session_state[ 'text_top_percent' ]
 				
 				with prm_c2:
-					set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'text_frequency_penalty', 0.0 )),
-						0.01, help=cfg.FREQUENCY_PENALTY )
+					set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+						value=float( st.session_state.get( 'text_frequency_penalty', 0.0 )),
+						step=0.01, help=cfg.FREQUENCY_PENALTY )
 					text_fequency = st.session_state[ 'text_frequency_penalty' ]
 				
 				with prm_c3:
-					set_text_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
-						0.01, help=cfg.PRESENCE_PENALTY )
+					set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+						value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
+						step=0.01, help=cfg.PRESENCE_PENALTY )
 					text_presense = st.session_state[ 'text_presense_penalty' ]
 				
 				with prm_c4:
-					set_text_temperature = st.slider( 'Temperature', 0.0, 1.0,
-						float( st.session_state.get( 'text_temperature', 0.0 ) ), 0.01,
+					set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+						value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
 						help=cfg.TEMPERATURE )
+					
 					text_temperature = st.session_state[ 'text_temperature' ]
 				
 				with prm_c5:
-					set_text_number = st.number_input( 'Number', min_value=0, max_value=4,
-						help='Optional. Upper limit on the responses returned by the model',
+					set_text_number = st.number_input( label='Number', min_value=1, max_value=4,
+						step=1, help='Optional. Upper limit on the responses returned by the model',
 						key='text_number' )
 					text_number = st.session_state[ 'text_number' ]
 				
-				if st.button( 'Reset', key='text_inference_reset', width='stretch' ):
+				if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
 					# ----------------------------------------------------------
 					# Remove Inference Settings session keys
 					# ----------------------------------------------------------
@@ -2737,31 +2743,31 @@ elif mode == 'Text':
 			# ------------------------------------------------------------------
 			# Text Generation Tool Options
 			# ------------------------------------------------------------------
-			with st.expander( 'Tool Settings', expanded=False, width='stretch' ):
+			with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
 				tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 				
 				with tool_c1:
-					set_text_parallel = st.toggle( 'Allow Parallel', key='text_parallel_tools',
+					set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
 						help=cfg.PARALLEL_TOOL_CALLS )
 					text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 				
 				with tool_c2:
-					set_text_calls = st.number_input( 'Max Tools', min_value=0, max_value=4,
-						help=cfg.MAX_TOOL_CALLS, key='text_max_tools' )
+					set_text_calls = st.number_input( label='Max Tools', min_value=0, max_value=4,
+						step=1, help=cfg.MAX_TOOL_CALLS, key='text_max_tools' )
 					text_max_tools = st.session_state[ 'text_max_tools' ]
 				
 				with tool_c3:
-					set_text_choice = st.multiselect( 'Tool Choice:', options=text.choice_options,
-						key='text_tool_choice', help=cfg.CHOICE )
+					set_text_choice = st.multiselect( label='Tool Choice:', options=text.choice_options,
+						key='text_tool_choice', help=cfg.CHOICE, placeholder='Options' )
 					text_tool_choice = st.session_state[ 'text_tool_choice' ]
 				
 				with tool_c4:
-					set_text_tools = st.multiselect( 'Tools:', options=text.tool_options,
-						key='text_tools', help=cfg.TOOLS )
+					set_text_tools = st.multiselect( label='Tools:', options=text.tool_options,
+						key='text_tools', help=cfg.TOOLS, placeholder='Options' )
 					text_tools = st.session_state[ 'text_tools' ]
 				
-				if st.button( 'Reset', key='text_tools_reset', width='stretch' ):
+				if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
 					# ----------------------------------------------------------
 					# Remove Tool Settings session keys
 					# ----------------------------------------------------------
@@ -2775,37 +2781,42 @@ elif mode == 'Text':
 			# ------------------------------------------------------------------
 			# Expander — Text Generation Response
 			# ------------------------------------------------------------------
-			with st.expander( 'Response Settings', expanded=False, width='stretch' ):
+			with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					with resp_c1:
-						set_text_stream = st.toggle( 'Stream', key='text_stream',
+						set_text_stream = st.toggle( label='Stream', key='text_stream',
 							help=cfg.STREAM )
+						
 						text_stream = st.session_state[ 'text_stream' ]
 						
 					with resp_c2:
-						set_text_store = st.toggle( 'Store', key='text_store',
+						set_text_store = st.toggle( label='Store', key='text_store',
 							help=cfg.STORE )
+						
 						text_store = st.session_state[ 'text_store' ]
 						
 					with resp_c3:
-						set_text_background = st.toggle( 'Background', key='text_background',
+						set_text_background = st.toggle( label='Background', key='text_background',
 							 help=cfg.BACKGROUND_MODE )
+						
 						text_background = st.session_state[ 'text_background' ]
 						
 					with resp_c4:
-						set_text_stops = st.text_input( 'Stop Sequences', key='text_stops',
-							help=cfg.STOP_SEQUENCE, width='stretch' )
+						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+						
 						text_stops = [ d.strip( ) for d in set_text_domains.split( ',' )
 						               if d.strip( ) ]
 					
 					with resp_c5:
-						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						set_text_tokens = st.number_input( label='Max Tokens', min_value=1, max_value=100000,
+							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
-					if st.button( 'Reset', key='text_response_reset', width='stretch' ):
+					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
 						# ----------------------------------------------------------
 						# Remove Response Settings session keys
 						# ----------------------------------------------------------
@@ -2822,14 +2833,14 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		# Expander — Text System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
 				prompt_names = [ 'No Templates Found' ]
 
 			with in_left:
-				st.text_area( 'Enter Text', height=50, width='stretch',
+				st.text_area( label='Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
 			
 			def _on_template_change( ) -> None:
@@ -2840,14 +2851,14 @@ elif mode == 'Text':
 						st.session_state[ 'text_system_instructions' ] = text
 			
 			with in_right:
-				st.selectbox( 'Use Template', prompt_names,
+				st.selectbox( label='Use Template', options=prompt_names, placeholder='',
 					key='instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'text_system_instructions' ] = ''
 				st.session_state[ 'instructions' ] = ''
 			
-			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
+			st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
 			
 		
 		# ----------- MESSAGES ---------------------------------
