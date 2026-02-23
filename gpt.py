@@ -205,7 +205,7 @@ class Chat( GPT ):
 			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, file_path: str=None,
 			background: bool=None, is_parallel: bool=None, max_tokens: int=None, frequency: float=None,
 			input: List[ Dict[ str, str ] ]=[ ], file_ids: List[ str ]=[ ], previous_id: str=None,
-			reasoning: Dict[ str, str ]=[ ], output_text: str=None,
+			reasoning: Dict[ str, str ]={}, output_text: str=None,
 			content: List[ Dict[ str, str ] ]=[ ] ):
 		super( ).__init__( model, prompt, temperature, top_p, presense, store, stream, stops,
 			format, number, instruct, messages, background, max_tokens, frequency )

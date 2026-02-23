@@ -1964,31 +1964,31 @@ if 'files' not in st.session_state:
 	
 #----------MODEL PARAMETERS --------------------------------
 if 'model' not in st.session_state:
-	st.session_state.model = None
+	st.session_state.model = ''
 
 if 'text_model' not in st.session_state:
-	st.session_state[ 'text_model' ] = None
+	st.session_state[ 'text_model' ] = ''
 	
 if 'image_model' not in st.session_state:
-	st.session_state[ 'image_model' ] = None
+	st.session_state[ 'image_model' ] = ''
 	
 if 'audio_model' not in st.session_state:
-	st.session_state[ 'audio_model' ] = None
+	st.session_state[ 'audio_model' ] = ''
 	
 if 'embedding_model' not in st.session_state:
-	st.session_state[ 'embedding_model' ] = None
+	st.session_state[ 'embedding_model' ] = ''
 
 if 'docqna_model' not in st.session_state:
-	st.session_state[ 'docqna_model' ] = None
+	st.session_state[ 'docqna_model' ] = ''
 
 if 'tts_model' not in st.session_state:
-	st.session_state[ 'tts_model' ] = None
+	st.session_state[ 'tts_model' ] = ''
 
 if 'transcription_model' not in st.session_state:
-	st.session_state[ 'transcription_model' ] = None
+	st.session_state[ 'transcription_model' ] = ''
 
 if 'translation_model' not in st.session_state:
-	st.session_state[ 'translation_model' ] = None
+	st.session_state[ 'translation_model' ] = ''
 
 # --------SYSTEM PARAMETERS----------------------
 if 'instructions' not in st.session_state:
@@ -2008,37 +2008,37 @@ if 'docqna_system_instructions' not in st.session_state:
 
 #--------CHAT-GENERATION PARAMETERS--------------------
 if 'execution_mode' not in st.session_state:
-	st.session_state[ 'execution_mode' ] = None
+	st.session_state[ 'execution_mode' ] = ''
 	
 if 'temperature' not in st.session_state:
-	st.session_state[ 'temperature' ] = None
+	st.session_state[ 'temperature' ] = 0.0
 	
 if 'top_percent' not in st.session_state:
-	st.session_state[ 'top_percent' ] = None
+	st.session_state[ 'top_percent' ] = 0.0
 
 if 'input' not in st.session_state:
-	st.session_state[ 'input' ] = None
+	st.session_state[ 'input' ] = [ ]
 
 if 'max_tokens' not in st.session_state:
-	st.session_state[ 'max_tokens' ] = None
+	st.session_state[ 'max_tokens' ] = 0
 	
 if 'frequency_penalty' not in st.session_state:
-	st.session_state[ 'frequency_penalty' ] = None
+	st.session_state[ 'frequency_penalty' ] = 0.0
 	
 if 'presense_penalty' not in st.session_state:
-	st.session_state[ 'presense_penalty' ] = None
+	st.session_state[ 'presense_penalty' ] = 0.0
 
 if 'stops' not in st.session_state:
-	st.session_state[ 'stops' ] = None
+	st.session_state[ 'stops' ] = [ ]
 
 if 'includes' not in st.session_state:
 	st.session_state[ 'includes' ] = [ ]
 
 if 'tool_choice' not in st.session_state:
-	st.session_state[ 'tool_choice' ] = 'auto'
+	st.session_state[ 'tool_choice' ] = ''
 
 if 'reasoning' not in st.session_state:
-	st.session_state[ 'reasoning' ] = 'low'
+	st.session_state[ 'reasoning' ] = ''
 
 if 'background' not in st.session_state:
 	st.session_state[ 'background' ] = False
@@ -2047,16 +2047,16 @@ if 'parallel_tools' not in st.session_state:
 	st.session_state[ 'parallel_tools' ] = False
 
 if 'max_tools' not in st.session_state:
-	st.session_state[ 'max_tools' ] = False
+	st.session_state[ 'max_tools' ] = 0
 
 if 'store' not in st.session_state:
-	st.session_state[ 'store' ] = True
+	st.session_state[ 'store' ] = False
 
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
 if 'response_format' not in st.session_state:
-	st.session_state[ 'response_format' ] = None
+	st.session_state[ 'response_format' ] = ''
 
 if 'tools' not in st.session_state:
 	st.session_state[ 'tools' ] = [ ]
@@ -2069,22 +2069,43 @@ if 'last_sources' not in st.session_state:
 
 # --------TEXT-GENERATION PARAMETERS--------------------
 if 'text_temperature' not in st.session_state:
-	st.session_state[ 'text_temperature' ] = 0.8
+	st.session_state[ 'text_temperature' ] = 0.0
 
 if 'text_top_percent' not in st.session_state:
-	st.session_state[ 'text_top_percent' ] = 1.0
-
-if 'text_input' not in st.session_state:
-	st.session_state[ 'text_input' ] = [ ]
+	st.session_state[ 'text_top_percent' ] = 0.0
 
 if 'text_max_tokens' not in st.session_state:
-	st.session_state[ 'text_max_tokens' ] = 8064
+	st.session_state[ 'text_max_tokens' ] = 0
 
 if 'text_frequency_penalty' not in st.session_state:
 	st.session_state[ 'text_frequency_penalty' ] = 0.0
 
 if 'text_presense_penalty' not in st.session_state:
 	st.session_state[ 'text_presense_penalty' ] = 0.0
+
+if 'text_max_calls' not in st.session_state:
+	st.session_state[ 'text_max_calls' ] = 0
+
+if 'text_tool_choice' not in st.session_state:
+	st.session_state[ 'text_tool_choice' ] = ''
+
+if 'text_reasoning' not in st.session_state:
+	st.session_state[ 'text_reasoning' ] = ''
+
+if 'text_parallel_tools' not in st.session_state:
+	st.session_state[ 'text_parallel_tools' ] = False
+
+if 'text_background' not in st.session_state:
+	st.session_state[ 'text_background' ] = False
+
+if 'text_store' not in st.session_state:
+	st.session_state[ 'text_store' ] = False
+
+if 'text_stream' not in st.session_state:
+	st.session_state[ 'text_stream' ] = False
+
+if 'text_response_format' not in st.session_state:
+	st.session_state[ 'text_response_format' ] = ''
 
 if 'text_stops' not in st.session_state:
 	st.session_state[ 'text_stops' ] = [ ]
@@ -2095,32 +2116,8 @@ if 'text_include' not in st.session_state:
 if 'text_domains' not in st.session_state:
 	st.session_state[ 'text_domains' ] = [ ]
 
-if 'text_parallel_tools' not in st.session_state:
-	st.session_state[ 'text_parallel_tools' ] = False
-
-if 'text_max_calls' not in st.session_state:
-	st.session_state[ 'text_max_calls' ] = None
-
-if 'text_tool_choice' not in st.session_state:
-	st.session_state[ 'text_tool_choice' ] = ''
-
-if 'text_reasoning' not in st.session_state:
-	st.session_state[ 'text_reasoning' ] = None
-
-if 'text_background' not in st.session_state:
-	st.session_state[ 'text_background' ] = False
-
-if 'text_store' not in st.session_state:
-	st.session_state[ 'text_store' ] = True
-
-if 'text_stream' not in st.session_state:
-	st.session_state[ 'text_stream' ] = False
-
 if 'text_input' not in st.session_state:
-	st.session_state[ 'text_input' ] = None
-
-if 'text_response_format' not in st.session_state:
-	st.session_state[ 'text_response_format' ] = None
+	st.session_state[ 'text_input' ] = [ ]
 
 if 'text_tools' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
@@ -2128,18 +2125,18 @@ if 'text_tools' not in st.session_state:
 if 'text_messages' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
 
+if 'text_content' not in st.session_state:
+	st.session_state[ 'text_content' ] = [ ]
+
 # --------IMAGE-GENERATION PARAMETERS--------------------
 if 'image_temperature' not in st.session_state:
-	st.session_state[ 'image_temperature' ] = 0.8
+	st.session_state[ 'image_temperature' ] = 0.0
 
 if 'image_top_percent' not in st.session_state:
-	st.session_state[ 'image_top_percent' ] = 1.0
-
-if 'image_input' not in st.session_state:
-	st.session_state[ 'image_input' ] = [ ]
+	st.session_state[ 'image_top_percent' ] = 0.0
 
 if 'image_max_tokens' not in st.session_state:
-	st.session_state[ 'image_max_tokens' ] = 8064
+	st.session_state[ 'image_max_tokens' ] = 0
 
 if 'image_frequency_penalty' not in st.session_state:
 	st.session_state[ 'image_frequency_penalty' ] = 0.0
@@ -2148,31 +2145,40 @@ if 'image_parallel_tools' not in st.session_state:
 	st.session_state[ 'image_parallel_tools' ] = False
 
 if 'image_max_tools' not in st.session_state:
-	st.session_state[ 'image_max_tools' ] = False
+	st.session_state[ 'image_max_tools' ] = 0
 
 if 'image_presense_penalty' not in st.session_state:
 	st.session_state[ 'image_presense_penalty' ] = 0.0
 
-if 'image_includes' not in st.session_state:
-	st.session_state[ 'image_includes' ] = [ ]
-
 if 'image_tool_choice' not in st.session_state:
-	st.session_state[ 'image_tool_choice' ] = None
+	st.session_state[ 'image_tool_choice' ] = ''
 
 if 'image_reasoning' not in st.session_state:
-	st.session_state[ 'image_reasoning' ] = None
+	st.session_state[ 'image_reasoning' ] = ''
+
+if 'image_quality' not in st.session_state:
+	st.session_state[ 'image_quality' ] = ''
+
+if 'image_format' not in st.session_state:
+	st.session_state[ 'image_format' ] = ''
 
 if 'image_background' not in st.session_state:
 	st.session_state[ 'image_background' ] = False
 
 if 'image_store' not in st.session_state:
-	st.session_state[ 'image_store' ] = True
+	st.session_state[ 'image_store' ] = False
 
 if 'image_stream' not in st.session_state:
 	st.session_state[ 'image_stream' ] = False
 
 if 'image_response_format' not in st.session_state:
-	st.session_state[ 'image_response_format' ] = None
+	st.session_state[ 'image_response_format' ] = ''
+
+if 'image_input' not in st.session_state:
+	st.session_state[ 'image_input' ] = ''
+
+if 'image_include' not in st.session_state:
+	st.session_state[ 'image_include' ] = [ ]
 
 if 'image_tools' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
@@ -2182,50 +2188,44 @@ if 'image_messages' not in st.session_state:
 
 if 'image_domains' not in st.session_state:
 	st.session_state[ 'image_domains' ] = [ ]
-	
-if 'image_quality' not in st.session_state:
-	st.session_state[ 'image_quality' ] = None
-	
-if 'image_format' not in st.session_state:
-	st.session_state[ 'image_format' ] = None
+
+if 'image_content' not in st.session_state:
+	st.session_state[ 'image_content' ] = [ ]
 
 # ------- IMAGE-SPECIFIC PARAMETER---------------
 if 'image_mode' not in st.session_state:
-	st.session_state[ 'image_mode' ] = None
+	st.session_state[ 'image_mode' ] = ''
 	
 if 'image_size' not in st.session_state:
-	st.session_state[ 'image_size' ] = None
+	st.session_state[ 'image_size' ] = ''
 
 if 'image_style' not in st.session_state:
-	st.session_state[ 'image_style' ] = None
+	st.session_state[ 'image_style' ] = ''
 
 if 'image_detail' not in st.session_state:
-	st.session_state[ 'image)detail' ] = None
+	st.session_state[ 'image_detail' ] = ''
 
 if 'image_backcolor' not in st.session_state:
-	st.session_state[ 'image_backcolor' ] = None
+	st.session_state[ 'image_backcolor' ] = ''
 
 if 'image_quality' not in st.session_state:
-	st.session_state[ 'image_quality' ] = None
+	st.session_state[ 'image_quality' ] = ''
 
 if 'image_output' not in st.session_state:
-	st.session_state[ 'image_output' ] = None
+	st.session_state[ 'image_output' ] = ''
 
 if 'image_url' not in st.session_state:
-	st.session_state[ 'image_url' ] = None
+	st.session_state[ 'image_url' ] = ''
 
 # --------AUDIO-GENERATION PARAMETERS--------------------
 if 'audio_temperature' not in st.session_state:
-	st.session_state[ 'audio_temperature' ] = 0.8
+	st.session_state[ 'audio_temperature' ] = 0.0
 
 if 'audio_top_percent' not in st.session_state:
-	st.session_state[ 'audio_top_percent' ] = 1.0
-
-if 'audio_input' not in st.session_state:
-	st.session_state[ 'audio_input' ] = [ ]
+	st.session_state[ 'audio_top_percent' ] = 0.0
 
 if 'audio_max_tokens' not in st.session_state:
-	st.session_state[ 'audio_max_tokens' ] = 8064
+	st.session_state[ 'audio_max_tokens' ] = 0
 
 if 'audio_frequency_penalty' not in st.session_state:
 	st.session_state[ 'audio_frequency_penalty' ] = 0.0
@@ -2233,32 +2233,35 @@ if 'audio_frequency_penalty' not in st.session_state:
 if 'audio_presense_penalty' not in st.session_state:
 	st.session_state[ 'audio_presense_penalty' ] = 0.0
 
-if 'audio_stops' not in st.session_state:
-	st.session_state[ 'audio_stops' ] = [ ]
-
-if 'audio_includes' not in st.session_state:
-	st.session_state[ 'audio_includes' ] = [ ]
-
 if 'audio_tool_choice' not in st.session_state:
-	st.session_state[ 'audio_tool_choice' ] = 'auto'
+	st.session_state[ 'audio_tool_choice' ] = ''
 
 if 'audio_reasoning' not in st.session_state:
-	st.session_state[ 'audio_reasoning' ] = 'low'
+	st.session_state[ 'audio_reasoning' ] = ''
 
 if 'audio_background' not in st.session_state:
 	st.session_state[ 'audio_background' ] = False
 
 if 'audio_store' not in st.session_state:
-	st.session_state[ 'audio_store' ] = True
+	st.session_state[ 'audio_store' ] = False
 
 if 'audio_stream' not in st.session_state:
 	st.session_state[ 'audio_stream' ] = False
 
+if 'audio_response_format' not in st.session_state:
+	st.session_state[ 'audio_response_format' ] = { }
+
 if 'audio_input' not in st.session_state:
 	st.session_state[ 'audio_input' ] = [ ]
 
-if 'audio_response_format' not in st.session_state:
-	st.session_state[ 'audio_response_format' ] = { }
+if 'audio_input' not in st.session_state:
+	st.session_state[ 'audio_input' ] = [ ]
+
+if 'audio_stops' not in st.session_state:
+	st.session_state[ 'audio_stops' ] = [ ]
+
+if 'audio_includes' not in st.session_state:
+	st.session_state[ 'audio_includes' ] = [ ]
 
 if 'audio_tools' not in st.session_state:
 	st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
@@ -2268,16 +2271,16 @@ if 'messages' not in st.session_state:
 
 #-------AUDIO-SECIFIC PARAMETERS--------------
 if 'audio_file' not in st.session_state:
-	st.session_state[ 'audio_file' ] = None
+	st.session_state[ 'audio_file' ] = ''
 
 if 'sample_rate' not in st.session_state:
-	st.session_state[ 'sample_rate' ] = 16000
+	st.session_state[ 'sample_rate' ] = 0
 
 if 'language' not in st.session_state:
-	st.session_state[ 'language' ] = None
+	st.session_state[ 'language' ] = ''
 
 if 'voice' not in st.session_state:
-	st.session_state[ 'voice' ] = None
+	st.session_state[ 'voice' ] = ''
 
 if 'start_time' not in st.session_state:
 	st.session_state[ 'start_time' ] = 0.0
@@ -2292,49 +2295,47 @@ if 'play' not in st.session_state:
 	st.session_state[ 'play' ] = False
 
 if 'audio_format' not in st.session_state:
-	st.session_state[ 'audio_format' ] = 'audio/wav'
+	st.session_state[ 'audio_format' ] = ''
 
 # ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
 if 'embedding_input_text' not in st.session_state:
-	st.session_state[ 'embedding_input_text' ] = None
+	st.session_state[ 'embedding_input_text' ] = ''
 
 if 'embedding_dimensions' not in st.session_state:
-	st.session_state[ 'embedding_dimensions' ] = None
+	st.session_state[ 'embedding_dimensions' ] = 0
 
 if 'embedding_encoding_format' not in st.session_state:
-	st.session_state[ 'embedding_encoding_format' ] = None
+	st.session_state[ 'embedding_encoding_format' ] = ''
 
 if 'embedding_batch_size' not in st.session_state:
-	st.session_state[ 'embedding_batch_size' ] = None
+	st.session_state[ 'embedding_batch_size' ] = 0
 
 if 'embedding_method' not in st.session_state:
-	st.session_state[ 'embedding_method' ] = None
+	st.session_state[ 'embedding_method' ] = ''
 
 # ------- FILES-SPECIFIC PARAMETERS --------------------------
 if 'purpose' not in st.session_state:
-	st.session_state[ 'purpose' ] = None
+	st.session_state[ 'purpose' ] = ''
 
 if 'file_type' not in st.session_state:
-	st.session_state[ 'file_type' ] = None
+	st.session_state[ 'file_type' ] = ''
 
 if 'file_id' not in st.session_state:
-	st.session_state[ 'file_id' ] = None
+	st.session_state[ 'file_id' ] = ''
 
 if 'file_url' not in st.session_state:
-	st.session_state[ 'file_url' ] = None
+	st.session_state[ 'file_url' ] = ''
+	
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
 if 'stores_temperature' not in st.session_state:
-	st.session_state[ 'stores_temperature' ] = 0.8
+	st.session_state[ 'stores_temperature' ] = 0.0
 
 if 'stores_top_percent' not in st.session_state:
-	st.session_state[ 'stores_top_percent' ] = 1.0
-
-if 'stores_input' not in st.session_state:
-	st.session_state[ 'stores_input' ] = [ ]
+	st.session_state[ 'stores_top_percent' ] = 0.0
 
 if 'stores_max_tokens' not in st.session_state:
-	st.session_state[ 'stores_max_tokens' ] = 8064
+	st.session_state[ 'stores_max_tokens' ] = 0
 
 if 'stores_frequency_penalty' not in st.session_state:
 	st.session_state[ 'stores_frequency_penalty' ] = 0.0
@@ -2342,35 +2343,32 @@ if 'stores_frequency_penalty' not in st.session_state:
 if 'stores_presense_penalty' not in st.session_state:
 	st.session_state[ 'stores_presense_penalty' ] = 0.0
 
-if 'stores_stops' not in st.session_state:
-	st.session_state[ 'stores_stops' ] = [ ]
+if 'stores_max_calls' not in st.session_state:
+	st.session_state[ 'stores_max_calls' ] = 0
 
-if 'stores_include' not in st.session_state:
-	st.session_state[ 'stores_include' ] = [ ]
+if 'stores_tool_choice' not in st.session_state:
+	st.session_state[ 'stores_tool_choice' ] = ''
+
+if 'stores_response_format' not in st.session_state:
+	st.session_state[ 'stores_response_format' ] = ''
+
+if 'stores_reasoning' not in st.session_state:
+	st.session_state[ 'stores_reasoning' ] = ''
 
 if 'stores_parallel_tools' not in st.session_state:
 	st.session_state[ 'stores_parallel_tools' ] = False
-
-if 'stores_max_calls' not in st.session_state:
-	st.session_state[ 'stores_max_calls' ] = None
-
-if 'stores_tool_choice' not in st.session_state:
-	st.session_state[ 'stores_tool_choice' ] = 'auto'
-
-if 'stores_reasoning' not in st.session_state:
-	st.session_state[ 'stores_reasoning' ] = 'low'
 
 if 'stores_background' not in st.session_state:
 	st.session_state[ 'stores_background' ] = False
 
 if 'stores_store' not in st.session_state:
-	st.session_state[ 'stores_store' ] = True
+	st.session_state[ 'stores_store' ] = False
 
 if 'stores_stream' not in st.session_state:
 	st.session_state[ 'stores_stream' ] = False
 
-if 'stores_response_format' not in st.session_state:
-	st.session_state[ 'stores_response_format' ] = None
+if 'stores_input' not in st.session_state:
+	st.session_state[ 'stores_input' ] = [ ]
 
 if 'stores_tools' not in st.session_state:
 	st.session_state[ 'stores_tools' ] = [ ]
@@ -2378,17 +2376,23 @@ if 'stores_tools' not in st.session_state:
 if 'stores_messages' not in st.session_state:
 	st.session_state[ 'stores_messages' ] = [ ]
 
+if 'stores_stops' not in st.session_state:
+	st.session_state[ 'stores_stops' ] = [ ]
+
+if 'stores_include' not in st.session_state:
+	st.session_state[ 'stores_include' ] = [ ]
+
 # ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
 
 if 'stores_id' not in st.session_state:
-	st.session_state[ 'stores_id' ] = None
+	st.session_state[ 'stores_id' ] = ''
 
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'files' not in st.session_state:
 	st.session_state[ 'files' ] = [ ]
 	
 if 'uploaded' not in st.session_state:
-	st.session_state[ 'uploaded' ] = None
+	st.session_state[ 'uploaded' ] = ''
 
 if 'doc_messages' not in st.session_state:
 	st.session_state.doc_messages = [ ]
@@ -2397,7 +2401,7 @@ if 'doc_active_docs' not in st.session_state:
 	st.session_state.doc_active_docs = [ ]
 
 if 'doc_source' not in st.session_state:
-	st.session_state.doc_source = None
+	st.session_state.doc_source = ''
 
 if 'doc_multi_mode' not in st.session_state:
 	st.session_state.doc_multi_mode = False
@@ -2505,6 +2509,7 @@ if mode == 'Chat':
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
 	with st.sidebar:
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		st.text( '⚙️  Chat Settings' )
 		st.radio( 'Execution Mode', options=[ 'Standard', 'Guidance Only', 'Analysis Only' ],
 			index=[ 'Standard', 'Guidance Only', 'Analysis Only' ].index( st.session_state.execution_mode ),
@@ -2588,28 +2593,29 @@ elif mode == 'Text':
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	text_model = st.session_state.get( 'text_model', None )
-	text_top_percent = st.session_state.get( 'text_top_percent', None )
-	text_freq = st.session_state.get( 'text_frequency_penalty', None )
-	text_presense = st.session_state.get( 'text_presense_penalty', None )
-	text_number = st.session_state.get( 'text_number', None )
-	text_temperature = st.session_state.get( 'text_temperature', None )
-	text_stream = st.session_state.get( 'text_stream', None )
-	text_parallel_tools = st.session_state.get( 'text_parallel_tools', None )
-	text_max_calls = st.session_state.get( 'text_max_calls', None )
-	text_store = st.session_state.get( 'text_store', None )
-	text_tools = st.session_state.get( 'text_tools', None )
-	text_include = st.session_state.get( 'text_include', None )
-	text_domains = st.session_state.get( 'text_domains', None )
-	text_stops = st.session_state.get( 'text_stops', None )
-	text_input = st.session_state.get( 'text_input', None )
-	text_choice = st.session_state.get( 'text_tool_choice', None )
-	text_background = st.session_state.get( 'text_background', None )
-	text_messages = st.session_state.get( 'text_messages', None )
-	text_tokens = st.session_state.get( 'text_max_tokens', None )
+	text_model = st.session_state.get( 'text_model', '' )
+	text_top_percent = st.session_state.get( 'text_top_percent', 0.0 )
+	text_freq = st.session_state.get( 'text_frequency_penalty', 0.0 )
+	text_presense = st.session_state.get( 'text_presense_penalty', 0.0 )
+	text_number = st.session_state.get( 'text_number', 0 )
+	text_temperature = st.session_state.get( 'text_temperature', 0.0 )
+	text_stream = st.session_state.get( 'text_stream', False )
+	text_parallel_tools = st.session_state.get( 'text_parallel_tools', False )
+	text_max_calls = st.session_state.get( 'text_max_calls', 0 )
+	text_store = st.session_state.get( 'text_store', False )
+	text_tools = st.session_state.get( 'text_tools', [ ] )
+	text_include = st.session_state.get( 'text_include', [ ] )
+	text_domains = st.session_state.get( 'text_domains', [ ] )
+	text_stops = st.session_state.get( 'text_stops', [ ] )
+	text_input = st.session_state.get( 'text_input', [ ] )
+	text_choice = st.session_state.get( 'text_tool_choice', '' )
+	text_background = st.session_state.get( 'text_background', False )
+	text_messages = st.session_state.get( 'text_messages', [ ] )
+	text_tokens = st.session_state.get( 'text_max_tokens', 0 )
 	text = provider_module.Chat( )
 	
-	for key in [ 'text_domains', 'text_stops', 'text_tools' ]:
+	for key in [ 'text_domains', 'text_stops', 'text_tools',
+	             'text_includes', 'text_input', 'tools_messages' ]:
 		if key in st.session_state and isinstance( st.session_state[ key ], list ):
 			del st.session_state[ key ]
 		
@@ -2626,7 +2632,7 @@ elif mode == 'Text':
 	with center:
 		if st.session_state.get( 'do_clear_instructions' ):
 			st.session_state[ 'text_system_instructions' ] = ''
-			st.session_state[ 'instructions_last_loaded' ] = None
+			st.session_state[ 'instructions_last_loaded' ] = ''
 			st.session_state[ 'do_clear_instructions' ] = False
 		
 		# ------------------------------------------------------------------
@@ -2645,7 +2651,7 @@ elif mode == 'Text':
 							help='REQUIRED. Text Generation model used by the AI',
 							key='text_model',
 							index=(text.model_options.index( st.session_state[ 'text_model' ] )
-							       if st.session_state.get( 'text_model' ) in text.model_options else 0), )
+							       if st.session_state.get( 'text_model' ) in text.model_options else 0),)
 						text_model = st.session_state[ 'text_model' ]
 					
 					with llm_c2:
@@ -2663,8 +2669,8 @@ elif mode == 'Text':
 						st.session_state[ 'text_domains' ] = text_domains
 
 					with llm_c4:
-						set_text_reasoning = st.selectbox( 'Reasoning Effort:',
-							options=text.reasoning_options, key='text_reasoning', help=cfg.REASONING )
+						set_text_reasoning = st.selectbox( 'Reasoning Effort:', text.reasoning_options,
+							key='text_reasoning', help=cfg.REASONING )
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
 					if st.button( 'Reset', key='text_model_reset', width='stretch' ):
@@ -2687,7 +2693,7 @@ elif mode == 'Text':
 				
 				with prm_c1:
 					set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'text_top_percent', 1.0 ) ), 0.01,
+						float( st.session_state.get( 'text_top_percent', 0.0 ) ), 0.01,
 						help=cfg.TOP_P, key='text_top_percent' )
 					text_top_percent = st.session_state[ 'text_top_percent' ]
 				
@@ -2705,7 +2711,7 @@ elif mode == 'Text':
 				
 				with prm_c4:
 					set_text_temperature = st.slider( 'Temperature', 0.0, 1.0,
-						float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
+						float( st.session_state.get( 'text_temperature', 0.0 ) ), 0.01,
 						help=cfg.TEMPERATURE )
 					text_temperature = st.session_state[ 'text_temperature' ]
 				
@@ -2772,11 +2778,13 @@ elif mode == 'Text':
 						[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					with resp_c1:
-						set_text_stream = st.toggle( 'Stream', key='text_stream', value=False, help=cfg.STREAM )
+						set_text_stream = st.toggle( 'Stream', key='text_stream',
+							value=False, help=cfg.STREAM )
 						text_stream = st.session_state[ 'text_stream' ]
 						
 					with resp_c2:
-						set_text_store = st.toggle( 'Store', key='text_store', value=True, help=cfg.STORE )
+						set_text_store = st.toggle( 'Store', key='text_store',
+							value=True, help=cfg.STORE )
 						text_store = st.session_state[ 'text_store' ]
 						
 					with resp_c3:
@@ -2793,7 +2801,7 @@ elif mode == 'Text':
 					
 					with resp_c5:
 						set_text_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-							value=6048, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
 					if st.button( 'Reset', key='text_response_reset', width='stretch' ):
@@ -2921,25 +2929,30 @@ elif mode == "Images":
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	image_model = st.session_state.get( 'image_model', None )
-	image_response_format = st.session_state.get( 'image_response_format', None )
-	image_detail = st.session_state.get( 'image_detail', None )
-	image_style = st.session_state.get( 'image_style', None )
-	image_quality = st.session_state.get( 'image_quality', None )
-	image_backcolor = st.session_state.get( 'image_backcolor', None )
-	image_size = st.session_state.get( 'image_size', None )
-	image_output = st.session_state.get( 'image_output', None )
-	image_stops = st.session_state.get( 'image_stops', None )
-	image_domains = st.session_state.get( 'image_domains', None )
-	image_top_p = st.session_state.get( 'image_top_percent', None)
-	image_freq = st.session_state.get( 'image_frequency_penalty', None )
-	image_presense = st.session_state.get( 'image_presense_penalty', None)
-	image_number = st.session_state.get( 'image_number', None )
-	image_temperature = st.session_state.get( 'image_temperature', None )
-	image_stream = st.session_state.get( 'image_stream', None )
-	image_store = st.session_state.get( 'image_store', None )
-	image_background = st.session_state.get( 'image_background', None)
-	image_mode = st.session_state.get( 'image_mode', None )
+	image_model = st.session_state.get( 'image_model', '' )
+	image_response_format = st.session_state.get( 'image_response_format', '' )
+	image_detail = st.session_state.get( 'image_detail', '' )
+	image_style = st.session_state.get( 'image_style', '' )
+	image_quality = st.session_state.get( 'image_quality', '' )
+	image_backcolor = st.session_state.get( 'image_backcolor', '' )
+	image_size = st.session_state.get( 'image_size', '' )
+	image_output = st.session_state.get( 'image_output', '' )
+	image_input = st.session_state.get( 'image_input', '' )
+	image_mode = st.session_state.get( 'image_mode', '' )
+	image_top_p = st.session_state.get( 'image_top_percent', 0.0 )
+	image_freq = st.session_state.get( 'image_frequency_penalty', 0.0 )
+	image_presense = st.session_state.get( 'image_presense_penalty', 0.0 )
+	image_number = st.session_state.get( 'image_number', 0 )
+	image_temperature = st.session_state.get( 'image_temperature', 0.0 )
+	image_stream = st.session_state.get( 'image_stream', False )
+	image_store = st.session_state.get( 'image_store', False )
+	image_background = st.session_state.get( 'image_background', False )
+	image_stops = st.session_state.get( 'image_stops', [ ] )
+	image_domains = st.session_state.get( 'image_domains', [ ] )
+	image_include = st.session_state.get( 'image_include', [ ] )
+	image_tools = st.session_state.get( 'image_tools', [ ] )
+	image_messages = st.session_state.get( 'image_messages', [ ] )
+	image_content = st.session_state.get( 'image_content', [ ] )
 	generator = None
 	analyzer = None
 	editor = None
@@ -2948,7 +2961,7 @@ elif mode == "Images":
 	model_options = [ ]
 	image = provider_module.Images( )
 	
-	for key in [ 'image_domains', 'image_includes', 'image_tools' ]:
+	for key in [ 'image_domains', 'image_include', 'image_tools', 'image_stops' ]:
 		if key in st.session_state and isinstance( st.session_state[ key ], list ):
 			del st.session_state[ key ]
 		
@@ -3441,22 +3454,22 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	audio_model = st.session_state.get( 'audio_model', None )
-	audio_format = st.session_state.get( 'audio_response_format', None )
-	audio_top_p = st.session_state.get( 'audio_top_percent', None )
-	audio_freq = st.session_state.get( 'audio_frequency_penalty', None )
-	audio_presense = st.session_state.get( 'audio_presense_penalty', None )
-	audio_number = st.session_state.get( 'audio_number', None )
-	audio_temperature = st.session_state.get( 'audio_temperature', None )
-	audio_stream = st.session_state.get( 'audio_stream', None )
-	audio_store = st.session_state.get( 'audio_store', None )
-	audio_input = st.session_state.get( 'audio_input', None )
-	audio_reasoning = st.session_state.get( 'audio_reasoning', None )
-	audio_choice = st.session_state.get( 'audio_tool_choice', None )
-	audio_messages = st.session_state.get( 'audio_messages', None )
-	audio_background = st.session_state.get( 'audio_background', None )
-	audio_file = st.session_state.get( 'audio_file', None )
-	audio_rate = st.session_state.get( 'audio_rate', 16000 )
+	audio_model = st.session_state.get( 'audio_model', '' )
+	audio_format = st.session_state.get( 'audio_response_format', '' )
+	audio_top_p = st.session_state.get( 'audio_top_percent', 0.0 )
+	audio_freq = st.session_state.get( 'audio_frequency_penalty', 0.0 )
+	audio_presense = st.session_state.get( 'audio_presense_penalty', 0.0 )
+	audio_number = st.session_state.get( 'audio_number', 0 )
+	audio_temperature = st.session_state.get( 'audio_temperature', 0.0 )
+	audio_stream = st.session_state.get( 'audio_stream', False )
+	audio_store = st.session_state.get( 'audio_store', False )
+	audio_input = st.session_state.get( 'audio_input', [ ] )
+	audio_reasoning = st.session_state.get( 'audio_reasoning', '' )
+	audio_choice = st.session_state.get( 'audio_tool_choice', '' )
+	audio_messages = st.session_state.get( 'audio_messages', [ ] )
+	audio_background = st.session_state.get( 'audio_background', True )
+	audio_file = st.session_state.get( 'audio_file', '')
+	audio_rate = st.session_state.get( 'audio_rate', 0 )
 	audio_start = st.session_state.get( 'audio_start', 0.0 )
 	audio_end = st.session_state.get( 'audio_end', 0.0 )
 	audio_loop = st.session_state.get( 'audio_loop', False )
@@ -3733,13 +3746,12 @@ elif mode == "Audio":
 			
 		# -----------PLAY AUDIO----------------------
 		with right_audio:
-			if audio_file is not None:
-				array = np.ndarray( audio_file )
+			if audio_file:
+				audio_recording = st.audio( data, sample_rate=audio_rate,
+					start_time=audio_start, end_time=audio_end, format=audio_format, width='stretch',
+					loop=audio_loop, autoplay=auto_play )
 			else:
 				array = None
-			audio_recording = st.audio( data=audio_file, sample_rate=audio_rate,
-				start_time=audio_start, end_time=audio_end, format=audio_format, width='stretch',
-				loop=audio_loop, autoplay=auto_play  )
 	
 # ======================================================================================
 # EMBEDDINGS MODE
