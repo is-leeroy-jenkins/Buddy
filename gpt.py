@@ -189,7 +189,7 @@ class Chat( GPT ):
 	output_text: Optional[ str ]
 	vector_stores: Optional[ Dict[ str, str ] ]
 	files: Optional[ Dict[ str, str ] ]
-	content: Optional[ List[ Dict[ str, Any ] ] ]
+	content: Optional[ str ]
 	vector_store_ids: Optional[ List[ str ] ]
 	file_ids: Optional[ List[ str ] ]
 	response: Optional[ openai.types.responses.Response ]
@@ -197,7 +197,7 @@ class Chat( GPT ):
 	purpose: Optional[ str ]
 	domains: Optional[ str ]
 	
-	def __init__( self, model: str='gpt-5-mini', prompt: str=None, temperature: float=None,
+	def __init__( self, model: str='gpt-5-nano', prompt: str=None, temperature: float=None,
 			top_p: float=None, presense: float=None, store: bool=None, stream: bool=None,
 			stops: List[ str ]=[ ], format: str=None, number: int=None,
 			instruct: str=None, messages: List[ Dict[ str, str ] ]=[ ], domains: List[ str ]=[ ],
@@ -205,8 +205,8 @@ class Chat( GPT ):
 			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, file_path: str=None,
 			background: bool=None, is_parallel: bool=None, max_tokens: int=None, frequency: float=None,
 			input: List[ Dict[ str, str ] ]=[ ], file_ids: List[ str ]=[ ], previous_id: str=None,
-			reasoning: Dict[ str, str ]={}, output_text: str=None,
-			content: List[ Dict[ str, str ] ]=[ ] ):
+			reasoning: Dict[ str, str ]={}, output_text: str=None, max_search_results: Optional[ int ]=None,
+			content: str=None, vector_store_ids: Optional[ List[ str ] ]=None ):
 		super( ).__init__( model, prompt, temperature, top_p, presense, store, stream, stops,
 			format, number, instruct, messages, background, max_tokens, frequency )
 		self.api_key = cfg.OPENAI_API_KEY
@@ -230,6 +230,7 @@ class Chat( GPT ):
 		self.output_text = output_text
 		self.max_tools = max_tools
 		self.allowed_domains = is_parallel
+		self.vector_store_ids = vector_store_ids
 		self.file_ids = file_ids
 		self.tools = tools
 		self.domains = domains
@@ -243,7 +244,7 @@ class Chat( GPT ):
 		self.image_url = None
 		self.content = content
 		self.output_text = None
-		self.max_search_results = None
+		self.max_search_results = max_search_results
 		self.purpose = None
 		self.vector_stores = \
 		{
@@ -348,10 +349,10 @@ class Chat( GPT ):
 			A List[ str ] of reasoning effort options
 
 		'''
-		return [ 'low',
+		return [ 'none',
+		         'low',
 		         'medium',
 		         'high',
-		         'none',
 		         'minimal',
 		         'xhigh' ]
 	
