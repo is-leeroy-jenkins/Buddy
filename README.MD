@@ -27,11 +27,11 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
 ## Execute chat queries against federal financial management documentation
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-chat.gif)
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 ___
 
 ## Customize the knowledge-base, use computer vision, and text embeddings
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-functionality.gif)
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-functionality.gif)
 ___
 ## Model Integration
 
