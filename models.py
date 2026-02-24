@@ -260,19 +260,20 @@ class AiConfig( ):
 	max_tokens: Optional[ int ]
 	presence_penalty: Optional[ float ]
 	fequency_penalty: Optional[ float ]
-	store: Optional[ bool ]
-	stream: Optional[ bool ]
+	is_stored: Optional[ bool ]
+	is_stream: Optional[ bool ]
 	background: Optional[ bool ]
 	stop_sequence: Optional[ List[ str ] ]
 	response_format: Optional[ str ]
 	number: Optional[ int ]
+	reasoning: Optional[ Dict[ str, str ] ]
 	
 	def __init__( self  ):
 		self.temperature = None
 		self.top_percent = None
 		self.presense = None
-		self.store = None
-		self.stream = None
+		self.is_stored = None
+		self.is_stream = None
 		self.fequency_penalty = None
 		self.stop_sequence = None
 		self.response_format = None
@@ -309,6 +310,7 @@ class GemConfig( AiConfig ):
 	instructions: Optional[ str ]
 	
 	def __init__( self ):
+		super( ).__init__( )
 		self.model = None
 		self.instructions = None
 
@@ -326,6 +328,7 @@ class GrokConfig( ContentConfig ):
 	instructions: Optional[ str ]
 	
 	def __init__( self ):
+		super( ).__init__( )
 		sself.model = None
 		self.instructions = None
 
@@ -343,6 +346,7 @@ class GptConfig( AiConfig ):
 	instructions: Optional[ str ]
 	
 	def __init__( self ):
+		super( ).__init__( )
 		self.model = None
 		self.instructions = None
 
@@ -361,11 +365,12 @@ class ToolConfig( AiConfig ):
 	domains: Optional[ List[ str ] ]
 	include: Optional[ List[ str ] ]
 	tools: Optional[ List[ Dict[ str, str ] ] ]
-	allow_parallel: Optional[ bool ]
+	is_parallel: Optional[ bool ]
 	tool_choice: Optional[ bool ]
 	max_tools: Optional[ int ]
 	
 	def __init__( self ):
+		super( ).__init__( )
 		self.domains = [ ]
 		self.tools = [ ]
 		self.include = [ ]
@@ -437,7 +442,6 @@ class TextConfig( AiConfig ):
 		The stop sequence will not be included as part of the response.
 		
 	'''
-	reasoning: Optional[ Dict[ str, str ] ]
 	file_path: Optional[ str ]
 	previous_id: Optional[ str ]
 	input: Optional[ List[ Dict[ str, str ] ] ] | str
@@ -532,7 +536,6 @@ class ImageConfig( ToolConfig ):
 		
 	'''
 	previous_id: Optional[ str ]
-	reasoning: Optional[ Dict[ str, str ] ]
 	image_path: Optional[ str ]
 	image_url: Optional[ str ]
 	image_data: Optional[ bytes ]

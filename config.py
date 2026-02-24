@@ -119,8 +119,7 @@ GPT_ANALYSIS = [ 'gpt-5.2', 'gpt-5.1', 'gpt-5', 'gpt-5-nano', 'gpt-image-1', 'gp
 GPT_EDITING = [ 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini', 'chatgpt-image-latest',
                 'dall-e-2' ]
 
-GPT_VECTORSTORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_697f86ad98888191b967685ae558bfc0',
-                     'vs_712r5W5833G6aLxIYIbuvVcK']
+GPT_VECTORSTORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_699506f7d5348191990e0557c717fa9d']
 
 GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
                  'file-WPmTsHFYDLGHbyERqJdyqv',

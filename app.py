@@ -2652,14 +2652,16 @@ elif mode == 'Text':
 						border=True, gap='medium' )
 					
 					with llm_c1:
-						set_text_model = st.selectbox( label='Select Model', options=text.model_options,
+						model_options = list( text.model_options )
+						set_text_model = st.selectbox( label='Select Model', options=model_options,
 							help='REQUIRED. Text Generation model used by the AI',
 							key='text_model', placeholder='Options' )
 						
 						text_model = st.session_state[ 'text_model' ]
 					
 					with llm_c2:
-						set_text_includes = st.multiselect( label='Include:', options=text.include_options,
+						include_options = list( text.include_options )
+						set_text_includes = st.multiselect( label='Include:', options=include_options,
 							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
 						
 						text_includes = st.session_state[ 'text_include' ]
@@ -2675,8 +2677,9 @@ elif mode == 'Text':
 						st.session_state[ 'text_domains' ] = text_domains
 
 					with llm_c4:
+						reasoning_options = list( text.reasoning_options )
 						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
-							options=text.reasoning_options, key='text_reasoning',
+							options=reasoning_options, key='text_reasoning',
 							help=cfg.REASONING, placeholder='Options'  )
 						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
@@ -2701,8 +2704,7 @@ elif mode == 'Text':
 				
 				with prm_c1:
 					set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-						step=0.01,
-						help=cfg.TOP_P, key='text_top_percent' )
+						step=0.01, help=cfg.TOP_P, key='text_top_percent' )
 					text_top_percent = st.session_state[ 'text_top_percent' ]
 				
 				with prm_c2:
@@ -2734,8 +2736,8 @@ elif mode == 'Text':
 					# ----------------------------------------------------------
 					# Remove Inference Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'text_top_percent', 'text_frequency_penalty', 'text_presense_penalty',
-							'text_temperature', 'text_number', ]:
+					for key in [ 'text_top_percent', 'text_frequency_penalty',
+					             'text_presense_penalty', 'text_temperature', 'text_number', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -2759,12 +2761,14 @@ elif mode == 'Text':
 					text_max_tools = st.session_state[ 'text_max_tools' ]
 				
 				with tool_c3:
-					set_text_choice = st.multiselect( label='Tool Choice:', options=text.choice_options,
+					choice_options = text.choice_options
+					set_text_choice = st.multiselect( label='Tool Choice:', options=choice_options,
 						key='text_tool_choice', help=cfg.CHOICE, placeholder='Options' )
 					text_tool_choice = st.session_state[ 'text_tool_choice' ]
 				
 				with tool_c4:
-					set_text_tools = st.multiselect( label='Tools:', options=text.tool_options,
+					tool_options = text.tool_options
+					set_text_tools = st.multiselect( label='Tools:', options=tool_options,
 						key='text_tools', help=cfg.TOOLS, placeholder='Options' )
 					text_tools = st.session_state[ 'text_tools' ]
 				
@@ -2772,8 +2776,8 @@ elif mode == 'Text':
 					# ----------------------------------------------------------
 					# Remove Tool Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'text_parallel_tools', 'text_max_tools', 'text_tool_choice',
-							'text_tools', ]:
+					for key in [ 'text_parallel_tools', 'text_max_tools',
+					             'text_tool_choice', 'text_tools', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -5333,9 +5337,9 @@ st.markdown(
 		width: 100%;
 		background-color: rgba(17, 17, 17, 0.95);
 		border-top: 1px solid #2a2a2a;
-		padding: 6px 16px;
-		font-size: 0.85rem;
-		color: #9aa0a6;
+		padding: 10px 16px;
+		font-size: 0.80rem;
+		color: #35618c;
 		z-index: 1000;
 	}
 	.boo-status-inner {
@@ -5640,7 +5644,7 @@ elif mode == 'VectorStores':
 	if background:
 		right_parts.append( 'Background: On' )
 
-right_text = " 🔹 ".join( right_parts ) if right_parts else "—"
+right_text = " ◽ ".join( right_parts ) if right_parts else "—"
 
 # ---- Rendering Method
 st.markdown(
