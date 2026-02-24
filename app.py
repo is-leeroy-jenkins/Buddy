@@ -1951,6 +1951,15 @@ if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
 	st.session_state[ 'mode' ] = 'Chat'
 
+if 'completion_tokens' not in st.session_state:
+	st.session_state[ 'completion_tokens' ] = 0
+
+if 'total_tokens' not in st.session_state:
+	st.session_state[ 'total_tokens' ] = 0
+
+if 'prompt_tokens' not in st.session_state:
+	st.session_state[ 'prompt_tokens' ] = 0
+
 if 'last_call_usage' not in st.session_state:
 	st.session_state.last_call_usage = {
 			'prompt_tokens': 0,
@@ -2921,23 +2930,6 @@ elif mode == 'Text':
 						except Exception:
 							pass
 			
-		# --------------------------------------------------------------
-		# Token Usage Reporting
-		# --------------------------------------------------------------
-		lcu = st.session_state.last_call_usage
-		tu = st.session_state.token_usage
-		
-		if any( lcu.values( ) ):
-			st.info(
-				f'Last call — prompt: {lcu[ "prompt_tokens" ]}, '
-				f'completion: {lcu[ "completion_tokens "]}, '
-				f'total: {lcu[ "total_tokens" ]}'
-			)
-		
-		if tu[ 'total_tokens' ] > 0:
-			st.write( f'Session totals — prompt: {tu[ "prompt_tokens" ]} · '
-				f'completion: {tu[ "completion_tokens" ]} · '
-				f'total: {tu[ "total_tokens" ]}' )
 
 # ======================================================================================
 # IMAGES MODE
