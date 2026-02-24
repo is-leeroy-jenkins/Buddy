@@ -26,7 +26,12 @@ and policy datasets hosted on Huggingface:
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy.gif)
+## Execute chat queries against federal financial management documentation
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-chat.gif)
+___
+
+## Customize the knowledge-base, use computer vision, and text embeddings
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-functionality.gif)
 ___
 ## Model Integration
 
