@@ -88,10 +88,9 @@ These fine-tuned models improve:
 | Variable          | Required For |
 | ----------------- | ------------ |
 | OPENAI_API_KEY    | OpenAI       |
-| ANTHROPIC_API_KEY | Claude       |
 | GOOGLE_API_KEY    | Gemini       |
 | GROK_API_KEY      | Grok         |
-| MISTRAL_API_KEY   | Mistral      |
+
 
 ## 📦 Installation
 
