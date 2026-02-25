@@ -70,23 +70,15 @@ These fine-tuned models improve:
 
 ## Required API Key
 
-API providers are the external artificial intelligence platforms that power Buddy’s capabilities.
-Each provider operates large-scale machine learning models—such as language models, embedding
-models, image generators, or audio systems—that are accessed programmatically through secure API
-keys. When you select a provider (for example, OpenAI, xAI’s Grok, or Google’s Gemini), Buddy sends
-your prompt or data request to that provider’s infrastructure, the model processes it, and the
-structured response is returned to your application. Different providers may offer variations in
-model performance, pricing, speed, context length, multimodal support, or enterprise controls. By
-supporting multiple API providers, Buddy gives users flexibility, redundancy, and the ability to
-compare outputs across model ecosystems while maintaining a consistent user interface and workflow.
+- Buddy’s capabilities are provided by OpenAI, Grok, and Gemini.
+- Each provider provides language models, embedding models, image generators, or audio systems 
+- Buddy gives users flexibility the ability to improve accuracy by comparing output across model ecosystems.
 
 #### Instructions
 
 - [![OpenAI](https://img.shields.io/badge/OpenAI-API-black?style=for-the-badge&logo=openai&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
 - [![Grok](https://img.shields.io/badge/Grok-xAI-black?style=for-the-badge&logo=x&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
 - [![Gemini](https://img.shields.io/badge/Gemini-Google-blue?style=for-the-badge&logo=google&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
-
-
 
 
 
