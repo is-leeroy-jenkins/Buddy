@@ -271,14 +271,12 @@ This enables controlled experimentation and governance of AI behavior.
 | Records Management Standards DTM 22‑001  | Establishes mandatory standards for managing, retaining, and disposing of DoD records. |
 | Use Of Non‑Government Owned Mobile Devices.  | Provides policy governing the use of personally owned mobile devices for official DoD activities. |
 
-## File A (Account Balances)
+## [File A (Account Balances)]
 
-- File A (Account Balances) is part of the package of data submitted to USAspending.gov every month
-  by
-  federal agencies, as required by the DATA Act. As part of the monthly submission process, agencies
-  generate File A automatically from data in the Governmentwide Treasury Account Symbol Adjusted
-  Trial
-  Balance System (GTAS), or choose to upload their own custom File A data.
+- File A (Account Balances) is part of the package of data submitted to [USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
+  by federal agencies, as required by the DATA Act. As part of the monthly submission process, agencies
+  generate File A automatically from data in the [Governmentwide Treasury Account Symbol Adjusted
+  Trial Balance System (GTAS)](https://fiscal.treasury.gov/gtas/), or choose to upload their own custom File A data.
 
 - File A contains budgetary resources, obligation, and outlay data for all the relevant Treasury
   Account Symbols (TAS) in a
@@ -286,7 +284,7 @@ This enables controlled experimentation and governance of AI behavior.
   non-award
   spending (grouped together), and crosswalks with the SF 133 report.
 
-## SF 133 Report on Budget Execution and Budgetary Resources
+## [SF 133 Report on Budget Execution and Budgetary Resources]https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html()
 
 - The SF 133 Report on Budget Execution and Budgetary Resources fulfills the requirement in 31
   U.S.C.
