@@ -188,6 +188,27 @@ submitted by the agencies.
 - [Gemini](https://aistudio.google.com/app/api-keys)
 - [Google Cloud](https://console.cloud.google.com/welcome?project=gen-lang-client-0254760271)
 
+## 🔐 Environment Variables 
+
+| Variable          | Required For |
+| ----------------- | ------------ |
+| OPENAI_API_KEY    | OpenAI       |
+| ANTHROPIC_API_KEY | Claude       |
+| GOOGLE_API_KEY    | Gemini       |
+| GROK_API_KEY      | Grok         |
+| MISTRAL_API_KEY   | Mistral      |
+
+## 📦 Installation
+
+```
+
+    python -m venv .venv
+    .venv\Scripts\activate  # Windows
+    python -m pip install - r requirements.txt
+    streamlit run app.py
+
+```
+
 ## Application Features
 
 ### 1. Conversational Chat Interface
@@ -252,8 +273,7 @@ This enables controlled experimentation and governance of AI behavior.
     * Prompt storage
     * Semantic embeddings
     * (Planned) chat history persistence
-* Modular design anticipates:
-
+    * Modular design anticipates:
     * External vector databases
     * Centralized prompt registries
     * Multi-user or shared analytical environments
@@ -269,6 +289,38 @@ This enables controlled experimentation and governance of AI behavior.
 * Program and portfolio analysts requiring explainable AI assistance
 
 
+## 🖥 Core Runtime Requirements
+
+| Category                       | Component / Library | Minimum Version     | Required    | Purpose / Notes                        |
+| ------------------------------ | ------------------- | ------------------- | ----------- | -------------------------------------- |
+| **Core Runtime**               | Python              | 3.10                | Yes         | Application runtime (3.11 recommended) |
+|                                | Streamlit           | Latest stable       | Yes         | UI framework                           |
+|                                | pip                 | Latest              | Yes         | Package management                     |
+|                                | virtualenv / venv   | Any                 | Recommended | Environment isolation                  |
+| **AI Providers**               | openai              | Latest              | Optional    | OpenAI Text, Image, Audio, Embeddings  |
+|                                | anthropic           | Latest              | Optional    | Claude models                          |
+|                                | google-generativeai | Latest              | Optional    | Gemini models                          |
+|                                | mistralai           | Latest              | Optional    | Mistral models                         |
+|                                | groq / xai client   | Latest              | Optional    | Grok models                            |
+|                                | requests            | Latest              | Yes         | API communication layer                |
+| **Document Processing**        | pypdf (or PyPDF2)   | Latest              | Yes         | PDF text extraction                    |
+|                                | python-docx         | Latest              | Yes         | Word document parsing                  |
+|                                | chardet             | Latest              | Optional    | Encoding detection                     |
+|                                | base64 / io         | Built-in            | Yes         | Byte handling                          |
+| **Embeddings & Vector Stores** | numpy               | Latest              | Yes         | Vector math                            |
+|                                | pandas              | Latest              | Yes         | Data handling                          |
+|                                | sqlite3             | Built-in            | Yes         | Local vector persistence               |
+|                                | chromadb            | Latest              | Optional    | Persistent vector store                |
+|                                | scikit-learn        | Latest              | Optional    | Similarity utilities                   |
+| **Data Management**            | openpyxl            | Latest              | Yes         | Excel read/write                       |
+|                                | sqlalchemy          | Latest              | Optional    | External DB connectivity               |
+| **Audio Processing**           | pydub               | Latest              | Optional    | Audio manipulation                     |
+|                                | ffmpeg              | External dependency | Optional    | Audio decoding backend                 |
+|                                | soundfile           | Latest              | Optional    | Audio IO                               |
+| **Image Processing**           | Pillow (PIL)        | Latest              | Yes         | Image handling                         |
+| **Utilities**                  | python-dotenv       | Latest              | Recommended | Environment variable loading           |
+|                                | logging / traceback | Built-in            | Yes         | Runtime diagnostics                    |
+|                                | rich                | Latest              | Optional    | Structured console output              |
 
 ## Disclaimer
 
