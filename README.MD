@@ -67,51 +67,20 @@ These fine-tuned models improve:
 * Terminology alignment (OMB, DoD, Treasury, GAO)
 * Consistency when answering budget and execution questions
 
-## 🏗 Architecture Overview
-
-app.py
-│
-├── Providers
-│ ├── OpenAI
-│ ├── Grok
-│ ├── Gemini
-│ ├── Mistral
-│ ├── Claude
-│ └── Local Models
-│
-├── Modes
-│ ├── Text
-│ ├── Image
-│ ├── Audio
-│ ├── Embeddings
-│ ├── Document Q&A
-│ └── Data Management
-│
-├── Utilities
-│ ├── Session State Controls
-│ ├── Reset Buttons
-│ ├── Footer Parameter Reflection
-│ └── Error Handling
-│
-└── Vector Stores
-├── SQLite
-├── Chroma
-└── Custom Implementations
-
 
 ## Required API Key
+
+
 #### Instructions
 
 - ![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white)
 
 - ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
 
+- ![Grok](https://img.shields.io/badge/Grok-xAI-black?style=for-the-badge&logo=x&logoColor=white)
 
-<a href="https://groq.com" target="_blank" rel="noopener noreferrer">
-    <img src="https://console.groq.com/powered-by-groq-dark.svg" alt="Powered by Groq for fast inference." />
-</a>
 
-#### Links
+#### Provider Links
 - [OpenAI](https://platform.openai.com/api-keys)
 - [xAi](https://docs.x.ai/developers/quickstart)
 - [Gemini](https://aistudio.google.com/app/api-keys)
