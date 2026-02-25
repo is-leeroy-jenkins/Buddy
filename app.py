@@ -425,19 +425,6 @@ def init_state( ) -> None:
 	if 'chat_messages' not in st.session_state:
 		st.session_state.chat_messages = [ ]
 		
-	if 'last_answer' not in st.session_state:
-		st.session_state.last_answer = ''
-	
-	if 'last_sources' not in st.session_state:
-		st.session_state.last_sources = [ ]
-	
-	if 'last_analysis' not in st.session_state:
-		st.session_state.last_analysis = {
-				'tables': [ ],
-				'files': [ ],
-				'text': [ ],
-		}
-	
 	if 'execution_mode' not in st.session_state:
 		st.session_state.execution_mode = 'Standard'
 		
@@ -1733,7 +1720,7 @@ def embedding_model_options( embed ):
 # -------------DOC Q&A ----------------------
 def route_document_query( prompt: str ) -> str:
 	source = st.session_state.get( 'doc_source' )
-	active_docs = st.session_state.get( 'doc_active_docs', [ ] )
+	active_docs = st.session_state.get( 'docqna_active_docs', [ ] )
 	doc_bytes = st.session_state.get( 'doc_bytes', { } )
 	
 	if not source:
@@ -1951,24 +1938,6 @@ if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
 	st.session_state[ 'mode' ] = 'Chat'
 
-if 'completion_tokens' not in st.session_state:
-	st.session_state[ 'completion_tokens' ] = 0
-
-if 'total_tokens' not in st.session_state:
-	st.session_state[ 'total_tokens' ] = 0
-
-if 'prompt_tokens' not in st.session_state:
-	st.session_state[ 'prompt_tokens' ] = 0
-
-if 'last_call_usage' not in st.session_state:
-	st.session_state.last_call_usage = {
-			'prompt_tokens': 0,
-			'completion_tokens': 0,
-			'total_tokens': 0, }
-
-if 'token_usage' not in st.session_state:
-	st.session_state.token_usage = { 'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0,}
-
 if 'files' not in st.session_state:
 	st.session_state.files: List[ str ] = [ ]
 	
@@ -2075,9 +2044,6 @@ if 'tools' not in st.session_state:
 if 'messages' not in st.session_state:
 	st.session_state[ 'messages' ] = [ ]
 
-if 'last_sources' not in st.session_state:
-	st.session_state[ 'last_sources' ] = [ ]
-
 # --------TEXT-GENERATION PARAMETERS--------------------
 if 'text_max_tokens' not in st.session_state:
 	st.session_state[ 'text_max_tokens' ] = 0
@@ -2142,10 +2108,10 @@ if 'text_messages' not in st.session_state:
 # --------IMAGE-GENERATION PARAMETERS--------------------
 if 'image_max_tokens' not in st.session_state:
 	st.session_state[ 'image_max_tokens' ] = 0
-
-if 'image_max_tools' not in st.session_state:
-	st.session_state[ 'image_max_tools' ] = 0
 	
+if 'image_max_calls' not in st.session_state:
+	st.session_state[ 'image_max_calls' ] = 0
+
 if 'image_temperature' not in st.session_state:
 	st.session_state[ 'image_temperature' ] = 0.0
 
@@ -2339,64 +2305,64 @@ if 'file_url' not in st.session_state:
 	
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
-if 'stores_temperature' not in st.session_state:
-	st.session_state[ 'stores_temperature' ] = 0.0
+if 'store_temperature' not in st.session_state:
+	st.session_state[ 'store_temperature' ] = 0.0
 
 if 'stores_top_percent' not in st.session_state:
 	st.session_state[ 'stores_top_percent' ] = 0.0
 
-if 'stores_max_tokens' not in st.session_state:
-	st.session_state[ 'stores_max_tokens' ] = 0
+if 'store_max_tokens' not in st.session_state:
+	st.session_state[ 'store_max_tokens' ] = 0
 
-if 'stores_frequency_penalty' not in st.session_state:
-	st.session_state[ 'stores_frequency_penalty' ] = 0.0
+if 'store_frequency_penalty' not in st.session_state:
+	st.session_state[ 'store_frequency_penalty' ] = 0.0
 
-if 'stores_presense_penalty' not in st.session_state:
-	st.session_state[ 'stores_presense_penalty' ] = 0.0
+if 'store_presense_penalty' not in st.session_state:
+	st.session_state[ 'store_presense_penalty' ] = 0.0
 
-if 'stores_max_calls' not in st.session_state:
-	st.session_state[ 'stores_max_calls' ] = 0
+if 'store_max_calls' not in st.session_state:
+	st.session_state[ 'store_max_calls' ] = 0
 
-if 'stores_tool_choice' not in st.session_state:
-	st.session_state[ 'stores_tool_choice' ] = ''
+if 'store_tool_choice' not in st.session_state:
+	st.session_state[ 'store_tool_choice' ] = ''
 
-if 'stores_response_format' not in st.session_state:
-	st.session_state[ 'stores_response_format' ] = ''
+if 'store_response_format' not in st.session_state:
+	st.session_state[ 'store_response_format' ] = ''
 
-if 'stores_reasoning' not in st.session_state:
-	st.session_state[ 'stores_reasoning' ] = ''
+if 'store_reasoning' not in st.session_state:
+	st.session_state[ 'store_reasoning' ] = ''
 
-if 'stores_parallel_tools' not in st.session_state:
-	st.session_state[ 'stores_parallel_tools' ] = False
+if 'store_parallel_tools' not in st.session_state:
+	st.session_state[ 'store_parallel_tools' ] = False
 
-if 'stores_background' not in st.session_state:
-	st.session_state[ 'stores_background' ] = False
+if 'store_background' not in st.session_state:
+	st.session_state[ 'store_background' ] = False
 
-if 'stores_store' not in st.session_state:
-	st.session_state[ 'stores_store' ] = False
+if 'store_store' not in st.session_state:
+	st.session_state[ 'store_store' ] = False
 
-if 'stores_stream' not in st.session_state:
-	st.session_state[ 'stores_stream' ] = False
+if 'store_stream' not in st.session_state:
+	st.session_state[ 'store_stream' ] = False
 
-if 'stores_input' not in st.session_state:
-	st.session_state[ 'stores_input' ] = [ ]
+if 'store_input' not in st.session_state:
+	st.session_state[ 'store_input' ] = [ ]
 
-if 'stores_tools' not in st.session_state:
-	st.session_state[ 'stores_tools' ] = [ ]
+if 'store_tools' not in st.session_state:
+	st.session_state[ 'store_tools' ] = [ ]
 
-if 'stores_messages' not in st.session_state:
-	st.session_state[ 'stores_messages' ] = [ ]
+if 'store_messages' not in st.session_state:
+	st.session_state[ 'store_messages' ] = [ ]
 
-if 'stores_stops' not in st.session_state:
-	st.session_state[ 'stores_stops' ] = [ ]
+if 'store_stops' not in st.session_state:
+	st.session_state[ 'store_stops' ] = [ ]
 
-if 'stores_include' not in st.session_state:
-	st.session_state[ 'stores_include' ] = [ ]
+if 'store_include' not in st.session_state:
+	st.session_state[ 'store_include' ] = [ ]
 
 # ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
 
-if 'stores_id' not in st.session_state:
-	st.session_state[ 'stores_id' ] = ''
+if 'store_id' not in st.session_state:
+	st.session_state[ 'store_id' ] = ''
 
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'files' not in st.session_state:
@@ -2405,11 +2371,11 @@ if 'files' not in st.session_state:
 if 'uploaded' not in st.session_state:
 	st.session_state[ 'uploaded' ] = ''
 
-if 'doc_messages' not in st.session_state:
-	st.session_state.doc_messages = [ ]
+if 'docqna_messages' not in st.session_state:
+	st.session_state.docqna_messages = [ ]
 
-if 'doc_active_docs' not in st.session_state:
-	st.session_state.doc_active_docs = [ ]
+if 'docqna_active_docs' not in st.session_state:
+	st.session_state.docqna_active_docs = [ ]
 
 if 'doc_source' not in st.session_state:
 	st.session_state.doc_source = ''
@@ -3981,19 +3947,19 @@ elif mode == 'Embeddings':
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	stores_model = st.session_state.get( 'stores_model', None )
-	stores_format = st.session_state.get( 'stores_response_format', None )
+	stores_format = st.session_state.get( 'store_response_format', None )
 	stores_top_percent = st.session_state.get( 'stores_top_percent', None )
-	stores_frequency = st.session_state.get( 'stores_frequency_penalty', None )
-	stores_presense = st.session_state.get( 'stores_presense_penalty', None )
+	stores_frequency = st.session_state.get( 'store_frequency_penalty', None )
+	stores_presense = st.session_state.get( 'store_presense_penalty', None )
 	stores_number = st.session_state.get( 'stores_number', None )
-	stores_temperature = st.session_state.get( 'stores_temperature', None )
-	stores_stream = st.session_state.get( 'stores_stream', None )
-	stores_store = st.session_state.get( 'stores_store', None )
-	stores_input = st.session_state.get( 'stores_input', None )
-	stores_reasoning = st.session_state.get( 'stores_reasoning', None )
-	vectorstores_choice = st.session_state.get( 'stores_tool_choice', None )
-	stores_messages = st.session_state.get( 'stores_messages', None )
-	stores_background = st.session_state.get( 'stores_background', None )
+	stores_temperature = st.session_state.get( 'store_temperature', None )
+	stores_stream = st.session_state.get( 'store_stream', None )
+	stores_store = st.session_state.get( 'store_store', None )
+	stores_input = st.session_state.get( 'store_input', None )
+	stores_reasoning = st.session_state.get( 'store_reasoning', None )
+	vectorstores_choice = st.session_state.get( 'store_tool_choice', None )
+	stores_messages = st.session_state.get( 'store_messages', None )
+	stores_background = st.session_state.get( 'store_background', None )
 	vector = None
 	collector  = None
 	searcher = None
@@ -4346,8 +4312,8 @@ elif mode == 'Document Q&A':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = st.session_state.get( 'files' )
 	uploaded = st.session_state.get( 'uploaded' )
-	doc_messages = st.session_state.get( 'doc_messages' )
-	doc_active_docs = st.session_state.get( 'doc_active_docs' )
+	doc_messages = st.session_state.get( 'docqna_messages' )
+	doc_active_docs = st.session_state.get( 'docqna_active_docs' )
 	doc_source = st.session_state.get( 'doc_source' )
 	doc_multi_mode = st.session_state.get( 'doc_multi_mode' )
 	
@@ -4442,7 +4408,7 @@ elif mode == 'Document Q&A':
 				accept_multiple_files=False, label_visibility='visible' )
 			
 			if uploaded is not None:
-				st.session_state.doc_active_docs = [ uploaded.name ]
+				st.session_state.docqna_active_docs = [ uploaded.name ]
 				st.session_state.doc_bytes = { uploaded.name: uploaded.getvalue( ) }
 				st.success( f'{uploaded.name} has been loaded!' )
 			else:
@@ -4451,23 +4417,23 @@ elif mode == 'Document Q&A':
 			unload = st.button( label='Unload Document', width='stretch' )
 			if unload:
 				uploaded = None
-				st.session_state.doc_active_docs = None
+				st.session_state.docqna_active_docs = None
 		
 		with doc_right:
-			if st.session_state.get( 'doc_active_docs' ):
-				name = st.session_state.doc_active_docs[ 0 ]
+			if st.session_state.get( 'docqna_active_docs' ):
+				name = st.session_state.docqna_active_docs[ 0 ]
 				file_bytes = st.session_state.doc_bytes.get( name )
 				if file_bytes:
 					st.pdf( file_bytes, height=420 )
 		
-		for msg in st.session_state.doc_messages:
+		for msg in st.session_state.docqna_messages:
 			with st.chat_message( msg[ 'role' ] ):
 				st.markdown( msg[ 'content' ] )
 		
 		if prompt := st.chat_input( 'Ask a question about the document' ):
-			st.session_state.doc_messages.append( { 'role': 'user', 'content': prompt } )
+			st.session_state.docqna_messages.append( { 'role': 'user', 'content': prompt } )
 			response = route_document_query( prompt )
-			st.session_state.doc_messages.append( { 'role': 'assistant', 'content': response } )
+			st.session_state.docqna_messages.append( { 'role': 'assistant', 'content': response } )
 			st.rerun( )
 
 # ======================================================================================
@@ -4719,7 +4685,7 @@ elif mode == 'Prompt Engineering':
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 
-				
+		
 		# ------------------------------------------------------------------
 		# Edit Prompt
 		# ------------------------------------------------------------------
@@ -5580,19 +5546,19 @@ elif mode == 'Files':
 
 elif mode == 'VectorStores':
 	model = st.session_state.get( 'stores_model' )
-	fmt = st.session_state.get( 'stores_response_format' )
-	temperature = st.session_state.get( 'stores_temperature' )
+	fmt = st.session_state.get( 'store_response_format' )
+	temperature = st.session_state.get( 'store_temperature' )
 	top_p = st.session_state.get( 'stores_top_percent' )
-	freq = st.session_state.get( 'stores_frequency_penalty' )
-	presence = st.session_state.get( 'stores_presense_penalty' )
+	freq = st.session_state.get( 'store_frequency_penalty' )
+	presence = st.session_state.get( 'store_presense_penalty' )
 	number = st.session_state.get( 'stores_number' )
-	stream = st.session_state.get( 'stores_stream' )
-	store = st.session_state.get( 'stores_store' )
-	input_data = st.session_state.get( 'stores_input' )
-	reasoning = st.session_state.get( 'stores_reasoning' )
-	tool_choice = st.session_state.get( 'stores_tool_choice' )
-	messages = st.session_state.get( 'stores_messages' )
-	background = st.session_state.get( 'stores_background' )
+	stream = st.session_state.get( 'store_stream' )
+	store = st.session_state.get( 'store_store' )
+	input_data = st.session_state.get( 'store_input' )
+	reasoning = st.session_state.get( 'store_reasoning' )
+	tool_choice = st.session_state.get( 'store_tool_choice' )
+	messages = st.session_state.get( 'store_messages' )
+	background = st.session_state.get( 'store_background' )
 	
 	if model is not None:
 		right_parts.append( f'Model: {model}' )
