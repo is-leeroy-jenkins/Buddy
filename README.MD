@@ -70,6 +70,15 @@ These fine-tuned models improve:
 
 ## Required API Key
 
+API providers are the external artificial intelligence platforms that power Buddy’s capabilities.
+Each provider operates large-scale machine learning models—such as language models, embedding
+models, image generators, or audio systems—that are accessed programmatically through secure API
+keys. When you select a provider (for example, OpenAI, xAI’s Grok, or Google’s Gemini), Buddy sends
+your prompt or data request to that provider’s infrastructure, the model processes it, and the
+structured response is returned to your application. Different providers may offer variations in
+model performance, pricing, speed, context length, multimodal support, or enterprise controls. By
+supporting multiple API providers, Buddy gives users flexibility, redundancy, and the ability to
+compare outputs across model ecosystems while maintaining a consistent user interface and workflow.
 
 #### Instructions
 
