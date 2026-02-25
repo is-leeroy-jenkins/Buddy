@@ -287,9 +287,8 @@ This enables controlled experimentation and governance of AI behavior.
   program operating plans, and spend-out rate estimates.
 
 - Agencies submit the data that appear on these reports to the Department of the Treasury Bureau of
-  Fiscal Service. While OMB publishes these reports as a
-  service to agency budget and finance offices and other interested parties, the underlying data is
-  submitted by the agencies.
+  Fiscal Service. While OMB publishes these reports as a service to agency budget and finance offices
+  and other interested parties, the underlying data is submitted by the agencies.
 
 ## 🖥 Core Runtime Requirements
 
