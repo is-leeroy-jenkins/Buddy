@@ -33,11 +33,11 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 ## Demo 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
-## Execute chat queries against federal financial management documentation
+-  Execute chat queries against federal financial management documentation
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 ___
 
-## Customize the knowledge-base, use computer vision, and text embeddings
+- Customize the knowledge-base, use computer vision, and text embeddings
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-functionality.gif)
 ___
 ## Model Integration
@@ -73,18 +73,11 @@ These fine-tuned models improve:
 
 #### Instructions
 
-- ![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
-
-- ![Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
-
-- ![Grok](https://img.shields.io/badge/Grok-xAI-black?style=for-the-badge&logo=x&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
+- [![OpenAI](https://img.shields.io/badge/OpenAI-API-black?style=for-the-badge&logo=openai&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
+- [![Grok](https://img.shields.io/badge/Grok-xAI-black?style=for-the-badge&logo=x&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
+- [![Gemini](https://img.shields.io/badge/Gemini-Google-blue?style=for-the-badge&logo=google&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
 
 
-#### Provider Links
-- [OpenAI](https://platform.openai.com/api-keys)
-- [xAi](https://docs.x.ai/developers/quickstart)
-- [Gemini](https://aistudio.google.com/app/api-keys)
-- [Google Cloud](https://console.cloud.google.com/welcome?project=gen-lang-client-0254760271)
 
 
 
