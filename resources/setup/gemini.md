@@ -3,7 +3,7 @@
 This guide explains how to enable Gemini API access, generate an API key, and create a Google Cloud
 Storage bucket.
 
----
+
 
 # PART 1 — Create Google Cloud Project
 
@@ -13,7 +13,7 @@ Storage bucket.
 2. Sign in with a Google account
 3. Enable billing
 
----
+
 
 ## 2. Create a New Project
 
@@ -22,7 +22,7 @@ Storage bucket.
 3. Enter a project name (e.g., buddy-gemini)
 4. Click **Create**
 
----
+
 
 # PART 2 — Enable Gemini API
 
@@ -32,7 +32,7 @@ Storage bucket.
 2. Search for **Generative Language API**
 3. Click **Enable**
 
----
+
 
 # PART 3 — Generate an API Key
 
@@ -47,7 +47,7 @@ Example key format:
 
     AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
----
+
 
 ## 5. Restrict the API Key (Recommended)
 
@@ -56,7 +56,7 @@ Example key format:
 3. Select **Generative Language API**
 4. Save changes
 
----
+
 
 # PART 4 — Create Cloud Storage Bucket
 
@@ -69,7 +69,7 @@ Example key format:
 5. Keep default settings unless specific requirements exist
 6. Click **Create**
 
----
+
 
 ## 7. Configure Permissions (If Needed)
 
@@ -78,7 +78,7 @@ Example key format:
 3. Add principal (user or service account)
 4. Assign appropriate role (e.g., Storage Object Admin)
 
----
+
 
 # PART 5 — Configure Environment Variable
 
@@ -98,7 +98,7 @@ To persist permanently:
 
 Restart terminal.
 
----
+
 
 ## 8. Verify Setup
 
@@ -106,7 +106,7 @@ Restart terminal.
 
 If configured correctly, the key will display.
 
----
+
 
 ## Security Best Practices
 

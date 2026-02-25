@@ -75,7 +75,7 @@ These fine-tuned models improve:
 
 - ![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
 
-- ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
+- ![Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
 
 - ![Grok](https://img.shields.io/badge/Grok-xAI-black?style=for-the-badge&logo=x&logoColor=white)(https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
 

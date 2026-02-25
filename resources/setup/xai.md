@@ -3,7 +3,7 @@
 This guide explains how to create an xAI account, generate a Grok API key, and configure it for
 local development.
 
----
+
 
 ## 1. Create an xAI Account
 
@@ -12,7 +12,7 @@ local development.
 3. Register using X (Twitter) or email
 4. Complete account verification
 
----
+
 
 ## 2. Enable API Access
 
@@ -20,7 +20,7 @@ local development.
 2. Locate **API Access** or **Developer Settings**
 3. Enable API access and accept terms
 
----
+
 
 ## 3. Configure Billing (If Required)
 
@@ -28,7 +28,7 @@ local development.
 2. Add a payment method
 3. Review pricing and usage limits
 
----
+
 
 ## 4. Generate an API Key
 
@@ -43,7 +43,7 @@ Example key format:
 
 Store securely.
 
----
+
 
 ## 5. Configure Environment Variable
 
@@ -63,7 +63,7 @@ To persist permanently:
 
 Restart terminal.
 
----
+
 
 ## 6. Verify Setup
 
@@ -71,7 +71,7 @@ Restart terminal.
 
 If configured correctly, the key will display.
 
----
+
 
 ## Security Best Practices
 
