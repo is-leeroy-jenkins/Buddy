@@ -17,13 +17,20 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 
 ## Core Capabilities
 
-* Conversational analysis of federal budget and financial guidance
-* Source-aware responses with traceable references
-* Retrieval-augmented generation using user-provided documents
-* Semantic search across guidance and execution datasets
-* Prompt and system-instruction version control
-* Exportable analytical outputs (Markdown, PDF)
 
+  | Mode | Description |
+  | ----------------------- | ---------------------------------------------------------------- |
+  | 📝 **Text Generation**  | Structured LLM interaction with full parameter control |
+  | 🖼 **Image Generation** | Prompt-based image synthesis with provider configuration |
+  | 🔊 **Audio Processing** | Text-to-Speech and Speech-to-Text workflows |
+  | 📚 **Document Q&A**     | Context-aware querying of uploaded or embedded documents |
+  | 🧬 **Embeddings**       | Vector creation and similarity-based search |
+  | 🗄 **Vector Stores**    | Persistent semantic storage (SQLite / Chroma / others)           |
+  | 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
+  | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
+
+
+## Demo 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
 ## Execute chat queries against federal financial management documentation
