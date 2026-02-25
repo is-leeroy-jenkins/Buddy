@@ -84,7 +84,7 @@ These fine-tuned models improve:
 
 
 ## 🔐 Environment Variables 
-- After obtaining the api keys, set environment variables following instructions found [here]()
+- After obtaining the api keys, set environment variables following instructions found [here](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/environments.md)
 
 | Variable          | Required For |
 | ----------------- | ------------ |
