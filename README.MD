@@ -100,11 +100,25 @@ app.py
 
 
 ## Required API Key
+#### Instructions
 
+- ![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white)
+
+- ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
+
+
+<a href="https://groq.com" target="_blank" rel="noopener noreferrer">
+    <img src="https://console.groq.com/powered-by-groq-dark.svg" alt="Powered by Groq for fast inference." />
+</a>
+
+#### Links
 - [OpenAI](https://platform.openai.com/api-keys)
 - [xAi](https://docs.x.ai/developers/quickstart)
 - [Gemini](https://aistudio.google.com/app/api-keys)
 - [Google Cloud](https://console.cloud.google.com/welcome?project=gen-lang-client-0254760271)
+
+
+
 
 ## 🔐 Environment Variables 
 
