@@ -74,14 +74,9 @@ These fine-tuned models improve:
 - Buddy’s capabilities are provided by OpenAI, Grok, and Gemini with instructions for each below.
 - Each provider provides language models, embedding models, image generators, or audio systems 
 - Buddy gives users flexibility the ability to improve accuracy by comparing output across model ecosystems.
-
-### Instructions
-
-- The instructions for establishing OpenAI API key [![OpenAI](https://img.shields.io/badge/OpenAI-API-black?style=for-the-badge&logo=openai&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
-- The instructions for establishing Grok API key [![Grok](https://img.shields.io/badge/Grok-xAI-black?style=for-the-badge&logo=x&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
-- The instructions for establishing Gemini API key  [![Gemini](https://img.shields.io/badge/Gemini-Google-blue?style=for-the-badge&logo=google&logoColor=white)](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
-
-
+- The instructions for establishing OpenAI API key can be found [here] (https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
+- The instructions for establishing Grok API key can be found [here](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
+- The instructions for establishing Gemini API key can be found [here](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
 
 
 ## 🔐 Environment Variables 
