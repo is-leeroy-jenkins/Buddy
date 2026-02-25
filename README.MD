@@ -273,7 +273,7 @@ This enables controlled experimentation and governance of AI behavior.
 
 ## File A (Account Balances)
 
-- ![File A (Account Balances)](https://www.usaspending.gov/download_center/custom_account_data) is part of the package of data submitted to ![USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
+- ![File A-Account Balances](https://www.usaspending.gov/download_center/custom_account_data) is part of the package of data submitted to ![USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
   by federal agencies, as required by the DATA Act. As part of the monthly submission process, agencies
   generate File A automatically from data in the [Governmentwide Treasury Account Symbol Adjusted
   Trial Balance System (GTAS)](https://fiscal.treasury.gov/gtas/), or choose to upload their own custom File A data.
