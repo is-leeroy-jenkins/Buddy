@@ -33,11 +33,13 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 
 -  Execute chat queries against federal financial management documentation
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
-___
+
+
 
 - Customize the knowledge-base, use computer vision, and text embeddings
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-functionality.gif)
-___
+
+
 ## Model Integration
 
 ### GPT-5.2 (Primary Inference Engine)
