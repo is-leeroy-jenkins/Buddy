@@ -84,6 +84,7 @@ These fine-tuned models improve:
 
 
 ## 🔐 Environment Variables 
+- After obtaining the api keys, set environment variables following instructions found [here]()
 
 | Variable          | Required For |
 | ----------------- | ------------ |
