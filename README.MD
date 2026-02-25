@@ -174,7 +174,12 @@ service to agency budget and finance offices and other interested parties, the u
 submitted by the agencies.
 
 
+## Required API Key
 
+- [OpenAI](https://platform.openai.com/api-keys)
+- [xAi](https://docs.x.ai/developers/quickstart)
+- [Gemini](https://aistudio.google.com/app/api-keys)
+- [Google Cloud](https://console.cloud.google.com/welcome?project=gen-lang-client-0254760271)
 
 ## Application Features
 

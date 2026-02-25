@@ -2044,6 +2044,9 @@ if 'tools' not in st.session_state:
 if 'messages' not in st.session_state:
 	st.session_state[ 'messages' ] = [ ]
 
+if 'last_sources' not in st.session_state:
+	st.session_state[ 'last_sources' ] = [ ]
+
 # --------TEXT-GENERATION PARAMETERS--------------------
 if 'text_max_tokens' not in st.session_state:
 	st.session_state[ 'text_max_tokens' ] = 0
@@ -2383,6 +2386,30 @@ if 'doc_source' not in st.session_state:
 if 'doc_multi_mode' not in st.session_state:
 	st.session_state.doc_multi_mode = False
 
+# ------- TOKEN PARAMATERS  ---------------------------
+if 'last_answer' not in st.session_state:
+	st.session_state.last_answer = ''
+
+if 'last_sources' not in st.session_state:
+	st.session_state.last_sources = [ ]
+
+if 'last_analysis' not in st.session_state:
+	st.session_state.last_analysis = {
+			'tables': [ ],
+			'files': [ ],
+			'text': [ ],
+	}
+
+if 'last_call_usage' not in st.session_state:
+	st.session_state.last_call_usage = {
+			'prompt_tokens': 0,
+			'completion_tokens': 0,
+			'total_tokens': 0, }
+
+if 'token_usage' not in st.session_state:
+	st.session_state.token_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
+	                                 'total_tokens': 0, }
+
 # ==============================================================================
 # Sidebar
 # ==============================================================================
@@ -2479,7 +2506,6 @@ if mode == 'Chat':
 	chat_choice = st.session_state.get( 'tool_choice', '' )
 	chat_messages = st.session_state.get( 'messages', [ ] )
 	execution_mode = st.session_state.get( 'execution_mode', '' )
-	chat_last_sources = st.session_state.get( "last_sources", [ ] )
 	chat_history = st.session_state.get( 'chat_history', [ ] )
 	
 	# ------------------------------------------------------------------
