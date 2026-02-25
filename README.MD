@@ -1,16 +1,15 @@
 
 ###### Buddy
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy_Project.png)
-___
+
 
 Budget Buddy is an federal financial management AI tool designed to support fderal budget/financial 
 analysts, managers, and policy professionals. It integrates large language models (LLMs) such as
 OpenAI's ChatGPT 5+, xAI's Grok 3/4, and Googles Gemini 3/4 for retrieval-augmented generation (RAG), 
 semantic searching, and structured prompt engineering to assist with interpretation of financial guidance, 
-budget execution data, and a vectorized data set of financial policy documents. Buddy is integrated with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets 
+budget execution data, and a vectorized data set of financial policy documents. Buddy is integrated 
+with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets 
 on vectorized financial management and policy datasets hosted on Huggingface:
-
-
 
 
 ## Core Capabilities
@@ -32,11 +31,13 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
 -  Execute chat queries against federal financial management documentation
+
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 
 
 
 - Customize the knowledge-base, use computer vision, and text embeddings
+
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-functionality.gif)
 
 
