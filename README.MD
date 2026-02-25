@@ -66,7 +66,7 @@ These fine-tuned models improve:
 * Consistency when answering budget and execution questions
 
 
-## Required API Key
+## Required API Keys
 
 - Buddy’s capabilities are provided by OpenAI, Grok, and Gemini with instructions for each below.
 - Each provider provides language models, embedding models, image generators, or audio systems 
