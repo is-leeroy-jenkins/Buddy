@@ -273,7 +273,7 @@ This enables controlled experimentation and governance of AI behavior.
 
 ## File A (Account Balances)
 
-- File A (Account Balances)](https://www.usaspending.gov/download_center/custom_account_data) is part of the package of data submitted to [USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
+- ![File A (Account Balances)](https://www.usaspending.gov/download_center/custom_account_data) is part of the package of data submitted to ![USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
   by federal agencies, as required by the DATA Act. As part of the monthly submission process, agencies
   generate File A automatically from data in the [Governmentwide Treasury Account Symbol Adjusted
   Trial Balance System (GTAS)](https://fiscal.treasury.gov/gtas/), or choose to upload their own custom File A data.
@@ -284,7 +284,7 @@ This enables controlled experimentation and governance of AI behavior.
 
 ## SF 133 Report on Budget Execution and Budgetary Resources
 
-- The [SF 133 Report on Budget Execution and Budgetary Resources](https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html) fulfills the requirement in 31
+- The ![SF 133 Report on Budget Execution and Budgetary Resources](https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html) fulfills the requirement in 31
   U.S.C. 1511 - 1514 that the President review Federal expenditures at least four times a year.
 
 - SF 133s provide historical reference that can be used to help prepare the President's Budget,
