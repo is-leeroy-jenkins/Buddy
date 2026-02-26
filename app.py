@@ -3026,7 +3026,7 @@ elif mode == "Images":
 					elif st.session_state[ 'image_mode' ] == 'Editing':
 						editing = cfg.GPT_EDITING
 						set_image_model = st.selectbox( label='Select Model', options=editing,
-						help='REQUIRED. Images Generation model used by the AI', key = 'image_model',
+						help='REQUIRED. Images Generation model used by the AI', key='image_model',
 						placeholder='Options' )
 						image_model = st.session_state[ 'image_model' ]
 					else:
