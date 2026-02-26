@@ -577,7 +577,7 @@ def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 					continue
 				
 				sources.append( { 'title': s.get( 'title' ), 'snippet': s.get( 'snippet' ),
-						'url': s.get( 'url' ), 'file_id': None, } )
+						'url': s.get( 'url' ), 'files_id': None, } )
 		
 		# ------------------------------------------------
 		# File search (vector store)
@@ -594,7 +594,7 @@ def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 					continue
 				
 				sources.append( { 'title': s.get( 'file_name' ) or s.get( 'title' ),
-						'snippet': s.get( 'text' ), 'url': None, 'file_id': s.get( 'file_id' ), } )
+						'snippet': s.get( 'text' ), 'url': None, 'files_id': s.get( 'files_id' ), } )
 	
 	return sources
 
@@ -1960,6 +1960,12 @@ if 'embedding_model' not in st.session_state:
 if 'docqna_model' not in st.session_state:
 	st.session_state[ 'docqna_model' ] = ''
 
+if 'files_model' not in st.session_state:
+	st.session_state[ 'files_model' ] = ''
+
+if 'stores_model' not in st.session_state:
+	st.session_state[ 'stores_model' ] = ''
+
 if 'tts_model' not in st.session_state:
 	st.session_state[ 'tts_model' ] = ''
 
@@ -2278,101 +2284,101 @@ if 'audio_format' not in st.session_state:
 	st.session_state[ 'audio_format' ] = ''
 
 # ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
-if 'embedding_input_text' not in st.session_state:
-	st.session_state[ 'embedding_input_text' ] = ''
+if 'embeddings_input_text' not in st.session_state:
+	st.session_state[ 'embeddings_input_text' ] = ''
 
-if 'embedding_dimensions' not in st.session_state:
-	st.session_state[ 'embedding_dimensions' ] = 0
+if 'embeddings_dimensions' not in st.session_state:
+	st.session_state[ 'embeddings_dimensions' ] = 0
 
-if 'embedding_encoding_format' not in st.session_state:
-	st.session_state[ 'embedding_encoding_format' ] = ''
+if 'embeddings_encoding_format' not in st.session_state:
+	st.session_state[ 'embeddings_encoding_format' ] = ''
 
-if 'embedding_batch_size' not in st.session_state:
-	st.session_state[ 'embedding_batch_size' ] = 0
+if 'embeddings_batch_size' not in st.session_state:
+	st.session_state[ 'embeddings_batch_size' ] = 0
 
-if 'embedding_method' not in st.session_state:
-	st.session_state[ 'embedding_method' ] = ''
+if 'embeddings_method' not in st.session_state:
+	st.session_state[ 'embeddings_method' ] = ''
 
 # ------- FILES-SPECIFIC PARAMETERS --------------------------
-if 'purpose' not in st.session_state:
-	st.session_state[ 'purpose' ] = ''
+if 'files_purpose' not in st.session_state:
+	st.session_state[ 'files_purpose' ] = ''
 
-if 'file_type' not in st.session_state:
-	st.session_state[ 'file_type' ] = ''
+if 'files_type' not in st.session_state:
+	st.session_state[ 'files_type' ] = ''
 
-if 'file_id' not in st.session_state:
-	st.session_state[ 'file_id' ] = ''
+if 'files_id' not in st.session_state:
+	st.session_state[ 'files_id' ] = ''
 
-if 'file_url' not in st.session_state:
-	st.session_state[ 'file_url' ] = ''
+if 'files_url' not in st.session_state:
+	st.session_state[ 'files_url' ] = ''
 	
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
-if 'store_temperature' not in st.session_state:
-	st.session_state[ 'store_temperature' ] = 0.0
+if 'stores_temperature' not in st.session_state:
+	st.session_state[ 'stores_temperature' ] = 0.0
 
 if 'stores_top_percent' not in st.session_state:
 	st.session_state[ 'stores_top_percent' ] = 0.0
 
-if 'store_max_tokens' not in st.session_state:
-	st.session_state[ 'store_max_tokens' ] = 0
+if 'stores_max_tokens' not in st.session_state:
+	st.session_state[ 'stores_max_tokens' ] = 0
 
-if 'store_frequency_penalty' not in st.session_state:
-	st.session_state[ 'store_frequency_penalty' ] = 0.0
+if 'stores_frequency_penalty' not in st.session_state:
+	st.session_state[ 'stores_frequency_penalty' ] = 0.0
 
-if 'store_presense_penalty' not in st.session_state:
-	st.session_state[ 'store_presense_penalty' ] = 0.0
+if 'stores_presense_penalty' not in st.session_state:
+	st.session_state[ 'stores_presense_penalty' ] = 0.0
 
-if 'store_max_calls' not in st.session_state:
-	st.session_state[ 'store_max_calls' ] = 0
+if 'stores_max_calls' not in st.session_state:
+	st.session_state[ 'stores_max_calls' ] = 0
 
-if 'store_tool_choice' not in st.session_state:
-	st.session_state[ 'store_tool_choice' ] = ''
+if 'stores_tool_choice' not in st.session_state:
+	st.session_state[ 'stores_tool_choice' ] = ''
 
-if 'store_response_format' not in st.session_state:
-	st.session_state[ 'store_response_format' ] = ''
+if 'stores_response_format' not in st.session_state:
+	st.session_state[ 'stores_response_format' ] = ''
 
-if 'store_reasoning' not in st.session_state:
-	st.session_state[ 'store_reasoning' ] = ''
+if 'stores_reasoning' not in st.session_state:
+	st.session_state[ 'stores_reasoning' ] = ''
 
-if 'store_parallel_tools' not in st.session_state:
-	st.session_state[ 'store_parallel_tools' ] = False
+if 'stores_parallel_tools' not in st.session_state:
+	st.session_state[ 'stores_parallel_tools' ] = False
 
-if 'store_background' not in st.session_state:
-	st.session_state[ 'store_background' ] = False
+if 'stores_background' not in st.session_state:
+	st.session_state[ 'stores_background' ] = False
 
-if 'store_store' not in st.session_state:
-	st.session_state[ 'store_store' ] = False
+if 'stores_store' not in st.session_state:
+	st.session_state[ 'stores_store' ] = False
 
-if 'store_stream' not in st.session_state:
-	st.session_state[ 'store_stream' ] = False
+if 'stores_stream' not in st.session_state:
+	st.session_state[ 'stores_stream' ] = False
 
-if 'store_input' not in st.session_state:
-	st.session_state[ 'store_input' ] = [ ]
+if 'stores_input' not in st.session_state:
+	st.session_state[ 'stores_input' ] = [ ]
 
-if 'store_tools' not in st.session_state:
-	st.session_state[ 'store_tools' ] = [ ]
+if 'stores_tools' not in st.session_state:
+	st.session_state[ 'stores_tools' ] = [ ]
 
-if 'store_messages' not in st.session_state:
-	st.session_state[ 'store_messages' ] = [ ]
+if 'stores_messages' not in st.session_state:
+	st.session_state[ 'stores_messages' ] = [ ]
 
-if 'store_stops' not in st.session_state:
-	st.session_state[ 'store_stops' ] = [ ]
+if 'stores_stops' not in st.session_state:
+	st.session_state[ 'stores_stops' ] = [ ]
 
-if 'store_include' not in st.session_state:
-	st.session_state[ 'store_include' ] = [ ]
+if 'stores_include' not in st.session_state:
+	st.session_state[ 'stores_include' ] = [ ]
 
 # ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
 
-if 'store_id' not in st.session_state:
-	st.session_state[ 'store_id' ] = ''
+if 'stores_id' not in st.session_state:
+	st.session_state[ 'stores_id' ] = ''
 
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
-if 'files' not in st.session_state:
-	st.session_state[ 'files' ] = [ ]
+if 'docqna_files' not in st.session_state:
+	st.session_state[ 'docqna_files' ] = [ ]
 	
-if 'uploaded' not in st.session_state:
-	st.session_state[ 'uploaded' ] = ''
+if 'docqna_uploaded' not in st.session_state:
+	st.session_state[ 'docqna_uploaded' ] = ''
 
 if 'docqna_messages' not in st.session_state:
 	st.session_state.docqna_messages = [ ]
@@ -2380,11 +2386,11 @@ if 'docqna_messages' not in st.session_state:
 if 'docqna_active_docs' not in st.session_state:
 	st.session_state.docqna_active_docs = [ ]
 
-if 'doc_source' not in st.session_state:
-	st.session_state.doc_source = ''
+if 'docqna_source' not in st.session_state:
+	st.session_state.docqna_source = ''
 
-if 'doc_multi_mode' not in st.session_state:
-	st.session_state.doc_multi_mode = False
+if 'docqna_multi_mode' not in st.session_state:
+	st.session_state.docqna_multi_mode = False
 
 # ------- TOKEN PARAMATERS  ---------------------------
 if 'last_answer' not in st.session_state:
@@ -2396,7 +2402,7 @@ if 'last_sources' not in st.session_state:
 if 'last_analysis' not in st.session_state:
 	st.session_state.last_analysis = {
 			'tables': [ ],
-			'files': [ ],
+			'docqna_files': [ ],
 			'text': [ ],
 	}
 
@@ -2428,6 +2434,7 @@ with st.sidebar:
 		logo_path = cfg.LOGO_MAP.get( provider )
 		st.logo( logo_path, size='large', link=cfg.CRS )
 	
+	#-----API KEY Expander------------------------------
 	with st.expander( label='Keys:', icon='🔑', expanded=False ):
 		openai_key = st.text_input( 'OpenAI API Key', type='password',
 			value=st.session_state.openai_api_key or '',
@@ -2528,7 +2535,7 @@ if mode == 'Chat':
 			# -------------------------------
 			# Render user message
 			# -------------------------------
-			with st.chat_message( "user", avatar=cfg.ANALYST ):
+			with st.chat_message( 'user', avatar=cfg.ANALYST ):
 				st.markdown( user_input )
 			
 			# -------------------------------
@@ -2562,7 +2569,7 @@ if mode == 'Chat':
 							if url:
 								st.markdown( f"- [{title}]({url})" )
 							elif src.get( "file_id" ):
-								st.markdown( f"- {title} _(Vector Store File: `{src[ 'file_id' ]}`)_" )
+								st.markdown( f"- {title} _(Vector Store File: `{src[ 'files_id' ]}`)_" )
 					
 					# -------------------------------
 					# Extract and render text output
@@ -2922,7 +2929,6 @@ elif mode == 'Text':
 						except Exception:
 							pass
 			
-
 # ======================================================================================
 # IMAGES MODE
 # ======================================================================================
@@ -3792,9 +3798,9 @@ elif mode == 'Embeddings':
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	embedding_model = st.session_state.get( 'embedding_model' )
-	dimensions = st.session_state.get( 'embedding_dimensions' )
-	encoding = st.session_state.get( 'embedding_encoding_format' )
-	input_text = st.session_state.get( 'embedding_input_text' )
+	dimensions = st.session_state.get( 'embeddings_dimensions' )
+	encoding = st.session_state.get( 'embeddings_encoding_format' )
+	input_text = st.session_state.get( 'embeddings_input_text' )
 	embedding = provider_module.Embeddings( )
 	
 	# ------------------------------------------------------------------
@@ -3819,16 +3825,16 @@ elif mode == 'Embeddings':
 			
 			with llm_c2:
 				set_encoding_format = st.selectbox( 'Encoding Format:',
-					options=embedding.encoding_options, key='embedding_encoding_format',
+					options=embedding.encoding_options, key='embeddings_encoding_format',
 					help='REQUIRED: The format to return the embeddings in. float or base64')
-				embedding_encoding_format = st.session_state[ 'embedding_encoding_format' ]
+				embedding_encoding_format = st.session_state[ 'embeddings_encoding_format' ]
 			
 			with llm_c3:
 				set_embedding_dimensions = st.number_input( 'Dimensions', min_value=0,
-					max_value=2048, step=1, key='embedding_dimensions',
+					max_value=2048, step=1, key='embeddings_dimensions',
 					help='Optional (large models only): An integer between 1 and 2048',
 					width='stretch' )
-				embedding_dimensions = st.session_state[ 'embedding_dimensions' ]
+				embedding_dimensions = st.session_state[ 'embeddings_dimensions' ]
 			
 			with llm_c4:
 				st.number_input( 'Chunk Size (tokens)', min_value=50, max_value=2000,
@@ -3840,8 +3846,8 @@ elif mode == 'Embeddings':
 				# ----------------------------------------------------------
 				# Remove Embedding Configuration session keys
 				# ----------------------------------------------------------
-				for key in [ 'embedding_model', 'embedding_dimensions', 'embedding_encoding_format',
-						'embedding_input_text', ]:
+				for key in [ 'embedding_model', 'embeddings_dimensions', 'embeddings_encoding_format',
+						'embeddings_input_text', ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
 				
@@ -3850,7 +3856,7 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		# Main UI — Embedding execution (unchanged behavior)
 		# ------------------------------------------------------------------
-		set_input_text = st.text_area( 'Text to embed', key='embedding_input_text' )
+		set_input_text = st.text_area( 'Text to embed', key='embeddings_input_text' )
 		btn_left, btn_right = st.columns( [ 0.50, 0.50 ] )
 		
 		with btn_left:
@@ -3918,7 +3924,7 @@ elif mode == 'Embeddings':
 				# Clear Embedding State
 				# ----------------------------------------------------------
 				for key in [ 'embeddings', 'embedding_chunks', 'embedding_df',
-						'embedding_input_text' ]:
+						'embeddings_input_text' ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
 				
@@ -3928,8 +3934,8 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		# TEXT METRICS (Render Above Buttons – Safe Append)
 		# ------------------------------------------------------------------
-		if st.session_state.get( 'embedding_input_text' ):
-			input_text: str = st.session_state.get( 'embedding_input_text', '' ).strip( )
+		if st.session_state.get( 'embeddings_input_text' ):
+			input_text: str = st.session_state.get( 'embeddings_input_text', '' ).strip( )
 			
 		if input_text:
 			words = input_text.split( )
@@ -3940,11 +3946,11 @@ elif mode == 'Embeddings':
 			ttr = (unique_words / total_words) if total_words > 0 else 0.0
 			
 			col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns( 5, border=True )
-			col_m1.metric( "Tokens", token_count )
-			col_m2.metric( "Words", total_words )
-			col_m3.metric( "Unique Words", unique_words )
-			col_m4.metric( "TTR", f"{ttr:.3f}" )
-			col_m5.metric( "Characters", char_count )
+			col_m1.metric( 'Tokens', token_count )
+			col_m2.metric( 'Words', total_words )
+			col_m3.metric( 'Unique Words', unique_words )
+			col_m4.metric( 'TTR', f"{ttr:.3f}" )
+			col_m5.metric( 'Characters', char_count )
 			
 			st.session_state[ 'embedding_metrics' ] = { 'tokens': token_count, 'words': total_words,
 					'unique_words': unique_words, 'ttr': ttr, 'characters': char_count }
@@ -3973,19 +3979,19 @@ elif mode == 'Embeddings':
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	stores_model = st.session_state.get( 'stores_model', None )
-	stores_format = st.session_state.get( 'store_response_format', None )
+	stores_format = st.session_state.get( 'stores_response_format', None )
 	stores_top_percent = st.session_state.get( 'stores_top_percent', None )
-	stores_frequency = st.session_state.get( 'store_frequency_penalty', None )
-	stores_presense = st.session_state.get( 'store_presense_penalty', None )
+	stores_frequency = st.session_state.get( 'stores_frequency_penalty', None )
+	stores_presense = st.session_state.get( 'stores_presense_penalty', None )
 	stores_number = st.session_state.get( 'stores_number', None )
-	stores_temperature = st.session_state.get( 'store_temperature', None )
-	stores_stream = st.session_state.get( 'store_stream', None )
-	stores_store = st.session_state.get( 'store_store', None )
-	stores_input = st.session_state.get( 'store_input', None )
-	stores_reasoning = st.session_state.get( 'store_reasoning', None )
-	vectorstores_choice = st.session_state.get( 'store_tool_choice', None )
-	stores_messages = st.session_state.get( 'store_messages', None )
-	stores_background = st.session_state.get( 'store_background', None )
+	stores_temperature = st.session_state.get( 'stores_temperature', None )
+	stores_stream = st.session_state.get( 'stores_stream', None )
+	stores_store = st.session_state.get( 'stores_store', None )
+	stores_input = st.session_state.get( 'stores_input', None )
+	stores_reasoning = st.session_state.get( 'stores_reasoning', None )
+	vectorstores_choice = st.session_state.get( 'stores_tool_choice', None )
+	stores_messages = st.session_state.get( 'stores_messages', None )
+	stores_background = st.session_state.get( 'stores_background', None )
 	vector = None
 	collector  = None
 	searcher = None
@@ -4336,12 +4342,12 @@ elif mode == 'Document Q&A':
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	files = st.session_state.get( 'files' )
-	uploaded = st.session_state.get( 'uploaded' )
-	doc_messages = st.session_state.get( 'docqna_messages' )
+	files = st.session_state.get( 'docqna_files' )
+	uploaded = st.session_state.get( 'docqna_uploaded' )
+	docqna_messages = st.session_state.get( 'docqna_messages' )
 	doc_active_docs = st.session_state.get( 'docqna_active_docs' )
-	doc_source = st.session_state.get( 'doc_source' )
-	doc_multi_mode = st.session_state.get( 'doc_multi_mode' )
+	doc_source = st.session_state.get( 'docqna_source' )
+	doc_multi_mode = st.session_state.get( 'docqna_multi_mode' )
 	
 	# ------------------------------------------------------------------
 	#  DOCQA SETTINGS
@@ -4468,10 +4474,10 @@ elif mode == 'Document Q&A':
 elif mode == 'Files':
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
-	purpose = st.session_state.get( 'purpose' )
-	file_type = st.session_state.get( 'file_type' )
-	file_id = st.session_state.get( 'file_id' )
-	file_url = st.session_state.get( 'file_url' )
+	purpose = st.session_state.get( 'files_purpose' )
+	file_type = st.session_state.get( 'files_type' )
+	file_id = st.session_state.get( 'files_id' )
+	file_url = st.session_state.get( 'files_url' )
 	try:
 		chat  # type: ignore
 	except NameError:
@@ -4513,7 +4519,7 @@ elif mode == 'Files':
 				for f in files_list:
 					rows.append( { 'id': str( getattr( f, 'id', "" ) ),
 							'filename': str( getattr( f, 'filename', "" ) ),
-							'purpose': str( getattr( f, 'purpose', "" ) ), } )
+							'files_purpose': str( getattr( f, 'files_purpose', "" ) ), } )
 				
 				st.session_state.files_table = rows
 			
@@ -5340,18 +5346,18 @@ st.markdown(
 # ======================================================================================
 # FOOTER RENDERING
 # ======================================================================================
-_mode_to_model_key = {
-		'Text': 'text_model',
-		'Images': 'image_model',
-		'Audio': 'audio_model',
-		'Embeddings': 'embed_model',
+_mode_to_model_key = \
+{
+	'Text': 'text_model',
+	'Images': 'image_model',
+	'Audio': 'audio_model',
+	'Embeddings': 'embed_model',
 }
 
-provider_val = st.session_state.get( "provider", "—" )
-mode_val = mode or "—"
+provider_val = st.session_state.get( 'provider', '—' )
+mode_val = mode or '—'
 active_model = st.session_state.get( _mode_to_model_key.get( mode, "" ), None )
 right_parts = [ ]
-
 if active_model is not None:
 	right_parts.append( f'Model: {active_model}' )
 
@@ -5536,8 +5542,8 @@ elif mode == 'Audio':
 
 elif mode == 'Embeddings':
 	model = st.session_state.get( 'embedding_model' )
-	dimensions = st.session_state.get( 'embedding_dimensions' )
-	encoding = st.session_state.get( 'embedding_encoding_format' )
+	dimensions = st.session_state.get( 'embeddings_dimensions' )
+	encoding = st.session_state.get( 'embeddings_encoding_format' )
 	input_data = st.session_state.get( 'embedding_text_input' )
 	
 	if model is not None:
@@ -5553,10 +5559,10 @@ elif mode == 'Embeddings':
 		right_parts.append( 'Input: Set' )
 
 elif mode == 'Files':
-	purpose = st.session_state.get( 'purpose' )
-	file_type = st.session_state.get( 'file_type' )
-	file_id = st.session_state.get( 'file_id' )
-	file_url = st.session_state.get( 'file_url' )
+	purpose = st.session_state.get( 'files_purpose' )
+	file_type = st.session_state.get( 'files_type' )
+	file_id = st.session_state.get( 'files_id' )
+	file_url = st.session_state.get( 'files_url' )
 	
 	if purpose is not None:
 		right_parts.append( f'Purpose: {purpose}' )
@@ -5572,19 +5578,19 @@ elif mode == 'Files':
 
 elif mode == 'VectorStores':
 	model = st.session_state.get( 'stores_model' )
-	fmt = st.session_state.get( 'store_response_format' )
-	temperature = st.session_state.get( 'store_temperature' )
+	fmt = st.session_state.get( 'stores_response_format' )
+	temperature = st.session_state.get( 'stores_temperature' )
 	top_p = st.session_state.get( 'stores_top_percent' )
-	freq = st.session_state.get( 'store_frequency_penalty' )
-	presence = st.session_state.get( 'store_presense_penalty' )
+	freq = st.session_state.get( 'stores_frequency_penalty' )
+	presence = st.session_state.get( 'stores_presense_penalty' )
 	number = st.session_state.get( 'stores_number' )
-	stream = st.session_state.get( 'store_stream' )
-	store = st.session_state.get( 'store_store' )
-	input_data = st.session_state.get( 'store_input' )
-	reasoning = st.session_state.get( 'store_reasoning' )
-	tool_choice = st.session_state.get( 'store_tool_choice' )
-	messages = st.session_state.get( 'store_messages' )
-	background = st.session_state.get( 'store_background' )
+	stream = st.session_state.get( 'stores_stream' )
+	store = st.session_state.get( 'stores_store' )
+	input_data = st.session_state.get( 'stores_input' )
+	reasoning = st.session_state.get( 'stores_reasoning' )
+	tool_choice = st.session_state.get( 'stores_tool_choice' )
+	messages = st.session_state.get( 'stores_messages' )
+	background = st.session_state.get( 'stores_background' )
 	
 	if model is not None:
 		right_parts.append( f'Model: {model}' )
@@ -5628,7 +5634,7 @@ elif mode == 'VectorStores':
 	if background:
 		right_parts.append( 'Background: On' )
 
-right_text = " ◽ ".join( right_parts ) if right_parts else "—"
+right_text = ' ◽ '.join( right_parts ) if right_parts else '—'
 
 # ---- Rendering Method
 st.markdown(
