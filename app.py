@@ -1976,8 +1976,8 @@ if 'translation_model' not in st.session_state:
 	st.session_state[ 'translation_model' ] = ''
 
 # --------SYSTEM PARAMETERS----------------------
-if 'chat_instructions' not in st.session_state:
-	st.session_state[ 'chat_instructions' ] = ''
+if 'chat_system_instructions' not in st.session_state:
+	st.session_state[ 'chat_system_instructions' ] = ''
 	
 if 'text_system_instructions' not in st.session_state:
 	st.session_state[ 'text_system_instructions' ] = ''
@@ -2857,7 +2857,7 @@ elif mode == 'Text':
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
 			
 			def _on_template_change( ) -> None:
-				name = st.session_state.get( 'chat_instructions' )
+				name = st.session_state.get( 'text_system_instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
@@ -2865,11 +2865,10 @@ elif mode == 'Text':
 			
 			with in_right:
 				st.selectbox( label='Use Template', options=prompt_names, placeholder='',
-					key='chat_instructions', on_change=_on_template_change )
+					key='text_system_instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'text_system_instructions' ] = ''
-				st.session_state[ 'chat_instructions' ] = ''
 			
 			st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
 			
@@ -2895,7 +2894,7 @@ elif mode == 'Text':
 				gen_kwargs = { }
 				
 				with st.spinner( 'Thinking…' ):
-					gen_kwargs[ 'chat_model' ] = st.session_state[ 'text_model' ]
+					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
 					gen_kwargs[ 'top_percent' ] = st.session_state[ 'text_top_percent' ]
 					gen_kwargs[ 'background' ] = st.session_state[ 'text_background' ]
 					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'text_max_tokens' ]
@@ -3283,7 +3282,7 @@ elif mode == "Images":
 					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
 			
 			def _on_template_change( ) -> None:
-				name = st.session_state.get( 'chat_instructions' )
+				name = st.session_state.get( 'image_system_instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
@@ -3291,11 +3290,10 @@ elif mode == "Images":
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='chat_instructions', on_change=_on_template_change )
+					key='set_image_instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'image_system_instructions' ] = ''
-				st.session_state[ 'chat_instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -3702,7 +3700,7 @@ elif mode == "Audio":
 					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
 			
 			def _on_template_change( ) -> None:
-				name = st.session_state.get( 'chat_instructions' )
+				name = st.session_state.get( 'audio_system_instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
@@ -3710,11 +3708,10 @@ elif mode == "Audio":
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='chat_instructions', on_change=_on_template_change )
+					key='audio_system_instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'audio_system_instructions' ] = ''
-				st.session_state[ 'chat_instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
