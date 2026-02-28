@@ -582,6 +582,94 @@ class Images( Gemini ):
 			exception.cause = 'Images'
 			exception.method = 'generate( self, prompt, aspect ) -> Image'
 			raise exception
+	
+	def analyze( self, prompt: str, model: str = 'gemini-2.5-flash-image', aspect: str = None,
+			number: int = None, temperature: float = None, top_p: float = None,
+			frequency: float = None, presence: float = None, max_tokens: int = None,
+			instruct: str = None ) -> Optional[ Image ]:
+		"""
+			
+			Purpose:
+			-----------
+			Generates a new image based on a descriptive text prompt.
+			
+			Parameters:
+			-----------
+			prompt: str - Image description.
+			aspect: str - Aspect ratio.
+			
+			Returns:
+			--------
+			Optional[ Image ] - The Image data object.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.model = model
+			self.number = number
+			self.aspect_ratio = aspect
+			self.top_p = top_p
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.instructions = instruct
+			self.genimg_config = GenerateImagesConfig( aspect_ratio=self.aspect_ratio,
+				number_of_images=self.number )
+			response = self.client.models.generate_images( model=self.model,
+				prompt=self.prompt, config=self.genimg_config )
+			return response.generated_images[ 0 ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Images'
+			exception.method = 'generate( self, prompt, aspect ) -> Image'
+			raise exception
+	
+	def edit( self, prompt: str, model: str = 'gemini-2.5-flash-image', aspect: str = None,
+			number: int = None, temperature: float = None, top_p: float = None,
+			frequency: float = None, presence: float = None, max_tokens: int = None,
+			instruct: str = None ) -> Optional[ Image ]:
+		"""
+			
+			Purpose:
+			-----------
+			Generates a new image based on a descriptive text prompt.
+			
+			Parameters:
+			-----------
+			prompt: str - Image description.
+			aspect: str - Aspect ratio.
+			
+			Returns:
+			--------
+			Optional[ Image ] - The Image data object.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.model = model
+			self.number = number
+			self.aspect_ratio = aspect
+			self.top_p = top_p
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.instructions = instruct
+			self.genimg_config = GenerateImagesConfig( aspect_ratio=self.aspect_ratio,
+				number_of_images=self.number )
+			response = self.client.models.generate_images( model=self.model,
+				prompt=self.prompt, config=self.genimg_config )
+			return response.generated_images[ 0 ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Images'
+			exception.method = 'generate( self, prompt, aspect ) -> Image'
+			raise exception
 
 class Embeddings( Gemini ):
 	'''
