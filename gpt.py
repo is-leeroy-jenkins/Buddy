@@ -81,13 +81,13 @@ class GPT:
 	background: Optional[ bool ]
 	number: Optional[ int ]
 	response_format: Optional[ str ]
-	messages: Optional[ List[ Dict[ str, str ] ] ]
+	context: Optional[ List[ Dict[ str, str ] ] ]
 	instructions: Optional[ str ]
 	
 	def __init__( self, model: str='gpt-5-nano', prompt: str=None, temperature: float=None,
 			top_p: float=None, presence: float=None, store: bool=None, stream: bool=None,
 			stops: List[ str ]=[ ], format: str=None, number: int=None, instruct: str=None,
-			messages: List[ Dict[ str, str ] ]=[ ], background: bool=None,
+			context: List[ Dict[ str, str ] ]=[ ], background: bool=None,
 			max_tokens: int=None, frequency: float=None ):
 		self.api_key = cfg.OPENAI_API_KEY
 		self.model = model
@@ -106,7 +106,7 @@ class GPT:
 		self.stream = stream
 		self.background = background
 		self.instructions = instruct
-		self.messages = messages
+		self.context = context
 
 class Chat( GPT ):
 	"""
@@ -200,7 +200,7 @@ class Chat( GPT ):
 	def __init__( self, model: str='gpt-5-nano', prompt: str=None, temperature: float=None,
 			top_p: float=None, presense: float=None, store: bool=None, stream: bool=None,
 			stops: List[ str ]=[ ], format: str=None, number: int=None,
-			instruct: str=None, messages: List[ Dict[ str, str ] ]=[ ], domains: List[ str ]=[ ],
+			instruct: str=None, context: List[ Dict[ str, str ] ]=[ ], domains: List[ str ]=[ ],
 			include: List[ Dict[ str, str ] ]=[ ], tools: List[ Dict[ str, str ] ]=[ ],
 			max_tools: Optional[ int ]=None, tool_choice: Optional[ str ]=None, file_path: str=None,
 			background: bool=None, is_parallel: bool=None, max_tokens: int=None, frequency: float=None,
@@ -208,7 +208,7 @@ class Chat( GPT ):
 			reasoning: Dict[ str, str ]={}, output_text: str=None, max_search_results: Optional[ int ]=None,
 			content: str=None, vector_store_ids: Optional[ List[ str ] ]=None ):
 		super( ).__init__( model, prompt, temperature, top_p, presense, store, stream, stops,
-			format, number, instruct, messages, background, max_tokens, frequency )
+			format, number, instruct, context, background, max_tokens, frequency )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.model = model
@@ -218,12 +218,13 @@ class Chat( GPT ):
 		self.frequency_penalty = frequency
 		self.presence_penalty = presense
 		self.max_tokens = max_tokens
+		self.context = context
 		self.stream = stream
 		self.store = store
 		self.instructions = instruct
 		self.stops = stops
 		self.background = background
-		self.messages = messages
+		self.conetxt = context
 		self.response_format = format
 		self.input = input
 		self.include = include

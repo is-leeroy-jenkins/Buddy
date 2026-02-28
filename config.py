@@ -57,6 +57,7 @@ CLOSE_TAG = re.compile( r'</([A-Za-z0-9_\-:.]+)>' )
 MARKDOWN_HEADING_PATTERN = re.compile( r'^##\s+(?P<title>.+?)\s*$' )
 XML_BLOCK_PATTERN = re.compile( r'<(?P<tag>[a-zA-Z0-9_:-]+)>(?P<body>.*?)</\1>', re.DOTALL )
 DB_PATH = 'stores/sqlite/Data.db'
+AUDIO_TEST_FILE = r'stores/audio/conditions.mp3'
 ANALYST = '❓'
 BUDDY = '🧠'
 GPT_AVATAR = r'resources/images/gpt_avatar.png'

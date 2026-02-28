@@ -2054,11 +2054,14 @@ if 'last_sources' not in st.session_state:
 	st.session_state[ 'last_sources' ] = [ ]
 
 # --------TEXT-GENERATION PARAMETERS--------------------
-if 'text_max_tokens' not in st.session_state:
-	st.session_state[ 'text_max_tokens' ] = 0
+if 'text_number' not in st.session_state:
+	st.session_state[ 'text_number' ] = 0
 
 if 'text_max_calls' not in st.session_state:
 	st.session_state[ 'text_max_calls' ] = 0
+
+if 'text_max_tokens' not in st.session_state:
+	st.session_state[ 'text_max_tokens' ] = 0
 
 if 'text_temperature' not in st.session_state:
 	st.session_state[ 'text_temperature' ] = 0.0
@@ -2093,8 +2096,8 @@ if 'text_tool_choice' not in st.session_state:
 if 'text_reasoning' not in st.session_state:
 	st.session_state[ 'text_reasoning' ] = ''
 
-if 'text_content' not in st.session_state:
-	st.session_state[ 'text_content' ] = ''
+if 'text_input' not in st.session_state:
+	st.session_state[ 'text_input' ] = ''
 
 if 'text_stops' not in st.session_state:
 	st.session_state[ 'text_stops' ] = [ ]
@@ -2105,14 +2108,14 @@ if 'text_include' not in st.session_state:
 if 'text_domains' not in st.session_state:
 	st.session_state[ 'text_domains' ] = [ ]
 
-if 'text_input' not in st.session_state:
-	st.session_state[ 'text_input' ] = [ ]
-
 if 'text_tools' not in st.session_state:
-	st.session_state.text_tools: List[ Dict[ str, Any ] ] = [ ]
+	st.session_state[ 'text_tools' ] = [ ]
 
-if 'text_messages' not in st.session_state:
-	st.session_state[ 'text_messages' ] = [ ]
+if 'text_context' not in st.session_state:
+	st.session_state[ 'text_context' ] = [ ]
+
+if 'text_content' not in st.session_state:
+	st.session_state[ 'text_content' ] = [ ]
 
 # --------IMAGE-GENERATION PARAMETERS--------------------
 if 'image_max_tokens' not in st.session_state:
@@ -2151,12 +2154,6 @@ if 'image_tool_choice' not in st.session_state:
 if 'image_reasoning' not in st.session_state:
 	st.session_state[ 'image_reasoning' ] = ''
 
-if 'image_quality' not in st.session_state:
-	st.session_state[ 'image_quality' ] = ''
-
-if 'image_format' not in st.session_state:
-	st.session_state[ 'image_format' ] = ''
-
 if 'image_response_format' not in st.session_state:
 	st.session_state[ 'image_response_format' ] = ''
 
@@ -2169,8 +2166,8 @@ if 'image_include' not in st.session_state:
 if 'image_tools' not in st.session_state:
 	st.session_state.image_tools: List[ Dict[ str, Any ] ] = [ ]
 
-if 'image_messages' not in st.session_state:
-	st.session_state.image_messages: List[ Dict[ str, Any ] ] = [ ]
+if 'image_context' not in st.session_state:
+	st.session_state.image_context: List[ Dict[ str, Any ] ] = [ ]
 
 if 'image_domains' not in st.session_state:
 	st.session_state[ 'image_domains' ] = [ ]
@@ -2182,9 +2179,6 @@ if 'image_content' not in st.session_state:
 if 'image_mode' not in st.session_state:
 	st.session_state[ 'image_mode' ] = ''
 	
-if 'image_size' not in st.session_state:
-	st.session_state[ 'image_size' ] = ''
-
 if 'image_style' not in st.session_state:
 	st.session_state[ 'image_style' ] = ''
 
@@ -2194,14 +2188,17 @@ if 'image_detail' not in st.session_state:
 if 'image_backcolor' not in st.session_state:
 	st.session_state[ 'image_backcolor' ] = ''
 
-if 'image_quality' not in st.session_state:
-	st.session_state[ 'image_quality' ] = ''
-
 if 'image_output' not in st.session_state:
 	st.session_state[ 'image_output' ] = ''
 
 if 'image_url' not in st.session_state:
 	st.session_state[ 'image_url' ] = ''
+	
+if 'image_size' not in st.session_state:
+	st.session_state[ 'image_size' ] = ''
+	
+if 'image_quality' not in st.session_state:
+	st.session_state[ 'image_quality' ] = ''
 
 # --------AUDIO-GENERATION PARAMETERS--------------------
 if 'audio_max_tokens' not in st.session_state:
@@ -2228,6 +2225,9 @@ if 'audio_store' not in st.session_state:
 if 'audio_stream' not in st.session_state:
 	st.session_state[ 'audio_stream' ] = False
 
+if 'audio_task' not in st.session_state:
+	st.session_state[ 'audio_task' ] = ''
+
 if 'audio_tool_choice' not in st.session_state:
 	st.session_state[ 'audio_tool_choice' ] = ''
 
@@ -2235,13 +2235,10 @@ if 'audio_reasoning' not in st.session_state:
 	st.session_state[ 'audio_reasoning' ] = ''
 
 if 'audio_response_format' not in st.session_state:
-	st.session_state[ 'audio_response_format' ] = { }
+	st.session_state[ 'audio_response_format' ] = ''
 
 if 'audio_input' not in st.session_state:
-	st.session_state[ 'audio_input' ] = [ ]
-
-if 'audio_input' not in st.session_state:
-	st.session_state[ 'audio_input' ] = [ ]
+	st.session_state[ 'audio_input' ] = ''
 
 if 'audio_stops' not in st.session_state:
 	st.session_state[ 'audio_stops' ] = [ ]
@@ -2252,36 +2249,36 @@ if 'audio_includes' not in st.session_state:
 if 'audio_tools' not in st.session_state:
 	st.session_state.audio_tools: List[ Dict[ str, Any ] ] = [ ]
 
-if 'audio_messages' not in st.session_state:
-	st.session_state.audio_messages: List[ Dict[ str, Any ] ] = [ ]
+if 'audio_context' not in st.session_state:
+	st.session_state.audio_context: List[ Dict[ str, Any ] ] = [ ]
 
 #-------AUDIO-SECIFIC PARAMETERS--------------
 if 'audio_file' not in st.session_state:
 	st.session_state[ 'audio_file' ] = ''
 
-if 'sample_rate' not in st.session_state:
-	st.session_state[ 'sample_rate' ] = 0
+if 'audio_rate' not in st.session_state:
+	st.session_state[ 'audio_rate' ] = [ ]
 
-if 'language' not in st.session_state:
-	st.session_state[ 'language' ] = ''
+if 'audio_language' not in st.session_state:
+	st.session_state[ 'audio_language' ] = ''
 
-if 'voice' not in st.session_state:
-	st.session_state[ 'voice' ] = ''
+if 'audio_voice' not in st.session_state:
+	st.session_state[ 'audio_voice' ] = ''
 
-if 'start_time' not in st.session_state:
-	st.session_state[ 'start_time' ] = 0.0
+if 'audio_start_time' not in st.session_state:
+	st.session_state[ 'audio_start_time' ] = 0.0
 
-if 'end_time' not in st.session_state:
-	st.session_state[ 'end_time' ] = 0.0
+if 'audio_end_time' not in st.session_state:
+	st.session_state[ 'audio_end_time' ] = 0.0
 
-if 'loop' not in st.session_state:
-	st.session_state[ 'loop' ] = False
+if 'audio_loop' not in st.session_state:
+	st.session_state[ 'audio_loop' ] = False
 	
-if 'play' not in st.session_state:
-	st.session_state[ 'play' ] = False
+if 'audio_autoplay' not in st.session_state:
+	st.session_state[ 'audio_autoplay' ] = False
 
-if 'audio_format' not in st.session_state:
-	st.session_state[ 'audio_format' ] = ''
+if 'audio_output' not in st.session_state:
+	st.session_state[ 'audio_output' ] = ''
 
 # ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
 if 'embeddings_input_text' not in st.session_state:
@@ -2373,6 +2370,25 @@ if 'stores_include' not in st.session_state:
 if 'stores_id' not in st.session_state:
 	st.session_state[ 'stores_id' ] = ''
 
+# ------ DOCQNA GENERATION PARAMETERS -----------------
+if 'docqna_max_tools' not in st.session_state:
+	st.session_state[ 'docqna_max_tools' ] = 0
+
+if 'docqna_max_tokens' not in st.session_state:
+	st.session_state[ 'docqna_max_tokens' ] = 0
+
+if 'docqna_temperature' not in st.session_state:
+	st.session_state[ 'docqna_temperature' ] = 0.0
+
+if 'docqna_top_percent' not in st.session_state:
+	st.session_state[ 'docqna_top_percent' ] = 0.0
+
+if 'docqna_frequency_penalty' not in st.session_state:
+	st.session_state[ 'docqna_frequency_penalty' ] = 0.0
+
+if 'docqna_presense_penalty' not in st.session_state:
+	st.session_state[ 'docqna_presense_penalty' ] = 0.0
+	
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'docqna_files' not in st.session_state:
 	st.session_state[ 'docqna_files' ] = [ ]
@@ -2605,7 +2621,7 @@ elif mode == 'Text':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	text_number = st.session_state.get( 'text_number', 0 )
 	text_max_calls = st.session_state.get( 'text_max_calls', 0 )
-	text_tokens = st.session_state.get( 'text_max_tokens', 0 )
+	text_max_tokens = st.session_state.get( 'text_max_tokens', 0 )
 	text_top_percent = st.session_state.get( 'text_top_percent', 0.0 )
 	text_freq = st.session_state.get( 'text_frequency_penalty', 0.0 )
 	text_presense = st.session_state.get( 'text_presense_penalty', 0.0 )
@@ -2619,16 +2635,15 @@ elif mode == 'Text':
 	text_response_format = st.session_state.get( 'text_response_format', '' )
 	text_choice = st.session_state.get( 'text_tool_choice', '' )
 	text_content = st.session_state.get( 'text_content', '' )
+	text_input = st.session_state.get( 'text_input', '' )
 	text_tools = st.session_state.get( 'text_tools', [ ] )
+	text_context = st.session_state.get( 'text_context', [ ] )
 	text_include = st.session_state.get( 'text_include', [ ] )
 	text_domains = st.session_state.get( 'text_domains', [ ] )
 	text_stops = st.session_state.get( 'text_stops', [ ] )
-	text_input = st.session_state.get( 'text_input', [ ] )
-	text_messages = st.session_state.get( 'text_messages', [ ] )
 	text = provider_module.Chat( )
 	
-	for key in [ 'text_domains', 'text_stops', 'text_tools',
-	             'text_includes', 'text_input',  ]:
+	for key in [ 'text_domains', 'text_stops', 'text_includes', 'text_input',  ]:
 		if key in st.session_state and isinstance( st.session_state[ key ], list ):
 			del st.session_state[ key ]
 		
@@ -2662,17 +2677,20 @@ elif mode == 'Text':
 					with llm_c1:
 						model_options = list( text.model_options )
 						set_text_model = st.selectbox( label='Select Model', options=model_options,
-							help='REQUIRED. Text Generation model used by the AI',
-							key='text_model', placeholder='Options' )
+							key='text_model', placeholder='Options', index=None,
+							help = 'REQUIRED. Text Generation model used by the AI', )
 						
 						text_model = st.session_state[ 'text_model' ]
 					
 					with llm_c2:
 						include_options = list( text.include_options )
-						set_text_includes = st.multiselect( label='Include:', options=include_options,
+						set_text_include = st.multiselect( label='Include:', options=include_options,
 							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
 						
-						text_includes = st.session_state[ 'text_include' ]
+						text_include = [ d.strip( ) for d in set_text_include
+						                 if d.strip( ) ]
+						
+						text_include = st.session_state[ 'text_include' ]
 					
 					with llm_c3:
 						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
@@ -2683,12 +2701,12 @@ elif mode == 'Text':
 								if d.strip( ) ]
 						
 						st.session_state[ 'text_domains' ] = text_domains
-
+					
 					with llm_c4:
 						reasoning_options = list( text.reasoning_options )
 						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
 							options=reasoning_options, key='text_reasoning',
-							help=cfg.REASONING, placeholder='Options'  )
+							help=cfg.REASONING, index=None, placeholder='Options'  )
 						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
@@ -2712,19 +2730,23 @@ elif mode == 'Text':
 				
 				with prm_c1:
 					set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+						value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
 						step=0.01, help=cfg.TOP_P, key='text_top_percent' )
+					
 					text_top_percent = st.session_state[ 'text_top_percent' ]
 				
 				with prm_c2:
 					set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
 						value=float( st.session_state.get( 'text_frequency_penalty', 0.0 )),
 						step=0.01, help=cfg.FREQUENCY_PENALTY, key='text_frequency_penalty' )
+					
 					text_fequency = st.session_state[ 'text_frequency_penalty' ]
 				
 				with prm_c3:
 					set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
 						value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
 						step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presense_penalty' )
+					
 					text_presense = st.session_state[ 'text_presense_penalty' ]
 				
 				with prm_c4:
@@ -2735,9 +2757,11 @@ elif mode == 'Text':
 					text_temperature = st.session_state[ 'text_temperature' ]
 				
 				with prm_c5:
-					set_text_number = st.number_input( label='Number', min_value=1, max_value=4,
-						step=1, help='Optional. Upper limit on the responses returned by the model',
+					set_text_number = st.slider( label='Number', min_value=0, max_value=4,
+						value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+						help='Optional. Upper limit on the responses returned by the model',
 						key='text_number' )
+					
 					text_number = st.session_state[ 'text_number' ]
 				
 				if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
@@ -2761,31 +2785,39 @@ elif mode == 'Text':
 				with tool_c1:
 					set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
 						help=cfg.PARALLEL_TOOL_CALLS )
+					
 					text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 				
 				with tool_c2:
-					set_text_calls = st.number_input( label='Max Calls', min_value=0, max_value=5,
-						step=1, help=cfg.MAX_TOOL_CALLS, key='text_max_tools' )
-					text_max_tools = st.session_state[ 'text_max_tools' ]
+					set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=5,
+						value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
+						help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+					
+					text_max_calls = st.session_state[ 'text_max_calls' ]
 				
 				with tool_c3:
-					choice_options = text.choice_options
-					set_text_choice = st.multiselect( label='Tool Choice:', options=choice_options,
-						key='text_tool_choice', help=cfg.CHOICE, placeholder='Options' )
+					choice_options = list( text.choice_options )
+					set_text_choice = st.selectbox( label='Tool Choice:', options=choice_options,
+						key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+					
 					text_tool_choice = st.session_state[ 'text_tool_choice' ]
 				
 				with tool_c4:
-					tool_options = text.tool_options
+					tool_options = list( text.tool_options )
 					set_text_tools = st.multiselect( label='Tools:', options=tool_options,
 						key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+					
+					text_tools = [ d.strip( ) for d in set_text_tools
+					                 if d.strip( ) ]
+					
 					text_tools = st.session_state[ 'text_tools' ]
 				
 				if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
 					# ----------------------------------------------------------
 					# Remove Tool Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'text_parallel_tools', 'text_max_tools',
-					             'text_tool_choice', 'text_tools', ]:
+					for key in [ 'text_parallel_tools', 'text_tool_choice',
+					             'text_tools', 'text_max_calls' ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -2820,12 +2852,13 @@ elif mode == 'Text':
 						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
 							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
 						
-						text_stops = [ d.strip( ) for d in set_text_domains.split( ',' )
+						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
 						               if d.strip( ) ]
 					
 					with resp_c5:
-						set_text_tokens = st.number_input( label='Max Tokens', min_value=0, max_value=100000,
-							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
@@ -2865,7 +2898,7 @@ elif mode == 'Text':
 			
 			with in_right:
 				st.selectbox( label='Use Template', options=prompt_names, placeholder='',
-					key='text_system_instructions', on_change=_on_template_change )
+					key='set_text_instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'text_system_instructions' ] = ''
@@ -2874,9 +2907,9 @@ elif mode == 'Text':
 			
 		
 		# ----------- MESSAGES ---------------------------------
-		if st.session_state[ 'text_messages' ] is not None:
-			for msg in st.session_state.text_messages:
-				with st.chat_message( msg[ 'role' ], avatar="" ):
+		if st.session_state[ 'text_input' ] is not None:
+			for msg in st.session_state.text_input:
+				with st.chat_message( msg[ 'role' ], avatar='' ):
 					st.markdown( msg[ 'content' ] )
 		
 		if provider_name == 'GPT':
@@ -2949,15 +2982,15 @@ elif mode == "Images":
 	image_background = st.session_state.get( 'image_background', False )
 	image_model = st.session_state.get( 'image_model', '' )
 	image_response_format = st.session_state.get( 'image_response_format', '' )
+	image_output = st.session_state.get( 'image_output', '' )
 	image_detail = st.session_state.get( 'image_detail', '' )
 	image_style = st.session_state.get( 'image_style', '' )
-	image_quality = st.session_state.get( 'image_quality', '' )
 	image_backcolor = st.session_state.get( 'image_backcolor', '' )
 	image_content = st.session_state.get( 'image_content', '' )
-	image_size = st.session_state.get( 'image_size', '' )
-	image_output = st.session_state.get( 'image_output', '' )
 	image_input = st.session_state.get( 'image_input', '' )
 	image_mode = st.session_state.get( 'image_mode', '' )
+	image_quality = st.session_state.get( 'image_quality', '' )
+	image_size = st.session_state.get( 'image_size', '' )
 	image_stops = st.session_state.get( 'image_stops', [ ] )
 	image_domains = st.session_state.get( 'image_domains', [ ] )
 	image_include = st.session_state.get( 'image_include', [ ] )
@@ -3000,44 +3033,45 @@ elif mode == "Images":
 				with llm_c1:
 					_modes = [ 'Generation', 'Analysis', 'Editing' ]
 					set_image_mode = st.selectbox( label='Image Mode:', options=_modes,
-						key='image_mode', help='Available Image API modes',
+						key='image_mode', help='Available Image API modes', index=None,
 						placeholder='Options' )
 					
 					image_mode = st.session_state[ 'image_mode' ]
 					
 				with llm_c2:
 					if st.session_state[ 'image_mode' ] == 'Generation':
-						generation = cfg.GPT_GENERATION
+						generation = list( cfg.GPT_GENERATION )
 						set_image_model = st.selectbox( label='Select Model', options=generation,
 						help='REQUIRED. Images Generation model used by the AI', key='image_model',
-						placeholder='Options' )
+						placeholder='Options', index=None )
 						
 						image_model = st.session_state[ 'image_model' ]
 						
 					elif st.session_state[ 'image_mode' ] == 'Analysis':
-						analysis = cfg.GPT_ANALYSIS
+						analysis = list( cfg.GPT_ANALYSIS )
 						set_image_model = st.selectbox( label='Select Model', options=analysis,
 							help='REQUIRED. Images Generation model used by the AI', key='image_model',
-							placeholder='Options' )
+							placeholder='Options', index=None )
 						
 						image_model = st.session_state[ 'image_model' ]
 						
 					elif st.session_state[ 'image_mode' ] == 'Editing':
-						editing = cfg.GPT_EDITING
+						editing = list( cfg.GPT_EDITING )
 						set_image_model = st.selectbox( label='Select Model', options=editing,
-						help='REQUIRED. Images Generation model used by the AI', key='image_model',
-						placeholder='Options' )
+						help='REQUIRED. Images Generationmodel used by the AI', key='image_model',
+						placeholder='Options', index=None, )
+						
 						image_model = st.session_state[ 'image_model' ]
 					else:
-						all = cfg.GPT_GENERATION
+						all = list( cfg.GPT_GENERATION )
 						set_image_model = st.selectbox( label='Select Model', options=all,
 							help='REQUIRED. Images Generation model used by the AI', key='image_model',
-							placeholder='Options' )
+							placeholder='Options', index=None )
 						
 						image_model = st.session_state[ 'image_model' ]
 				
 				with llm_c3:
-					includes = image.include_options
+					includes = list( image.include_options )
 					set_image_include = st.multiselect( label='Include:',
 						options=includes, key='image_include',
 						help=cfg.INCLUDE, placeholder='Options' )
@@ -3055,9 +3089,9 @@ elif mode == "Images":
 					image_domains = st.session_state[ 'image_domains' ]
 				
 				with llm_c5:
-					reasonings = image.reasoning_options
+					reasonings = list( image.reasoning_options )
 					set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
-						options=reasonings, key='image_reasoning', help=cfg.REASONING )
+						options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
 					
 					image_reasoning = st.session_state[ 'image_reasoning' ]
 				
@@ -3065,14 +3099,15 @@ elif mode == "Images":
 					# ----------------------------------------------------------
 					# Remove Image Model Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'image_include', 'image_domains', 'image_stops', ]:
+					for key in [ 'image_mode', 'image_model', 'image_include',
+					             'image_domains', 'image_stops', 'image_reasoning', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 							
 						if 'image_domains_input' in st.session_state:
 							del st.session_state[ 'image_domains_input' ]
 						
-						st.rerun( )
+					st.rerun( )
 			
 			with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
 				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
@@ -3080,6 +3115,7 @@ elif mode == "Images":
 				
 				with prm_c1:
 					set_image_top_p = st.slider( label='Top-P',  key='image_top_percent',
+						value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
 						min_value=0.0, max_value=1.0, step=0.01, help=cfg.TOP_P )
 					
 					image_top_percent = st.session_state[ 'image_top_percent' ]
@@ -3087,6 +3123,7 @@ elif mode == "Images":
 				with prm_c2:
 					set_image_freq = st.slider( label='Frequency Penalty',
 						key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
+						value=float( st.session_state.get( 'image_frequency_penalty', 0.0 ) ),
 						step=0.01, help=cfg.FREQUENCY_PENALTY )
 					
 					image_fequency = st.session_state[ 'image_frequency_penalty' ]
@@ -3094,19 +3131,21 @@ elif mode == "Images":
 				with prm_c3:
 					set_image_presense = st.slider( label='Presence Penalty',
 						key='image_presense_penalty', min_value=-2.0, max_value=2.0,
+						value=float( st.session_state.get( 'image_presence_penalty', 0.0 ) ),
 						step=0.01,  help=cfg.PRESENCE_PENALTY )
 					
 					image_presense = st.session_state[ 'image_presense_penalty' ]
 				
 				with prm_c4:
-					set_image_temperature = st.slider( label='Temperature',
-						key='image_temperature',
+					set_image_temperature = st.slider( label='Temperature', key='image_temperature',
+						value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
 						min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
 					
 					image_temperature = st.session_state[ 'image_temperature' ]
 				
 				with prm_c5:
-					set_image_number = st.number_input( label='Number', min_value=0, max_value=100,
+					set_image_number = st.slider( label='Number', min_value=0, max_value=100,
+						value=int( st.session_state.get( 'image_number', 0 ) ),
 						step=1, help='Optional. Upper limit on the responses returned by the model',
 						key='image_number' )
 					
@@ -3134,20 +3173,22 @@ elif mode == "Images":
 					image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
 				
 				with tool_c2:
-					set_image_calls = st.number_input( label='Max Tools', min_value=0, max_value=6,
+					set_image_calls = st.slider( label='Max Tools', min_value=0, max_value=6,
+						value=int( st.session_state.get( 'image_max_tools', 0 ) ),
 						step=1, help=cfg.MAX_TOOL_CALLS, key='image_max_tools' )
 					
 					image_max_tools = st.session_state[ 'image_max_tools' ]
 				
 				with tool_c3:
-					choices = image.choice_options
+					choices = list( image.choice_options )
 					set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
-						key='image_choice', help=cfg.CHOICE, placeholder='Options')
+						key='image_choice', help=cfg.CHOICE, placeholder='Options', index=None )
 					
 					image_tool_choice = st.session_state[ 'image_choice' ]
 				
 				with tool_c4:
-					set_image_tools = st.multiselect( label='Tools:', options=image.tool_options,
+					tool_options = list( image.tool_options )
+					set_image_tools = st.multiselect( label='Tools:', options=tool_options,
 						key='image_tools', help=cfg.TOOLS, placeholder='Options' )
 					
 					image_tools = st.session_state[ 'image_tools' ]
@@ -3184,15 +3225,15 @@ elif mode == "Images":
 					image_background = st.session_state[ 'image_background' ]
 				
 				with res_four:
-					formats = image.format_options
+					formats = list( image.format_options )
 					set_image_reponse = st.selectbox( label='Response Format:',
 						options=formats, key='image_response_format',
-						help=cfg.IMAGE_RESPONSE, placeholder='Options' )
+						help=cfg.IMAGE_RESPONSE, placeholder='Options', index=None )
 					
 					image_respose_format = st.session_state[ 'image_response_format' ]
 				
 				with res_five:
-					set_image_tokens = st.number_input( label='Max Tokens', min_value=0, max_value=100000,
+					set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 						step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 					
 					image_tokens = st.session_state[ 'image_max_tokens' ]
@@ -3217,43 +3258,46 @@ elif mode == "Images":
 				
 				# ------------ Image Detail
 				with img_c1:
-					details = image.detail_options
+					details = list( image.detail_options )
 					set_image_detail = st.selectbox( label='Image Detail', options=details,
-						help='Optional. Image detail', key='image_detail', placeholder='Options' )
+						help='Optional. Image detail', key='image_detail',
+						placeholder='Options', index=None )
 					
 					image_detail = st.session_state[ 'image_detail' ]
 				
 				# ------------ Image Style
 				with img_c2:
-					sizes = image.size_options
+					sizes = list( image.size_options )
 					set_image_size = st.selectbox( label='Image Size', options=sizes,
-						help='Optional. Image size', key='image_size', placeholder='Options' )
+						help='Optional. Image size', key='image_size',
+						placeholder='Options', index=None, )
 					
 					image_size = st.session_state[ 'image_size' ]
 				
 				# ------------ Image Quality
 				with img_c3:
-					qualities = image.quality_options
+					qualities = list( image.quality_options )
 					set_image_quality = st.selectbox( label='Image Quality',
 						options=qualities, help='Optional. Image Quality',
-						key='image_quality', placeholder='Options' )
+						key='image_quality', placeholder='Options', index=None )
 					
 					image_quality = st.session_state[ 'image_quality' ]
 				
 				# ------------ Image Backcolor
 				with img_c4:
-					colors = image.backcolor_options
+					colors = list( image.backcolor_options )
 					set_image_backcolor = st.selectbox( label='Image Backcolor',
-						options=colors,
-						help=cfg.IMAGE_BACKGROUND, key='image_backcolor', placeholder='Options' )
+						options=colors, help=cfg.IMAGE_BACKGROUND,
+						key='image_backcolor', placeholder='Options', index=None )
 					
 					image_backcolor = st.session_state[ 'image_backcolor' ]
 				
 				# ------------ Image Output Format
 				with img_c5:
-					outputs = image.output_options
+					outputs = list( image.output_options )
 					set_image_output = st.selectbox( label='Image Format', options=outputs,
-						help=cfg.IMAGE_RESPONSE, key='image_output', placeholder='Options' )
+						help=cfg.IMAGE_RESPONSE, key='image_output',
+						placeholder='Options', index=None )
 					
 					image_output = st.session_state[ 'image_output' ]
 				
@@ -3261,8 +3305,8 @@ elif mode == "Images":
 					# ----------------------------------------------------------
 					# Remove Image Response session keys
 					# ----------------------------------------------------------
-					for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality'
-					             'image_size', 'image_output', ]:
+					for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
+					             'image_size', 'image_output' ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -3271,7 +3315,7 @@ elif mode == "Images":
 		# ------------------------------------------------------------------
 		# Expander — Image System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
@@ -3321,9 +3365,7 @@ elif mode == "Images":
 						st.image( img_url )
 						
 						try:
-							_update_token_counters(
-								getattr( image, 'response', None )
-							)
+							_update_token_counters( getattr( image, 'response', None ) )
 						except Exception:
 							pass
 					
@@ -3389,19 +3431,19 @@ elif mode == "Images":
 								if isinstance( analysis_result, (dict, list) ):
 									st.json( analysis_result )
 								else:
-									st.markdown( "**Analysis result:**" )
+									st.markdown( '**Analysis result:**' )
 									st.write( analysis_result )
 								
 								try:
 									_update_token_counters(
-										getattr( image, "response", None )
+										getattr( image, 'response', None )
 										or analysis_result
 									)
 								except Exception:
 									pass
 						
 						except Exception as exc:
-							st.error( f"Analysis Failed: {exc}" )
+							st.error( f'Analysis Failed: {exc}' )
 		
 		with tab_edit:
 			uploaded_img = st.file_uploader( 'Upload Image for Edit',
@@ -3479,7 +3521,7 @@ elif mode == "Images":
 # ======================================================================================
 # AUDIO MODE
 # ======================================================================================
-elif mode == "Audio":
+elif mode == 'Audio':
 	st.subheader( '🔉 Audio API', help=cfg.AUDIO_API )
 	st.divider( )
 	# ------------------------------------------------------------------
@@ -3487,51 +3529,40 @@ elif mode == "Audio":
 	# ------------------------------------------------------------------
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	audio_model = st.session_state.get( 'audio_model', '' )
-	audio_format = st.session_state.get( 'audio_response_format', '' )
-	audio_top_p = st.session_state.get( 'audio_top_percent', 0.0 )
+	audio_top_percent = st.session_state.get( 'audio_top_percent', 0.0 )
 	audio_freq = st.session_state.get( 'audio_frequency_penalty', 0.0 )
 	audio_presense = st.session_state.get( 'audio_presense_penalty', 0.0 )
 	audio_number = st.session_state.get( 'audio_number', 0 )
 	audio_temperature = st.session_state.get( 'audio_temperature', 0.0 )
+	audio_start = st.session_state.get( 'audio_start_time', 0.0 )
+	audio_end = st.session_state.get( 'audio_end_time', 0.0 )
 	audio_stream = st.session_state.get( 'audio_stream', False )
 	audio_store = st.session_state.get( 'audio_store', False )
-	audio_input = st.session_state.get( 'audio_input', [ ] )
+	audio_background = st.session_state.get( 'audio_background', True )
+	audio_loop = st.session_state.get( 'audio_loop', False )
+	audio_autoplay = st.session_state.get( 'audio_autoplay', False )
+	audio_input = st.session_state.get( 'audio_input', '' )
+	audio_task = st.session_state.get( 'audio_task', '' )
+	audio_model = st.session_state.get( 'audio_model', '' )
+	audio_language = st.session_state.get( 'audio_language', '' )
+	audio_format = st.session_state.get( 'audio_format', '' )
+	audio_file = st.session_state.get( 'audio_file', '' )
 	audio_reasoning = st.session_state.get( 'audio_reasoning', '' )
 	audio_choice = st.session_state.get( 'audio_tool_choice', '' )
+	audio_voice = st.session_state.get( 'audio_voice', '' )
 	audio_messages = st.session_state.get( 'audio_messages', [ ] )
-	audio_background = st.session_state.get( 'audio_background', True )
-	audio_file = st.session_state.get( 'audio_file', '')
-	audio_rate = st.session_state.get( 'audio_rate', 0 )
-	audio_start = st.session_state.get( 'audio_start', 0.0 )
-	audio_end = st.session_state.get( 'audio_end', 0.0 )
-	audio_loop = st.session_state.get( 'audio_loop', False )
-	auto_play = st.session_state.get( 'auto_play', False )
-	voice = st.session_state.get( 'voice', None )
-	transcriber = None
-	translator = None
-	tts = None
-	if hasattr( provider_module, 'Transcription' ):
-		transcriber = provider_module.Transcription( )
-	if hasattr( provider_module, 'Translation' ):
-		translator = provider_module.Translation( )
-	if hasattr( provider_module, 'TTS' ):
-		tts = provider_module.TTS( )
+	audio_rate = st.session_state.get( 'audio_rate', [ ] )
+	transcriber = provider_module.Transcription( )
+	translator = provider_module.Translation( )
+	tts = provider_module.TTS( )
 	
 	# ---------------- Task ----------------
-	available_tasks = [ ]
+	available_tasks = [ 'Transcribe', 'Translate', 'Text-to-Speech' ]
 	model_options = [ ]
-	language = None
-	voice = None
+	audio_language = None
+	audio_voice = None
 	audio_model = None
 	
-	if transcriber is not None:
-		available_tasks.append( 'Transcribe' )
-	if translator is not None:
-		available_tasks.append( 'Translate' )
-	if tts is not None:
-		available_tasks.append( 'Text-to-Speech' )
-		
 	# ------------------------------------------------------------------
 	#  AUDIO SETTINGS
 	# ------------------------------------------------------------------
@@ -3551,70 +3582,81 @@ elif mode == "Audio":
 		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
 			# Expander — Audio Model
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				aud_one, aud_two, aud_three, aud_four, aud_five = st.columns(
+				aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
 					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
 				
 				# ---------------- Task ---------------
-				with aud_one:
+				with aud_c1:
 					if not available_tasks:
 						st.info( 'Audio is not supported by the selected provider.' )
-						task = None
+						audio_task = None
 					else:
-						task = st.selectbox( 'Mode', available_tasks )
-				
-				# ---------------- Model ---------------
-				with aud_two:
-					if task == 'Transcribe' and transcriber and hasattr( transcriber, 'model_options' ):
-						model_options = transcriber.model_options
-					elif task == 'Translate' and translator and hasattr( translator, 'model_options' ):
-						model_options = translator.model_options
-					elif task == 'Text-to-Speech' and tts and hasattr( tts, 'model_options' ):
-						model_options = tts.model_options
+						audio_task = st.selectbox( label='Mode', options=available_tasks,
+							key='audio_task', placeholder='Options', index=None )
+						
+						audio_task = st.session_state[ 'audio_task' ]
+					
+					# ---------------- Model ---------------
+				with aud_c2:
+					if audio_task == 'Transcribe':
+						model_options = list( transcriber.model_options )
+					elif audio_task == 'Translate':
+						model_options = list( translator.model_options )
+					elif audio_task == 'Text-to-Speech':
+						model_options = list( tts.model_options )
 					
 					if model_options:
-						audio_model = st.selectbox( 'Model', model_options,
-							index=(model_options.index( st.session_state.get( 'audio_model' ) )
-							       if st.session_state.get( 'audio_model' ) in model_options
-							       else 0), )
-						st.session_state[ 'audio_model' ] = audio_model
-				
-				# ---------------- Language ----------------
-				with aud_three:
-					if task in ('Transcribe', 'Translate'):
-						obj = transcriber if task == 'Transcribe' else translator
-						if obj and hasattr( obj, 'language_options' ):
-							language = st.selectbox( 'Language', obj.language_options, )
+						audio_model = st.selectbox( label='Model', options=model_options,
+							key='audio_model', placeholder='Options', index=None )
+						
+						audio_model = st.session_state[ 'audio_model' ]
 					
-					if task == 'Text-to-Speech' and tts:
+					# ---------------- Language ----------------
+				with aud_c3:
+					if audio_task in ('Transcribe', 'Translate'):
+						obj = transcriber if audio_task == 'Transcribe' else translator
+						if obj and hasattr( obj, 'language_options' ):
+							audio_language = st.selectbox( label='Language', options=obj.language_options,
+								key='audio_language', placeholder='Options', index=None )
+							
+							audio_language = st.session_state[ 'audio_language' ]
+					
+					if audio_task == 'Text-to-Speech' and tts:
 						if hasattr( tts, 'voice_options' ):
-							voice = st.selectbox( 'Voice', tts.voice_options, )
-				
-				# ---------------- Sample Rate ----------------
-				with aud_four:
-					audio_rate = st.selectbox( label='Speed', options=cfg.SAMPLE_RATES )
+							audio_voice = st.selectbox( label='Voice', options=tts.voice_options,
+								key='audio_voice', placeholder='Options', index=None )
+							
+							audio_voice = st.session_state[ 'audio_voice' ]
+						
+						# ---------------- Sample Rate ----------------
+				with aud_c4:
+					audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
+						key='audio_rate', placeholder='Options', index=None )
+					
+					audio_rate = st.session_state[ 'audio_rate' ]
 				
 				# ---------------- Format ----------------
-				with aud_five:
-					if task == 'Transcribe' and transcriber and hasattr( transcriber, 'format_options' ):
+				with aud_c5:
+					format_options = [ ]
+					if audio_task == 'Transcribe':
 						format_options = transcriber.format_options
-					elif task == 'Translate' and translator and hasattr( translator, 'format_options' ):
+					elif audio_task == 'Translate':
 						format_options = translator.format_options
-					elif task == 'Text-to-Speech' and tts and hasattr( tts, 'format_options' ):
+					elif audio_task == 'Text-to-Speech':
 						format_options = tts.format_options
 					
 					if format_options:
-						audio_format = st.selectbox( 'Format', format_options,
-							index=(format_options.index( st.session_state.get( 'audio_format' ) )
-							       if st.session_state.get( 'audio_format' ) in format_options
-							       else 0), )
-						st.session_state[ 'audio_format' ] = audio_format
+						audio_format = st.selectbox( label='Format', options=format_options,
+							key='audio_format', placeholder='Options', index=None )
+						
+						audio_format = st.session_state[ 'audio_format' ]
 				
 				if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
 					# ----------------------------------------------------------
 					# Remove Audio Model Settings session keys
 					# ----------------------------------------------------------
-					for key in [ 'audio_model', 'audio_language', 'audio_voice', 'audio_rate',
-							'audio_format', ]:
+					for key in [ 'audio_task', 'audio_model', 'audio_language',
+					             'audio_voice', 'audio_rate', 'audio_format' ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -3628,24 +3670,28 @@ elif mode == "Audio":
 				with prm_one:
 					set_audio_top = st.slider( 'Top-P', 0.0, 1.0,
 						float( st.session_state.get( 'audio_top_percent', 1.0 ) ), 0.01, help=cfg.TOP_P )
-					audio_top_p = st.session_state[ 'audio_top_percent' ]
+					
+					audio_top_percent = st.session_state[ 'audio_top_percent' ]
 			
 				with prm_two:
 					set_audio_frequency = st.slider( 'Frequency Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
 						0.01, help=cfg.FREQUENCY_PENALTY )
+					
 					audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
 				
 				with prm_three:
 					set_audio_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
 						float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
 						0.01, help=cfg.PRESENCE_PENALTY )
+					
 					audio_presense = st.session_state[ 'audio_presense_penalty' ]
 				
 				with prm_four:
 					set_audio_temperature = st.slider( 'Temperature', 0.0, 1.0,
 						float( st.session_state.get( 'audio_temperature', 0.7 ) ), 0.01,
 						help=cfg.TEMPERATURE )
+					
 					audio_temperature = st.session_state[ 'audio_temperature' ]
 				
 				if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
@@ -3660,31 +3706,50 @@ elif mode == "Audio":
 			
 			# Expander — Audio Response
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-				resp_one, resp_two, resp_three, resp_four, resp_five = st.columns(
+				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
 				
-				with resp_one:
-					loop = st.toggle( label='Loop Audio', value=False )
-					st.session_state[ 'audio_loop' ] = loop
+				with resp_c1:
+					loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
+					
+					loop = st.session_state[ 'audio_loop' ]
 				
-				with resp_two:
-					play = st.toggle( label='Auto Play', value=False )
-					st.session_state[ 'audio_loop' ] = play
+				with resp_c2:
+					set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
+					
+					audio_autoplay = st.session_state[ 'audio_autoplay' ]
 				
-				with resp_three:
-					start = st.number_input( label='Start Time:', min_value=0.0, value=0.0 )
-					st.session_state[ 'audio_start' ] = start
+				with resp_c3:
+					set_start_time = st.slider( label='Start Time:', min_value=0.0, max_value=5.0,
+						value=float( st.session_state.get( 'audio_start_time' ) ),
+						key='audio_start_time' )
+					
+					audio_start_time = st.session_state[ 'audio_start_time' ]
 				
-				with resp_four:
-					end = st.number_input( label='End Time:', min_value=0.0, value=0.0 )
-					st.session_state[ 'number' ] = end
+				with resp_c4:
+					set_end_time = st.slider( label='End Time:', min_value=0.0, max_value=5.0,
+						value=float( st.session_state.get( 'audio_end_time' ) ),
+						key='audio_end_time' )
+					
+					audio_end_time = st.session_state[ 'audio_end_time' ]
 				
-				with resp_five:
-					max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=100000,
-						value=6048, help=cfg.MAX_OUTPUT_TOKENS )
-					st.session_state[ 'max_tokens' ] = int( max_tokens )
+				with resp_c5:
+					set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
+						value=int( st.session_state.get( 'audio_max_tokens', 0 ) ),
+						help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
+					
+					audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
 				
-				st.button( 'Reset', key='audio_response_reset', width='stretch' )
+				if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
+					# ----------------------------------------------------------
+					# Remove Audio Model Settings session keys
+					# ----------------------------------------------------------
+					for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time', 'audio_end_time',
+					             'audio_rate', 'audio_max_tokens' ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
 		
 		# ------------------------------------------------------------------
 		# Expander — Audio System Instructions
@@ -3708,69 +3773,63 @@ elif mode == "Audio":
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='audio_system_instructions', on_change=_on_template_change )
+					key='set_audio_instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'audio_system_instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
-		left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ], border=True )
+		left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ],
+			border=True,  gap='medium' )
 		
 		# -----------UPLOAD AUDIO----------------------
 		with left_audio:
-			if task in ('Transcribe', 'Translate'):
-				uploaded = st.file_uploader( 'Upload File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
-				if uploaded:
-					tmp_path = save_temp( uploaded )
-					if task == 'Transcribe' and transcriber:
-						with st.spinner( 'Transcribing…' ):
+			uploaded = st.file_uploader( 'Upload File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
+			if uploaded:
+				tmp_path = save_temp( uploaded )
+				if audio_task == 'Transcribe' and transcriber:
+					with st.spinner( 'Transcribing…' ):
+						try:
+							text = transcriber.transcribe( tmp_path, model=audio_model,
+								language=language, )
+							st.text_area( 'Transcript', value=text, height=300 )
 							try:
-								text = transcriber.transcribe( tmp_path, model=audio_model,
-									language=language, )
-								st.text_area( 'Transcript', value=text, height=300 )
-								
-								try:
-									_update_token_counters(
-										getattr( transcriber, 'response', None )
-									)
-								except Exception:
-									pass
-							
-							except Exception as exc:
-								st.error( f'Transcription failed: {exc}' )
-					
-					elif task == 'Translate' and translator:
-						with st.spinner( 'Translating…' ):
-							try:
-								text = translator.translate( tmp_path, model=audio_model,
-									language=language, )
-								st.text_area( 'Translation', value=text, height=300 )
-								
-								try:
-									_update_token_counters( getattr( translator, 'response', None ) )
-								except Exception:
-									pass
-							
-							except Exception as exc:
-								st.error( f'Translation failed: {exc}' )
-			
-			elif task == 'Text-to-Speech' and tts:
-				text = st.text_area( 'Text to synthesize' )
+								_update_token_counters( getattr( transcriber, 'response', None ) )
+							except Exception:
+								pass
+						except Exception as exc:
+							st.error( f'Transcription failed: {exc}' )
 				
+				elif audio_task == 'Translate' and translator:
+					with st.spinner( 'Translating…' ):
+						try:
+							text = translator.translate( tmp_path, model=audio_model,
+								language=language, )
+							st.text_area( 'Translation', value=text, height=300 )
+							
+							try:
+								_update_token_counters( getattr( translator, 'response', None ) )
+							except Exception:
+								pass
+						
+						except Exception as exc:
+							st.error( f'Translation failed: {exc}' )
+			
+			elif audio_task == 'Text-to-Speech' and tts:
+				text = st.text_area( 'Text to synthesize' )
 				if text and st.button( 'Generate Audio' ):
 					with st.spinner( 'Synthesizing speech…' ):
 						try:
 							audio_bytes = tts.speak( text, model=audio_model, voice=voice, )
 							st.audio( audio_bytes )
-							
 							try:
-								_update_token_counters( getattr( tts, "response", None ) )
+								_update_token_counters( getattr( tts, 'response', None ) )
 							except Exception:
 								pass
 						
 						except Exception as exc:
-							st.error( f"Text-to-speech failed: {exc}" )
+							st.error( f'Text-to-speech failed: {exc}' )
 							
 		#-----------RECORD AUDIO----------------------
 		with center_audio:
@@ -3778,12 +3837,15 @@ elif mode == "Audio":
 			
 		# -----------PLAY AUDIO----------------------
 		with right_audio:
-			if audio_file:
+			data = cfg.AUDIO_TEST_FILE
+			st.caption( 'Local Audio File')
+			if data is not None:
 				audio_recording = st.audio( data, sample_rate=audio_rate,
-					start_time=audio_start, end_time=audio_end, format=audio_format, width='stretch',
-					loop=audio_loop, autoplay=auto_play )
+					start_time=audio_start, end_time=audio_end, format='wav', width='stretch',
+					loop=audio_loop, autoplay=audio_autoplay )
 			else:
-				array = None
+				audio_recording = st.audio( data,  start_time=audio_start, end_time=audio_end,
+					format='wav', width='stretch', loop=audio_loop, autoplay=audio_autoplay )
 	
 # ======================================================================================
 # EMBEDDINGS MODE
@@ -3812,33 +3874,37 @@ elif mode == 'Embeddings':
 				border=True, gap='medium' )
 			
 			with llm_c1:
-				set_embedding_model = st.selectbox( 'Embedding Model:', embedding.model_options,
-					help='REQUIRED. Embedding model used by the AI',
-					key='embedding_model',
-					index=(embedding.model_options.index( st.session_state[ 'embedding_model' ] )
-					       if st.session_state.get( 'embedding_model' ) in embedding.model_options else 0), )
+				embedding_models = list( embedding.model_options )
+				set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
+					help='REQUIRED. Embedding model used by the AI', key='embedding_model',
+					index=None, placeholder='Options' )
+				
 				embedding_model = st.session_state[ 'embedding_model' ]
 			
 			with llm_c2:
 				set_encoding_format = st.selectbox( 'Encoding Format:',
 					options=embedding.encoding_options, key='embeddings_encoding_format',
-					help='REQUIRED: The format to return the embeddings in. float or base64')
+					help='REQUIRED: The format to return the embeddings in. float or base64',
+					index=None, placeholder='Options' )
+				
 				embedding_encoding_format = st.session_state[ 'embeddings_encoding_format' ]
 			
 			with llm_c3:
-				set_embedding_dimensions = st.number_input( 'Dimensions', min_value=0,
+				set_embedding_dimensions = st.slider( 'Dimensions', min_value=0,
 					max_value=2048, step=1, key='embeddings_dimensions',
 					help='Optional (large models only): An integer between 1 and 2048',
 					width='stretch' )
+				
 				embedding_dimensions = st.session_state[ 'embeddings_dimensions' ]
 			
 			with llm_c4:
-				st.number_input( 'Chunk Size (tokens)', min_value=50, max_value=2000,
+				set_chunk_size = st.slider( label='Chunk Size (tokens)', min_value=50, max_value=2000,
 					step=50, key='embedding_chunk_size',
 					help='Maximum tokens per chunk for embedding segmentation.' )
+				
+				embedding_chunk_size = st.session_state[ 'embedding_chunk_size' ]
 
 			if st.button( 'Reset', key='embedding_reset', width='stretch' ):
-				
 				# ----------------------------------------------------------
 				# Remove Embedding Configuration session keys
 				# ----------------------------------------------------------
@@ -3871,16 +3937,10 @@ elif mode == 'Embeddings':
 						# Create Embeddings
 						# ----------------------------------------------------------
 						if embedding_dimensions is not None:
-							vectors = embedding.create(
-								text=chunks,
-								model=embedding_model,
-								dimensions=embedding_dimensions
-							)
+							vectors = embedding.create( text=chunks, model=embedding_model,
+								dimensions=embedding_dimensions )
 						else:
-							vectors = embedding.create(
-								text=chunks,
-								model=embedding_model
-							)
+							vectors = embedding.create( text=chunks, model=embedding_model )
 						
 						# ----------------------------------------------------------
 						# Persist Results
@@ -3995,7 +4055,7 @@ elif mode == 'Vector Stores':
 		st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
 		st.divider( )
 	elif provider_name == 'Gemini':
-		st.subheader( '📦 File Search Stores', help=cfg.VECTORSTORES_API )
+		st.subheader( '💾 File Search Stores', help=cfg.VECTORSTORES_API )
 		st.divider( )
 	elif provider_name == 'GPT':
 		st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
@@ -4366,35 +4426,39 @@ elif mode == 'Document Q&A':
 				border=True, gap='medium' )
 			
 			with stores_c1:
-				set_text_top_p = st.slider( 'Top-P', 0.0, 1.0,
-					float( st.session_state.get( 'top_p', 1.0 ) ), 0.01,
-					help=cfg.TOP_P, key='text_top_percent' )
-				text_top_percent = st.session_state[ 'text_top_percent' ]
+				set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+					value=float( st.session_state.get( 'docqna_top_percent', 0.0 ) ), step=0.01,
+					help=cfg.TOP_P, key='docqna_top_percent' )
+				
+				text_top_percent = st.session_state[ 'docqna_top_percent' ]
 			
 			with stores_c2:
-				set_text_freq = st.slider( 'Frequency Penalty', -2.0, 2.0,
-					float( st.session_state.get( 'text_frequency_penalty', 0.0 ) ),
-					0.01, help=cfg.FREQUENCY_PENALTY )
-				text_fequency = st.session_state[ 'text_frequency_penalty' ]
+				set_docqna_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+					value=float( st.session_state.get( 'docqna_frequency_penalty', 0.0 ) ),
+					step=0.01, help=cfg.FREQUENCY_PENALTY )
+				
+				docqna_fequency = st.session_state[ 'docqna_frequency_penalty' ]
 			
 			with stores_c3:
-				set_text_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
-					float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
-					0.01, help=cfg.PRESENCE_PENALTY )
-				text_presense = st.session_state[ 'text_presense_penalty' ]
+				set_docqna_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+					value=float( st.session_state.get( 'docqna_presense_penalty', 0.0 ) ),
+					step=0.01, help=cfg.PRESENCE_PENALTY )
+				
+				docqna_presense = st.session_state[ 'docqna_presense_penalty' ]
 			
 			with stores_c4:
-				set_text_temperature = st.slider( 'Temperature', 0.0, 1.0,
-					float( st.session_state.get( 'text_temperature', 0.7 ) ), 0.01,
+				set_docqna_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+					value=float( st.session_state.get( 'docqna_temperature', 0.7 ) ), step=0.01,
 					help=cfg.TEMPERATURE )
-				text_temperature = st.session_state[ 'text_temperature' ]
+				
+				docqna_temperature = st.session_state[ 'docqna_temperature' ]
 			
 			if st.button( 'Reset', key='docqa_inference_reset', width='stretch' ):
 				# ----------------------------------------------------------
 				# Remove DocQA Inference session keys
 				# ----------------------------------------------------------
-				for key in [ 'docqa_temperature', 'docqa_top_p', 'docqa_max_tokens',
-						'docqa_top_k', 'docqa_score_threshold', ]:
+				for key in [ 'docqa_temperature', 'docqa_top_percent', 'docqa_max_tokens',
+						'docqa_presense_penalty', 'docqa_frequency_penalty', ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
 				
@@ -4422,11 +4486,10 @@ elif mode == 'Document Q&A':
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='instructions', on_change=_on_template_change )
+					key='set_docqna_instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'docqna_system_instructions' ] = ''
-				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -4526,7 +4589,8 @@ elif mode == 'Files':
 			if 'files_list' in locals( ) and files_list:
 					file_ids = [ r.get( 'filename' ) if isinstance( r, dict )
 					             else getattr( r, 'id', None ) for r in files_list ]
-					sel = st.selectbox( 'Select File to Delete', options=file_ids )
+					sel = st.selectbox( label='Select File to Delete', options=file_ids,
+						index=None, placeholder='Options' )
 					if st.button( 'Delete File' ):
 						del_fn = None
 						for name in ( 'delete_file', 'delete', 'files_delete' ):
@@ -5470,68 +5534,68 @@ elif mode == 'Images':
 		right_parts.append( 'Background: On' )
 
 elif mode == 'Audio':
-	task = st.session_state.get( 'audio_task' )
-	fmt = st.session_state.get( 'audio_response_format' )
-	top_p = st.session_state.get( 'audio_top_percent' )
-	freq = st.session_state.get( 'audio_frequency_penalty' )
-	presence = st.session_state.get( 'audio_presense_penalty' )
-	number = st.session_state.get( 'audio_number' )
-	temperature = st.session_state.get( 'audio_temperature' )
-	stream = st.session_state.get( 'audio_stream' )
-	store = st.session_state.get( 'audio_store' )
-	input_mode = st.session_state.get( 'audio_input' )
-	reasoning = st.session_state.get( 'audio_reasoning' )
-	tool_choice = st.session_state.get( 'audio_tool_choice' )
-	messages = st.session_state.get( 'audio_messages' )
-	background = st.session_state.get( 'audio_background' )
+	audio_task = st.session_state.get( 'audio_task' )
+	audio_format = st.session_state.get( 'audio_response_format' )
+	audio_top_p = st.session_state.get( 'audio_top_percent' )
+	audio_freq = st.session_state.get( 'audio_frequency_penalty' )
+	audio_presence = st.session_state.get( 'audio_presense_penalty' )
+	audio_number = st.session_state.get( 'audio_number' )
+	audio_temperature = st.session_state.get( 'audio_temperature' )
+	audio_stream = st.session_state.get( 'audio_stream' )
+	audio_store = st.session_state.get( 'audio_store' )
+	audio_input_mode = st.session_state.get( 'audio_input' )
+	audio_reasoning = st.session_state.get( 'audio_reasoning' )
+	audio_tool_choice = st.session_state.get( 'audio_tool_choice' )
+	audio_messages = st.session_state.get( 'audio_messages' )
+	audio_background = st.session_state.get( 'audio_background' )
 	audio_file = st.session_state.get( 'audio_file' )
-	rate = st.session_state.get( 'audio_rate', 16000 )
-	start = st.session_state.get( 'audio_start', 0.0 )
-	end = st.session_state.get( 'audio_end', 0.0 )
-	loop = st.session_state.get( 'audio_loop', False )
-	autoplay = st.session_state.get( 'auto_play', False )
-	voice = st.session_state.get( 'voice', None )
+	audio_rate = st.session_state.get( 'audio_rate'  )
+	audio_start = st.session_state.get( 'audio_start' )
+	audio_end = st.session_state.get( 'audio_end'  )
+	audio_loop = st.session_state.get( 'audio_loop'  )
+	audio_play = st.session_state.get( 'auto_play'  )
+	audio_voice = st.session_state.get( 'voice', None )
 	
-	if task is not None:
-		right_parts.append( f'Task: {task}' )
-	if fmt is not None:
-		right_parts.append( f'Format: {fmt}' )
+	if audio_task is not None:
+		right_parts.append( f'Task: {audio_task}' )
+	if audio_format is not None:
+		right_parts.append( f'Format: {audio_format}' )
 	
-	if temperature is not None:
-		right_parts.append( f'Temp: {temperature}' )
-	if top_p is not None:
-		right_parts.append( f'Top-P: {top_p}' )
-	if freq is not None:
-		right_parts.append( f'Freq: {freq}' )
-	if presence is not None:
-		right_parts.append( f'Presence: {presence}' )
-	if number is not None:
-		right_parts.append( f'N: {number}' )
+	if audio_temperature is not None:
+		right_parts.append( f'Temp: {audio_temperature}' )
+	if audio_top_p is not None:
+		right_parts.append( f'Top-P: {audio_top_p}' )
+	if audio_freq is not None:
+		right_parts.append( f'Freq: {audio_freq}' )
+	if audio_presence is not None:
+		right_parts.append( f'Presence: {audio_presence}' )
+	if audio_number is not None:
+		right_parts.append( f'N: {audio_number}' )
 	
-	if stream:
+	if audio_stream:
 		right_parts.append( 'Stream: On' )
-	if store:
+	if audio_store:
 		right_parts.append( 'Store: On' )
-	if reasoning:
+	if audio_reasoning:
 		right_parts.append( 'Reasoning: On' )
-	if input_mode:
+	if audio_input:
 		right_parts.append( 'Input: Set' )
-	if tool_choice:
-		right_parts.append( f'Tool Choice: {tool_choice}' )
-	if messages:
+	if audio_tool_choice:
+		right_parts.append( f'Tool Choice: {audio_tool_choice}' )
+	if audio_messages:
 		right_parts.append( 'Messages: Set' )
-	if background:
+	if audio_background:
 		right_parts.append( 'Background: On' )
 	
-	if voice:
-		right_parts.append( f'Voice: {voice}' )
-	if rate is not None:
-		right_parts.append( f'Rate: {rate}' )
-	if (start or end) and end >= start:
-		right_parts.append( f'Trim: {start}s–{end}s' )
-	if loop:
+	if audio_voice:
+		right_parts.append( f'Voice: {audio_voice}' )
+	if audio_rate is not None:
+		right_parts.append( f'Rate: {audio_rate}' )
+	if (audio_start or audio_end) and audio_end >= audio_start:
+		right_parts.append( f'Trim: {audio_start}s–{audio_end}s' )
+	if audio_loop:
 		right_parts.append( 'Loop: On' )
-	if autoplay:
+	if audio_play:
 		right_parts.append( 'Autoplay: On' )
 	if audio_file is not None:
 		right_parts.append( 'File: Set' )
