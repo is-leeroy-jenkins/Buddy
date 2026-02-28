@@ -1868,11 +1868,10 @@ def summarize_active_document( ) -> str:
 	
 	return route_document_query( summary_prompt.strip( ) )
 
+
 # ==============================================================================
-# Page Setup / Configuration
+# Page Setup
 # ==============================================================================
-openai_client = OpenAI(  )
-st.session_state[ 'openai_client' ] = openai_client
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
 st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
 	initial_sidebar_state='collapsed' )
@@ -1976,6 +1975,9 @@ if 'translation_model' not in st.session_state:
 	st.session_state[ 'translation_model' ] = ''
 
 # --------SYSTEM PARAMETERS----------------------
+if 'instructions' not in st.session_state:
+	st.session_state[ 'instructions' ] = ''
+	
 if 'chat_system_instructions' not in st.session_state:
 	st.session_state[ 'chat_system_instructions' ] = ''
 	
@@ -2285,7 +2287,10 @@ if 'embeddings_dimensions' not in st.session_state:
 	st.session_state[ 'embeddings_dimensions' ] = 0
 
 if 'embeddings_chunk_size' not in st.session_state:
-	st.session_state[ 'embedding_chunk_size' ] = 0
+	st.session_state[ 'embeddings_chunk_size' ] = 0
+
+if 'embeddings_overlap_amount' not in st.session_state:
+	st.session_state[ 'embeddings_overlap_amount' ] = 0
 
 if 'embeddings_input_text' not in st.session_state:
 	st.session_state[ 'embeddings_input_text' ] = ''
@@ -2308,6 +2313,9 @@ if 'files_id' not in st.session_state:
 
 if 'files_url' not in st.session_state:
 	st.session_state[ 'files_url' ] = ''
+
+if 'files_table' not in st.session_state:
+	st.session_state[ 'files_table' ] = ''
 	
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
@@ -2499,10 +2507,8 @@ with st.sidebar:
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	if provider == 'Gemini':
 		mode = st.sidebar.radio( 'Select Mode', cfg.GEMINI_MODES, index=0 )
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	elif provider == 'Grok':
 		mode = st.sidebar.radio( 'Select Mode', cfg.GROK_MODES, index=0 )
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	else:
 		mode = st.sidebar.radio( 'Select Mode', cfg.GPT_MODES, index=0 )
 
@@ -2658,10 +2664,10 @@ elif mode == 'Text':
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
-		if st.session_state.get( 'do_clear_instructions' ):
+		if st.session_state.get( 'clear_instructions' ):
 			st.session_state[ 'text_system_instructions' ] = ''
 			st.session_state[ 'instructions_last_loaded' ] = ''
-			st.session_state[ 'do_clear_instructions' ] = False
+			st.session_state[ 'clear_instructions' ] = False
 		
 		# ------------------------------------------------------------------
 		# Expander — Text LLM Configuration
@@ -2882,29 +2888,29 @@ elif mode == 'Text':
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
-				prompt_names = [ 'No Templates Found' ]
+				prompt_names = [ '' ]
 
 			with in_left:
 				st.text_area( label='Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
 			
 			def _on_template_change( ) -> None:
-				name = st.session_state.get( 'text_system_instructions' )
+				name = st.session_state.get( 'instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
 						st.session_state[ 'text_system_instructions' ] = text
 			
 			with in_right:
-				st.selectbox( label='Use Template', options=prompt_names, placeholder='',
-					key='set_text_instructions', on_change=_on_template_change )
+				st.selectbox( label='Use Template', options=prompt_names, index=None,
+					key='instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'text_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
 			
-		
 		# ----------- MESSAGES ---------------------------------
 		if st.session_state[ 'text_input' ] is not None:
 			for msg in st.session_state.text_input:
@@ -3010,10 +3016,10 @@ elif mode == "Images":
 	# ------------------------------------------------------------------
 	# EXPANDER — IMAGE SETTINGS
 	# ------------------------------------------------------------------
-	if st.session_state.get( 'do_clear_instructions' ):
+	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'image_system_instructions' ] = ''
 		st.session_state[ 'clear_image_instructions' ] = False
-		st.session_state[ 'do_clear_instructions' ] = False
+		st.session_state[ 'clear_instructions' ] = False
 		
 	# ------------------------------------------------------------------
 	# Image Main  UI
@@ -3324,7 +3330,7 @@ elif mode == "Images":
 					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
 			
 			def _on_template_change( ) -> None:
-				name = st.session_state.get( 'image_system_instructions' )
+				name = st.session_state.get( 'instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
@@ -3332,10 +3338,11 @@ elif mode == "Images":
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='set_image_instructions', on_change=_on_template_change )
+					key='instructions', on_change=_on_template_change, index=None )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'image_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -3520,7 +3527,7 @@ elif mode == "Images":
 # AUDIO MODE
 # ======================================================================================
 elif mode == 'Audio':
-	st.subheader( '🔉 Audio API', help=cfg.AUDIO_API )
+	st.subheader( '🎧 Audio API', help=cfg.AUDIO_API )
 	st.divider( )
 	# ------------------------------------------------------------------
 	# Provider-aware Audio instantiation
@@ -3564,10 +3571,10 @@ elif mode == 'Audio':
 	# ------------------------------------------------------------------
 	#  AUDIO SETTINGS
 	# ------------------------------------------------------------------
-	if st.session_state.get( 'do_clear_instructions' ):
+	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'audio_system_instructions' ] = ''
 		st.session_state[ 'clear_audio_instructions' ] = False
-		st.session_state[ 'do_clear_instructions' ] = False
+		st.session_state[ 'clear_instructions' ] = False
 		
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -3577,7 +3584,7 @@ elif mode == 'Audio':
 		# ------------------------------------------------------------------
 		# Expander — Audio LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( '🧠 LLM Configuration', expanded=False, width='stretch' ):
+		with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 			# Expander — Audio Model
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
@@ -3756,7 +3763,7 @@ elif mode == 'Audio':
 		# ------------------------------------------------------------------
 		# Expander — Audio System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
@@ -3767,7 +3774,7 @@ elif mode == 'Audio':
 					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
 			
 			def _on_template_change( ) -> None:
-				name = st.session_state.get( 'audio_system_instructions' )
+				name = st.session_state.get( 'instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
@@ -3775,10 +3782,11 @@ elif mode == 'Audio':
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='set_audio_instructions', on_change=_on_template_change )
+					key='instructions', on_change=_on_template_change, index=None )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'audio_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -3853,14 +3861,16 @@ elif mode == 'Audio':
 # EMBEDDINGS MODE
 # ======================================================================================
 elif mode == 'Embeddings':
-	st.subheader( '⚡ Vector Embeddings', help=cfg.EMBEDDINGS_API )
+	st.subheader( '🔣 Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	embedding_model = st.session_state.get( 'embedding_model' )
-	dimensions = st.session_state.get( 'embeddings_dimensions' )
-	encoding = st.session_state.get( 'embeddings_encoding_format' )
-	input_text = st.session_state.get( 'embeddings_input_text' )
+	embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', 0 )
+	embeddings_chunk_size = st.session_state.get( 'embeddings_chunk_size', 0  )
+	embeddings_overlap_amount = st.session_state.get( 'embeddings_overlap_amount', 0  )
+	embedding_model = st.session_state.get( 'embedding_model', '' )
+	embeddings_encoding = st.session_state.get( 'embeddings_encoding_format', '' )
+	embeddings_input = st.session_state.get( 'embeddings_input_text', '' )
 	embedding = provider_module.Embeddings( )
 	
 	# ------------------------------------------------------------------
@@ -3871,11 +3881,11 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		# Expander — Embedding LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( 'Configuration', expanded=False, width='stretch' ):
-			llm_c1, llm_c2, llm_c3, llm_c4  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-				border=True, gap='medium' )
+		with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
+			emb_c1, emb_c2, emb_c3, emb_c4, emb_c5  = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+				border=True, gap='xxsmall' )
 			
-			with llm_c1:
+			with emb_c1:
 				embedding_models = list( embedding.model_options )
 				set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
 					help='REQUIRED. Embedding model used by the AI', key='embedding_model',
@@ -3883,35 +3893,46 @@ elif mode == 'Embeddings':
 				
 				embedding_model = st.session_state[ 'embedding_model' ]
 			
-			with llm_c2:
-				set_encoding_format = st.selectbox( 'Encoding Format:',
-					options=embedding.encoding_options, key='embeddings_encoding_format',
+			with emb_c2:
+				encoding_options = list( embedding.encoding_options )
+				set_encoding_format = st.selectbox( label='Encoding Format:',
+					options=encoding_options, key='embeddings_encoding_format',
 					help='REQUIRED: The format to return the embeddings in. float or base64',
 					index=None, placeholder='Options' )
 				
-				embedding_encoding_format = st.session_state[ 'embeddings_encoding_format' ]
+				embeddings_encoding = st.session_state[ 'embeddings_encoding_format' ]
 			
-			with llm_c3:
-				set_embedding_dimensions = st.slider( 'Dimensions', min_value=0,
-					max_value=2048, step=1, key='embeddings_dimensions',
+			with emb_c3:
+				set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
+					value=int( st.session_state.get( 'embeddings_dimensions' ) ),
+					step=1, key='embeddings_dimensions',
 					help='Optional (large models only): An integer between 1 and 2048',
 					width='stretch' )
 				
-				embedding_dimensions = st.session_state[ 'embeddings_dimensions' ]
+				embeddings_dimensions = st.session_state[ 'embeddings_dimensions' ]
 			
-			with llm_c4:
-				set_chunk_size = st.slider( label='Chunk Size (tokens)', min_value=50, max_value=2000,
-					step=50, key='embedding_chunk_size',
+			with emb_c4:
+				set_chunk_size = st.slider( label='Chunk Size', min_value=0, max_value=2000,
+					step=50, key='embeddings_chunk_size',
+					value=int( st.session_state.get( 'embeddings_chunk_size' ) ),
 					help='Maximum tokens per chunk for embedding segmentation.' )
 				
-				embedding_chunk_size = st.session_state[ 'embedding_chunk_size' ]
-
-			if st.button( 'Reset', key='embedding_reset', width='stretch' ):
+				embeddings_chunk_size = st.session_state[ 'embeddings_chunk_size' ]
+			
+			with emb_c5:
+				set_overlap_amount = st.slider( label='Overlap Amount', min_value=0, max_value=1000,
+					step=50, key='embeddings_overlap_amount',
+					help='The number of tokens spanning two chunks for embedding segmentation.' )
+				
+				embeddings_overlap_amount = st.session_state[ 'embeddings_overlap_amount' ]
+			
+			if st.button( label='Reset', key='embedding_reset', width='stretch' ):
 				# ----------------------------------------------------------
 				# Remove Embedding Configuration session keys
 				# ----------------------------------------------------------
-				for key in [ 'embedding_model', 'embeddings_dimensions', 'embeddings_encoding_format',
-						'embeddings_input_text', ]:
+				for key in [ 'embedding_model', 'embeddings_dimensions',
+				             'embeddings_encoding', 'embeddings_input_text',
+				             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
 				
@@ -3920,19 +3941,19 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		# Main UI — Embedding execution (unchanged behavior)
 		# ------------------------------------------------------------------
-		set_input_text = st.text_area( 'Text to embed', key='embeddings_input_text' )
+		embeddings_input = st.text_area( 'Text to embed', key='embeddings_input_text' )
 		btn_left, btn_right = st.columns( [ 0.50, 0.50 ] )
 		
 		with btn_left:
 			embed_clicked = st.button( 'Embed', width='stretch', key='embedding_set' )
-			if embed_clicked and input_text and input_text.strip( ):
+			if embed_clicked and embeddings_input and embeddings_input.strip( ):
 				with st.spinner( 'Embedding…' ):
 					try:
 						# ----------------------------------------------------------
 						# Normalize + Chunk
 						# ----------------------------------------------------------
-						chunk_size = st.session_state.get( 'embedding_chunk_size', 400 )
-						normalized_text = normalize_text( input_text )
+						chunk_size = st.session_state.get( 'embeddings_chunk_size' )
+						normalized_text = normalize_text( embeddings_input )
 						chunks = chunk_text( normalized_text, max_tokens=chunk_size )
 						
 						# ----------------------------------------------------------
@@ -3948,7 +3969,7 @@ elif mode == 'Embeddings':
 						# Persist Results
 						# ----------------------------------------------------------
 						st.session_state[ 'embeddings' ] = vectors
-						st.session_state[ 'embedding_chunks' ] = chunks
+						st.session_state[ 'embeddings_chunks' ] = chunks
 						
 						# ----------------------------------------------------------
 						# Display Summary
@@ -3981,7 +4002,7 @@ elif mode == 'Embeddings':
 				# ----------------------------------------------------------
 				# Clear Embedding State
 				# ----------------------------------------------------------
-				for key in [ 'embeddings', 'embedding_chunks', 'embedding_df',
+				for key in [ 'embeddings', 'embeddings_chunks', 'embeddings_df',
 						'embeddings_input_text' ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
@@ -3993,16 +4014,15 @@ elif mode == 'Embeddings':
 		# TEXT METRICS (Render Above Buttons – Safe Append)
 		# ------------------------------------------------------------------
 		if st.session_state.get( 'embeddings_input_text' ):
-			input_text: str = st.session_state.get( 'embeddings_input_text', '' ).strip( )
+			embeddings_input = st.session_state.get( 'embeddings_input_text', '' ).strip( )
 			
-		if input_text:
-			words = input_text.split( )
+		if embeddings_input:
+			words = embeddings_input.split( )
 			total_words = len( words )
 			unique_words = len( set( words ) )
-			char_count = len( input_text )
-			token_count = count_tokens( input_text )
+			char_count = len( embeddings_input )
+			token_count = count_tokens( embeddings_input )
 			ttr = (unique_words / total_words) if total_words > 0 else 0.0
-			
 			col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns( 5, border=True )
 			col_m1.metric( 'Tokens', token_count )
 			col_m2.metric( 'Words', total_words )
@@ -4053,256 +4073,256 @@ elif mode == 'Vector Stores':
 	vector = None
 	collector  = None
 	searcher = None
+	
+	# --------------------------------------------------------------
+	# Grok
+	# --------------------------------------------------------------
 	if provider_name == 'Grok':
 		st.subheader( '📚 Collections', help=cfg.VECTORSTORES_API )
 		st.divider( )
-	elif provider_name == 'Gemini':
-		st.subheader( '💾 File Search Stores', help=cfg.VECTORSTORES_API )
-		st.divider( )
-	elif provider_name == 'GPT':
-		st.subheader( '📦 Vector Stores', help=cfg.VECTORSTORES_API )
-		st.divider( )
-	
-	# ------------------------------------------------------------------
-	# Main Chat UI
-	# ------------------------------------------------------------------
-	if provider_name == 'Grok':
 		provider_module = get_provider_module( )
 		collector = provider_module.VectorStores( )
 		
-		# --------------------------------------------------------------
-		# Local mapping (if maintained by wrapper)
-		# --------------------------------------------------------------
-		vs_map = getattr( collector, 'collections', None )
-		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( '**Known Collections (local mapping)**' )
-			for name, vid in vs_map.items( ):
-				st.write( f"- **{name}** — `{vid}`" )
-			st.markdown( "---" )
-		
-		# --------------------------------------------------------------
-		# Create Collection
-		# --------------------------------------------------------------
-		with st.expander( 'Create:', expanded=True ):
-			new_store_name = st.text_input( 'Enter Collection Name' )
-			if st.button( '➕ Create Collection', key='create_collection' ):
-				if not new_store_name:
-					st.warning( 'Enter a Collection Name.' )
-				else:
-					try:
-						if hasattr( collector, "create" ):
-							res = provider_module.create( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
-						else:
-							st.warning( 'create() not available on Grok provider.' )
-					except Exception as exc:
-						st.error( f'Create collection failed: {exc}' )
-		
-		# --------------------------------------------------------------
-		# Discover collections ( API fallback )
-		# --------------------------------------------------------------
-		options: List[ tuple ] = [ ]
-		if vs_map and isinstance( vs_map, dict ):
-			options = list( vs_map.items( ) )
-		
-		if not options:
-			try:
-				client = getattr( collector, 'client', None )
-				if ( client and hasattr( client, 'collections' )
-						and hasattr( client.collections, 'list' ) ):
-					api_list = client.collections.list( )
-					temp: List[ tuple ] = [ ]
-					for item in getattr( api_list, 'data', [ ] ) or api_list:
-						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' ) if isinstance( item, dict ) else None )
-						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' ) if isinstance( item, dict ) else None )
-						if nm and vid:
-							temp.append( (nm, vid) )
-					if temp:
-						options = temp
-			except Exception:
-				options = [ ]
-		
-		# --------------------------------------------------------------
-		# Select / Retrieve / Delete
-		# --------------------------------------------------------------
-		if options:
-			names = [ f"{n} — {i}" for n, i in options ]
-			sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
-			
-			sel_id: Optional[ str ] = None
-			for n, i in options:
-				if f"{n} — {i}" == sel:
-					sel_id = i
-					break
-			
-			c1, c2 = st.columns( [ 1,  1 ] )
-			with c1:
-				if st.button( 'Retrieve Collection', key='retrieve_collection' ):
-					if not sel_id:
-						st.warning( 'No Collection Selected.' )
-					else:
-						try:
-							client = getattr( collector, 'client', None )
-							if ( client and hasattr( client, 'collections' )
-									and hasattr( client.collections, 'retrieve' ) ):
-								vs = client.collections.retrieve( collection_id=sel_id )
-								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
-							else:
-								st.warning( 'collections.retrieve() not available.' )
-						except Exception as exc:
-							st.error( f'retrieve() failed: {exc}' )
-			
-			with c2:
-				if st.button( '❌ Delete Collection',  key='delete_collection' ):
-					if not sel_id:
-						st.warning( 'No collection selected.' )
-					else:
-						try:
-							client = getattr( collector, 'client', None )
-							if ( client and hasattr( client, 'collections' )
-									and hasattr( client.collections, 'delete' ) ):
-								res = client.collections.delete( collection_id=sel_id )
-								st.success( f'Delete returned: {res}' )
-							else:
-								st.warning( 'collections.delete() not available.' )
-						except Exception as exc:
-							st.error( f'Delete failed: {exc}' )
-				else:
-					st.info(
-						'No collections discovered. Create one or confirm '
-						'collections exist for this account.' )
-						
-	elif provider_name == 'Gemini':
-		provider_module = get_provider_module( )
-		searcher = provider_module.VectorStores( )
-		
-		# --------------------------------------------------------------
-		# Local mapping (if maintained by wrapper)
-		# --------------------------------------------------------------
-		vs_map = getattr( searcher, 'collections', None )
-		if vs_map and isinstance( vs_map, dict ):
-			st.markdown( 'Local File Search Stores' )
-			for name, vid in vs_map.items( ):
-				st.write( f'- **{name}** — {vid}' )
-			st.divider( )
-		
-		# --------------------------------------------------------------
-		# Create File Search Store
-		# --------------------------------------------------------------
-		with st.expander( 'Create:', expanded=True ):
-			new_store_name = st.text_input( 'New File Search Store name' )
-			if st.button( '➕ Create File Search Store' ):
-				if not new_store_name:
-					st.warning( 'Enter a File Search Store Name.' )
-				else:
-					try:
-						if hasattr( provider_module, 'create' ):
-							res = provider_module.create( new_store_name )
-							st.success( f"Create call submitted for '{new_store_name}'." )
-						else:
-							st.warning( 'create() not available on Gemini provider.' )
-					except Exception as exc:
-						st.error( f'Create store failed: {exc}' )
-		
-		# --------------------------------------------------------------
-		# Discover file search stores (local → API fallback)
-		# --------------------------------------------------------------
-		options: List[ tuple ] = [ ]
-		if vs_map and isinstance( vs_map, dict ):
-			options = list( vs_map.items( ) )
-		
-		if not options:
-			try:
-				client = getattr( searcher, 'client', None )
-				if ( client and hasattr( client, 'file_search_stores' )
-						and hasattr( client.file_search_stores, 'list' ) ):
-					api_list = client.file_search_stores.list( )
-					temp: List[ tuple ] = [ ]
-					for item in getattr( api_list, 'data', [ ] ) or api_list:
-						nm = getattr( item, 'name', None ) or (
-								item.get( 'name' ) if isinstance( item, dict ) else None )
-						vid = getattr( item, 'id', None ) or (
-								item.get( 'id' ) if isinstance( item, dict ) else None )
-						if nm and vid:
-							temp.append( (nm, vid) )
-					if temp:
-						options = temp
-			except Exception:
-				options = [ ]
-		
-		# --------------------------------------------------------------
-		# Select / Retrieve / Delete
-		# --------------------------------------------------------------
-		if options:
-			names = [ f'{n} — {i}' for n, i in options ]
-			sel = st.selectbox( 'Select a File Search Store', options=names )
-			
-			sel_id: Optional[ str ] = None
-			for n, i in options:
-				if f'{n} — {i}' == sel:
-					sel_id = i
-					break
-			
-			c1, c2 = st.columns( [ 1,  1 ] )
-			
-			with c1:
-				if st.button( 'Retrieve File Store' ):
-					if not sel_id:
-						st.warning( 'No file search store selected.' )
-					else:
-						try:
-							client = getattr( searcher, 'client', None )
-							if ( client and hasattr( client, 'file_search_stores' )
-									and hasattr( client.file_search_stores, 'retrieve' ) ):
-								vs = client.file_search_stores.retrieve(
-									file_search_store_id=sel_id )
-								st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
-							else:
-								st.warning( 'file_search_stores.retrieve() not available.' )
-						except Exception as exc:
-							st.error( f'retrieve() failed: {exc}' )
-			
-			with c2:
-				if st.button( '❌ Delete File Store' ):
-					if not sel_id:
-						st.warning( 'No file search store selected.' )
-					else:
-						try:
-							client = getattr( searcher, 'client', None )
-							if ( client and hasattr( client, 'file_search_stores' )
-									and hasattr( client.file_search_stores, 'delete' ) ):
-								res = client.file_search_stores.delete(
-									file_search_store_id=sel_id )
-								st.success( f'Delete returned: {res}' )
-							else:
-								st.warning( 'file_search_stores.delete() not available.' )
-						except Exception as exc:
-							st.error( f'Delete failed: {exc}' )
-				else:
-					st.info( 'No file search stores discovered' )
-			
-	elif provider_name == 'GPT':
-		provider_module = get_provider_module( )
-		vector = provider_module.VectorStores( )
-		
-		# --------------------------------------------------------------
-		# Local mapping
-		# --------------------------------------------------------------
-		vs_map = getattr( vector, 'collections', None )
-		st.caption( 'Store Management')
 		# ------------------------------------------------------------------
 		# Main Chat UI
 		# ------------------------------------------------------------------
-		left, center, right = st.columns( [ 0.025, 0.95, 0.055 ] )
+		left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 		with center:
+			st.caption( 'Store Management' )
+			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
+			with stores_left:
+				# --------------------------------------------------------------
+				# Expander - Create Collection
+				# --------------------------------------------------------------
+				with st.expander( 'Create:', expanded=True ):
+					new_store_name = st.text_input( 'Enter Collection Name' )
+					if st.button( '➕ Create Collection', key='create_collection' ):
+						if not new_store_name:
+							st.warning( 'Enter a Collection Name.' )
+						else:
+							try:
+								if hasattr( collector, "create" ):
+									res = provider_module.create( new_store_name )
+									st.success( f"Create call submitted for '{new_store_name}'." )
+								else:
+									st.warning( 'create() not available on Grok provider.' )
+							except Exception as exc:
+								st.error( f'Create collection failed: {exc}' )
+			
+			with stores_right:
+				vs_map = getattr( vector, 'collections', None )
+				# --------------------------------------------------------------
+				# Expander - Retreive Files
+				# --------------------------------------------------------------
+				with st.expander( 'Retreive:', expanded=True ):
+					options: List[ tuple ] = [ ]
+					if vs_map and isinstance( vs_map, dict ):
+						options = list( vs_map.items( ) )
+					
+					if not options:
+						try:
+							client = getattr( collector, 'client', None )
+							if (client and hasattr( client, 'collections' )
+									and hasattr( client.collections, 'list' )):
+								api_list = client.collections.list( )
+								temp: List[ tuple ] = [ ]
+								for item in getattr( api_list, 'data', [ ] ) or api_list:
+									nm = getattr( item, 'name', None ) or (
+											item.get( 'name' ) if isinstance( item, dict ) else None)
+									vid = getattr( item, 'id', None ) or (
+											item.get( 'id' ) if isinstance( item, dict ) else None)
+									if nm and vid:
+										temp.append( (nm, vid) )
+								if temp:
+									options = temp
+						except Exception:
+							options = [ ]
+					
+					# --------------------------------------------------------------
+					# Select / Retrieve / Delete
+					# --------------------------------------------------------------
+					if options:
+						names = [ f"{n} — {i}" for n, i in options ]
+						sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
+						
+						sel_id: Optional[ str ] = None
+						for n, i in options:
+							if f"{n} — {i}" == sel:
+								sel_id = i
+								break
+						
+						c1, c2 = st.columns( [ 1, 1 ] )
+						with c1:
+							if st.button( '📥 Retrieve Collection', key='retrieve_collection' ):
+								if not sel_id:
+									st.warning( 'No Collection Selected.' )
+								else:
+									try:
+										client = getattr( collector, 'client', None )
+										if (client and hasattr( client, 'collections' )
+												and hasattr( client.collections, 'retrieve' )):
+											vs = client.collections.retrieve( collection_id=sel_id )
+											st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
+										else:
+											st.warning( 'collections.retrieve() not available.' )
+									except Exception as exc:
+										st.error( f'retrieve() failed: {exc}' )
+						
+						with c2:
+							if st.button( '❌ Delete Collection', key='delete_collection' ):
+								if not sel_id:
+									st.warning( 'No collection selected.' )
+								else:
+									try:
+										client = getattr( collector, 'client', None )
+										if (client and hasattr( client, 'collections' )
+												and hasattr( client.collections, 'delete' )):
+											res = client.collections.delete( collection_id=sel_id )
+											st.success( f'Delete returned: {res}' )
+										else:
+											st.warning( 'collections.delete() not available.' )
+									except Exception as exc:
+										st.error( f'Delete failed: {exc}' )
+							else:
+								st.info(
+									'No collections discovered. Create one or confirm '
+									'collections exist for this account.' )
+				
+	# --------------------------------------------------------------
+	# Gemini
+	# --------------------------------------------------------------
+	elif provider_name == 'Gemini':
+		st.subheader( '🏛️ File Search Stores', help=cfg.VECTORSTORES_API )
+		st.divider( )
+		provider_module = get_provider_module( )
+		searcher = provider_module.VectorStores( )
+		
+		# ------------------------------------------------------------------
+		# Main Chat UI
+		# ------------------------------------------------------------------
+		left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
+		with center:
+			st.caption( 'Store Management' )
+			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
+			with stores_left:
+				# --------------------------------------------------------------
+				# Expander - Create File Search Store
+				# --------------------------------------------------------------
+				with st.expander( 'Create:', expanded=True ):
+					new_store_name = st.text_input( 'New File Search Store name' )
+					if st.button( '➕ Create' ):
+						if not new_store_name:
+							st.warning( 'Enter a File Search Store Name.' )
+						else:
+							try:
+								if hasattr( provider_module, 'create' ):
+									res = provider_module.create( new_store_name )
+									st.success( f"Create call submitted for '{new_store_name}'." )
+								else:
+									st.warning( 'create() not available on Gemini provider.' )
+							except Exception as exc:
+								st.error( f'Create store failed: {exc}' )
+			
+			with stores_right:
+				vs_map = getattr( searcher, 'collections', None )
+				# --------------------------------------------------------------
+				# Expander - Retreive Files
+				# --------------------------------------------------------------
+				with st.expander( label='Retreive:', expanded=True ):
+					options: List[ tuple ] = [ ]
+					if vs_map and isinstance( vs_map, dict ):
+						options = list( vs_map.items( ) )
+					
+					if not options:
+						try:
+							client = getattr( searcher, 'client', None )
+							if (client and hasattr( client, 'vector_stores' )
+									and hasattr( client.file_search_stores, 'list' )):
+								api_list = client.file_search_stores.list( )
+								temp: List[ tuple ] = [ ]
+								for item in getattr( api_list, 'data', [ ] ) or api_list:
+									nm = getattr( item, 'name', None ) or (
+											item.get( 'name' ) if isinstance( item, dict ) else None)
+									vid = getattr( item, 'id', None ) or (
+											item.get( 'id' ) if isinstance( item, dict ) else None)
+									if nm and vid:
+										temp.append( (nm, vid) )
+								if temp:
+									options = temp
+						except Exception:
+							options = [ ]
+					
+					# --------------------------------------------------------------
+					# Select / Retrieve / Delete
+					# --------------------------------------------------------------
+					if options:
+						names = [ f'{n} — {i}' for n, i in options ]
+						sel = st.selectbox( label='Select', options=names )
+						
+						sel_id: Optional[ str ] = None
+						for n, i in options:
+							if f'{n} — {i}' == sel:
+								sel_id = i
+								break
+						
+						c1, c2 = st.columns( [ 1, 1 ] )
+						with c1:
+							if st.button( label='📥 Retrieve', key='retrive_store' ):
+								if not sel_id:
+									st.warning( 'No file search store selected.' )
+								else:
+									try:
+										client = getattr( searcher, 'client', None )
+										if (client and hasattr( client, 'file_search_stores' )
+												and hasattr( client.file_search_stores, 'retrieve' )):
+											vs = client.file_search_stores.retrieve(
+												file_search_store_id=sel_id )
+											st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
+										else:
+											st.warning( 'file_search_stores.retrieve() not available.' )
+									except Exception as exc:
+										st.error( f'retrieve() failed: {exc}' )
+						
+						with c2:
+							if st.button( '❌ Delete File Store' ):
+								if not sel_id:
+									st.warning( 'No file search store selected.' )
+								else:
+									try:
+										client = getattr( searcher, 'client', None )
+										if (client and hasattr( client, 'file_search_stores' )
+												and hasattr( client.file_search_stores, 'delete' )):
+											res = client.file_search_stores.delete(
+												file_search_store_id=sel_id )
+											st.success( f'Delete returned: {res}' )
+										else:
+											st.warning( 'file_search_stores.delete() not available.' )
+									except Exception as exc:
+										st.error( f'Delete failed: {exc}' )
+							else:
+								st.info( 'No file search stores discovered' )
+			
+	# --------------------------------------------------------------
+	# GPT
+	# --------------------------------------------------------------
+	elif provider_name == 'GPT':
+		st.subheader( '🧊 Vector Stores', help=cfg.VECTORSTORES_API )
+		st.divider( )
+		provider_module = get_provider_module( )
+		vector = provider_module.VectorStores( )
+		
+		# ------------------------------------------------------------------
+		# Main Chat UI
+		# ------------------------------------------------------------------
+		left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
+		with center:
+			st.caption( 'Store Management' )
 			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
 			with stores_left:
 				# --------------------------------------------------------------
 				# Expander - Create Vector Store
 				# --------------------------------------------------------------
-				with st.expander( 'Create:', expanded=True ):
+				with st.expander( label='Create:', expanded=True ):
 					new_store_name = st.text_input( 'New Vector Store name', key='store_name' )
 					if st.button( '➕ Create Store', key='create_store' ):
 						if not new_store_name:
@@ -4318,33 +4338,15 @@ elif mode == 'Vector Stores':
 								st.error( f'Create store failed: {exc}' )
 			
 			with stores_right:
+				vs_map = getattr( vector, 'collections', None )
 				# --------------------------------------------------------------
-				# Discover vector stores
+				# Expander - Retreive Files
 				# --------------------------------------------------------------
 				with st.expander( 'Retreive:', expanded=True ):
 					options: List[ tuple ] = [ ]
 					if vs_map and isinstance( vs_map, dict ):
 						options = list( vs_map.items( ) )
 					
-					if not options:
-						try:
-							openai_client = st.session_state.get( 'openai_client' )
-							if ( openai_client and hasattr( openai_client, 'vector_stores' )
-									and hasattr( openai_client.vector_stores, 'list' ) ):
-								api_list = openai_client.vector_stores.list( )
-								temp: List[ tuple ] = [ ]
-								for item in getattr( api_list, 'data', [ ] ) or api_list:
-									nm = getattr( item, 'name', None ) or (
-											item.get( 'name' ) if isinstance( item, dict ) else None )
-									vid = getattr( item, 'id', None ) or (
-											item.get( 'id' ) if isinstance( item, dict ) else None )
-									if nm and vid:
-										temp.append( (nm, vid) )
-								if temp:
-									options = temp
-						except Exception:
-							options = [ ]
-						
 					# --------------------------------------------------------------
 					# Select / Retrieve / Delete
 					# --------------------------------------------------------------
@@ -4362,14 +4364,13 @@ elif mode == 'Vector Stores':
 						c1, c2 = st.columns( [ 1, 1 ] )
 						
 						with c1:
-							if st.button( 'Retrieve Store', key='retrieve_store' ):
+							if st.button( '📥 Retrieve Store', key='retrieve_store' ):
 								if not sel_id:
 									st.warning( 'No vector store selected.' )
 								else:
 									try:
-										openai_client = st.session_state[ 'openai_client' ]
-										vs = openai_client.vector_stores.retrieve( vector_store_id=sel_id )
-										st.write( 'Name:', vs.name)
+										vs = vector.retrieve( id=sel_id )
+										st.write( 'Name:', vs.name )
 										st.write( 'Files:', vs.file_counts )
 										st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
 									except Exception as exc:
@@ -4381,7 +4382,7 @@ elif mode == 'Vector Stores':
 									st.warning( 'No vector store selected.' )
 								else:
 									try:
-										openai_client = st.session_state.get( 'openai_client' )
+										vs = vector.delete( )
 										if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
 											res = openai_client.vector_stores.delete( vector_store_id=sel_id )
 											st.success( f'Delete returned: {res}' )
@@ -4391,7 +4392,7 @@ elif mode == 'Vector Stores':
 										st.error( f'Delete failed: {exc}' )
 					else:
 						st.info( 'No vector stores discovered' )
-						
+
 # ======================================================================================
 # DOCUMENTS MODE
 # ======================================================================================
@@ -4410,10 +4411,10 @@ elif mode == 'Document Q&A':
 	# ------------------------------------------------------------------
 	#  DOCQA SETTINGS
 	# ------------------------------------------------------------------
-	if st.session_state.get( 'do_clear_instructions' ):
+	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'docqna_system_instructions' ] = ''
 		st.session_state[ 'clear_docqa_instructions' ] = False
-		st.session_state[ 'do_clear_instructions' ] = False
+		st.session_state[ 'clear_instructions' ] = False
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -4423,7 +4424,7 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		# Expander — DocQA Inference Parameters
 		# ------------------------------------------------------------------
-		with st.expander( '🧠 Inference Settings', expanded=True, width='stretch' ):
+		with st.expander( label='Inference Settings', icon='🧠', expanded=False, width='stretch' ):
 			stores_c1, stores_c2, stores_c3, stores_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 				border=True, gap='medium' )
 			
@@ -4469,7 +4470,7 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		# Expander — DocQA System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( '🖥️ System Instructions', expanded=False, width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
@@ -4488,10 +4489,11 @@ elif mode == 'Document Q&A':
 			
 			with in_right:
 				st.selectbox( 'Select Template', prompt_names,
-					key='set_docqna_instructions', on_change=_on_template_change )
+					key='instructions', on_change=_on_template_change, index=None )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'docqna_system_instructions' ] = ''
+				st.session_state[ 'instructions' ] = ''
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
@@ -4535,16 +4537,20 @@ elif mode == 'Document Q&A':
 elif mode == 'Files':
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
-	purpose = st.session_state.get( 'files_purpose' )
-	file_type = st.session_state.get( 'files_type' )
-	file_id = st.session_state.get( 'files_id' )
-	file_url = st.session_state.get( 'files_url' )
+	files_purpose = st.session_state.get( 'files_purpose' )
+	files_type = st.session_state.get( 'files_type' )
+	files_id = st.session_state.get( 'files_id' )
+	files_url = st.session_state.get( 'files_url' )
+	files_table = st.session_state.get( 'files_table' )
 	try:
 		chat  # type: ignore
 	except NameError:
 		provider_module = get_provider_module( )
 		files = get_provider_module( ).Files( )
 	
+	# ------------------------------------------------------------------
+	# Main Chat UI
+	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		list_method = None
@@ -5412,8 +5418,13 @@ _mode_to_model_key = \
 {
 	'Text': 'text_model',
 	'Images': 'image_model',
-	'Audio': 'audio_model',
-	'Embeddings': 'embed_model',
+	'TTS': 'tts_model',
+	'Translation': 'translation_model',
+	'Transcription': 'transcription_model',
+	'Embedding': 'embedding_model',
+	'DocQnA': 'docqna_model',
+	'Files': 'files_model',
+	'Stores': 'stores_model'
 }
 
 provider_val = st.session_state.get( 'provider', '—' )
@@ -5444,13 +5455,13 @@ if mode == 'Text':
 	max_tokens = st.session_state.get( 'text_max_tokens' )
 	
 	if temperature is not None:
-		right_parts.append( f'Temp: {temperature:.0%}' )
+		right_parts.append( f'Temp: {temperature:.1%}' )
 	if top_p is not None:
-		right_parts.append( f'Top-P: {top_p:.0%}' )
+		right_parts.append( f'Top-P: {top_p:.1%}' )
 	if freq is not None:
-		right_parts.append( f'Freq: {freq:.0%}' )
+		right_parts.append( f'Freq: {freq:.2f}' )
 	if presence is not None:
-		right_parts.append( f'Presence: {presence:.0%}' )
+		right_parts.append( f'Presence: {presence:.2f}' )
 	if number is not None:
 		right_parts.append( f'N: {number}' )
 	if max_tokens is not None:
@@ -5525,7 +5536,7 @@ elif mode == 'Images':
 	if image_max_calls is not None:
 		right_parts.append( f'Max Calls: {image_max_calls}' )
 	if image_tools:
-		right_parts.append( f'Tools: {len(image_tools )}' )
+		right_parts.append( f'Tools: {len(image_tools)}' )
 	if image_include:
 		right_parts.append( 'Include: On' )
 	if image_stream:
@@ -5564,13 +5575,13 @@ elif mode == 'Audio':
 		right_parts.append( f'Format: {audio_format}' )
 	
 	if audio_temperature is not None:
-		right_parts.append( f'Temp: {audio_temperature}' )
+		right_parts.append( f'Temp: {audio_temperature:.1%}' )
 	if audio_top_p is not None:
-		right_parts.append( f'Top-P: {audio_top_p}' )
+		right_parts.append( f'Top-P: {audio_top_p:.1%}' )
 	if audio_freq is not None:
-		right_parts.append( f'Freq: {audio_freq}' )
+		right_parts.append( f'Freq: {audio_freq:.2f}' )
 	if audio_presence is not None:
-		right_parts.append( f'Presence: {audio_presence}' )
+		right_parts.append( f'Presence: {audio_presence:.2f}' )
 	if audio_number is not None:
 		right_parts.append( f'N: {audio_number}' )
 	
@@ -5621,21 +5632,21 @@ elif mode == 'Embeddings':
 		right_parts.append( 'Input: Set' )
 
 elif mode == 'Files':
-	purpose = st.session_state.get( 'files_purpose' )
-	file_type = st.session_state.get( 'files_type' )
-	file_id = st.session_state.get( 'files_id' )
-	file_url = st.session_state.get( 'files_url' )
+	files_purpose = st.session_state.get( 'files_purpose' )
+	files_type = st.session_state.get( 'files_type' )
+	files_id = st.session_state.get( 'files_id' )
+	files_url = st.session_state.get( 'files_url' )
 	
-	if purpose is not None:
-		right_parts.append( f'Purpose: {purpose}' )
+	if files_purpose is not None:
+		right_parts.append( f'Purpose: {files_purpose}' )
 	
-	if file_type is not None:
-		right_parts.append( f'Type: {file_type}' )
+	if files_type is not None:
+		right_parts.append( f'Type: {files_type}' )
 	
-	if file_id is not None:
-		right_parts.append( f'File ID: {file_id}' )
+	if files_id is not None:
+		right_parts.append( f'File ID: {files_id}' )
 	
-	if file_url is not None:
+	if files_url is not None:
 		right_parts.append( 'URL: Set' )
 
 elif mode == 'VectorStores':

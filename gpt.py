@@ -2085,13 +2085,15 @@ class Files( GPT ):
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.model = None
-		self.content = None
 		self.prompt = None
+		self.purpose = None
 		self.response = None
 		self.file_id = None
 		self.file_path = None
-		self.input = None
-		self.purpose = None
+		self.include = [ ]
+		self.content = [ ]
+		self.input = [ ]
+		self.tools = [ ]
 		self.documents = \
 		{
 			'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
@@ -2099,6 +2101,27 @@ class Files( GPT ):
 			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
 			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
+	
+	@property
+	def model_options( self ) -> List[ str ] | None:
+		'''
+
+	        Purpose:
+	        --------
+	        Methods that returns a list of small_model names
+
+        '''
+		return [
+				'gpt-5',
+				'gpt-5.2',
+				'gpt-5-mini',
+				'gpt-5-nano',
+				'gpt-5-turbo',
+				'gpt-4.1',
+				'gpt-4.1-mini',
+				'gpt-4.1-nano',
+				'gpt-4o',
+				'gpt-4o-mini' ]
 	
 	@property
 	def purpose_options( self ) -> List[ str ]:
@@ -2139,7 +2162,7 @@ class Files( GPT ):
 	
 	        Returns
 	        -------
-	        str | None
+	        id: str - the id of the uploaded file.
 
         """
 		try:
@@ -2155,25 +2178,43 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'upload( self, filepath: str, purpose: str=user_data ) -> str'
+			raise  exception
+	
+	def list( self, purpose: str = 'user_data' ):
+		try:
+			self.purpose = purpose
+			self.client = OpenAI( api_key=self.api_key )
+			files = self.client.files.list( purpose=self.purpose )
+			out = [ ]
+			for f in files:
+				if purpose and getattr( f, 'purpose', None ) != purpose:
+					continue
+				out.append( { 'id': str( getattr( f, 'id', '' ) ),
+				              'filename': str( getattr( f, 'filename', '' ) ),
+				              'purpose': str( getattr( f, 'purpose', '' ) ), } )
+			return out
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'list( self, prompt: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def retrieve( self, id: str ) -> List[ str ] | None:
+	def retrieve( self, id: str ) -> Any | None:
 		"""
 	
 	        Purpose
 	        _______
-	        Method that summarizes a document given a
-	        path prompt, and a path
+	        Method that retrieves a Vector Store
 	
 	        Parameters
 	        ----------
-	        prompt: str
-	        path: str
+	        id: str
 	
 	        Returns
 	        -------
-	        str | None
+	        Any | None
 
         """
 		try:
@@ -2189,18 +2230,18 @@ class Files( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def summarize( self, prompt: str, pdf_path: str ) -> str | None:
+	def summarize( self, prompt: str, filepath: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
 	
 	        Purpose
 	        _______
-	        Method that summarizes a document given a
-	        path prompt, and a path
+	        Method that summarizes a document using the Responses API given a path, prompt, and a model
 	
 	        Parameters
 	        ----------
 	        prompt: str
 	        path: str
+	        model: str
 	
 	        Returns
 	        -------
@@ -2209,14 +2250,16 @@ class Files( GPT ):
         """
 		try:
 			throw_if( 'prompt', prompt )
-			throw_if( 'pdf_path', pdf_path )
+			throw_if( 'filepath', filepath )
 			self.prompt = prompt
-			self.file_path = pdf_path
+			self.file_path = filepath
+			self.model = model
 			self.file = self.client.files.create( file=open( file=self.file_path, mode='rb' ),
 				purpose='user_data' )
-			self.messages = [{'role': 'user', 'content': [{ 'type': 'file',
+			self.messages = [{'role': 'user',
+			                  'content': [{ 'type': 'file',
 											'file': { 'file_id': self.file.id, }, },
-									{ 'type': 'text', 'text': self.prompt, }, ], } ]
+			                              { 'type': 'text', 'content': self.prompt, }, ], } ]
 			
 			self.response = self.client.responses.create( model=self.model, input=self.messages )
 			return self.response.output_text
@@ -2224,7 +2267,7 @@ class Files( GPT ):
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'summarize( self, prompt: str, path: str ) -> str'
+			exception.method = 'summarize( self, prompt: str, path: str, model: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2233,12 +2276,13 @@ class Files( GPT ):
 
 	        Purpose:
 	        _______
-	        Method that analyzeses an image given a prompt,
+	        Method that searches a Vector Store using the Repsonses API given a prompt, id, and model
 
 	        Parameters:
 	        ----------
 	        prompt: str
-	        url: str
+	        store_id: str
+	        model: str
 
 	        Returns:
 	        -------
@@ -2265,22 +2309,22 @@ class Files( GPT ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'search( self, prompt: str ) -> str'
+			exception.cause = 'VectorStores'
+			exception.method = 'search( self, prompt: str, store_id: str, model: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def survey( self, prompt: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
+	def survey( self, prompt: str, store_ids: List[ str ], model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
 
 	        Purpose:
 	        _______
-	        Method that analyzeses an image given a prompt,
+	        Method that searches a Vector Store given a prompt and model using the Responses API
 	
 	        Parameters:
 	        ----------
 	        prompt: str
-	        url: str
+	        model: str
 	
 	        Returns:
 	        -------
@@ -2289,8 +2333,10 @@ class Files( GPT ):
         """
 		try:
 			throw_if( 'prompt', prompt )
+			throw_if( 'store_ids', store_ids )
 			self.prompt = prompt
 			self.model = model
+			self.vector_store_ids = store_ids
 			self.client = OpenAI( api_key=self.api_key )
 			self.vector_store_ids = list( self.vector_stores.values( ) )
 			self.tools = [ { 'text': 'file_search', 'vector_store_ids': self.vector_store_ids,
@@ -2303,30 +2349,9 @@ class Files( GPT ):
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'survey( self, prompt: str ) -> str'
+			exception.method = 'survey( self, prompt: str, store_ids: List[ str ], model: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def list( self, purpose: str='user_data' ):
-		try:
-			self.purpose = purpose
-			self.client = OpenAI( api_key=self.api_key )
-			page = self.client.files.list( purpose=self.purpose )  # no purpose arg
-			files = getattr( page, "data", None ) or page
-			out = [ ]
-			for f in files:
-				if purpose and getattr( f, "purpose", None ) != purpose:
-					continue
-				out.append( { "id": str( getattr( f, "id", "" ) ),
-				              "filename": str( getattr( f, "filename", "" ) ),
-				              "purpose": str( getattr( f, "purpose", "" ) ), } )
-			return out
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'list( self, prompt: str ) -> str'
-			raise exception
 	
 	def extract( self, id: str ) -> str | None:
 		'''
@@ -2349,7 +2374,7 @@ class Files( GPT ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def delete( self, id: str ) -> bool | None:
+	def delete( self, id: str ) -> None:
 		'''
 			
 			Returns:
@@ -2360,8 +2385,7 @@ class Files( GPT ):
 		try:
 			throw_if( 'id', id )
 			self.client = OpenAI( api_key=self.api_key )
-			_deleted = self.client.files.delete( file_id=id )
-			return bool( _deleted )
+			self.client.files.delete( file_id=id )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
@@ -2403,6 +2427,7 @@ class VectorStores( GPT ):
 	store_id: Optional[ str ]
 	file_path: Optional[ str ]
 	file_id: Optional[ str ]
+	max_results: Optional[ int ]
 	include: Optional[ List[ str ] ]
 	tool_choice: Optional[ str ]
 	input: Optional[ List[ Dict[ str, str ] ] ]
@@ -2423,6 +2448,7 @@ class VectorStores( GPT ):
 		self.store_id = None
 		self.file_id = None
 		self.file_path = None
+		self.max_results = None
 		self.collections = \
 		{
 			'Financial Regulations': 'vs_712r5W5833G6aLxIYIbuvVcK',
@@ -2447,23 +2473,34 @@ class VectorStores( GPT ):
 		'''
 		try:
 			throw_if( 'store_name', store_name )
+			self.name = store_name
 			self.client = OpenAI( api_key=self.api_key )
-			_store = self.client.vector_stores.create( name=store_name )
+			_store = self.client.vector_stores.create( name=self.store_name )
 			return _store
 		except Exception as e:
-			raise
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = 'create( self, store_name: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
 	
-	def list( self, id: str ) -> Any | None:
+	def list( self, store_id: str ) -> List[ Any ] | None:
 		try:
-			throw_if( 'id', id )
-			self.store_id = id
+			throw_if( 'store_id', store_id )
+			self.store_id = store_id
 			self.client = OpenAI( api_key=self.api_key )
 			_stores = self.client.vector_stores.files.list( vector_store_id=self.store_id )
-			return _stores
+			return list( _stores )
 		except Exception as e:
-			raise e
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = 'list( self, store_id: str ) -> Any'
+			error = ErrorDialog( exception )
+			error.show( )
 	
-	def retrieve( self, id: str ) -> Any | None:
+	def retrieve( self, store_id: str ) -> Any | None:
 		'''
 			
 			Returns:
@@ -2472,12 +2509,18 @@ class VectorStores( GPT ):
 
 		'''
 		try:
-			throw_if( 'id', id )
+			throw_if( 'store_id', store_id )
+			self.store_id = store_id
 			self.client = OpenAI( api_key=self.api_key )
-			vector_store = self.client.vector_stores.retrieve( vector_store_id=id )
+			vector_store = self.client.vector_stores.retrieve( vector_store_id=self.store_id )
 			return vector_store
 		except Exception as e:
-			raise
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = 'retrieve( self, id: str ) -> Any'
+			error = ErrorDialog( exception )
+			error.show( )
 	
 	def search( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
@@ -2503,19 +2546,25 @@ class VectorStores( GPT ):
 			self.model = model
 			self.vector_store_ids = [ store_id ]
 			self.tools = [
-					{
-							'text': 'file_search',
-							'vector_store_ids': self.vector_store_ids,
-							'max_num_results': self.max_search_results,
-					} ]
+			{
+				'text': 'file_search',
+				'vector_store_ids': self.vector_store_ids,
+				'max_num_results': self.max_search_results,
+			} ]
 			self.response = self.client.responses.create( model=self.model, tools=self.tools,
 				input=self.prompt )
 			return self.response.output_text
 		except Exception as e:
-			raise
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = ('search(self, prompt: str, store_id: str, '
+			                    'model: str=gpt-4.1-nano) -> str')
+			error = ErrorDialog( exception )
+			error.show( )
 	
-	def survey( self, prompt: str, store_id: List[ str ]=None,
-			model: str = 'gpt-4.1-nano-2025-04-14' ) -> str | None:
+	def survey( self, prompt: str, store_ids: List[ str ]=None, results: int=10,
+			model: str='gpt-4.1-nano' ) -> str | None:
 		"""
 
 	        Purpose:
@@ -2534,31 +2583,47 @@ class VectorStores( GPT ):
         """
 		try:
 			throw_if( 'prompt', prompt )
-			throw_if( 'store_id', store_id )
+			throw_if( 'store_id', store_ids )
 			self.prompt = prompt
 			self.model = model
-			self.vector_store_ids = [ store_id ]
+			self.vector_store_ids = store_ids
+			self.max_results = results
 			self.tools = [
-					{
-							'text': 'file_search',
-							'vector_store_ids': self.vector_store_ids,
-							'max_num_results': self.max_search_results,
-					} ]
+			{
+				'text': 'file_search',
+				'vector_store_ids': self.vector_store_ids,
+				'max_num_results': self.max_search_results,
+			} ]
 			self.response = self.client.responses.create( model=self.model, tools=self.tools,
 				input=self.prompt )
 			return self.response.output_text
 		except Exception as e:
-			raise
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = ('survey( self, prompt: str, store_ids: List[ str ], '
+			                    'results: int=10, model: str=gpt-4.1-nano )->str')
+			error = ErrorDialog( exception )
+			error.show( )
 	
-	def update( self, store_id: str, filename: str ):
+	def update( self, store_id: str, filename: str ) -> None:
 		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'filename', filename )
+			self.store_id = store_id
+			self.name = filename
 			self.client = OpenAI( api_key=self.api_key )
-			vector_store = self.client.vector_stores.update( vector_store_id=store_id, name=filename )
+			vector_store = self.client.vector_stores.update( vector_store_id=self.store_id, name=self.name )
 			return vector_store
 		except Exception as e:
-			return None
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = 'update( self, store_id: str, filename: str )'
+			error = ErrorDialog( exception )
+			error.show( )
 	
-	def delete( self, store_id: str ) -> bool | None:
+	def delete( self, store_id: str ) -> None:
 		'''
 			
 			Returns:
@@ -2568,11 +2633,16 @@ class VectorStores( GPT ):
 		'''
 		try:
 			throw_if( 'store_id', store_id )
+			self.store_id = store_id
 			self.client = OpenAI( api_key=self.api_key )
-			_deleted = self.client.vector_stores.delete( vector_store_id=id )
-			return bool( _deleted )
+			self.client.vector_stores.delete( vector_store_id=self.store_id )
 		except Exception as e:
-			return None
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStore'
+			exception.method = 'delete( self, id: str )'
+			error = ErrorDialog( exception )
+			error.show( )
 	
 	def __dir__( self ) -> List[ str ] | None:
 		return [ 'client',

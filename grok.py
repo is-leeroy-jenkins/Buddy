@@ -48,11 +48,10 @@ import requests
 from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
 from google.genai.types import ListFilesResponse
-from xai_sdk.aio.image import ImageResponse
-
 import config as cfg
 from boogr import ErrorDialog, Error
 import config as cfg
+from xai_sdk.aio.image import ImageResponse
 from xai_sdk import Client
 from xai_sdk.chat import user, system, image, file
 
@@ -1448,10 +1447,10 @@ class Files( Grok ):
 		self.purpose = None
 		self.documents = \
 		{
-				'Account Balances.csv': 'file_9e0d8f9e-06c7-4495-9576-cdd83c433be6',
-				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
-				'Authority.csv': '',
-				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
+			'Account Balances.csv': 'file_9e0d8f9e-06c7-4495-9576-cdd83c433be6',
+			'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
+			'Authority.csv': '',
+			'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
 		}
 
 	@property
@@ -1471,7 +1470,13 @@ class Files( Grok ):
 			List[str]
 		
 		"""
-		return [ 'grok-4-fast', 'grok-4' ]
+		return [ 'grok-4', 'grok-4-0709', 'grok-4-latest', 'grok-4-1-fast',
+		         'grok-4-1-fast-reasoning', 'grok-4-1-fast-reasoning-latest',
+		         'grok-4-1-fast-non-reasoning', 'grok-4-1-fast-non-reasoning-latest', 'grok-4-fast',
+		         'grok-4-fast-reasoning', 'grok-4-fast-reasoning-latest',
+		         'grok-4-fast-non-reasoning', 'grok-4-fast-non-reasoning-latest',
+		         'grok-code-fast-1', 'grok-3', 'grok-3-latest', 'grok-3-mini', 'grok-3-fast',
+		         'grok-3-fast-latest', 'grok-3-mini-fast', 'grok-3-mini-fast-latest' ]
 	
 	@property
 	def tool_options( self ) -> List[ str ]:
@@ -1492,7 +1497,7 @@ class Files( Grok ):
 		"""
 		return [ 'code_execution()' ]
 	
-	def upload( self, filepath: str, filename: str ):
+	def upload( self, filepath: str, filename: str ) -> None:
 		"""
 		
 			Purpose:
@@ -1501,8 +1506,8 @@ class Files( Grok ):
 
 			Parameters:
 			-----------
-			file_path : str
-			purpose : str
+			filepath : str
+			filename : str
 
 			Returns:
 			--------
@@ -1517,17 +1522,16 @@ class Files( Grok ):
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( {
 				'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			self.file = self.client.files.upload( open( self.file_path, mode='rb' ),
+			self.client.files.upload( file=open( self.file_path, mode='rb' ),
 				filename=self.file_name )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Files'
-			ex.method = 'create( text: str )'
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.method = 'upload( self, filepath: str, filename: str ) -> None'
+			raise ex
 	
-	def list( self ) -> ListFilesResponse:
+	def list( self ) -> List[ Any ]:
 		"""
 		
 			Purpose:
@@ -1547,16 +1551,15 @@ class Files( Grok ):
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 			files_response = self.client.files.list( )
-			return files_response
+			return list( files_response )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Files'
-			ex.method = 'list()'
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.method = 'list( self ) -> List[ Any ]'
+			raise ex
 	
-	def retrieve( self, file_id: str ):
+	def retrieve( self, file_id: str ) -> Any | None:
 		"""
 		
 			Purpose:
@@ -1578,83 +1581,19 @@ class Files( Grok ):
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( {
 					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			self.file = self.client.files.get( file_id=self.file_id )
-			return self.file
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Embeddings'
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def extract( self, file_id: str ) -> bytes | None:
-		"""
-		
-			Purpose:
-			--------
-			Retrieve raw content of a stored file.
-
-			Parameters:
-			-----------
-			file_id : str
-
-			Returns:
-			--------
-			bytes
-		
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( {
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			_content = self.client.files.content( file_id=self.file_id )
-			return _content
+			metadata = self.client.files.get( file_id=self.file_id )
+			return metadata
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Files'
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def delete( self, file_id: str ):
-		"""
-		
-			Purpose:
-			--------
-			Delete a file from storage.
-
-			Parameters:
-			-----------
-			file_id : str
-
-			Returns:
-			--------
-			dict
-		
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( {
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
-			self.file = self.client.files.delete( file_id=self.file_id )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Embeddings'
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.method = 'retrieve( self, file_id: str ) -> Any | None'
+			raise ex
 	
 	def search( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast',
-			temperature: float=0.8, top_p: float=0.9, frequency: float = 0.0,
-			presence: float= .0, max_tokens: int=10000, store: bool=True, stream: bool=True,
-			instruct: str=None ) -> str | None:
+			temperature: float=None, top_p: float=None, frequency: float=None,
+			presence: float=None, max_tokens: int=None, store: bool=None,
+			stream: bool=None, instruct: str=None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1703,20 +1642,19 @@ class Files( Grok ):
 				filename=self.file_name )
 			self.chat = self.client.chat.create( model=self.model )
 			self.chat.append( user( self.prompt, file( self.file.id ) ) )
-			_response = self.chat.sample()
+			_response = self.chat.sample( )
 			return _response.content
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Files'
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.method = 'search( self, filepath: str, filename: str, prompt: str, model: str ) -> str'
+			raise ex
 	
 	def survey( self, filepaths: List[ str ], filenames: List[ str ], prompt: str,
-			model: str='grok-4-fast', temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool=True, stream: bool=True,
-			instruct: str=None ) -> str | None:
+			model: str='grok-4-fast', temperature: float=None, top_p: float=None,
+			frequency: float=None, presence: float=None, max_tokens: int=None, store: bool=None,
+			stream: bool=None, instruct: str=None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1771,9 +1709,70 @@ class Files( Grok ):
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'Files'
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.method = ('survey( self, filepaths: List[ str ], filenames: List[ str ], '
+			             'prompt: str, model: str ) -> str')
+			raise ex
+	
+	def extract( self, file_id: str ) -> bytes | None:
+		"""
+		
+			Purpose:
+			--------
+			Retrieve raw content of a stored file.
+
+			Parameters:
+			-----------
+			file_id : str
+
+			Returns:
+			--------
+			bytes
+		
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			self.file_id = file_id
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			_content = self.client.files.content( file_id=self.file_id )
+			return _content
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Files'
+			ex.method = 'extract( self, file_id: str ) -> bytes | None'
+			raise ex
+	
+	def delete( self, file_id: str ) -> None:
+		"""
+		
+			Purpose:
+			--------
+			Delete a file from storage.
+
+			Parameters:
+			-----------
+			file_id : str
+
+			Returns:
+			--------
+			dict
+		
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			self.file_id = file_id
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.client.files.delete( file_id=self.file_id )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Files'
+			ex.method = 'delete( self, file_id: str ) -> None'
+			raise ex
 	
 	def __dir__( self ) -> List[ str ] | None:
 		return [ 'client',
@@ -1810,13 +1809,14 @@ class VectorStores( Grok ):
 	
 	"""
 	client: Optional[ Client ]
+	model: Optional[ str ]
 	prompt: Optional[ str ]
 	response_format: Optional[ str ]
 	number: Optional[ int ]
 	content: Optional[ str ]
 	name: Optional[ str ]
 	file_path: Optional[ str ]
-	file_id: Optional[ str ]
+	file_ids: Optional[ List[ str ] ]
 	store_id: Optional[ str ]
 	documents: Optional[ Dict[ str, str ] ]
 	collections: Optional[ Dict[ str, str ] ]
@@ -1828,20 +1828,16 @@ class VectorStores( Grok ):
 		self.model = None
 		self.content = None
 		self.response = None
-		self.file_id = None
+		self.file_ids = None
 		self.file_path = None
 		self.file_name = None
 		self.store_id = None
-		self.documents = None
 		self.collections = \
 		{
-				'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e',
-				'DoD Data': 'collection_137a5ed3-2f20-4082-bf44-73df43a356a4',
-				'DoD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6',
-				'DoA Regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e',
-				'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
-				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
-				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+			'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e',
+			'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+			'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+			'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
 		}
 		self.documents = \
 		{
@@ -1851,67 +1847,32 @@ class VectorStores( Grok ):
 				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
 		}
 	
-	def list( self ):
+	@property
+	def model_options( self ) -> List[ str ]:
 		"""
 		
 			Purpose:
 			--------
-			List all collections accessible to the account.
-
-			Returns:
-			--------
-			List[dict]
-		
-		"""
-		try:
-			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
-					'Content-Type': 'application/json', } )
-			self.collections = self.client.collections.list( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = ''
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
-	
-	def retrieve( self, collection_id: str ):
-		"""
-		
-			Purpose:
-			--------
-			Retrieve metadata for a specific collection.
+			Return list of efficient file interaction models.
 
 			Parameters:
 			-----------
-			collection_id : str
+			None
 
 			Returns:
 			--------
-			dict
+			List[str]
 		
 		"""
-		try:
-			throw_if( 'collection_id', collection_id )
-			self.collection_id = collection_id
-			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
-					'Content-Type': 'application/json', } )
-			url = f'{self.base_url}/collections/{self.collection_id}'
-			response = self.client.get( url, timeout=self.timeout )
-			response.raise_for_status( )
-			
-			return response.json( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = ''
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
+		return [ 'grok-4', 'grok-4-0709', 'grok-4-latest', 'grok-4-1-fast',
+		         'grok-4-1-fast-reasoning', 'grok-4-1-fast-reasoning-latest',
+		         'grok-4-1-fast-non-reasoning', 'grok-4-1-fast-non-reasoning-latest', 'grok-4-fast',
+		         'grok-4-fast-reasoning', 'grok-4-fast-reasoning-latest',
+		         'grok-4-fast-non-reasoning', 'grok-4-fast-non-reasoning-latest',
+		         'grok-code-fast-1', 'grok-3', 'grok-3-latest', 'grok-3-mini', 'grok-3-fast',
+		         'grok-3-fast-latest', 'grok-3-mini-fast', 'grok-3-mini-fast-latest' ]
 	
-	def create( self, name: str, file_ids: List[ str ], description: Optional[ str ] = None ):
+	def create( self, name: str, model: str ) -> None:
 		"""
 		
 			Purpose:
@@ -1931,28 +1892,85 @@ class VectorStores( Grok ):
 		"""
 		try:
 			throw_if( 'name', name )
-			throw_if( 'file_ids', file_ids )
+			throw_if( 'model', model )
+			self.model = model
+			self.file_name = name
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
-					'Content-Type': 'application/json', } )
-			payload = { 'name': name, 'file_ids': file_ids }
+			                              'Content-Type': 'application/json', } )
+			payload = { 'name': self.file_name, 'file_ids': self.file_ids }
 			if description:
 				payload[ 'description' ] = description
 			
 			url = f'{self.base_url}/collections'
-			response = self.client.post( url, json=payload, timeout=self.timeout )
+			response = self.client.collections.create( name=self.file_name, model_name=self.model )
 			response.raise_for_status( )
-			
 			return response.json( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = ''
-			ex.method = ''
+			ex.cause = 'VectorStores'
+			ex.method = 'create( self, name: str, model: str ) -> None'
+			raise ex
+	
+	def list( self ) -> List[ Any ] | None:
+		"""
+		
+			Purpose:
+			--------
+			List all collections accessible to the account.
+
+			Returns:
+			--------
+			List[dict]
+		
+		"""
+		try:
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
+			_response = self.client.collections.list( )
+			return list( _response )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'VectorStores'
+			ex.method = 'list( self ) -> List[ Any ] '
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def search( self, prompt: str, store_id: str, model: str = 'grok-4-fast' ) -> str | None:
+	def retrieve( self, stores_id: str ) -> Any | None:
+		"""
+		
+			Purpose:
+			--------
+			Retrieve metadata for a specific collection.
+
+			Parameters:
+			-----------
+			collection_id : str
+
+			Returns:
+			--------
+			dict
+		
+		"""
+		try:
+			throw_if( 'stores_id', stores_id )
+			self.stores_id = stores_id
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
+			metadata = self.client.collections.get( collection_id=self.collection_id )
+			return metadata
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'VectorStores'
+			ex.method = 'retrieve( self, stores_id: str ) -> Any '
+			raise ex
+	
+	def search( self, prompt: str, store_id: str, model: str='grok-4-fast' ) -> str | None:
 		"""
 
 	        Purpose:
@@ -1990,14 +2008,13 @@ class VectorStores( Grok ):
 				collection_ids=[ self.store_id ],)
 			return self.response.output_text
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'search( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'VectorStores'
+			ex.method = 'search( self, prompt: str, store_id: str, model: str ) -> str'
+			raise ex
 	
-	def update( self, collection_id: str, filepath: str, filename: str ):
+	def update( self, store_id: str, filepath: str, filename: str ) -> None:
 		"""
 		
 			Purpose:
@@ -2016,15 +2033,14 @@ class VectorStores( Grok ):
 		
 		"""
 		try:
-			throw_if( 'collection_id', collection_id )
+			throw_if( 'store_id', store_id )
 			throw_if( 'filename', filename )
 			throw_if( 'filepath', filepath )
 			self.file_path = filepath
 			self.file_name = filename
-			self.store_id = collection_id
+			self.store_id = store_id
 			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( {
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+			self.client.headers.update({ 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
 					'Content-Type': 'application/json', } )
 			with open( self.file_path, 'rb' ) as file:
 				file_data = file.read( )
@@ -2034,12 +2050,11 @@ class VectorStores( Grok ):
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = ''
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.cause = 'VectorStores'
+			ex.method = 'update( self, store_id: str, filepath: str, filename: str ) -> None'
+			raise ex
 			
-	def delete( self, collection_id: str ):
+	def delete( self, store_id: str ) -> None:
 		"""
 		
 			Purpose:
@@ -2056,23 +2071,20 @@ class VectorStores( Grok ):
 		
 		"""
 		try:
-			throw_if( 'collection_id', collection_id )
+			throw_if( 'store_id', store_id )
 			url = f'{self.base_url}/collections/{collection_id}'
 			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( {
-					'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+			self.client.headers.update({'Authorization': f'Bearer {cfg.GROK_API_KEY}',
 					'Content-Type': 'application/json', } )
 			response = self.client.delete( url, timeout=self.timeout )
 			response.raise_for_status( )
-			
 			return response.json( )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
-			ex.cause = ''
-			ex.method = ''
-			error = ErrorDialog( ex )
-			error.show( )
+			ex.cause = 'VectorStores'
+			ex.method = 'delete( self, store_id: str ) -> None'
+			raise ex
 	
 	def __dir__( self ) -> List[ str ] | None:
 		return [ 'client',
