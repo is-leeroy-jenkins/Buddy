@@ -2225,9 +2225,6 @@ if 'audio_store' not in st.session_state:
 if 'audio_stream' not in st.session_state:
 	st.session_state[ 'audio_stream' ] = False
 
-if 'audio_task' not in st.session_state:
-	st.session_state[ 'audio_task' ] = ''
-
 if 'audio_tool_choice' not in st.session_state:
 	st.session_state[ 'audio_tool_choice' ] = ''
 
@@ -2253,6 +2250,9 @@ if 'audio_context' not in st.session_state:
 	st.session_state.audio_context: List[ Dict[ str, Any ] ] = [ ]
 
 #-------AUDIO-SECIFIC PARAMETERS--------------
+if 'audio_task' not in st.session_state:
+	st.session_state[ 'audio_task' ] = ''
+
 if 'audio_file' not in st.session_state:
 	st.session_state[ 'audio_file' ] = ''
 
@@ -2281,17 +2281,17 @@ if 'audio_output' not in st.session_state:
 	st.session_state[ 'audio_output' ] = ''
 
 # ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
-if 'embeddings_input_text' not in st.session_state:
-	st.session_state[ 'embeddings_input_text' ] = ''
-
 if 'embeddings_dimensions' not in st.session_state:
 	st.session_state[ 'embeddings_dimensions' ] = 0
 
+if 'embeddings_chunk_size' not in st.session_state:
+	st.session_state[ 'embedding_chunk_size' ] = 0
+
+if 'embeddings_input_text' not in st.session_state:
+	st.session_state[ 'embeddings_input_text' ] = ''
+
 if 'embeddings_encoding_format' not in st.session_state:
 	st.session_state[ 'embeddings_encoding_format' ] = ''
-
-if 'embeddings_batch_size' not in st.session_state:
-	st.session_state[ 'embeddings_batch_size' ] = 0
 
 if 'embeddings_method' not in st.session_state:
 	st.session_state[ 'embeddings_method' ] = ''
@@ -2650,7 +2650,7 @@ elif mode == 'Text':
 	# ------------------------------------------------------------------
 	# Sidebar — Text Settings
 	# ------------------------------------------------------------------
-	with (st.sidebar):
+	with st.sidebar:
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
 	# ------------------------------------------------------------------
@@ -2714,8 +2714,7 @@ elif mode == 'Text':
 						# ----------------------------------------------------------
 						# Remove Model Settings session keys
 						# ----------------------------------------------------------
-						for key in [ 'text_model', 'text_include', 'text_domains', 'text_stops',
-						             'text_reasoning', 'text_domains_input' ]:
+						for key in [ 'text_model', 'text_include', 'text_domains', 'text_reasoning' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -2757,7 +2756,7 @@ elif mode == 'Text':
 					text_temperature = st.session_state[ 'text_temperature' ]
 				
 				with prm_c5:
-					set_text_number = st.slider( label='Number', min_value=0, max_value=4,
+					set_text_number = st.slider( label='Number', min_value=0, max_value=10,
 						value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
 						help='Optional. Upper limit on the responses returned by the model',
 						key='text_number' )
@@ -2866,8 +2865,8 @@ elif mode == 'Text':
 						# ----------------------------------------------------------
 						# Remove Response Settings session keys
 						# ----------------------------------------------------------
-						for key in [ 'text_stream', 'text_store', 'text_background',
-								'text_stops', 'text_max_tokens', ]:
+						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
+						             'text_max_tokens' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						# If using separated UI key for stops
@@ -2955,7 +2954,6 @@ elif mode == 'Text':
 						st.session_state.text_messages.append( { 'role': 'assistant', 'content': response } )
 					else:
 						st.error( 'Generation Failed!.' )
-			
 						try:
 							_update_token_counters( getattr( text, 'response', None ) or response )
 						except Exception:
@@ -3350,16 +3348,16 @@ elif mode == "Images":
 					try:
 						kwargs: Dict[ str, Any ] = {
 								'prompt': prompt,
-								'chat_model': image_model,
+								'model': image_model,
 						}
 						
 						# Provider-safe optional args
 						if size_arg is not None:
-							kwargs[ 'size' ] = size_arg
+							kwargs[ 'size' ] = st.session_state[ 'image_size' ]
 						if quality is not None:
-							kwargs[ 'quality' ] = quality
+							kwargs[ 'quality' ] = st.session_state[ 'image_quality' ]
 						if fmt is not None:
-							kwargs[ 'fmt' ] = fmt
+							kwargs[ 'fmt' ] = st.session_state[ 'image_response_format' ]
 						
 						img_url = image.generate( **kwargs )
 						st.image( img_url )
@@ -3596,7 +3594,7 @@ elif mode == 'Audio':
 						
 						audio_task = st.session_state[ 'audio_task' ]
 					
-					# ---------------- Model ---------------
+				# ---------------- Model ---------------
 				with aud_c2:
 					if audio_task == 'Transcribe':
 						model_options = list( transcriber.model_options )
@@ -3611,7 +3609,7 @@ elif mode == 'Audio':
 						
 						audio_model = st.session_state[ 'audio_model' ]
 					
-					# ---------------- Language ----------------
+				# ---------------- Language ----------------
 				with aud_c3:
 					if audio_task in ('Transcribe', 'Translate'):
 						obj = transcriber if audio_task == 'Transcribe' else translator
@@ -3629,6 +3627,8 @@ elif mode == 'Audio':
 							audio_voice = st.session_state[ 'audio_voice' ]
 						
 						# ---------------- Sample Rate ----------------
+				
+				#---------------- Sample Rate
 				with aud_c4:
 					audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
 						key='audio_rate', placeholder='Options', index=None )
@@ -3639,11 +3639,11 @@ elif mode == 'Audio':
 				with aud_c5:
 					format_options = [ ]
 					if audio_task == 'Transcribe':
-						format_options = transcriber.format_options
+						format_options = list( transcriber.format_options )
 					elif audio_task == 'Translate':
-						format_options = translator.format_options
+						format_options = list( translator.format_options )
 					elif audio_task == 'Text-to-Speech':
-						format_options = tts.format_options
+						format_options = list( tts.format_options )
 					
 					if format_options:
 						audio_format = st.selectbox( label='Format', options=format_options,
@@ -3668,28 +3668,29 @@ elif mode == 'Audio':
 					border=True, gap='medium' )
 				
 				with prm_one:
-					set_audio_top = st.slider( 'Top-P', 0.0, 1.0,
-						float( st.session_state.get( 'audio_top_percent', 1.0 ) ), 0.01, help=cfg.TOP_P )
+					set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+						value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
+						step=0.01, help=cfg.TOP_P )
 					
 					audio_top_percent = st.session_state[ 'audio_top_percent' ]
 			
 				with prm_two:
-					set_audio_frequency = st.slider( 'Frequency Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
-						0.01, help=cfg.FREQUENCY_PENALTY )
+					set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+						value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
+						step=0.01, help=cfg.FREQUENCY_PENALTY )
 					
 					audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
 				
 				with prm_three:
-					set_audio_presense = st.slider( 'Presence Penalty', -2.0, 2.0,
-						float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
-						0.01, help=cfg.PRESENCE_PENALTY )
+					set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+						value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
+						step=0.01, help=cfg.PRESENCE_PENALTY )
 					
 					audio_presense = st.session_state[ 'audio_presense_penalty' ]
 				
 				with prm_four:
-					set_audio_temperature = st.slider( 'Temperature', 0.0, 1.0,
-						float( st.session_state.get( 'audio_temperature', 0.7 ) ), 0.01,
+					set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+						value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
 						help=cfg.TEMPERATURE )
 					
 					audio_temperature = st.session_state[ 'audio_temperature' ]
@@ -3698,7 +3699,8 @@ elif mode == 'Audio':
 					# ----------------------------------------------------------
 					# Remove Audio Inference session keys
 					# ----------------------------------------------------------
-					for key in [ 'audio_top_percent', 'audio_temperature' ]:
+					for key in [ 'audio_top_percent', 'audio_temperature', 'audio_presense_penalty',
+					             'audio_frequency_penalty', ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
 					
@@ -3710,9 +3712,9 @@ elif mode == 'Audio':
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
 				
 				with resp_c1:
-					loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
+					set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
 					
-					loop = st.session_state[ 'audio_loop' ]
+					audio_loop = st.session_state[ 'audio_loop' ]
 				
 				with resp_c2:
 					set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
@@ -3720,22 +3722,22 @@ elif mode == 'Audio':
 					audio_autoplay = st.session_state[ 'audio_autoplay' ]
 				
 				with resp_c3:
-					set_start_time = st.slider( label='Start Time:', min_value=0.0, max_value=5.0,
-						value=float( st.session_state.get( 'audio_start_time' ) ),
+					set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
+						value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
 						key='audio_start_time' )
 					
 					audio_start_time = st.session_state[ 'audio_start_time' ]
 				
 				with resp_c4:
-					set_end_time = st.slider( label='End Time:', min_value=0.0, max_value=5.0,
-						value=float( st.session_state.get( 'audio_end_time' ) ),
+					set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
+						value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
 						key='audio_end_time' )
 					
 					audio_end_time = st.session_state[ 'audio_end_time' ]
 				
 				with resp_c5:
 					set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
-						value=int( st.session_state.get( 'audio_max_tokens', 0 ) ),
+						value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
 						help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
 					
 					audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
@@ -3817,11 +3819,11 @@ elif mode == 'Audio':
 							st.error( f'Translation failed: {exc}' )
 			
 			elif audio_task == 'Text-to-Speech' and tts:
-				text = st.text_area( 'Text to synthesize' )
+				text = st.text_area( 'Enter Text to Synthesize' )
 				if text and st.button( 'Generate Audio' ):
 					with st.spinner( 'Synthesizing speech…' ):
 						try:
-							audio_bytes = tts.speak( text, model=audio_model, voice=voice, )
+							audio_bytes = tts.create_speech( text, model=audio_model, voice=voice )
 							st.audio( audio_bytes )
 							try:
 								_update_token_counters( getattr( tts, 'response', None ) )
