@@ -1193,6 +1193,20 @@ class Images( Grok ):
 		return [ "grok-2-image-1212", 'grok-imagine-image' ]
 	
 	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'web_search',
+		         'x_search',
+		         'collections_search',
+		         'code_interpreter' ]
+	
+	@property
 	def aspect_options( self ) -> List[ str ]:
 		return [ '1:1',
 		         '3:4',
@@ -1232,7 +1246,7 @@ class Images( Grok ):
 		return [ 'low', 'high' ]
 	
 	@property
-	def resolution_options( self ) -> List[ str ]:
+	def size_options( self ) -> List[ str ]:
 		return [ '1K',  '2K' ]
 	
 	@property
@@ -1241,9 +1255,9 @@ class Images( Grok ):
 	
 	@property
 	def detail_options( self ) -> List[ str ]:
-		return [ "auto",
-		         "low",
-		         "high" ]
+		return [ 'auto',
+		         'low',
+		         'high' ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:

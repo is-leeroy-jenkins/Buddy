@@ -3699,8 +3699,8 @@ elif mode == "Images":
 						st.rerun( )
 	
 				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
-					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					img_c1, img_c2, img_c3, img_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 					
 					# ------------ Image Detail
 					with img_c1:
@@ -3729,18 +3729,9 @@ elif mode == "Images":
 						
 						image_quality = st.session_state[ 'image_quality' ]
 					
-					# ------------ Image Backcolor
-					with img_c4:
-						colors = list( image.backcolor_options )
-						set_image_backcolor = st.selectbox( label='Image Backcolor',
-							options=colors, help=cfg.IMAGE_BACKGROUND,
-							key='image_backcolor', placeholder='Options', index=None )
-						
-						image_backcolor = st.session_state[ 'image_backcolor' ]
-					
 					# ------------ Image Output Format
-					with img_c5:
-						outputs = list( image.output_options )
+					with img_c4:
+						outputs = list( image.format_options )
 						set_image_output = st.selectbox( label='Image Format', options=outputs,
 							help=cfg.IMAGE_RESPONSE, key='image_output',
 							placeholder='Options', index=None )
@@ -4631,187 +4622,373 @@ elif mode == 'Audio':
 	left, center, right = st.columns( [ 0.05, 0.9,  0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — Grok LLM Configuration
+		# Expander — Gemini LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-			with st.expander( 'Model Options', expanded=False, width='stretch' ):
-				aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
-					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
-				
-				# --------- Task ---------------
-				with aud_c1:
-					if not available_tasks:
-						st.info( 'Audio is not supported by the selected provider.' )
-						audio_task = None
-					else:
-						audio_task = st.selectbox( label='Mode', options=available_tasks,
-							key='audio_task', placeholder='Options', index=None )
-						
-						audio_task = st.session_state[ 'audio_task' ]
-				
-				# ---------  Mode ---------------
-				with aud_c2:
-					if audio_task == 'Transcribe':
-						model_options = list( transcriber.model_options )
-					elif audio_task == 'Translate':
-						model_options = list( translator.model_options )
-					elif audio_task == 'Text-to-Speech':
-						model_options = list( tts.model_options )
-					
-					if model_options:
-						audio_model = st.selectbox( label='Model', options=model_options,
-							key='audio_model', placeholder='Options', index=None )
-						
-						audio_model = st.session_state[ 'audio_model' ]
-					
-				# --------- Language -------------
-				with aud_c3:
-					if audio_task in ('Transcribe', 'Translate'):
-						obj = transcriber if audio_task == 'Transcribe' else translator
-						if obj and hasattr( obj, 'language_options' ):
-							audio_language = st.selectbox( label='Language', options=obj.language_options,
-								key='audio_language', placeholder='Options', index=None )
-							
-							audio_language = st.session_state[ 'audio_language' ]
-					
-					if audio_task == 'Text-to-Speech' and tts:
-						if hasattr( tts, 'voice_options' ):
-							audio_voice = st.selectbox( label='Voice', options=tts.voice_options,
-								key='audio_voice', placeholder='Options', index=None )
-							
-							audio_voice = st.session_state[ 'audio_voice' ]
-						
-						# ---------------- Sample Rate ----------------
-				
-				#---------- Sample Rate ----------
-				with aud_c4:
-					audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
-						key='audio_rate', placeholder='Options', index=None )
-					
-					audio_rate = st.session_state[ 'audio_rate' ]
-				
-				# -------- Response Format --------
-				with aud_c5:
-					format_options = [ ]
-					if audio_task == 'Transcribe':
-						format_options = list( transcriber.format_options )
-					elif audio_task == 'Translate':
-						format_options = list( translator.format_options )
-					elif audio_task == 'Text-to-Speech':
-						format_options = list( tts.format_options )
-					
-					if format_options:
-						audio_format = st.selectbox( label='Format', options=format_options,
-							key='audio_format', placeholder='Options', index=None )
-						
-						audio_format = st.session_state[ 'audio_format' ]
-				
-				# ----------- Reset Settings -------
-				if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
-					# ----------------------------------------------------------
-					# Remove Audio Model Settings session keys
-					# ----------------------------------------------------------
-					for key in [ 'audio_task', 'audio_model', 'audio_language',
-					             'audio_voice', 'audio_rate', 'audio_format' ]:
-						if key in st.session_state:
-							del st.session_state[ key ]
-					
-					st.rerun( )
-
-			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-				prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-					border=True, gap='medium' )
-				
-				# ---------  Top-P --------
-				with prm_one:
-					set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-						value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
-						step=0.01, help=cfg.TOP_P )
-					
-					audio_top_percent = st.session_state[ 'audio_top_percent' ]
-				
-				# ---------  Frequency --------
-				with prm_two:
-					set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
-						value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
-						step=0.01, help=cfg.FREQUENCY_PENALTY )
-					
-					audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
-				
-				# ---------  Presense --------
-				with prm_three:
-					set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
-						value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
-						step=0.01, help=cfg.PRESENCE_PENALTY )
-					
-					audio_presense = st.session_state[ 'audio_presense_penalty' ]
-				
-				# ---------  Temperature --------
-				with prm_four:
-					set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
-						value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
-						help=cfg.TEMPERATURE )
-					
-					audio_temperature = st.session_state[ 'audio_temperature' ]
-				
-				# --------- Reset Settings --------
-				if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
-					for key in [ 'audio_top_percent', 'audio_temperature', 'audio_presense_penalty',
-					             'audio_frequency_penalty', ]:
-						if key in st.session_state:
-							del st.session_state[ key ]
-					
-					st.rerun( )
+		if provider_name == 'Gemini':
+			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 			
-			with st.expander( 'Response Options', expanded=False, width='stretch' ):
-				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
-				
-				# ---------  Loop --------
-				with resp_c1:
-					set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
+				with st.expander( 'Model Options', expanded=False, width='stretch' ):
+					aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
+						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
 					
-					audio_loop = st.session_state[ 'audio_loop' ]
-				
-				# --------- Autoplay --------
-				with resp_c2:
-					set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
+					# --------- Task ---------------
+					with aud_c1:
+						if not available_tasks:
+							st.info( 'Audio is not supported by the selected provider.' )
+							audio_task = None
+						else:
+							audio_task = st.selectbox( label='Mode', options=available_tasks,
+								key='audio_task', placeholder='Options', index=None )
+							
+							audio_task = st.session_state[ 'audio_task' ]
 					
-					audio_autoplay = st.session_state[ 'audio_autoplay' ]
-				
-				# ---------  Start Time --------
-				with resp_c3:
-					set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
-						value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
-						key='audio_start_time' )
+					# ---------  Mode ---------------
+					with aud_c2:
+						if audio_task == 'Transcribe':
+							model_options = list( transcriber.model_options )
+						elif audio_task == 'Translate':
+							model_options = list( translator.model_options )
+						elif audio_task == 'Text-to-Speech':
+							model_options = list( tts.model_options )
+						
+						if model_options:
+							audio_model = st.selectbox( label='Model', options=model_options,
+								key='audio_model', placeholder='Options', index=None )
+							
+							audio_model = st.session_state[ 'audio_model' ]
+						
+					# --------- Language -------------
+					with aud_c3:
+						if audio_task in ('Transcribe', 'Translate'):
+							obj = transcriber if audio_task == 'Transcribe' else translator
+							if obj and hasattr( obj, 'language_options' ):
+								audio_language = st.selectbox( label='Language', options=obj.language_options,
+									key='audio_language', placeholder='Options', index=None )
+								
+								audio_language = st.session_state[ 'audio_language' ]
+						
+						if audio_task == 'Text-to-Speech' and tts:
+							if hasattr( tts, 'voice_options' ):
+								audio_voice = st.selectbox( label='Voice', options=tts.voice_options,
+									key='audio_voice', placeholder='Options', index=None )
+								
+								audio_voice = st.session_state[ 'audio_voice' ]
+							
+							# ---------------- Sample Rate ----------------
 					
-					audio_start_time = st.session_state[ 'audio_start_time' ]
-				
-				# ---------  End Time --------
-				with resp_c4:
-					set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
-						value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
-						key='audio_end_time' )
+					#---------- Sample Rate ----------
+					with aud_c4:
+						audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
+							key='audio_rate', placeholder='Options', index=None )
+						
+						audio_rate = st.session_state[ 'audio_rate' ]
 					
-					audio_end_time = st.session_state[ 'audio_end_time' ]
-				
-				# --------- Max Tokens --------
-				with resp_c5:
-					set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
-						value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
-						help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
+					# -------- Response Format --------
+					with aud_c5:
+						format_options = [ ]
+						if audio_task == 'Transcribe':
+							format_options = list( transcriber.format_options )
+						elif audio_task == 'Translate':
+							format_options = list( translator.format_options )
+						elif audio_task == 'Text-to-Speech':
+							format_options = list( tts.format_options )
+						
+						if format_options:
+							audio_format = st.selectbox( label='Format', options=format_options,
+								key='audio_format', placeholder='Options', index=None )
+							
+							audio_format = st.session_state[ 'audio_format' ]
 					
-					audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
-				
-				# ---------  Reset Setting --------
-				if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
-					for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time', 'audio_end_time',
-					             'audio_rate', 'audio_max_tokens' ]:
-						if key in st.session_state:
-							del st.session_state[ key ]
+					# ----------- Reset Settings -------
+					if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
+						# ----------------------------------------------------------
+						# Remove Audio Model Settings session keys
+						# ----------------------------------------------------------
+						for key in [ 'audio_task', 'audio_model', 'audio_language',
+						             'audio_voice', 'audio_rate', 'audio_format' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+	
+				with st.expander( 'Inference Options', expanded=False, width='stretch' ):
+					prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
 					
-					st.rerun( )
+					# ---------  Top-P --------
+					with prm_one:
+						set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
+							step=0.01, help=cfg.TOP_P )
+						
+						audio_top_percent = st.session_state[ 'audio_top_percent' ]
+					
+					# ---------  Frequency --------
+					with prm_two:
+						set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
+							step=0.01, help=cfg.FREQUENCY_PENALTY )
+						
+						audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
+					
+					# ---------  Presense --------
+					with prm_three:
+						set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
+							step=0.01, help=cfg.PRESENCE_PENALTY )
+						
+						audio_presense = st.session_state[ 'audio_presense_penalty' ]
+					
+					# ---------  Temperature --------
+					with prm_four:
+						set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
+							help=cfg.TEMPERATURE )
+						
+						audio_temperature = st.session_state[ 'audio_temperature' ]
+					
+					# --------- Reset Settings --------
+					if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
+						for key in [ 'audio_top_percent', 'audio_temperature', 'audio_presense_penalty',
+						             'audio_frequency_penalty', ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( 'Response Options', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
+					
+					# ---------  Loop --------
+					with resp_c1:
+						set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
+						
+						audio_loop = st.session_state[ 'audio_loop' ]
+					
+					# --------- Autoplay --------
+					with resp_c2:
+						set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
+						
+						audio_autoplay = st.session_state[ 'audio_autoplay' ]
+					
+					# ---------  Start Time --------
+					with resp_c3:
+						set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
+							value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
+							key='audio_start_time' )
+						
+						audio_start_time = st.session_state[ 'audio_start_time' ]
+					
+					# ---------  End Time --------
+					with resp_c4:
+						set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
+							value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
+							key='audio_end_time' )
+						
+						audio_end_time = st.session_state[ 'audio_end_time' ]
+					
+					# --------- Max Tokens --------
+					with resp_c5:
+						set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
+							value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
+							help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
+						
+						audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
+					
+					# ---------  Reset Setting --------
+					if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
+						for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time', 'audio_end_time',
+						             'audio_rate', 'audio_max_tokens' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
 		
+		# ------------------------------------------------------------------
+		# Expander — GPT LLM Configuration
+		# ------------------------------------------------------------------
+		elif provider_name == 'GPT':
+			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+				with st.expander( 'Model Options', expanded=False, width='stretch' ):
+					aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
+						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
+					
+					# --------- Task ---------------
+					with aud_c1:
+						if not available_tasks:
+							st.info( 'Audio is not supported by the selected provider.' )
+							audio_task = None
+						else:
+							audio_task = st.selectbox( label='Mode', options=available_tasks,
+								key='audio_task', placeholder='Options', index=None )
+							
+							audio_task = st.session_state[ 'audio_task' ]
+					
+					# ---------  Mode ---------------
+					with aud_c2:
+						if audio_task == 'Transcribe':
+							model_options = list( transcriber.model_options )
+						elif audio_task == 'Translate':
+							model_options = list( translator.model_options )
+						elif audio_task == 'Text-to-Speech':
+							model_options = list( tts.model_options )
+						
+						if model_options:
+							audio_model = st.selectbox( label='Model', options=model_options,
+								key='audio_model', placeholder='Options', index=None )
+							
+							audio_model = st.session_state[ 'audio_model' ]
+					
+					# --------- Language -------------
+					with aud_c3:
+						if audio_task in ('Transcribe', 'Translate'):
+							obj = transcriber if audio_task == 'Transcribe' else translator
+							if obj and hasattr( obj, 'language_options' ):
+								audio_language = st.selectbox( label='Language', options=obj.language_options,
+									key='audio_language', placeholder='Options', index=None )
+								
+								audio_language = st.session_state[ 'audio_language' ]
+						
+						if audio_task == 'Text-to-Speech' and tts:
+							if hasattr( tts, 'voice_options' ):
+								audio_voice = st.selectbox( label='Voice', options=tts.voice_options,
+									key='audio_voice', placeholder='Options', index=None )
+								
+								audio_voice = st.session_state[ 'audio_voice' ]
+					# ---------------- Sample Rate ----------------
+					
+					# ---------- Sample Rate ----------
+					with aud_c4:
+						audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
+							key='audio_rate', placeholder='Options', index=None )
+						
+						audio_rate = st.session_state[ 'audio_rate' ]
+					
+					# -------- Response Format --------
+					with aud_c5:
+						format_options = [ ]
+						if audio_task == 'Transcribe':
+							format_options = list( transcriber.format_options )
+						elif audio_task == 'Translate':
+							format_options = list( translator.format_options )
+						elif audio_task == 'Text-to-Speech':
+							format_options = list( tts.format_options )
+						
+						if format_options:
+							audio_format = st.selectbox( label='Format', options=format_options,
+								key='audio_format', placeholder='Options', index=None )
+							
+							audio_format = st.session_state[ 'audio_format' ]
+					
+					# ----------- Reset Settings -------
+					if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
+						# ----------------------------------------------------------
+						# Remove Audio Model Settings session keys
+						# ----------------------------------------------------------
+						for key in [ 'audio_task', 'audio_model', 'audio_language',
+						             'audio_voice', 'audio_rate', 'audio_format' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( 'Inference Options', expanded=False, width='stretch' ):
+					prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
+					
+					# ---------  Top-P --------
+					with prm_one:
+						set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
+							step=0.01, help=cfg.TOP_P )
+						
+						audio_top_percent = st.session_state[ 'audio_top_percent' ]
+					
+					# ---------  Frequency --------
+					with prm_two:
+						set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
+							step=0.01, help=cfg.FREQUENCY_PENALTY )
+						
+						audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
+					
+					# ---------  Presense --------
+					with prm_three:
+						set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
+							step=0.01, help=cfg.PRESENCE_PENALTY )
+						
+						audio_presense = st.session_state[ 'audio_presense_penalty' ]
+					
+					# ---------  Temperature --------
+					with prm_four:
+						set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
+							help=cfg.TEMPERATURE )
+						
+						audio_temperature = st.session_state[ 'audio_temperature' ]
+					
+					# --------- Reset Settings --------
+					if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
+						for key in [ 'audio_top_percent', 'audio_temperature',
+						             'audio_presense_penalty',
+						             'audio_frequency_penalty', ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( 'Response Options', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
+					
+					# ---------  Loop --------
+					with resp_c1:
+						set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
+						
+						audio_loop = st.session_state[ 'audio_loop' ]
+					
+					# --------- Autoplay --------
+					with resp_c2:
+						set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
+						
+						audio_autoplay = st.session_state[ 'audio_autoplay' ]
+					
+					# ---------  Start Time --------
+					with resp_c3:
+						set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
+							value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
+							key='audio_start_time' )
+						
+						audio_start_time = st.session_state[ 'audio_start_time' ]
+					
+					# ---------  End Time --------
+					with resp_c4:
+						set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
+							value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
+							key='audio_end_time' )
+						
+						audio_end_time = st.session_state[ 'audio_end_time' ]
+					
+					# --------- Max Tokens --------
+					with resp_c5:
+						set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
+							value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
+							help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
+						
+						audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
+					
+					# ---------  Reset Setting --------
+					if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
+						for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time',
+						             'audio_end_time',
+						             'audio_rate', 'audio_max_tokens' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+			
 		# ------------------------------------------------------------------
 		# Expander — Audio System Instructions
 		# ------------------------------------------------------------------
@@ -4931,65 +5108,198 @@ elif mode == 'Embeddings':
 	emb_left, emb_center, emb_right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with emb_center:
 		# ------------------------------------------------------------------
-		# Expander — Embedding LLM Configuration
+		# Expander — Grok LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
-			emb_c1, emb_c2, emb_c3, emb_c4, emb_c5  = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-				border=True, gap='xxsmall' )
-			
-			with emb_c1:
-				embedding_models = list( embedding.model_options )
-				set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
-					help='REQUIRED. Embedding model used by the AI', key='embedding_model',
-					index=None, placeholder='Options' )
+		if provider_name == 'Grok':
+			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
+				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5  = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					border=True, gap='xxsmall' )
 				
-				embedding_model = st.session_state[ 'embedding_model' ]
-			
-			with emb_c2:
-				encoding_options = list( embedding.encoding_options )
-				set_encoding_format = st.selectbox( label='Encoding Format:',
-					options=encoding_options, key='embeddings_encoding_format',
-					help='REQUIRED: The format to return the embeddings in. float or base64',
-					index=None, placeholder='Options' )
+				# ---------  Model --------
+				with emb_c1:
+					embedding_models = list( embedding.model_options )
+					set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
+						help='REQUIRED. Embedding model used by the AI', key='embedding_model',
+						index=None, placeholder='Options' )
+					
+					embedding_model = st.session_state[ 'embedding_model' ]
 				
-				embeddings_encoding = st.session_state[ 'embeddings_encoding_format' ]
-			
-			with emb_c3:
-				set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
-					value=int( st.session_state.get( 'embeddings_dimensions' ) ),
-					step=1, key='embeddings_dimensions',
-					help='Optional (large models only): An integer between 1 and 2048',
-					width='stretch' )
+				# ---------  Encoding --------
+				with emb_c2:
+					encoding_options = list( embedding.encoding_options )
+					set_encoding_format = st.selectbox( label='Encoding Format:',
+						options=encoding_options, key='embeddings_encoding_format',
+						help='REQUIRED: The format to return the embeddings in. float or base64',
+						index=None, placeholder='Options' )
+					
+					embeddings_encoding = st.session_state[ 'embeddings_encoding_format' ]
 				
-				embeddings_dimensions = st.session_state[ 'embeddings_dimensions' ]
-			
-			with emb_c4:
-				set_chunk_size = st.slider( label='Chunk Size', min_value=0, max_value=2000,
-					step=50, key='embeddings_chunk_size',
-					value=int( st.session_state.get( 'embeddings_chunk_size' ) ),
-					help='Maximum tokens per chunk for embedding segmentation.' )
+				# ---------  Dimensions --------
+				with emb_c3:
+					set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
+						value=int( st.session_state.get( 'embeddings_dimensions' ) ),
+						step=1, key='embeddings_dimensions',
+						help='Optional (large models only): An integer between 1 and 2048',
+						width='stretch' )
+					
+					embeddings_dimensions = st.session_state[ 'embeddings_dimensions' ]
 				
-				embeddings_chunk_size = st.session_state[ 'embeddings_chunk_size' ]
-			
-			with emb_c5:
-				set_overlap_amount = st.slider( label='Overlap Amount', min_value=0, max_value=1000,
-					step=50, key='embeddings_overlap_amount',
-					help='The number of tokens spanning two chunks for embedding segmentation.' )
+				# ---------  Size --------
+				with emb_c4:
+					set_chunk_size = st.slider( label='Chunk Size', min_value=0, max_value=2000,
+						step=50, key='embeddings_chunk_size',
+						value=int( st.session_state.get( 'embeddings_chunk_size' ) ),
+						help='Maximum tokens per chunk for embedding segmentation.' )
+					
+					embeddings_chunk_size = st.session_state[ 'embeddings_chunk_size' ]
 				
-				embeddings_overlap_amount = st.session_state[ 'embeddings_overlap_amount' ]
-			
-			if st.button( label='Reset', key='embedding_reset', width='stretch' ):
-				# ----------------------------------------------------------
-				# Remove Embedding Configuration session keys
-				# ----------------------------------------------------------
-				for key in [ 'embedding_model', 'embeddings_dimensions',
-				             'embeddings_encoding', 'embeddings_input_text',
-				             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
-					if key in st.session_state:
-						del st.session_state[ key ]
+				# ---------  Overlap --------
+				with emb_c5:
+					set_overlap_amount = st.slider( label='Overlap Amount', min_value=0, max_value=1000,
+						step=50, key='embeddings_overlap_amount',
+						help='The number of tokens spanning two chunks for embedding segmentation.' )
+					
+					embeddings_overlap_amount = st.session_state[ 'embeddings_overlap_amount' ]
 				
-				st.rerun( )
-
+				# ---------  Reset --------
+				if st.button( label='Reset', key='embedding_reset', width='stretch' ):
+					for key in [ 'embedding_model', 'embeddings_dimensions',
+					             'embeddings_encoding', 'embeddings_input_text',
+					             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# Expander — Gemini LLM Configuration
+		# ------------------------------------------------------------------
+		elif provider_name == 'Gemini':
+			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
+				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
+					border=True, gap='xxsmall' )
+				
+				# ---------  Model --------
+				with emb_c1:
+					embedding_models = list( embedding.model_options )
+					set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
+						help='REQUIRED. Embedding model used by the AI', key='embedding_model',
+						index=None, placeholder='Options' )
+					
+					embedding_model = st.session_state[ 'embedding_model' ]
+				
+				# ---------  Encoding --------
+				with emb_c2:
+					encoding_options = list( embedding.encoding_options )
+					set_encoding_format = st.selectbox( label='Encoding Format:',
+						options=encoding_options, key='embeddings_encoding_format',
+						help='REQUIRED: The format to return the embeddings in. float or base64',
+						index=None, placeholder='Options' )
+					
+					embeddings_encoding = st.session_state[ 'embeddings_encoding_format' ]
+				
+				# ---------  Dimensions --------
+				with emb_c3:
+					set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
+						value=int( st.session_state.get( 'embeddings_dimensions' ) ),
+						step=1, key='embeddings_dimensions',
+						help='Optional (large models only): An integer between 1 and 2048',
+						width='stretch' )
+					
+					embeddings_dimensions = st.session_state[ 'embeddings_dimensions' ]
+				
+				# ---------  Size --------
+				with emb_c4:
+					set_chunk_size = st.slider( label='Chunk Size', min_value=0, max_value=2000,
+						step=50, key='embeddings_chunk_size',
+						value=int( st.session_state.get( 'embeddings_chunk_size' ) ),
+						help='Maximum tokens per chunk for embedding segmentation.' )
+					
+					embeddings_chunk_size = st.session_state[ 'embeddings_chunk_size' ]
+				
+				# ---------  Overlap --------
+				with emb_c5:
+					set_overlap_amount = st.slider( label='Overlap Amount', min_value=0, max_value=1000,
+						step=50, key='embeddings_overlap_amount',
+						help='The number of tokens spanning two chunks for embedding segmentation.' )
+					
+					embeddings_overlap_amount = st.session_state[ 'embeddings_overlap_amount' ]
+				
+				# ---------  Reset --------
+				if st.button( label='Reset', key='embedding_reset', width='stretch' ):
+					for key in [ 'embedding_model', 'embeddings_dimensions',
+					             'embeddings_encoding', 'embeddings_input_text',
+					             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# Expander — Gemini LLM Configuration
+		# ------------------------------------------------------------------
+		elif provider_name == 'GPT':
+			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
+				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
+				                                                       0.20 ],
+					border=True, gap='xxsmall' )
+				
+				# ---------  Model --------
+				with emb_c1:
+					embedding_models = list( embedding.model_options )
+					set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
+						help='REQUIRED. Embedding model used by the AI', key='embedding_model',
+						index=None, placeholder='Options' )
+					
+					embedding_model = st.session_state[ 'embedding_model' ]
+				
+				# ---------  Encoding --------
+				with emb_c2:
+					encoding_options = list( embedding.encoding_options )
+					set_encoding_format = st.selectbox( label='Encoding Format:',
+						options=encoding_options, key='embeddings_encoding_format',
+						help='REQUIRED: The format to return the embeddings in. float or base64',
+						index=None, placeholder='Options' )
+					
+					embeddings_encoding = st.session_state[ 'embeddings_encoding_format' ]
+				
+				# ---------  Dimensions --------
+				with emb_c3:
+					set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
+						value=int( st.session_state.get( 'embeddings_dimensions' ) ),
+						step=1, key='embeddings_dimensions',
+						help='Optional (large models only): An integer between 1 and 2048',
+						width='stretch' )
+					
+					embeddings_dimensions = st.session_state[ 'embeddings_dimensions' ]
+				
+				# ---------  Size --------
+				with emb_c4:
+					set_chunk_size = st.slider( label='Chunk Size', min_value=0, max_value=2000,
+						step=50, key='embeddings_chunk_size',
+						value=int( st.session_state.get( 'embeddings_chunk_size' ) ),
+						help='Maximum tokens per chunk for embedding segmentation.' )
+					
+					embeddings_chunk_size = st.session_state[ 'embeddings_chunk_size' ]
+				
+				# ---------  Overlap --------
+				with emb_c5:
+					set_overlap_amount = st.slider( label='Overlap Amount', min_value=0, max_value=1000,
+						step=50, key='embeddings_overlap_amount',
+						help='The number of tokens spanning two chunks for embedding segmentation.' )
+					
+					embeddings_overlap_amount = st.session_state[ 'embeddings_overlap_amount' ]
+				
+				# ---------  Reset --------
+				if st.button( label='Reset', key='embedding_reset', width='stretch' ):
+					for key in [ 'embedding_model', 'embeddings_dimensions',
+					             'embeddings_encoding', 'embeddings_input_text',
+					             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
+						if key in st.session_state:
+							del st.session_state[ key ]
+					
+					st.rerun( )
+		
 		# ------------------------------------------------------------------
 		# Main UI — Embedding execution (unchanged behavior)
 		# ------------------------------------------------------------------
@@ -5062,6 +5372,7 @@ elif mode == 'Embeddings':
 				st.rerun( )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		
 		# ------------------------------------------------------------------
 		# TEXT METRICS (Render Above Buttons – Safe Append)
 		# ------------------------------------------------------------------
