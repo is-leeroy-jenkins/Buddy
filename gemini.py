@@ -42,7 +42,6 @@
   ******************************************************************************************
 '''
 from google.genai.file_search_stores import FileSearchStores
-
 import config as cfg
 from boogr import ErrorDialog, Error
 import os
@@ -58,7 +57,8 @@ from google.genai.types import (Part, GenerateContentConfig, ImageConfig, Functi
                                 GenerateImagesConfig, GenerateVideosConfig, ThinkingConfig,
                                 GeneratedImage, EmbedContentConfig, Content, ContentEmbedding,
                                 Candidate, HttpOptions, GenerateImagesResponse, Field, FileSearchStore,
-                                GenerateContentResponse, GenerateVideosResponse, Image, File )
+                                GenerateContentResponse, GenerateVideosResponse, Image, File,
+                                SpeakerVoiceConfig, VoiceConfig )
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -216,21 +216,21 @@ class Chat( Gemini ):
 		self.use_vertex = None
 		self.instructions = None
 		self.contents = None
-		self.http_options = None
+		self.http_options = { }
 		self.client = None
 		self.storage_client = None
 		self.response_modalities = [ ]
-		self.content_config = None;
-		self.image_config = None;
+		self.content_config = None
+		self.image_config = None
 		self.function_config = None
-		self.thought_config = None;
-		self.tool_config = None;
+		self.thought_config = None
+		self.tool_config = None
 		self.content_response = None
-		self.image_response = None;
-		self.image_uri = None;
-		self.audio_uri = None;
+		self.image_response = None
+		self.image_uri = None
+		self.audio_uri = None
 		self.file_path = None
-		self.files = None
+		self.files = [ ]
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
@@ -327,6 +327,17 @@ class Chat( Gemini ):
 		'''
 		return [ 'none', ]
 	
+	@property
+	def modality_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available modality options
+
+		'''
+		return [ 'TEXT', 'IMAGE', 'AUDIO' ]
+	
 	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[str]=None, instruct: str=None ) -> str | None:
@@ -373,7 +384,7 @@ class Chat( Gemini ):
 	
 	def web_search( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
-			max_tokens: int=None, stops: List[ str ]=None, instruct: str =None ) -> str | None:
+			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -585,6 +596,32 @@ class Images( Gemini ):
 		         '4:3',
 		         '9:16',
 		         '16:9' ]
+	
+	@property
+	def modality_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available modality options
+
+		'''
+		return [ 'TEXT', 'IMAGE', 'AUDIO' ]
+	
+	@property
+	def reasoning_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of thinking effort options
+
+		'''
+		return [ 'minimal',
+		         'low',
+		         'high',
+		         'medium',
+		         'high' ]
 	
 	def generate( self, prompt: str, model: str='gemini-2.5-flash-image', aspect: str=None,
 			number: int=None, temperature: float=None, top_p: float=None,
@@ -866,6 +903,8 @@ class TTS( Gemini ):
 	speed: Optional[ float ]
 	voice: Optional[ str ]
 	response: Optional[ GenerateContentResponse ]
+	voice_config: Optional[ VoiceConfig ]
+	speaker_config: Optional[ SpeakerVoiceConfig ]
 	client: Optional[ genai.Client ]
 	audio_path: Optional[ str ]
 	response_format: Optional[ str ]
@@ -996,7 +1035,7 @@ class Transcription( Gemini ):
 	transcript: Optional[ str ]
 	file_path: Optional[ str ]
 	
-	def __init__( self, n: int=1, model: str='gemini-2.0-flash', temperature: float=0.8,
+	def __init__( self, n: int=1, model: str='gemini-3-flash-preview', temperature: float=0.8,
 			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
 			max_tokens: int=10000, instruct: str=None ):
 		super( ).__init__( )
@@ -1022,8 +1061,7 @@ class Transcription( Gemini ):
 			Returns list of models supporting audio input.
 			
 		"""
-		return [ 'gemini-2.0-flash',
-		         'gemini-1.5-flash' ]
+		return [ 'gemini-3-flash-preview', 'gemini-2.0-flash', 'gemini-1.5-flash' ]
 	
 	@property
 	def language_options( self ) -> List[ str ] | None:
@@ -1040,6 +1078,17 @@ class Transcription( Gemini ):
 		         'Japanese',
 		         'German',
 		         'Chinese' ]
+	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+			
+			Purpose:
+			---------
+			Returns a list of audio mime types
+			
+		'''
+		return [ 'audio/wav', 'audio/mp3', 'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac' ]
 	
 	def transcribe( self, path: str, model: str='gemini-2.0-flash' ) -> Optional[ str ]:
 		"""
