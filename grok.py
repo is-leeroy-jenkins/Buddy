@@ -91,13 +91,14 @@ class Grok:
 	timeout: Optional[ float ]
 	number: Optional[ int ]
 	model: Optional[ str ]
-	store: Optional[ bool ]
+	store_messages: Optional[ bool ]
 	response_format: Optional[ str ]
 	temperature: Optional[ float ]
+	tool_choice: Optional[ str ]
 	top_percent: Optional[ float ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
-	max_completion_tokens: Optional[ int ]
+	max_output_tokens: Optional[ int ]
 	instructions: Optional[ str ]
 	content: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
@@ -122,11 +123,12 @@ class Grok:
 		self.timeout = None
 		self.instructions = None
 		self.content = None
-		self.store = None
+		self.store_messages = None
 		self.model = None
-		self.max_completion_tokens = None
+		self.max_output_tokens = None
 		self.temperature = None
 		self.top_percent = None
+		self.tool_choice = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
 		self.response_format = None
@@ -159,6 +161,7 @@ class Chat( Grok ):
 	reasoning_effort: Optional[ str ]
 	previous_response_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
+	allowed_websites: Optional[ List[ str ] ]
 	max_search_results: Optional[ int ]
 	tool_calls: Optional[ List[ str ] ]
 	parallel_tool_calls: Optional[ bool ]
@@ -192,6 +195,7 @@ class Chat( Grok ):
 		self.reasoning_effort = None
 		self.previous_response_id = None
 		self.parallel_tool_calls = None
+		self.allowed_websites = [ ]
 		self.include = [ ]
 		self.tool_calls = [ ]
 		self.collections = \
@@ -323,7 +327,7 @@ class Chat( Grok ):
 			A List[ str ] of available tools options
 
 		'''
-		return [ '', ]
+		return [ 'auto', 'required', 'none' ]
 	
 	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=10000,
 			temperature: float=0.8, top_p: float=0.9, effort: str='high', format: str='text',
@@ -1284,7 +1288,7 @@ class Images( Grok ):
 			A List[ str ] of available tools options
 
 		'''
-		return [ '', ]
+		return [ 'auto', 'required', 'none' ]
 	
 	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str=None,
 			aspect_ratio: str=None,  format: str=None ) -> str | None:

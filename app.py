@@ -2646,7 +2646,7 @@ elif mode == 'Text':
 	text_model = st.session_state.get( 'text_model', '' )
 	text_reasoning = st.session_state.get( 'text_reasoning', '' )
 	text_response_format = st.session_state.get( 'text_response_format', '' )
-	text_choice = st.session_state.get( 'text_tool_choice', '' )
+	text_tool_choice = st.session_state.get( 'text_tool_choice', '' )
 	text_content = st.session_state.get( 'text_content', '' )
 	text_input = st.session_state.get( 'text_input', '' )
 	text_tools = st.session_state.get( 'text_tools', [ ] )
@@ -2681,21 +2681,21 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				# ------------------------------------------------------------------
-				# Text Generation Model Parameter
-				# ------------------------------------------------------------------
+				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-						llm_c1, llm_c2, llm_c3, llm_c4  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 							border=True, gap='medium' )
 						
+						# ------------- Model Options ----------
 						with llm_c1:
 							model_options = list( text.model_options )
-							set_text_model = st.selectbox( label='Select Model', options=model_options,
+							set_text_model = st.selectbox( label='Select LLM', options=model_options,
 								key='text_model', placeholder='Options', index=None,
 								help = 'REQUIRED. Text Generation model used by the AI', )
 							
 							text_model = st.session_state[ 'text_model' ]
 						
+						# ------------- Include Options ----------
 						with llm_c2:
 							include_options = list( text.include_options )
 							set_text_include = st.multiselect( label='Include:', options=include_options,
@@ -2706,17 +2706,8 @@ elif mode == 'Text':
 							
 							text_include = st.session_state[ 'text_include' ]
 						
+						# ------------- Reasoning Options ----------
 						with llm_c3:
-							set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
-							value=','.join( st.session_state.get( 'text_domains', [ ] )  ),
-							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
-							
-							text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
-									if d.strip( ) ]
-							
-							st.session_state[ 'text_domains' ] = text_domains
-						
-						with llm_c4:
 							reasoning_options = list( text.reasoning_options )
 							set_text_reasoning = st.selectbox( label='Reasoning Effort:',
 								options=reasoning_options, key='text_reasoning',
@@ -2724,23 +2715,29 @@ elif mode == 'Text':
 							
 							text_reasoning = st.session_state[ 'text_reasoning' ]
 						
+						# ------------- Choice Options ----------
+						with llm_c4:
+							choice_options = list( text.choice_options )
+							set_text_choice = st.multiselect( label='Tool Choice:', options=choice_options,
+								key='text_tool_choice', help=cfg.INCLUDE, placeholder='Options' )
+							
+							
+							text_tool_choice = st.session_state[ 'text_tool_choice' ]
+						
+						# ------------- Reset Settings ----------
 						if st.button( label='Reset', key='text_model_reset', width='stretch' ):
-							# ----------------------------------------------------------
-							# Remove Model Settings session keys
-							# ----------------------------------------------------------
-							for key in [ 'text_model', 'text_include', 'text_domains', 'text_reasoning' ]:
+							for key in [ 'text_model', 'text_include',
+							             'text_reasoning', 'text_tool_choice' ]:
 								if key in st.session_state:
 									del st.session_state[ key ]
 							
 							st.rerun( )
-		
-				# ------------------------------------------------------------------
-				# Text Generation Inference Parameters
-				# ------------------------------------------------------------------
+						
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-						border=True, gap='xxsmall' )
+					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
 					
+					# ------------- Top P ----------
 					with prm_c1:
 						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
 							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
@@ -2748,71 +2745,63 @@ elif mode == 'Text':
 						
 						text_top_percent = st.session_state[ 'text_top_percent' ]
 					
+					# ------------- Temperature  ----------
 					with prm_c2:
-						set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'text_frequency_penalty', 0.0 )),
-							step=0.01, help=cfg.FREQUENCY_PENALTY, key='text_frequency_penalty' )
-						
-						text_fequency = st.session_state[ 'text_frequency_penalty' ]
-					
-					with prm_c3:
-						set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
-							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presense_penalty' )
-						
-						text_presense = st.session_state[ 'text_presense_penalty' ]
-					
-					with prm_c4:
 						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
 							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
 							help=cfg.TEMPERATURE, key='text_temperature' )
 						
 						text_temperature = st.session_state[ 'text_temperature' ]
 					
-					with prm_c5:
+					# ------------- Number ----------
+					with prm_c3:
 						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
 							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
 							help='Optional. Upper limit on the responses returned by the model',
 							key='text_number' )
 						
 						text_number = st.session_state[ 'text_number' ]
-					
+						
+					# ------------- Max tokens  ------------------
+					with prm_c4:
+						set_text_tokens = st.slider( label='Max Tokens',
+							min_value=0, max_value=100000, step=500,
+							value=int( st.session_state.get( 'text_max_tokens', 0 ) ),
+							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						
+						text_tokens = st.session_state[ 'text_max_tokens' ]
+				
+					# ------------- Reset Setting ----------
 					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Inference Settings session keys
-						# ----------------------------------------------------------
-						for key in [ 'text_top_percent', 'text_frequency_penalty',
-						             'text_presense_penalty', 'text_temperature', 'text_number', ]:
+						for key in [ 'text_top_percent', 'text_max_tokens',
+						             'text_temperature', 'text_number', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
 						st.rerun( )
-	
-				# ------------------------------------------------------------------
-				# Text Generation Tool Options
-				# ------------------------------------------------------------------
+						
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
 						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 					
-					#------------- Allow Parallel ------------------
+					#------------- Asynchronous  ------------------
 					with tool_c1:
-						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
+						set_text_parallel = st.toggle( label='Asynchronous Tool Calls', key='text_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 					
-					# ------------- Tool Calls ------------------
+					# ------------- Max Tool Calls ------------------
 					with tool_c2:
-						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=5,
+						set_text_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=4,
 							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
 							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
 						
 						text_max_calls = st.session_state[ 'text_max_calls' ]
 					
-					# -------------  Max Searches ------------------
+					# -------------  Max Web Searches ------------------
 					with tool_c3:
-						set_max_results = st.slider( label='Max Search Results', key='text_max_searches',
+						set_max_results = st.slider( label='Max Websearch Results', key='text_max_searches',
 							value=int( st.session_state.get( 'text_max_searches', 0 ) ),
 							min_value=0, max_value=30, step=1,
 							help='Optional. Upper limit on the number web search results' )
@@ -2838,52 +2827,44 @@ elif mode == 'Text':
 								del st.session_state[ key ]
 						
 						st.rerun( )
-	
-				# ------------------------------------------------------------------
-				# Expander — Text Generation Response
-				# ------------------------------------------------------------------
+				
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
-						resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-							[0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+						resp_c1, resp_c2, resp_c3, resp_c4 = st.columns(
+							[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 						
+						# ------------- Stream  ------------------
 						with resp_c1:
 							set_text_stream = st.toggle( label='Stream', key='text_stream',
 								help=cfg.STREAM )
 							
 							text_stream = st.session_state[ 'text_stream' ]
-							
+						
+						#------------- Store  ------------------
 						with resp_c2:
 							set_text_store = st.toggle( label='Store', key='text_store',
 								help=cfg.STORE )
 							
 							text_store = st.session_state[ 'text_store' ]
-							
+						
+						#------------- Background  ------------------
 						with resp_c3:
 							set_text_background = st.toggle( label='Background', key='text_background',
 								 help=cfg.BACKGROUND_MODE )
 							
 							text_background = st.session_state[ 'text_background' ]
-							
+						
+						#------------- Domains  ------------------
 						with resp_c4:
-							set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
-								help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+							set_text_domains = st.text_input( label='Allowed Websites', key='text_domains',
+								help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Web Domains' )
 							
-							text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
+							text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
 							               if d.strip( ) ]
 						
-						with resp_c5:
-							set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
-								value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
-								help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
-							
-							text_tokens = st.session_state[ 'text_max_tokens' ]
-						
+						# ------------- Reset Settings  ------------------
 						if st.button( label='Reset', key='text_response_reset', width='stretch' ):
-							# ----------------------------------------------------------
-							# Remove Response Settings session keys
-							# ----------------------------------------------------------
-							for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
-							             'text_max_tokens' ]:
+							for key in [ 'text_stream', 'text_store',
+							             'text_background', 'text_domains' ]:
 								if key in st.session_state:
 									del st.session_state[ key ]
 							# If using separated UI key for stops
@@ -3430,6 +3411,7 @@ elif mode == "Images":
 	image_response_format = st.session_state.get( 'image_response_format', '' )
 	image_output = st.session_state.get( 'image_output', '' )
 	image_detail = st.session_state.get( 'image_detail', '' )
+	image_tool_choice = st.session_state.get( 'image_tool_choice', '' )
 	image_style = st.session_state.get( 'image_style', '' )
 	image_backcolor = st.session_state.get( 'image_backcolor', '' )
 	image_content = st.session_state.get( 'image_content', '' )
@@ -3469,7 +3451,7 @@ elif mode == "Images":
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — Grok LLM Configuration
+		# Expander — Grok Image LLM Configuration
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -3559,8 +3541,8 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-						border=True, gap='xxsmall' )
+					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
 					
 					# ---------  Top-P --------
 					with prm_c1:
@@ -3570,26 +3552,8 @@ elif mode == "Images":
 						
 						image_top_percent = st.session_state[ 'image_top_percent' ]
 					
-					# ---------  Frequency --------
-					with prm_c2:
-						set_image_freq = st.slider( label='Frequency Penalty',
-							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'image_frequency_penalty', 0.0 ) ),
-							step=0.01, help=cfg.FREQUENCY_PENALTY )
-						
-						image_fequency = st.session_state[ 'image_frequency_penalty' ]
-					
-					# ---------  Presense --------
-					with prm_c3:
-						set_image_presense = st.slider( label='Presence Penalty',
-							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'image_presence_penalty', 0.0 ) ),
-							step=0.01,  help=cfg.PRESENCE_PENALTY )
-						
-						image_presense = st.session_state[ 'image_presense_penalty' ]
-					
 					# ---------  Temperature --------
-					with prm_c4:
+					with prm_c2:
 						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
 							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
 							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
@@ -3597,7 +3561,7 @@ elif mode == "Images":
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
 					# ---------  Number --------
-					with prm_c5:
+					with prm_c3:
 						set_image_number = st.slider( label='Number', min_value=0, max_value=100,
 							value=int( st.session_state.get( 'image_number', 0 ) ),
 							step=1, help='Optional. Upper limit on the responses returned by the model',
@@ -3605,17 +3569,24 @@ elif mode == "Images":
 						
 						image_number = st.session_state[ 'image_number' ]
 					
+					# ---------  Max Tokens --------
+					with prm_c4:
+						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
+						
+						image_max_tokens = st.session_state[ 'image_max_tokens' ]
+					
 					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						for key in [ 'image_top_percent', 'image_frequency_penalty',
-						             'image_presense_penalty', 'image_temperature',  'image_number' ]:
+						for key in [ 'image_top_percent', 'image_temperature',
+						             'image_number', 'image_max_tokens' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 								
 						st.rerun( )
 	
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
-					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='medium' )
 					
 					# ---------  Allow Parallel --------
@@ -3640,7 +3611,7 @@ elif mode == "Images":
 							min_value=0, max_value=30, step=1,
 							help='Optional. Upper limit on the number web search results' )
 						
-						image_tool_choice = st.session_state[ 'image_choice' ]
+						image_max_searches = st.session_state[ 'image_max_searches' ]
 					
 					# ---------  Tool Options --------
 					with tool_c4:
@@ -3650,10 +3621,18 @@ elif mode == "Images":
 						
 						image_tools = st.session_state[ 'image_tools' ]
 					
+					# --------- Tool Choice ----------
+					with tool_c5:
+						choice_options = list( image.choice_options )
+						set_image_choice = st.selectbox( label='Tool Choice:', options=choice_options,
+							key='image_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						image_tool_choice = st.session_state[ 'image_tool_choice' ]
+					
 					# --------- Reset Tool Settings --------
 					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
 						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_max_searches',
-								'image_tools', ]:
+								'image_tools', 'image_tool_choice' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -3661,7 +3640,7 @@ elif mode == "Images":
 	
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					res_one, res_two, res_three, res_four, res_five = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 					
 					# ---------  Stream --------
 					with res_one:
@@ -3691,17 +3670,10 @@ elif mode == "Images":
 						
 						image_respose_format = st.session_state[ 'image_response_format' ]
 					
-					# ---------  Max Tokens --------
-					with res_five:
-						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
-							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
-						
-						image_tokens = st.session_state[ 'image_max_tokens' ]
-					
 					# --------- Reset Response Settings --------
 					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						for key in [ 'image_stream', 'image_store', 'image_background',
-								'image_response_format', 'image_max_tokens', ]:
+						for key in [ 'image_stream', 'image_store',
+						             'image_background', 'image_response_format',  ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						# If canonical separation used
@@ -3760,7 +3732,7 @@ elif mode == "Images":
 						st.rerun( )
 			
 		# ------------------------------------------------------------------
-		# Expander — Gemini LLM Configuration
+		# Expander — Gemini Image LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -4064,7 +4036,7 @@ elif mode == "Images":
 						st.rerun( )
 			
 		# ------------------------------------------------------------------
-		# Expander — GPT LLM Configuration
+		# Expander — GPT Image LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -4355,10 +4327,8 @@ elif mode == "Images":
 						
 						image_output = st.session_state[ 'image_output' ]
 					
+					# ------------ Reset Settings -------------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Response session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
 						             'image_size', 'image_output' ]:
 							if key in st.session_state:

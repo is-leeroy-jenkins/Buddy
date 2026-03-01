@@ -64,6 +64,17 @@ def throw_if( name: str, value: object ):
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
+def encode_image( image_path: str ) -> str:
+	"""
+		
+		Purpose:
+		---------
+		Encodes a local image to a base64 string for vision API requests.
+		
+	"""
+	with open( image_path, "rb" ) as image_file:
+		return base64.b64encode( image_file.read( ) ).decode( 'utf-8' )
+
 class Gemini( ):
 	'''
 
@@ -117,7 +128,7 @@ class Gemini( ):
 	image_config: Optional[ ImageConfig ]
 	tool_config: Optional[ List[ types.Tool ] ]
 	candidate_count: Optional[ int ]
-	modalities: Optional[ List[ str ] ]
+	response_modalities: Optional[ List[ str ] ]
 	stops: Optional[ List[ str ] ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
@@ -126,27 +137,27 @@ class Gemini( ):
 	def __init__( self ):
 		self.google_api_key = cfg.GOOGLE_API_KEY
 		self.gemini_api_key = cfg.GEMINI_API_KEY
-		self.model = None;
-		self.content_config = None;
+		self.model = None
+		self.content_config = None
 		self.image_config = None
-		self.function_config = None;
-		self.thought_config = None;
+		self.function_config = None
+		self.thought_config = None
 		self.genimg_config = None
-		self.tool_config = None;
-		self.api_version = None;
-		self.temperature = 0.7
-		self.top_p = 0.9;
-		self.top_k = 40;
-		self.candidate_count = 1
-		self.frequency_penalty = 0.0;
-		self.presence_penalty = 0.0;
-		self.max_output_tokens = 2048
-		self.instructions = None;
-		self.prompt = None;
+		self.tool_config = [ ]
+		self.api_version = None
+		self.temperature = None
+		self.top_p = None
+		self.top_k = None
+		self.candidate_count = None
+		self.frequency_penalty = None
+		self.presence_penalty = None
+		self.max_output_tokens = None
+		self.instructions = None
+		self.prompt = None
 		self.response_format = None
-		self.number = 1;
-		self.modalities = None;
-		self.stops = None
+		self.number = None
+		self.response_modalities = [ ]
+		self.stops = [ ]
 
 class Chat( Gemini ):
 	'''
@@ -190,11 +201,11 @@ class Chat( Gemini ):
 	response_modalities: Optional[ List[ str ] ]
 	files: Optional[ List[ str ] ]
 	
-	def __init__( self ):
+	def __init__( self, model: str='gemini-2.5-flash' ):
 		super( ).__init__( )
 		self.client = None
 		self.number = None
-		self.model = None
+		self.model = model
 		self.api_version = None
 		self.top_p = None
 		self.temperature = None
@@ -208,7 +219,7 @@ class Chat( Gemini ):
 		self.http_options = None
 		self.client = None
 		self.storage_client = None
-		self.response_modalities = [ 'TEXT', 'IMAGE' ]
+		self.response_modalities = [ ]
 		self.content_config = None;
 		self.image_config = None;
 		self.function_config = None
@@ -223,17 +234,27 @@ class Chat( Gemini ):
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Returns list of available chat models."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available chat models.
+			
+		"""
 		return [ 'gemini-2.5-flash',
-		         'gemini-2.5 flash image',
-		         'gemini-2.5 flash-tts',
 		         'gemini-2.5 flash-lite',
 				 'gemini-2.0-flash',
 		         'gemini-2.0-flash-lite' ]
 	
 	@property
 	def version_options( self ) -> List[ str ] | None:
-		"""Returns list of available API versions."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available API versions.
+			
+		"""
 		return [ 'v1',
 		         'v1alpha',
 		         'v1beta1' ]
@@ -526,13 +547,39 @@ class Images( Gemini ):
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Returns list of image generation models."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of image generation models.
+			
+		"""
 		return [ 'gemini-2.5-flash-image',
 		         'gemini-3-pro-image-preview' ]
 	
 	@property
+	def include_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of the includeable options
+
+		'''
+		return [ 'file_search_call.results',
+		         'message.input_image.image_url',
+		         'message.output_text.logprobs',
+		         'reasoning.encrypted_content' ]
+	
+	@property
 	def aspect_options( self ) -> List[ str ] | None:
-		"""Returns list of allowed aspect ratios."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of allowed aspect ratios.
+			
+		"""
 		return [ '1:1',
 		         '3:4',
 		         '4:3',
@@ -824,7 +871,7 @@ class TTS( Gemini ):
 	response_format: Optional[ str ]
 	input_text: Optional[ str ]
 	
-	def __init__( self, model: str='gemini-2.0-flash'  ):
+	def __init__( self, model: str='gemini-2.5-flash-preview-tts'  ):
 		super( ).__init__( )
 		self.number = None
 		self.model = model
@@ -844,19 +891,32 @@ class TTS( Gemini ):
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Returns list of models supporting audio output."""
-		return [ 'gemini-2.0-flash',
+		"""
+			
+			Purpose:
+			--------
+			Returns list of models supporting audio output.
+			
+			
+		"""
+		return [ 'gemini-2.5-flash-preview-tts',
+		         'gemini-2.0-flash',
 		         'gemini-1.5-flash' ]
 	
 	@property
 	def voice_options( self ) -> List[ str ] | None:
-		"""Returns list of available voice personas."""
-		return [ 'Achernar',
-		         'Aoede',
-		         'Erinome',
-		         'Kore',
-		         'Orus',
-		         'Puck' ]
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available voice personas.
+			
+		"""
+		return [ 'Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir', 'Leda', 'Orus', 'Aoede', 'Callirhoe',
+		         'Autonoe', 'Enceladus', 'Iapetus', 'Umbriel', 'Algieba', 'Despina', 'Erinome',
+		         'Algenib', 'Rasalgethi', 'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux',
+		         'Pulcherrima', 'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia',
+		         'Sadaltager', 'Sulafar' ]
 	
 	def create_speech( self, text: str, filepath: str, model: str, format: str=None,
 			speed: float=None, voice: str=None, frequency: float=None, presense: float=None,
@@ -955,13 +1015,25 @@ class Transcription( Gemini ):
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Returns list of models supporting audio input."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of models supporting audio input.
+			
+		"""
 		return [ 'gemini-2.0-flash',
 		         'gemini-1.5-flash' ]
 	
 	@property
 	def language_options( self ) -> List[ str ] | None:
-		"""Returns list of available target languages."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available target languages.
+			
+		"""
 		return [ 'English',
 		         'Spanish',
 		         'French',
@@ -1053,13 +1125,25 @@ class Translation( Gemini ):
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Returns list of translation-capable models."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of translation-capable models.
+			
+		"""
 		return [ 'gemini-2.0-flash',
 		         'gemini-1.5-pro' ]
 	
 	@property
 	def language_options( self ) -> List[ str ] | None:
-		"""Returns list of available target languages."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available target languages.
+			
+		"""
 		return [ 'English',
 		         'Spanish',
 		         'French',
@@ -1172,12 +1256,24 @@ class Files( Gemini ):
 	
 	@property
 	def file_options( self ) -> List[ str ] | None:
-		"""Returns list of available chat models."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available chat models.
+			
+		"""
 		return self.files
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Returns list of available chat models."""
+		"""
+			
+			Purpose:
+			--------
+			Returns list of available chat models.
+			
+		"""
 		return [ 'gemini-3.5-flash',
 		         'gemini-3.5 flash-lite',
 		         'gemini-3.0-flash',
