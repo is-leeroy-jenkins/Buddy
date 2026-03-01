@@ -322,7 +322,7 @@ class Chat( Grok ):
 			A List[ str ] of available tools options
 
 		'''
-		return [ 'none', ]
+		return [ '', ]
 	
 	def create( self, prompt: str, model: str='grok-3-mini', max_tokens: int=10000,
 			temperature: float=0.8, top_p: float=0.9, effort: str='high', format: str='text',
