@@ -97,11 +97,10 @@ class Grok:
 	top_percent: Optional[ float ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
-	max_output_tokens: Optional[ int ]
+	max_completion_tokens: Optional[ int ]
 	instructions: Optional[ str ]
-	prompt: Optional[ str ]
+	content: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
-	tool_choice: Optional[ str ]
 	stores: Optional[ Dict[ str, str ] ]
 	files: Optional[ Dict[ str, str ] ]
 	
@@ -122,16 +121,16 @@ class Grok:
 		self.organization = None
 		self.timeout = None
 		self.instructions = None
-		self.prompt = None
+		self.content = None
 		self.store = None
 		self.model = None
-		self.max_output_tokens = None
+		self.max_completion_tokens = None
 		self.temperature = None
 		self.top_percent = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
-		self.tool_choice = None
 		self.response_format = None
+		self.messages = [ ]
 		self.collections = None
 		self.files = None
 
@@ -160,7 +159,9 @@ class Chat( Grok ):
 	reasoning_effort: Optional[ str ]
 	previous_response_id: Optional[ str ]
 	include: Optional[ List[ str ] ]
-	tools: Optional[ List[ str ] ]
+	max_search_results: Optional[ int ]
+	tool_calls: Optional[ List[ str ] ]
+	parallel_tool_calls: Optional[ bool ]
 	client: Optional[ Client ]
 	chat: Optional[ Any  ]
 	
@@ -187,23 +188,24 @@ class Chat( Grok ):
 		self.max_output_tokens = None
 		self.temperature = None
 		self.top_percent = None
+		self.max_search_results = None
 		self.reasoning_effort = None
 		self.previous_response_id = None
-		self.tool_choice = 'auto'
-		self.include = None
-		self.tools = None
+		self.parallel_tool_calls = None
+		self.include = [ ]
+		self.tool_calls = [ ]
 		self.collections = \
 		{
-				'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
-				'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
-				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
-				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+			'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+			'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
+			'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+			'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
 		}
 		self.files = \
 		{
-				'Outlays.csv': 'file_b0a448b3-904a-40c7-bae1-64df657fde1c',
-				'Authority.csv': 'file_c6ad236f-0c52-45f4-8883-d3be032d07c2',
-				'Balances.csv': 'file_0f63d120-406f-49e6-97e5-7855f2cb26b5'
+			'Outlays.csv': 'file_b0a448b3-904a-40c7-bae1-64df657fde1c',
+			'Authority.csv': 'file_c6ad236f-0c52-45f4-8883-d3be032d07c2',
+			'Balances.csv': 'file_0f63d120-406f-49e6-97e5-7855f2cb26b5'
 		}
 	
 	@property
@@ -223,7 +225,7 @@ class Chat( Grok ):
 			List[str]
 		
 		"""
-		return [ 'text', 'json_object' ]
+		return [ 'text', 'json_object', 'json_schema' ]
 	
 	@property
 	def model_options( self ) -> List[ str ]:
