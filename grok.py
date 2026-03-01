@@ -1260,6 +1260,17 @@ class Images( Grok ):
 		         'inline_citations',
 		         'verbose_streaming' ]
 	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ '', ]
+	
 	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str=None,
 			aspect_ratio: str=None,  format: str=None ) -> str | None:
 		"""
