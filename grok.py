@@ -1209,15 +1209,35 @@ class Images( Grok ):
 		         '2:1']
 	
 	@property
+	def reasoning_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported reasoning effort levels.
+
+			Notes:
+			------
+			Only valid for model = 'grok-3-mini'.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'low', 'high' ]
+	
+	@property
 	def resolution_options( self ) -> List[ str ]:
-		return [ "1K",
-		         "2K" ]
+		return [ '1K',  '2K' ]
 	
 	@property
 	def quality_options( self ) -> List[ str ]:
-		return [ "low",
-		         "medium",
-		         "high" ]
+		return [ 'low', 'medium', 'high' ]
 	
 	@property
 	def detail_options( self ) -> List[ str ]:
@@ -1229,8 +1249,19 @@ class Images( Grok ):
 	def format_options( self ) -> List[ str ]:
 		return [ 'base64', 'url' ]
 	
-	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str='1k',
-			aspect_ratio: str='4:3',  format: str='base64' ) -> str | None:
+	@property
+	def include_options( self ) -> List[ str ]:
+		return [ 'web_search_call_output',
+		         'x_search_call_output',
+		         'code_execution_call_output',
+		         'collections_search_call_output',
+		         'attachment_search_call_output',
+		         'mcp_call_output',
+		         'inline_citations',
+		         'verbose_streaming' ]
+	
+	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str=None,
+			aspect_ratio: str=None,  format: str=None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1275,8 +1306,8 @@ class Images( Grok ):
 			error.show( )
 	
 	def edit( self, image_path: str, prompt: str, model: str='grok-imagine-image',
-			aspect_ratio: str = "4:3", resolution: str='1k', quality: str='medium',
-			response_format: str='base64' ) -> str | None:
+			aspect_ratio: str=None, resolution: str=None, quality: str=None,
+			response_format: str=None ) -> str | None:
 		"""
 		
 			Purpose:

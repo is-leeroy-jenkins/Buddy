@@ -3462,11 +3462,10 @@ elif mode == "Images":
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
-					
+					# ---------  Mode --------
 					with llm_c1:
 						_modes = [ 'Generation', 'Analysis', 'Editing' ]
 						set_image_mode = st.selectbox( label='Image Mode:', options=_modes,
@@ -3474,7 +3473,8 @@ elif mode == "Images":
 							placeholder='Options' )
 						
 						image_mode = st.session_state[ 'image_mode' ]
-						
+					
+					# ---------  Model --------
 					with llm_c2:
 						if st.session_state[ 'image_mode' ] == 'Generation':
 							generation = list( cfg.GPT_GENERATION )
@@ -3507,6 +3507,7 @@ elif mode == "Images":
 							
 							image_model = st.session_state[ 'image_model' ]
 					
+					# ---------  Include --------
 					with llm_c3:
 						includes = list( image.include_options )
 						set_image_include = st.multiselect( label='Include:',
@@ -3515,6 +3516,7 @@ elif mode == "Images":
 						
 						image_include = st.session_state[ 'image_include' ]
 					
+					# ---------  Domains --------
 					with llm_c4:
 						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains',
 							placeholder='Enter Domains',
@@ -3525,6 +3527,7 @@ elif mode == "Images":
 						
 						image_domains = st.session_state[ 'image_domains' ]
 					
+					# ---------  Reasoning --------
 					with llm_c5:
 						reasonings = list( image.reasoning_options )
 						set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
@@ -3532,10 +3535,8 @@ elif mode == "Images":
 						
 						image_reasoning = st.session_state[ 'image_reasoning' ]
 					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Model Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_mode', 'image_model', 'image_include',
 						             'image_domains', 'image_stops', 'image_reasoning', ]:
 							if key in st.session_state:
@@ -3550,6 +3551,7 @@ elif mode == "Images":
 					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
 					
+					# ---------  Top-P --------
 					with prm_c1:
 						set_image_top_p = st.slider( label='Top-P',  key='image_top_percent',
 							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
@@ -3557,6 +3559,7 @@ elif mode == "Images":
 						
 						image_top_percent = st.session_state[ 'image_top_percent' ]
 					
+					# ---------  Frequency --------
 					with prm_c2:
 						set_image_freq = st.slider( label='Frequency Penalty',
 							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
@@ -3565,6 +3568,7 @@ elif mode == "Images":
 						
 						image_fequency = st.session_state[ 'image_frequency_penalty' ]
 					
+					# ---------  Presense --------
 					with prm_c3:
 						set_image_presense = st.slider( label='Presence Penalty',
 							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
@@ -3573,6 +3577,7 @@ elif mode == "Images":
 						
 						image_presense = st.session_state[ 'image_presense_penalty' ]
 					
+					# ---------  Temperature --------
 					with prm_c4:
 						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
 							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
@@ -3580,6 +3585,7 @@ elif mode == "Images":
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
+					# ---------  Number --------
 					with prm_c5:
 						set_image_number = st.slider( label='Number', min_value=0, max_value=100,
 							value=int( st.session_state.get( 'image_number', 0 ) ),
@@ -3587,11 +3593,9 @@ elif mode == "Images":
 							key='image_number' )
 						
 						image_number = st.session_state[ 'image_number' ]
-						
+					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Inferrence Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_top_percent', 'image_frequency_penalty',
 						             'image_presense_penalty', 'image_temperature',  'image_number' ]:
 							if key in st.session_state:
@@ -3603,12 +3607,14 @@ elif mode == "Images":
 					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
+					# ---------  Allow Parallel --------
 					with tool_c1:
 						set_image_parallel = st.toggle( label='Allow Parallel', key='image_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
 					
+					# ---------  Max Tools --------
 					with tool_c2:
 						set_image_calls = st.slider( label='Max Tools', min_value=0, max_value=6,
 							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
@@ -3616,6 +3622,7 @@ elif mode == "Images":
 						
 						image_max_tools = st.session_state[ 'image_max_tools' ]
 					
+					# ---------  Tool Choice --------
 					with tool_c3:
 						choices = list( image.choice_options )
 						set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
@@ -3623,6 +3630,7 @@ elif mode == "Images":
 						
 						image_tool_choice = st.session_state[ 'image_choice' ]
 					
+					# ---------  Tool Options --------
 					with tool_c4:
 						tool_options = list( image.tool_options )
 						set_image_tools = st.multiselect( label='Tools:', options=tool_options,
@@ -3630,10 +3638,8 @@ elif mode == "Images":
 						
 						image_tools = st.session_state[ 'image_tools' ]
 					
+					# --------- Reset Tool Settings --------
 					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Tool Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
 								'image_tools', ]:
 							if key in st.session_state:
@@ -3645,22 +3651,26 @@ elif mode == "Images":
 					res_one, res_two, res_three, res_four, res_five = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------  Stream --------
 					with res_one:
 						set_image_stream = st.toggle( label='Stream', key='image_stream', help=cfg.STREAM )
 						
 						image_stream = st.session_state[ 'image_stream' ]
 					
+					# ---------  Store --------
 					with res_two:
 						set_image_store = st.toggle( label='Store', key='image_store', help=cfg.STORE )
 						
 						text_store = st.session_state[ 'image_store' ]
 					
+					# ---------  Background --------
 					with res_three:
 						set_image_background = st.toggle( label='Background', key='image_background',
 							help=cfg.BACKGROUND_MODE )
 						
 						image_background = st.session_state[ 'image_background' ]
 					
+					# ---------  Response Format --------
 					with res_four:
 						formats = list( image.format_options )
 						set_image_reponse = st.selectbox( label='Response Format:',
@@ -3669,16 +3679,15 @@ elif mode == "Images":
 						
 						image_respose_format = st.session_state[ 'image_response_format' ]
 					
+					# ---------  Max Tokens --------
 					with res_five:
 						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 						
 						image_tokens = st.session_state[ 'image_max_tokens' ]
 					
+					# --------- Reset Response Settings --------
 					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Response session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_stream', 'image_store', 'image_background',
 								'image_response_format', 'image_max_tokens', ]:
 							if key in st.session_state:
@@ -3738,10 +3747,8 @@ elif mode == "Images":
 						
 						image_output = st.session_state[ 'image_output' ]
 					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Response session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
 						             'image_size', 'image_output' ]:
 							if key in st.session_state:
@@ -3760,6 +3767,7 @@ elif mode == "Images":
 					                                                       0.20 ],
 						border=True, gap='xxsmall' )
 					
+					# ---------  Mode  --------
 					with llm_c1:
 						_modes = [ 'Generation', 'Analysis', 'Editing' ]
 						set_image_mode = st.selectbox( label='Image Mode:', options=_modes,
@@ -3768,6 +3776,7 @@ elif mode == "Images":
 						
 						image_mode = st.session_state[ 'image_mode' ]
 					
+					# ---------  Model --------
 					with llm_c2:
 						if st.session_state[ 'image_mode' ] == 'Generation':
 							generation = list( cfg.GPT_GENERATION )
@@ -3800,6 +3809,7 @@ elif mode == "Images":
 							
 							image_model = st.session_state[ 'image_model' ]
 					
+					# ---------  Include --------
 					with llm_c3:
 						includes = list( image.include_options )
 						set_image_include = st.multiselect( label='Include:',
@@ -3808,6 +3818,7 @@ elif mode == "Images":
 						
 						image_include = st.session_state[ 'image_include' ]
 					
+					# ---------  Domains --------
 					with llm_c4:
 						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains',
 							placeholder='Enter Domains',
@@ -3818,6 +3829,7 @@ elif mode == "Images":
 						
 						image_domains = st.session_state[ 'image_domains' ]
 					
+					# ---------  Reasoning --------
 					with llm_c5:
 						reasonings = list( image.reasoning_options )
 						set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
@@ -3840,10 +3852,10 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
-					                                                       0.20 ],
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
 					
+					# ---------  Top-P --------
 					with prm_c1:
 						set_image_top_p = st.slider( label='Top-P', key='image_top_percent',
 							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
@@ -3851,6 +3863,7 @@ elif mode == "Images":
 						
 						image_top_percent = st.session_state[ 'image_top_percent' ]
 					
+					# ---------  Frequency --------
 					with prm_c2:
 						set_image_freq = st.slider( label='Frequency Penalty',
 							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
@@ -3859,6 +3872,7 @@ elif mode == "Images":
 						
 						image_fequency = st.session_state[ 'image_frequency_penalty' ]
 					
+					# ---------  Presense --------
 					with prm_c3:
 						set_image_presense = st.slider( label='Presence Penalty',
 							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
@@ -3867,6 +3881,7 @@ elif mode == "Images":
 						
 						image_presense = st.session_state[ 'image_presense_penalty' ]
 					
+					# ---------  Temperature --------
 					with prm_c4:
 						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
 							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
@@ -3874,6 +3889,7 @@ elif mode == "Images":
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
+					# ---------  Number --------
 					with prm_c5:
 						set_image_number = st.slider( label='Number', min_value=0, max_value=100,
 							value=int( st.session_state.get( 'image_number', 0 ) ),
@@ -3882,10 +3898,8 @@ elif mode == "Images":
 						
 						image_number = st.session_state[ 'image_number' ]
 					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Inferrence Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_top_percent', 'image_frequency_penalty',
 						             'image_presense_penalty', 'image_temperature', 'image_number' ]:
 							if key in st.session_state:
@@ -3897,12 +3911,14 @@ elif mode == "Images":
 					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
+					# ---------  Allow Parallel --------
 					with tool_c1:
 						set_image_parallel = st.toggle( label='Allow Parallel', key='image_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
 					
+					# ---------  Max Tools --------
 					with tool_c2:
 						set_image_calls = st.slider( label='Max Tools', min_value=0, max_value=6,
 							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
@@ -3910,6 +3926,7 @@ elif mode == "Images":
 						
 						image_max_tools = st.session_state[ 'image_max_tools' ]
 					
+					# ---------  Tool Choice --------
 					with tool_c3:
 						choices = list( image.choice_options )
 						set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
@@ -3917,6 +3934,7 @@ elif mode == "Images":
 						
 						image_tool_choice = st.session_state[ 'image_choice' ]
 					
+					# ---------  Tool Options --------
 					with tool_c4:
 						tool_options = list( image.tool_options )
 						set_image_tools = st.multiselect( label='Tools:', options=tool_options,
@@ -3924,10 +3942,8 @@ elif mode == "Images":
 						
 						image_tools = st.session_state[ 'image_tools' ]
 					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Tool Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
 						             'image_tools', ]:
 							if key in st.session_state:
@@ -3939,22 +3955,26 @@ elif mode == "Images":
 					res_one, res_two, res_three, res_four, res_five = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------  Stream --------
 					with res_one:
 						set_image_stream = st.toggle( label='Stream', key='image_stream', help=cfg.STREAM )
 						
 						image_stream = st.session_state[ 'image_stream' ]
 					
+					# ---------  Store --------
 					with res_two:
 						set_image_store = st.toggle( label='Store', key='image_store', help=cfg.STORE )
 						
 						text_store = st.session_state[ 'image_store' ]
 					
+					# ---------  Background --------
 					with res_three:
 						set_image_background = st.toggle( label='Background', key='image_background',
 							help=cfg.BACKGROUND_MODE )
 						
 						image_background = st.session_state[ 'image_background' ]
 					
+					# ---------  Response Format --------
 					with res_four:
 						formats = list( image.format_options )
 						set_image_reponse = st.selectbox( label='Response Format:',
@@ -3963,16 +3983,15 @@ elif mode == "Images":
 						
 						image_respose_format = st.session_state[ 'image_response_format' ]
 					
+					# ---------  Max Tokens --------
 					with res_five:
 						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 						
 						image_tokens = st.session_state[ 'image_max_tokens' ]
 					
+					# ------- Reset Settings -----------
 					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Response session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_stream', 'image_store', 'image_background',
 						             'image_response_format', 'image_max_tokens', ]:
 							if key in st.session_state:
@@ -3987,7 +4006,7 @@ elif mode == "Images":
 					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
-					# ------------ Image Detail
+					# ------------ Image Detail -------
 					with img_c1:
 						details = list( image.detail_options )
 						set_image_detail = st.selectbox( label='Image Detail', options=details,
@@ -3996,7 +4015,7 @@ elif mode == "Images":
 						
 						image_detail = st.session_state[ 'image_detail' ]
 					
-					# ------------ Image Style
+					# ------------ Image Style --------
 					with img_c2:
 						sizes = list( image.size_options )
 						set_image_size = st.selectbox( label='Image Size', options=sizes,
@@ -4005,7 +4024,7 @@ elif mode == "Images":
 						
 						image_size = st.session_state[ 'image_size' ]
 					
-					# ------------ Image Quality
+					# ------------ Image Quality ------
 					with img_c3:
 						qualities = list( image.quality_options )
 						set_image_quality = st.selectbox( label='Image Quality',
@@ -4014,7 +4033,7 @@ elif mode == "Images":
 						
 						image_quality = st.session_state[ 'image_quality' ]
 					
-					# ------------ Image Backcolor
+					# ------------ Image Backcolor -------
 					with img_c4:
 						colors = list( image.backcolor_options )
 						set_image_backcolor = st.selectbox( label='Image Backcolor',
@@ -4023,7 +4042,7 @@ elif mode == "Images":
 						
 						image_backcolor = st.session_state[ 'image_backcolor' ]
 					
-					# ------------ Image Output Format
+					# ------------ Image Output Format ------
 					with img_c5:
 						outputs = list( image.output_options )
 						set_image_output = st.selectbox( label='Image Format', options=outputs,
@@ -4032,10 +4051,8 @@ elif mode == "Images":
 						
 						image_output = st.session_state[ 'image_output' ]
 					
+					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Response session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
 						             'image_size', 'image_output' ]:
 							if key in st.session_state:
@@ -4053,6 +4070,7 @@ elif mode == "Images":
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
 						border=True, gap='xxsmall' )
 					
+					# ---------  Mode --------
 					with llm_c1:
 						_modes = [ 'Generation', 'Analysis', 'Editing' ]
 						set_image_mode = st.selectbox( label='Image Mode:', options=_modes,
@@ -4061,6 +4079,7 @@ elif mode == "Images":
 						
 						image_mode = st.session_state[ 'image_mode' ]
 					
+					# ---------  Model --------
 					with llm_c2:
 						if st.session_state[ 'image_mode' ] == 'Generation':
 							generation = list( cfg.GPT_GENERATION )
@@ -4093,6 +4112,7 @@ elif mode == "Images":
 							
 							image_model = st.session_state[ 'image_model' ]
 					
+					# ---------  Include --------
 					with llm_c3:
 						includes = list( image.include_options )
 						set_image_include = st.multiselect( label='Include:',
@@ -4101,6 +4121,7 @@ elif mode == "Images":
 						
 						image_include = st.session_state[ 'image_include' ]
 					
+					# ---------  Domains --------
 					with llm_c4:
 						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains',
 							placeholder='Enter Domains',
@@ -4111,6 +4132,7 @@ elif mode == "Images":
 						
 						image_domains = st.session_state[ 'image_domains' ]
 					
+					# ---------  Reasoning --------
 					with llm_c5:
 						reasonings = list( image.reasoning_options )
 						set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
@@ -4118,10 +4140,8 @@ elif mode == "Images":
 						
 						image_reasoning = st.session_state[ 'image_reasoning' ]
 					
+					# --------- Reset Model Settings --------
 					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Model Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_mode', 'image_model', 'image_include',
 						             'image_domains', 'image_stops', 'image_reasoning', ]:
 							if key in st.session_state:
@@ -4133,10 +4153,10 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
-					                                                       0.20 ],
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
 						border=True, gap='xxsmall' )
 					
+					# ---------  Top-P --------
 					with prm_c1:
 						set_image_top_p = st.slider( label='Top-P', key='image_top_percent',
 							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
@@ -4144,6 +4164,7 @@ elif mode == "Images":
 						
 						image_top_percent = st.session_state[ 'image_top_percent' ]
 					
+					# ---------  Frequency --------
 					with prm_c2:
 						set_image_freq = st.slider( label='Frequency Penalty',
 							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
@@ -4152,6 +4173,7 @@ elif mode == "Images":
 						
 						image_fequency = st.session_state[ 'image_frequency_penalty' ]
 					
+					# ---------  Presense --------
 					with prm_c3:
 						set_image_presense = st.slider( label='Presence Penalty',
 							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
@@ -4160,6 +4182,7 @@ elif mode == "Images":
 						
 						image_presense = st.session_state[ 'image_presense_penalty' ]
 					
+					# ---------  Temperature --------
 					with prm_c4:
 						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
 							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
@@ -4167,6 +4190,7 @@ elif mode == "Images":
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
+					# ---------  Number --------
 					with prm_c5:
 						set_image_number = st.slider( label='Number', min_value=0, max_value=100,
 							value=int( st.session_state.get( 'image_number', 0 ) ),
@@ -4175,10 +4199,8 @@ elif mode == "Images":
 						
 						image_number = st.session_state[ 'image_number' ]
 					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Inferrence Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_top_percent', 'image_frequency_penalty',
 						             'image_presense_penalty', 'image_temperature', 'image_number' ]:
 							if key in st.session_state:
@@ -4190,12 +4212,14 @@ elif mode == "Images":
 					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
+					# ---------  Allow Parallel --------
 					with tool_c1:
 						set_image_parallel = st.toggle( label='Allow Parallel', key='image_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
 					
+					# ---------  Max Tools --------
 					with tool_c2:
 						set_image_calls = st.slider( label='Max Tools', min_value=0, max_value=6,
 							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
@@ -4203,6 +4227,7 @@ elif mode == "Images":
 						
 						image_max_tools = st.session_state[ 'image_max_tools' ]
 					
+					# ---------  Tool Choice --------
 					with tool_c3:
 						choices = list( image.choice_options )
 						set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
@@ -4210,6 +4235,7 @@ elif mode == "Images":
 						
 						image_tool_choice = st.session_state[ 'image_choice' ]
 					
+					# ---------  Tool Options --------
 					with tool_c4:
 						tool_options = list( image.tool_options )
 						set_image_tools = st.multiselect( label='Tools:', options=tool_options,
@@ -4217,10 +4243,8 @@ elif mode == "Images":
 						
 						image_tools = st.session_state[ 'image_tools' ]
 					
+					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Tool Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
 						             'image_tools', ]:
 							if key in st.session_state:
@@ -4232,22 +4256,26 @@ elif mode == "Images":
 					res_one, res_two, res_three, res_four, res_five = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------  Stream --------
 					with res_one:
 						set_image_stream = st.toggle( label='Stream', key='image_stream', help=cfg.STREAM )
 						
 						image_stream = st.session_state[ 'image_stream' ]
 					
+					# ---------  Store --------
 					with res_two:
 						set_image_store = st.toggle( label='Store', key='image_store', help=cfg.STORE )
 						
 						text_store = st.session_state[ 'image_store' ]
 					
+					# ---------  Background --------
 					with res_three:
 						set_image_background = st.toggle( label='Background', key='image_background',
 							help=cfg.BACKGROUND_MODE )
 						
 						image_background = st.session_state[ 'image_background' ]
 					
+					# ---------  Response Format --------
 					with res_four:
 						formats = list( image.format_options )
 						set_image_reponse = st.selectbox( label='Response Format:',
@@ -4256,16 +4284,15 @@ elif mode == "Images":
 						
 						image_respose_format = st.session_state[ 'image_response_format' ]
 					
+					# ---------  Max Tokens --------
 					with res_five:
 						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 						
 						image_tokens = st.session_state[ 'image_max_tokens' ]
 					
+					# ------- Reset Settings -----------
 					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Response session keys
-						# ----------------------------------------------------------
 						for key in [ 'image_stream', 'image_store', 'image_background',
 						             'image_response_format', 'image_max_tokens', ]:
 							if key in st.session_state:
