@@ -5387,7 +5387,7 @@ elif mode == 'Vector Stores':
 		# ------------------------------------------------------------------
 		left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 		with center:
-			st.caption( 'Store Management' )
+			st.caption( 'Collections Management' )
 			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
 			with stores_left:
 				# --------------------------------------------------------------
@@ -5409,7 +5409,7 @@ elif mode == 'Vector Stores':
 								st.error( f'Create collection failed: {exc}' )
 			
 			with stores_right:
-				vs_map = getattr( vector, 'collections', None )
+				vs_map = getattr( collector, 'collections', None )
 				# --------------------------------------------------------------
 				# Expander - Retreive Files
 				# --------------------------------------------------------------
@@ -5418,31 +5418,12 @@ elif mode == 'Vector Stores':
 					if vs_map and isinstance( vs_map, dict ):
 						options = list( vs_map.items( ) )
 					
-					if not options:
-						try:
-							client = getattr( collector, 'client', None )
-							if (client and hasattr( client, 'collections' )
-									and hasattr( client.collections, 'list' )):
-								api_list = client.collections.list( )
-								temp: List[ tuple ] = [ ]
-								for item in getattr( api_list, 'data', [ ] ) or api_list:
-									nm = getattr( item, 'name', None ) or (
-											item.get( 'name' ) if isinstance( item, dict ) else None)
-									vid = getattr( item, 'id', None ) or (
-											item.get( 'id' ) if isinstance( item, dict ) else None)
-									if nm and vid:
-										temp.append( (nm, vid) )
-								if temp:
-									options = temp
-						except Exception:
-							options = [ ]
-					
 					# --------------------------------------------------------------
 					# Select / Retrieve / Delete
 					# --------------------------------------------------------------
 					if options:
 						names = [ f"{n} — {i}" for n, i in options ]
-						sel = st.selectbox( 'Select a Collection', options=names, key='sel_collection' )
+						sel = st.selectbox( '✔️ Select Collection', options=names, key='select_collection' )
 						
 						sel_id: Optional[ str ] = None
 						for n, i in options:
@@ -5452,9 +5433,9 @@ elif mode == 'Vector Stores':
 						
 						c1, c2 = st.columns( [ 1, 1 ] )
 						with c1:
-							if st.button( '📥 Retrieve Collection', key='retrieve_collection' ):
+							if st.button( '📥 Retrieve Collection', key='retrieve_filestore' ):
 								if not sel_id:
-									st.warning( 'No Collection Selected.' )
+									st.warning( 'No File Search Store Selected.' )
 								else:
 									try:
 										client = getattr( collector, 'client', None )
@@ -5463,7 +5444,7 @@ elif mode == 'Vector Stores':
 											vs = client.collections.retrieve( collection_id=sel_id )
 											st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
 										else:
-											st.warning( 'collections.retrieve() not available.' )
+											st.warning( 'retrieve() not available.' )
 									except Exception as exc:
 										st.error( f'retrieve() failed: {exc}' )
 						
@@ -5479,13 +5460,9 @@ elif mode == 'Vector Stores':
 											res = client.collections.delete( collection_id=sel_id )
 											st.success( f'Delete returned: {res}' )
 										else:
-											st.warning( 'collections.delete() not available.' )
+											st.warning( 'delete() not available.' )
 									except Exception as exc:
 										st.error( f'Delete failed: {exc}' )
-							else:
-								st.info(
-									'No collections discovered. Create one or confirm '
-									'collections exist for this account.' )
 				
 	# --------------------------------------------------------------
 	# Gemini
@@ -5501,7 +5478,7 @@ elif mode == 'Vector Stores':
 		# ------------------------------------------------------------------
 		left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 		with center:
-			st.caption( 'Store Management' )
+			st.caption( 'File Search Store Management' )
 			stores_left, stores_right = st.columns( [ 0.50, 0.50 ], border=True )
 			with stores_left:
 				# --------------------------------------------------------------
@@ -5527,36 +5504,18 @@ elif mode == 'Vector Stores':
 				# --------------------------------------------------------------
 				# Expander - Retreive Files
 				# --------------------------------------------------------------
-				with st.expander( label='Retreive:', expanded=True ):
+				with st.expander( 'Retreive:', expanded=True ):
 					options: List[ tuple ] = [ ]
 					if vs_map and isinstance( vs_map, dict ):
 						options = list( vs_map.items( ) )
-					
-					if not options:
-						try:
-							client = getattr( searcher, 'client', None )
-							if (client and hasattr( client, 'vector_stores' )
-									and hasattr( client.file_search_stores, 'list' )):
-								api_list = client.file_search_stores.list( )
-								temp: List[ tuple ] = [ ]
-								for item in getattr( api_list, 'data', [ ] ) or api_list:
-									nm = getattr( item, 'name', None ) or (
-											item.get( 'name' ) if isinstance( item, dict ) else None)
-									vid = getattr( item, 'id', None ) or (
-											item.get( 'id' ) if isinstance( item, dict ) else None)
-									if nm and vid:
-										temp.append( (nm, vid) )
-								if temp:
-									options = temp
-						except Exception:
-							options = [ ]
 					
 					# --------------------------------------------------------------
 					# Select / Retrieve / Delete
 					# --------------------------------------------------------------
 					if options:
 						names = [ f'{n} — {i}' for n, i in options ]
-						sel = st.selectbox( label='Select', options=names )
+						sel = st.selectbox( '✔️ Select File Search Store', options=names,
+							key='select_filestore' )
 						
 						sel_id: Optional[ str ] = None
 						for n, i in options:
@@ -5565,42 +5524,30 @@ elif mode == 'Vector Stores':
 								break
 						
 						c1, c2 = st.columns( [ 1, 1 ] )
+						
 						with c1:
-							if st.button( label='📥 Retrieve', key='retrive_store' ):
+							if st.button( '📥 Retrieve File Search Store', key='retrieve_filestore' ):
 								if not sel_id:
-									st.warning( 'No file search store selected.' )
+									st.warning( 'No File Search Store Selected!' )
 								else:
 									try:
-										client = getattr( searcher, 'client', None )
-										if (client and hasattr( client, 'file_search_stores' )
-												and hasattr( client.file_search_stores, 'retrieve' )):
-											vs = client.file_search_stores.retrieve(
-												file_search_store_id=sel_id )
-											st.json( vs.__dict__ if hasattr( vs, '__dict__' ) else vs )
-										else:
-											st.warning( 'file_search_stores.retrieve() not available.' )
+										vs = searcher.retrieve( store_id=sel_id )
+										st.write( 'Name:', vs.name )
+										st.write( 'Files:', vs.file_counts )
+										st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
 									except Exception as exc:
 										st.error( f'retrieve() failed: {exc}' )
 						
 						with c2:
-							if st.button( '❌ Delete File Store' ):
+							if st.button( '❌ Delete File Search Store', key='delete_store' ):
 								if not sel_id:
-									st.warning( 'No file search store selected.' )
+									st.warning( 'No File Search Store Selected.' )
 								else:
 									try:
-										client = getattr( searcher, 'client', None )
-										if (client and hasattr( client, 'file_search_stores' )
-												and hasattr( client.file_search_stores, 'delete' )):
-											res = client.file_search_stores.delete(
-												file_search_store_id=sel_id )
-											st.success( f'Delete returned: {res}' )
-										else:
-											st.warning( 'file_search_stores.delete() not available.' )
+										vs = searcher.delete( store_id=sel_id )
 									except Exception as exc:
 										st.error( f'Delete failed: {exc}' )
-							else:
-								st.info( 'No file search stores discovered' )
-			
+	
 	# --------------------------------------------------------------
 	# GPT
 	# --------------------------------------------------------------
@@ -5641,7 +5588,7 @@ elif mode == 'Vector Stores':
 				# --------------------------------------------------------------
 				# Expander - Retreive Files
 				# --------------------------------------------------------------
-				with st.expander( 'Retreive:', expanded=True ):
+				with st.expander( '✔️ Retreive:', expanded=True ):
 					options: List[ tuple ] = [ ]
 					if vs_map and isinstance( vs_map, dict ):
 						options = list( vs_map.items( ) )
@@ -5651,7 +5598,7 @@ elif mode == 'Vector Stores':
 					# --------------------------------------------------------------
 					if options:
 						names = [ f'{n} — {i}' for n, i in options ]
-						sel = st.selectbox( 'Select Vector Store', options=names,
+						sel = st.selectbox( '✔️ Select Vector Store', options=names,
 							key='select_vectorstore' )
 						
 						sel_id: Optional[ str ] = None
@@ -5668,7 +5615,7 @@ elif mode == 'Vector Stores':
 									st.warning( 'No vector store selected.' )
 								else:
 									try:
-										vs = vector.retrieve( id=sel_id )
+										vs = vector.retrieve( store_id=sel_id )
 										st.write( 'Name:', vs.name )
 										st.write( 'Files:', vs.file_counts )
 										st.write( 'Size (MB):', round( vs.usage_bytes / 1_048_576, 2 ) )
@@ -5681,16 +5628,9 @@ elif mode == 'Vector Stores':
 									st.warning( 'No vector store selected.' )
 								else:
 									try:
-										vs = vector.delete( )
-										if openai_client and hasattr( openai_client.vector_stores, 'delete' ):
-											res = openai_client.vector_stores.delete( vector_store_id=sel_id )
-											st.success( f'Delete returned: {res}' )
-										else:
-											st.warning( 'vector_stores.delete() not available.' )
+										vs = vector.delete( store_id=sel_id )
 									except Exception as exc:
 										st.error( f'Delete failed: {exc}' )
-					else:
-						st.info( 'No vector stores discovered' )
 
 # ======================================================================================
 # DOCUMENTS MODE

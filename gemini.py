@@ -909,7 +909,7 @@ class TTS( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'TTS'
-			exception.method = 'create_audio( self, text, filepath, format, speed, voice ) -> str'
+			exception.method = 'create_speech( self, text, filepath, format, speed, voice ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 
@@ -1215,7 +1215,7 @@ class Files( Gemini ):
 			ex.method = 'upload( self, path: str, name: str ) -> Optional[ File ]'
 			raise ex
 	
-	def list( self, model: str = 'gemini-2.0-flash', temperature: float=None,
+	def list( self, model: str='gemini-2.0-flash', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[ str ]=None ) -> List[ str ]:
 		"""
@@ -1284,7 +1284,7 @@ class Files( Gemini ):
 			ex.method = 'retrieve( self, file_id: str ) -> Optional[ File ]'
 			raise ex
 	
-	def summarize( self, prompt: str, filepath: str, model: str = 'gemini-2.0-flash',
+	def summarize( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
 			temperature: float=None, top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
 		"""
@@ -1498,6 +1498,8 @@ class VectorStores( Gemini ):
 	bucket_name: Optional[ str ]
 	object_name: Optional[ str ]
 	file_path: Optional[ str ]
+	file_ids: Optional[ List[ str ] ]
+	store_ids: Optional[ List[ str ] ]
 	client: Optional[ storage.Client ]
 	bucket: Optional[ storage.Bucket ]
 	response: Optional[ Any ]
@@ -1510,10 +1512,35 @@ class VectorStores( Gemini ):
 		self.bucket_name = None
 		self.object_name = None
 		self.file_path = None
+		self.file_ids = [ ]
+		self.store_ids = [ ]
 		self.bucket = None
 		self.response = None
-		self.collections = { }
-		self.documents = { }
+		self.collections = \
+		{
+				'Federal Financial Data': 'jeni-financial/data',
+				'Federal Financial Regulations': 'jeni-financial/regulations',
+				'DoW Financial Data': 'jeni_dow/budget/data',
+				'DoW Financial Regulations': 'jeni_dow/budget/regulations',
+				'DoA Financial Data': 'jenni-doa/Financial Data',
+		}
+		self.documents = \
+		{
+				'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
+				'SF133.csv': 'file-32s641QK1Xb5QUatY3zfWF',
+				'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
+				'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
+		}
+	
+	@property
+	def model_options( self ) -> List[ str ] | None:
+		"""Returns list of available chat models."""
+		return [ 'gemini-2.5-flash',
+		         'gemini-2.5 flash image',
+		         'gemini-2.5 flash-tts',
+		         'gemini-2.5 flash-lite',
+		         'gemini-2.0-flash',
+		         'gemini-2.0-flash-lite' ]
 	
 	def create( self, bucket: str, name: str ):
 		"""

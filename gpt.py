@@ -2462,7 +2462,28 @@ class VectorStores( GPT ):
 			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
 			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
+	
+	@property
+	def model_options( self ) -> List[ str ] | None:
+		'''
 
+	        Purpose:
+	        --------
+	        Methods that returns a list of small_model names
+
+        '''
+		return [
+				'gpt-5',
+				'gpt-5.2',
+				'gpt-5-mini',
+				'gpt-5-nano',
+				'gpt-5-turbo',
+				'gpt-4.1',
+				'gpt-4.1-mini',
+				'gpt-4.1-nano',
+				'gpt-4o',
+				'gpt-4o-mini' ]
+	
 	def create( self, store_name: str ) -> Any | None:
 		'''
 			

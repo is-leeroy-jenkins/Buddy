@@ -194,17 +194,16 @@ class Chat( Grok ):
 		self.tools = None
 		self.collections = \
 		{
-				'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+				'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+				'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
 				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
 				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
-				'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e'
 		}
 		self.files = \
 		{
-				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5',
-				'Authority.csv': 'file_b2b0139f-ceb1-491e-90e6-65d16152c521',
-				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
-				'Account Balances.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2'
+				'Outlays.csv': 'file_b0a448b3-904a-40c7-bae1-64df657fde1c',
+				'Authority.csv': 'file_c6ad236f-0c52-45f4-8883-d3be032d07c2',
+				'Balances.csv': 'file_0f63d120-406f-49e6-97e5-7855f2cb26b5'
 		}
 	
 	@property
@@ -1503,10 +1502,10 @@ class Files( Grok ):
 		self.purpose = None
 		self.documents = \
 		{
-			'Account Balances.csv': 'file_9e0d8f9e-06c7-4495-9576-cdd83c433be6',
+			'AccountBalances.csv': 'file_4731bb8c-d8ff-48c0-9dae-3092fbcab214',
 			'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
-			'Authority.csv': '',
-			'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
+			'Authority.csv': 'file_cbde06d5-988b-483f-880c-441613bfe54f',
+			'Outlays.csv': 'file_78479189-7d47-4edb-9abc-2931172430e9'
 		}
 
 	@property
@@ -1644,6 +1643,67 @@ class Files( Grok ):
 			ex.module = 'grok'
 			ex.cause = 'Files'
 			ex.method = 'retrieve( self, file_id: str ) -> Any | None'
+			raise ex
+	
+	def summarize( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast',
+			temperature: float=None, top_p: float=None, frequency: float=None,
+			presence: float=None, max_tokens: int=None, store: bool=None,
+			stream: bool=None, instruct: str=None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Chat with an uploaded file by attaching it to a Responses API
+			request and asking a question about its contents.
+
+			Parameters:
+			-----------
+			file_id : str
+			prompt : str
+			model : str | None
+			max_output_tokens : int | None
+			temperature : float | None
+			top_p : float | None
+			store : bool
+			previous_response_id : str | None
+
+			Returns:
+			--------
+			str
+		
+		"""
+		try:
+			throw_if( 'filepath', filepath )
+			throw_if( 'filename', filename )
+			throw_if( 'prompt', prompt )
+			self.model = model
+			self.prompt = prompt
+			self.instructions = instruct
+			self.temperature = temperature
+			self.top_p = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.messages.append( system( self.instructions ) )
+			self.messages.append( user( self.user ) )
+			self.file_path = filepath
+			self.filename = filename
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( {
+					'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
+			self.file = self.client.files.upload( open( self.file_path, 'rb' ),
+				filename=self.file_name )
+			self.chat = self.client.chat.create( model=self.model )
+			self.chat.append( user( self.prompt, file( self.file.id ) ) )
+			_response = self.chat.sample( )
+			return _response.content
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'Files'
+			ex.method = 'search( self, filepath: str, filename: str, prompt: str, model: str ) -> str'
 			raise ex
 	
 	def search( self, filepath: str, filename: str, prompt: str, model: str='grok-4-fast',
@@ -1873,6 +1933,7 @@ class VectorStores( Grok ):
 	name: Optional[ str ]
 	file_path: Optional[ str ]
 	file_ids: Optional[ List[ str ] ]
+	store_ids: Optional[ List[ str ] ]
 	store_id: Optional[ str ]
 	documents: Optional[ Dict[ str, str ] ]
 	collections: Optional[ Dict[ str, str ] ]
@@ -1884,23 +1945,23 @@ class VectorStores( Grok ):
 		self.model = None
 		self.content = None
 		self.response = None
-		self.file_ids = None
+		self.file_ids = [ ]
+		self.store_ids = [ ]
 		self.file_path = None
 		self.file_name = None
 		self.store_id = None
 		self.collections = \
 		{
-			'Financial Data': 'collection_3b4d5d26-d26f-487c-b589-1c5fbde26c5e',
-			'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
-			'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
-			'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+				'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+				'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
+				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee'
 		}
 		self.documents = \
 		{
-				'Account Balances.csv': 'file_9e0d8f9e-06c7-4495-9576-cdd83c433be6',
-				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
-				'Authority.csv': '',
-				'Outlays.csv': 'file_9d0acf02-4794-4a26-843b-b46c754e7cf5'
+				'Outlays.csv': 'file_b0a448b3-904a-40c7-bae1-64df657fde1c',
+				'Authority.csv': 'file_c6ad236f-0c52-45f4-8883-d3be032d07c2',
+				'Balances.csv': 'file_0f63d120-406f-49e6-97e5-7855f2cb26b5'
 		}
 	
 	@property
@@ -1995,7 +2056,7 @@ class VectorStores( Grok ):
 			error = ErrorDialog( ex )
 			error.show( )
 	
-	def retrieve( self, stores_id: str ) -> Any | None:
+	def retrieve( self, store_id: str ) -> Any | None:
 		"""
 		
 			Purpose:
@@ -2012,8 +2073,8 @@ class VectorStores( Grok ):
 		
 		"""
 		try:
-			throw_if( 'stores_id', stores_id )
-			self.stores_id = stores_id
+			throw_if( 'store_id', store_id )
+			self.stores_id = store_id
 			self.client = Client( api_key=self.api_key )
 			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
 					'Content-Type': 'application/json', } )
@@ -2062,6 +2123,47 @@ class VectorStores( Grok ):
 					'Content-Type': 'application/json', } )
 			self.response = client.collections.search( query=self.prompt,
 				collection_ids=[ self.store_id ],)
+			return self.response.output_text
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'grok'
+			ex.cause = 'VectorStores'
+			ex.method = 'search( self, prompt: str, store_id: str, model: str ) -> str'
+			raise ex
+	
+	def survey( self, prompt: str, store_ids: List[ str ], model: str='grok-4-fast' ) -> str | None:
+		"""
+
+	        Purpose:
+	        _______
+	        Method that analyzeses an image given a prompt,
+
+	        Parameters:
+	        ----------
+	        prompt: str
+	        url: str
+
+	        Returns:
+	        -------
+	        str | None
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'store_ids', store_ids )
+			self.prompt = prompt
+			self.model = model
+			self.store_ids = store_ids
+			self.tools = [
+			{
+				'text': 'file_search',
+				'vector_store_ids': self.store_ids,
+			} ]
+			self.client = Client( api_key=self.api_key )
+			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}',
+					'Content-Type': 'application/json', } )
+			self.response = self.client.collections.search( query=self.prompt,
+				collection_ids=self.store_ids, )
 			return self.response.output_text
 		except Exception as e:
 			ex = Error( e )
@@ -2146,15 +2248,18 @@ class VectorStores( Grok ):
 		return [ 'client',
 		         'file_path',
 		         'response',
-		         'name',
+		         'file_name',
 		         'model',
-		         'file_id',
+		         'model_options',
+		         'file_ids',
+		         'store_ids',
 		         'store_id',
 		         'create',
+		         'list',
 		         'retrieve',
 		         'search',
-		         'delete',
 		         'update',
+		         'delete',
 		         'collections',
 		         'documents' ]
 	
