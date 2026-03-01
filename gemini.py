@@ -103,7 +103,7 @@ class Gemini( ):
 		image_config      : ImageConfig - Multimodal settings
 		tool_config       : list - Collection of Tool objects for grounding
 		candidate_count   : int - Response count
-		modalities        : list - I/O types
+		response_modalities        : list - I/O types
 		stops             : list - Stop sequences
 		frequency_penalty : float - Repetition control
 		presence_penalty  : float - Topic control

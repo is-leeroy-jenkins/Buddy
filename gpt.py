@@ -48,16 +48,25 @@ from pathlib import Path
 import tiktoken
 from openai import OpenAI
 from typing import Optional, List, Dict
-
 from openai.types.responses import Response
 from openai.types import CreateEmbeddingResponse, VectorStore
-	
 from boogr import Error
 import config as cfg
 
 def throw_if( name: str, value: object ):
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
+
+def encode_image( image_path: str ) -> str:
+	"""
+		
+		Purpose:
+		--------
+		Encodes a local image to a base64 string for vision API requests.
+		
+	"""
+	with open( image_path, "rb" ) as image_file:
+		return base64.b64encode( image_file.read( ) ).decode( 'utf-8' )
 
 class GPT:
 	'''
