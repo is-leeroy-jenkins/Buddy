@@ -5108,73 +5108,9 @@ elif mode == 'Embeddings':
 	emb_left, emb_center, emb_right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with emb_center:
 		# ------------------------------------------------------------------
-		# Expander — Grok LLM Configuration
-		# ------------------------------------------------------------------
-		if provider_name == 'Grok':
-			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
-				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5  = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-					border=True, gap='xxsmall' )
-				
-				# ---------  Model --------
-				with emb_c1:
-					embedding_models = list( embedding.model_options )
-					set_embedding_model = st.selectbox( label='Embedding Model:', options=embedding_models,
-						help='REQUIRED. Embedding model used by the AI', key='embedding_model',
-						index=None, placeholder='Options' )
-					
-					embedding_model = st.session_state[ 'embedding_model' ]
-				
-				# ---------  Encoding --------
-				with emb_c2:
-					encoding_options = list( embedding.encoding_options )
-					set_encoding_format = st.selectbox( label='Encoding Format:',
-						options=encoding_options, key='embeddings_encoding_format',
-						help='REQUIRED: The format to return the embeddings in. float or base64',
-						index=None, placeholder='Options' )
-					
-					embeddings_encoding = st.session_state[ 'embeddings_encoding_format' ]
-				
-				# ---------  Dimensions --------
-				with emb_c3:
-					set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
-						value=int( st.session_state.get( 'embeddings_dimensions' ) ),
-						step=1, key='embeddings_dimensions',
-						help='Optional (large models only): An integer between 1 and 2048',
-						width='stretch' )
-					
-					embeddings_dimensions = st.session_state[ 'embeddings_dimensions' ]
-				
-				# ---------  Size --------
-				with emb_c4:
-					set_chunk_size = st.slider( label='Chunk Size', min_value=0, max_value=2000,
-						step=50, key='embeddings_chunk_size',
-						value=int( st.session_state.get( 'embeddings_chunk_size' ) ),
-						help='Maximum tokens per chunk for embedding segmentation.' )
-					
-					embeddings_chunk_size = st.session_state[ 'embeddings_chunk_size' ]
-				
-				# ---------  Overlap --------
-				with emb_c5:
-					set_overlap_amount = st.slider( label='Overlap Amount', min_value=0, max_value=1000,
-						step=50, key='embeddings_overlap_amount',
-						help='The number of tokens spanning two chunks for embedding segmentation.' )
-					
-					embeddings_overlap_amount = st.session_state[ 'embeddings_overlap_amount' ]
-				
-				# ---------  Reset --------
-				if st.button( label='Reset', key='embedding_reset', width='stretch' ):
-					for key in [ 'embedding_model', 'embeddings_dimensions',
-					             'embeddings_encoding', 'embeddings_input_text',
-					             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
-						if key in st.session_state:
-							del st.session_state[ key ]
-					
-					st.rerun( )
-		
-		# ------------------------------------------------------------------
 		# Expander — Gemini LLM Configuration
 		# ------------------------------------------------------------------
-		elif provider_name == 'Gemini':
+		if provider_name == 'Gemini':
 			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
 				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
 					border=True, gap='xxsmall' )
@@ -5234,9 +5170,9 @@ elif mode == 'Embeddings':
 							del st.session_state[ key ]
 					
 					st.rerun( )
-		
+
 		# ------------------------------------------------------------------
-		# Expander — Gemini LLM Configuration
+		# Expander — GPT LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):

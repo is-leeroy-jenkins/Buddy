@@ -521,7 +521,7 @@ class Images( Gemini ):
 		self.presence_penalty = None
 		self.max_tokens = None
 		self.instructions = None
-		self.client = genai.Client( api_key=self.gemini_api_key )
+		self.client = None
 		self.genimg_config = None
 	
 	@property
@@ -571,6 +571,7 @@ class Images( Gemini ):
 			self.presence_penalty = presence
 			self.max_tokens = max_tokens
 			self.instructions = instruct
+			self.client = genai.Client( api_key=self.gemini_api_key )
 			self.genimg_config = GenerateImagesConfig( aspect_ratio=self.aspect_ratio,
 				number_of_images=self.number )
 			response = self.client.models.generate_images( model=self.model,
@@ -615,6 +616,7 @@ class Images( Gemini ):
 			self.presence_penalty = presence
 			self.max_tokens = max_tokens
 			self.instructions = instruct
+			self.client = genai.Client( api_key=self.gemini_api_key )
 			self.genimg_config = GenerateImagesConfig( aspect_ratio=self.aspect_ratio,
 				number_of_images=self.number )
 			response = self.client.models.generate_images( model=self.model,
@@ -627,10 +629,10 @@ class Images( Gemini ):
 			exception.method = 'generate( self, prompt, aspect ) -> Image'
 			raise exception
 	
-	def edit( self, prompt: str, model: str = 'gemini-2.5-flash-image', aspect: str = None,
-			number: int = None, temperature: float = None, top_p: float = None,
-			frequency: float = None, presence: float = None, max_tokens: int = None,
-			instruct: str = None ) -> Optional[ Image ]:
+	def edit( self, prompt: str, model: str='gemini-2.5-flash-image', aspect: str=None,
+			number: int=None, temperature: float=None, top_p: float=None,
+			frequency: float=None, presence: float=None, max_tokens: int=None,
+			instruct: str=None ) -> Optional[ Image ]:
 		"""
 			
 			Purpose:
@@ -659,6 +661,7 @@ class Images( Gemini ):
 			self.presence_penalty = presence
 			self.max_tokens = max_tokens
 			self.instructions = instruct
+			self.client = genai.Client( api_key=self.gemini_api_key )
 			self.genimg_config = GenerateImagesConfig( aspect_ratio=self.aspect_ratio,
 				number_of_images=self.number )
 			response = self.client.models.generate_images( model=self.model,
@@ -668,7 +671,7 @@ class Images( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Images'
-			exception.method = 'generate( self, prompt, aspect ) -> Image'
+			exception.method = 'edit( self, prompt, aspect ) -> Image'
 			raise exception
 
 class Embeddings( Gemini ):
@@ -748,7 +751,7 @@ class Embeddings( Gemini ):
 		'''
 		return [ 'float', 'base64' ]
 	
-	def generate( self, text: str, model: str='text-embedding-004', temperature: float=None,
+	def create( self, text: str, model: str='text-embedding-004', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None ) -> List[ float ] | None:
 		"""
