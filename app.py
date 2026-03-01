@@ -3445,7 +3445,7 @@ elif mode == "Images":
 			del st.session_state[ key ]
 		
 	# ------------------------------------------------------------------
-	# EXPANDER — IMAGE SETTINGS
+	# Session State
 	# ------------------------------------------------------------------
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'image_system_instructions' ] = ''
@@ -3453,12 +3453,12 @@ elif mode == "Images":
 		st.session_state[ 'clear_instructions' ] = False
 		
 	# ------------------------------------------------------------------
-	# Image Main  UI
+	# Main  UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with (center):
+	with center:
 		# ------------------------------------------------------------------
-		# Expander — Grok Image LLM Configuration
+		# Expander — Grok LLM Configuration
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -3757,7 +3757,7 @@ elif mode == "Images":
 						st.rerun( )
 			
 		# ------------------------------------------------------------------
-		# Expander — Gemini Image LLM Configuration
+		# Expander — Gemini LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -4061,7 +4061,7 @@ elif mode == "Images":
 						st.rerun( )
 			
 		# ------------------------------------------------------------------
-		# Expander — GPT Image LLM Configuration
+		# Expander — GPT LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -4393,7 +4393,9 @@ elif mode == "Images":
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
-		# Image Modes
+		# ------------------------------------------------------------------
+		# Tab Section
+		# ------------------------------------------------------------------
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 		with tab_gen:
 			prompt = st.chat_input( 'Prompt' )
@@ -4616,7 +4618,7 @@ elif mode == 'Audio':
 	audio_model = None
 	
 	# ------------------------------------------------------------------
-	#  AUDIO SETTINGS
+	#  Session State Initilization
 	# ------------------------------------------------------------------
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'audio_system_instructions' ] = ''
@@ -4629,15 +4631,14 @@ elif mode == 'Audio':
 	left, center, right = st.columns( [ 0.05, 0.9,  0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — Audio LLM Configuration
+		# Expander — Grok LLM Configuration
 		# ------------------------------------------------------------------
 		with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-			# Expander — Audio Model
 			with st.expander( 'Model Options', expanded=False, width='stretch' ):
 				aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
 					[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
 				
-				# ---------------- Task ---------------
+				# --------- Task ---------------
 				with aud_c1:
 					if not available_tasks:
 						st.info( 'Audio is not supported by the selected provider.' )
@@ -4647,8 +4648,8 @@ elif mode == 'Audio':
 							key='audio_task', placeholder='Options', index=None )
 						
 						audio_task = st.session_state[ 'audio_task' ]
-					
-				# ---------------- Model ---------------
+				
+				# ---------  Mode ---------------
 				with aud_c2:
 					if audio_task == 'Transcribe':
 						model_options = list( transcriber.model_options )
@@ -4663,7 +4664,7 @@ elif mode == 'Audio':
 						
 						audio_model = st.session_state[ 'audio_model' ]
 					
-				# ---------------- Language ----------------
+				# --------- Language -------------
 				with aud_c3:
 					if audio_task in ('Transcribe', 'Translate'):
 						obj = transcriber if audio_task == 'Transcribe' else translator
@@ -4682,14 +4683,14 @@ elif mode == 'Audio':
 						
 						# ---------------- Sample Rate ----------------
 				
-				#---------------- Sample Rate
+				#---------- Sample Rate ----------
 				with aud_c4:
 					audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
 						key='audio_rate', placeholder='Options', index=None )
 					
 					audio_rate = st.session_state[ 'audio_rate' ]
 				
-				# ---------------- Format ----------------
+				# -------- Response Format --------
 				with aud_c5:
 					format_options = [ ]
 					if audio_task == 'Transcribe':
@@ -4705,6 +4706,7 @@ elif mode == 'Audio':
 						
 						audio_format = st.session_state[ 'audio_format' ]
 				
+				# ----------- Reset Settings -------
 				if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
 					# ----------------------------------------------------------
 					# Remove Audio Model Settings session keys
@@ -4716,18 +4718,19 @@ elif mode == 'Audio':
 					
 					st.rerun( )
 
-			# Expander — Audio Inference
 			with st.expander( 'Inference Options', expanded=False, width='stretch' ):
 				prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 					border=True, gap='medium' )
 				
+				# ---------  Top-P --------
 				with prm_one:
 					set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
 						value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
 						step=0.01, help=cfg.TOP_P )
 					
 					audio_top_percent = st.session_state[ 'audio_top_percent' ]
-			
+				
+				# ---------  Frequency --------
 				with prm_two:
 					set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
 						value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
@@ -4735,6 +4738,7 @@ elif mode == 'Audio':
 					
 					audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
 				
+				# ---------  Presense --------
 				with prm_three:
 					set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
 						value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
@@ -4742,6 +4746,7 @@ elif mode == 'Audio':
 					
 					audio_presense = st.session_state[ 'audio_presense_penalty' ]
 				
+				# ---------  Temperature --------
 				with prm_four:
 					set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
 						value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
@@ -4749,10 +4754,8 @@ elif mode == 'Audio':
 					
 					audio_temperature = st.session_state[ 'audio_temperature' ]
 				
+				# --------- Reset Settings --------
 				if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
-					# ----------------------------------------------------------
-					# Remove Audio Inference session keys
-					# ----------------------------------------------------------
 					for key in [ 'audio_top_percent', 'audio_temperature', 'audio_presense_penalty',
 					             'audio_frequency_penalty', ]:
 						if key in st.session_state:
@@ -4760,21 +4763,23 @@ elif mode == 'Audio':
 					
 					st.rerun( )
 			
-			# Expander — Audio Response
 			with st.expander( 'Response Options', expanded=False, width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
 				
+				# ---------  Loop --------
 				with resp_c1:
 					set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
 					
 					audio_loop = st.session_state[ 'audio_loop' ]
 				
+				# --------- Autoplay --------
 				with resp_c2:
 					set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
 					
 					audio_autoplay = st.session_state[ 'audio_autoplay' ]
 				
+				# ---------  Start Time --------
 				with resp_c3:
 					set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
 						value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
@@ -4782,6 +4787,7 @@ elif mode == 'Audio':
 					
 					audio_start_time = st.session_state[ 'audio_start_time' ]
 				
+				# ---------  End Time --------
 				with resp_c4:
 					set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
 						value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
@@ -4789,6 +4795,7 @@ elif mode == 'Audio':
 					
 					audio_end_time = st.session_state[ 'audio_end_time' ]
 				
+				# --------- Max Tokens --------
 				with resp_c5:
 					set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
 						value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
@@ -4796,10 +4803,8 @@ elif mode == 'Audio':
 					
 					audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
 				
+				# ---------  Reset Setting --------
 				if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
-					# ----------------------------------------------------------
-					# Remove Audio Model Settings session keys
-					# ----------------------------------------------------------
 					for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time', 'audio_end_time',
 					             'audio_rate', 'audio_max_tokens' ]:
 						if key in st.session_state:
