@@ -2147,6 +2147,9 @@ if 'image_frequency_penalty' not in st.session_state:
 if 'image_presense_penalty' not in st.session_state:
 	st.session_state[ 'image_presense_penalty' ] = 0.0
 
+if 'image_number' not in st.session_state:
+	st.session_state[ 'image_number' ] = 0.0
+
 if 'image_parallel_tools' not in st.session_state:
 	st.session_state[ 'image_parallel_tools' ] = False
 
@@ -2170,6 +2173,9 @@ if 'image_resolution' not in st.session_state:
 
 if 'image_aspect_ratio' not in st.session_state:
 	st.session_state[ 'image_aspect_ratio' ] = ''
+
+if 'image_mime_type' not in st.session_state:
+	st.session_state[ 'image_mime_type' ] = ''
 
 if 'image_response_format' not in st.session_state:
 	st.session_state[ 'image_response_format' ] = ''
@@ -3429,6 +3435,7 @@ elif mode == "Images":
 	image_background = st.session_state.get( 'image_background', False )
 	image_model = st.session_state.get( 'image_model', '' )
 	image_response_format = st.session_state.get( 'image_response_format', '' )
+	image_mime_type = st.session_state.get( 'image_mime_type', '' )
 	image_output = st.session_state.get( 'image_output', '' )
 	image_detail = st.session_state.get( 'image_detail', '' )
 	image_tool_choice = st.session_state.get( 'image_tool_choice', '' )
@@ -3996,7 +4003,7 @@ elif mode == "Images":
 					with img_c1:
 						resolution_options = list( image.resolution_options )
 						set_image_resolution = st.selectbox( label='Image Resolution',
-							options=resolution_options, help='Optional. Image detail', key='image_detail',
+							options=resolution_options, help='Optional. Image detail', key='image_resolution',
 							placeholder='Options', index=None )
 						
 						image_resolution = st.session_state[ 'image_resolution' ]
@@ -4029,7 +4036,7 @@ elif mode == "Images":
 						image_number = st.session_state[ 'image_number' ]
 					
 					# -------- Reset Settings ------------------
-					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
+					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
 						for key in [ 'image_resolution', 'image_mime_type',
 						             'image_number', 'image_aspect_ratio' ]:
 							if key in st.session_state:
