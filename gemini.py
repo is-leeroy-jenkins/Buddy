@@ -626,7 +626,7 @@ class Images( Gemini ):
 		         'computer_use' ]
 	
 	@property
-	def format_options( self ):
+	def format_options( self ) -> List[ str ] | None:
 		'''
 			
 			Returns:
@@ -639,7 +639,7 @@ class Images( Gemini ):
 		         'text/x.enum' ]
 	
 	@property
-	def mime_options( self ):
+	def mime_options( self ) -> List[ str ] | None:
 		'''
 			
 			Returns:

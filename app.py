@@ -3993,38 +3993,29 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
-					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					img_c1, img_c2, img_c3, img_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
 					
-					# ------------ Image Detail -------
+					# ------------ Image Resolution -------
 					with img_c1:
-						details = list( image.detail_options )
-						set_image_detail = st.selectbox( label='Image Detail', options=details,
-							help='Optional. Image detail', key='image_detail',
+						resolution_options = list( image.resolution_options )
+						set_image_resolution = st.selectbox( label='Image Resolution',
+							options=resolution_options, help='Optional. Image detail', key='image_detail',
 							placeholder='Options', index=None )
 						
-						image_detail = st.session_state[ 'image_detail' ]
+						image_resolution = st.session_state[ 'image_resolution' ]
 					
-					# ------------ Image Style --------
+					# ------------ MIME Type --------
 					with img_c2:
-						sizes = list( image.size_options )
-						set_image_size = st.selectbox( label='Image Size', options=sizes,
-							help='Optional. Image size', key='image_size',
+						mime_options = list( image.mime_options )
+						set_image_mime = st.selectbox( label='MIME Type', options=mime_options,
+							help='Optional. Image MIME Type', key='image_mime_type',
 							placeholder='Options', index=None, )
 						
-						image_size = st.session_state[ 'image_size' ]
-					
-					# ------------ Image Quality ------
-					with img_c3:
-						qualities = list( image.quality_options )
-						set_image_quality = st.selectbox( label='Image Quality',
-							options=qualities, help='Optional. Image Quality',
-							key='image_quality', placeholder='Options', index=None )
-						
-						image_quality = st.session_state[ 'image_quality' ]
+						image_mime_type = st.session_state[ 'image_mime_type' ]
 					
 					# ------------ Image Aspect Ratio -------
-					with img_c4:
+					with img_c3:
 						ratios = list( image.aspect_options )
 						set_image_aspect = st.selectbox( label='Aspect Ratio',
 							options=ratios, help=cfg.IMAGE_BACKGROUND,
@@ -4032,10 +4023,10 @@ elif mode == "Images":
 						
 						image_aspect_ratio = st.session_state[ 'image_aspect_ratio' ]
 					
-					# ------------ Image Output Format ------
-					with img_c5:
-						outputs = list( image.output_options )
-						set_image_output = st.selectbox( label='Image Format', options=outputs,
+					# ------------ Image Response Format ------
+					with img_c4:
+						formats= list( image.format_options )
+						set_image_format = st.selectbox( label='Response Format', options=formats,
 							help=cfg.IMAGE_RESPONSE, key='image_output',
 							placeholder='Options', index=None )
 						
@@ -4043,8 +4034,8 @@ elif mode == "Images":
 					
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
-						for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
-						             'image_size', 'image_output', 'image_aspect_ratio' ]:
+						for key in [ 'image_resolution', 'image_mime_type',
+						             'image_output', 'image_aspect_ratio' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
