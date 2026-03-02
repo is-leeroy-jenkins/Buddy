@@ -2165,6 +2165,12 @@ if 'image_tool_choice' not in st.session_state:
 if 'image_reasoning' not in st.session_state:
 	st.session_state[ 'image_reasoning' ] = ''
 
+if 'image_resolution' not in st.session_state:
+	st.session_state[ 'image_resolution' ] = ''
+
+if 'image_aspect_ratio' not in st.session_state:
+	st.session_state[ 'image_aspect_ratio' ] = ''
+
 if 'image_response_format' not in st.session_state:
 	st.session_state[ 'image_response_format' ] = ''
 
@@ -2885,13 +2891,12 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				# ------------------------------------------------------------------
-				# Text Generation Model Parameter
-				# ------------------------------------------------------------------
+				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
+					# ---------- Model ------------
 					with llm_c1:
 						model_options = list( text.model_options )
 						set_text_model = st.selectbox( label='Select Model', options=model_options,
@@ -2900,6 +2905,7 @@ elif mode == 'Text':
 						
 						text_model = st.session_state[ 'text_model' ]
 					
+					# ---------- Include ------------
 					with llm_c2:
 						include_options = list( text.include_options )
 						set_text_include = st.multiselect( label='Include:', options=include_options,
@@ -2910,6 +2916,7 @@ elif mode == 'Text':
 						
 						text_include = st.session_state[ 'text_include' ]
 					
+					# ---------- Allowed Domains ------------
 					with llm_c3:
 						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
 							value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
@@ -2920,6 +2927,7 @@ elif mode == 'Text':
 						
 						st.session_state[ 'text_domains' ] = text_domains
 					
+					# ---------- Reasoning ------------
 					with llm_c4:
 						reasoning_options = list( text.reasoning_options )
 						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
@@ -2928,10 +2936,8 @@ elif mode == 'Text':
 						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Model Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_model', 'text_include', 'text_domains',
 						             'text_reasoning' ]:
 							if key in st.session_state:
@@ -2939,14 +2945,11 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				# ------------------------------------------------------------------
-				# Text Generation Inference Parameters
-				# ------------------------------------------------------------------
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
-					                                                       0.20 ],
-						border=True, gap='xxsmall' )
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------- Top-P ------------
 					with prm_c1:
 						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
 							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
@@ -2954,6 +2957,7 @@ elif mode == 'Text':
 						
 						text_top_percent = st.session_state[ 'text_top_percent' ]
 					
+					# ---------- Frequency ------------
 					with prm_c2:
 						set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'text_frequency_penalty', 0.0 ) ),
@@ -2961,13 +2965,15 @@ elif mode == 'Text':
 						
 						text_fequency = st.session_state[ 'text_frequency_penalty' ]
 					
+					# ---------- Presense ------------
 					with prm_c3:
-						set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+						set_text_presense = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
 							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presense_penalty' )
 						
 						text_presense = st.session_state[ 'text_presense_penalty' ]
 					
+					# ---------- Temperature ------------
 					with prm_c4:
 						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
 							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
@@ -2975,6 +2981,7 @@ elif mode == 'Text':
 						
 						text_temperature = st.session_state[ 'text_temperature' ]
 					
+					# ---------- Number ------------
 					with prm_c5:
 						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
 							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
@@ -2983,10 +2990,8 @@ elif mode == 'Text':
 						
 						text_number = st.session_state[ 'text_number' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Inference Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_top_percent', 'text_frequency_penalty',
 						             'text_presense_penalty', 'text_temperature', 'text_number', ]:
 							if key in st.session_state:
@@ -2994,19 +2999,18 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				# ------------------------------------------------------------------
-				# Text Generation Tool Options
-				# ------------------------------------------------------------------
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
+					# ---------- Allow Parallel ------------
 					with tool_c1:
 						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 					
+					# ---------- Max Calls ------------
 					with tool_c2:
 						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=5,
 							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
@@ -3014,6 +3018,7 @@ elif mode == 'Text':
 						
 						text_max_calls = st.session_state[ 'text_max_calls' ]
 					
+					# ---------- Choice ------------
 					with tool_c3:
 						choice_options = list( text.choice_options )
 						set_text_choice = st.selectbox( label='Tool Choice:', options=choice_options,
@@ -3021,6 +3026,7 @@ elif mode == 'Text':
 						
 						text_tool_choice = st.session_state[ 'text_tool_choice' ]
 					
+					# ---------- Tools ------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
 						set_text_tools = st.multiselect( label='Tools:', options=tool_options,
@@ -3031,6 +3037,7 @@ elif mode == 'Text':
 						
 						text_tools = st.session_state[ 'text_tools' ]
 					
+					# ---------- Modalities ------------
 					with tool_c5:
 						modality_options = list( text.modality_options )
 						set_text_modalities = st.multiselect( label='Modalities', options=modality_options,
@@ -3042,10 +3049,8 @@ elif mode == 'Text':
 						
 						text_modalities = st.session_state[ 'text_modalities' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Tool Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_parallel_tools', 'text_tool_choice',
 						             'text_tools', 'text_max_calls', 'text_modalities' ]:
 							if key in st.session_state:
@@ -3053,31 +3058,31 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				# ------------------------------------------------------------------
-				# Expander — Text Generation Response
-				# ------------------------------------------------------------------
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------- Reset Settings ------------
 					with resp_c1:
 						set_text_stream = st.toggle( label='Stream', key='text_stream',
 							help=cfg.STREAM )
 						
 						text_stream = st.session_state[ 'text_stream' ]
 					
+					# ---------- Store ------------
 					with resp_c2:
-						set_text_store = st.toggle( label='Store', key='text_store',
-							help=cfg.STORE )
+						set_text_store = st.toggle( label='Store', key='text_store', help=cfg.STORE )
 						
 						text_store = st.session_state[ 'text_store' ]
 					
+					# ---------- Background ------------
 					with resp_c3:
 						set_text_background = st.toggle( label='Background', key='text_background',
 							help=cfg.BACKGROUND_MODE )
 						
 						text_background = st.session_state[ 'text_background' ]
 					
+					# ---------- Stops ------------
 					with resp_c4:
 						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
 							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
@@ -3085,6 +3090,7 @@ elif mode == 'Text':
 						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
 						               if d.strip( ) ]
 					
+					# ---------- Max Tokens ------------
 					with resp_c5:
 						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
@@ -3092,10 +3098,8 @@ elif mode == 'Text':
 						
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Response Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
 						             'text_max_tokens' ]:
 							if key in st.session_state:
@@ -3111,13 +3115,12 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				# ------------------------------------------------------------------
-				# Text Generation Model Parameter
-				# ------------------------------------------------------------------
+				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
+					# ---------- Model ------------
 					with llm_c1:
 						model_options = list( text.model_options )
 						set_text_model = st.selectbox( label='Select Model', options=model_options,
@@ -3126,6 +3129,7 @@ elif mode == 'Text':
 						
 						text_model = st.session_state[ 'text_model' ]
 					
+					# ---------- Include ------------
 					with llm_c2:
 						include_options = list( text.include_options )
 						set_text_include = st.multiselect( label='Include:', options=include_options,
@@ -3136,6 +3140,7 @@ elif mode == 'Text':
 						
 						text_include = st.session_state[ 'text_include' ]
 					
+					# ---------- Allowed Domains ------------
 					with llm_c3:
 						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
 							value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
@@ -3146,6 +3151,7 @@ elif mode == 'Text':
 						
 						st.session_state[ 'text_domains' ] = text_domains
 					
+					# ---------- Reasoning ------------
 					with llm_c4:
 						reasoning_options = list( text.reasoning_options )
 						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
@@ -3154,10 +3160,8 @@ elif mode == 'Text':
 						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Model Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_model', 'text_include', 'text_domains',
 						             'text_reasoning' ]:
 							if key in st.session_state:
@@ -3165,14 +3169,11 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				# ------------------------------------------------------------------
-				# Text Generation Inference Parameters
-				# ------------------------------------------------------------------
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
-					                                                       0.20 ],
-						border=True, gap='xxsmall' )
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------- Top-P ------------
 					with prm_c1:
 						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
 							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
@@ -3180,6 +3181,7 @@ elif mode == 'Text':
 						
 						text_top_percent = st.session_state[ 'text_top_percent' ]
 					
+					# ---------- Frequency ------------
 					with prm_c2:
 						set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'text_frequency_penalty', 0.0 ) ),
@@ -3187,6 +3189,7 @@ elif mode == 'Text':
 						
 						text_fequency = st.session_state[ 'text_frequency_penalty' ]
 					
+					# ---------- Presense ------------
 					with prm_c3:
 						set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
@@ -3194,6 +3197,7 @@ elif mode == 'Text':
 						
 						text_presense = st.session_state[ 'text_presense_penalty' ]
 					
+					# ---------- Temperature ------------
 					with prm_c4:
 						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
 							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
@@ -3201,6 +3205,7 @@ elif mode == 'Text':
 						
 						text_temperature = st.session_state[ 'text_temperature' ]
 					
+					# ---------- Number ------------
 					with prm_c5:
 						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
 							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
@@ -3209,10 +3214,8 @@ elif mode == 'Text':
 						
 						text_number = st.session_state[ 'text_number' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Inference Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_top_percent', 'text_frequency_penalty',
 						             'text_presense_penalty', 'text_temperature', 'text_number', ]:
 							if key in st.session_state:
@@ -3220,19 +3223,18 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				# ------------------------------------------------------------------
-				# Text Generation Tool Options
-				# ------------------------------------------------------------------
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
 						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 					
+					# ---------- Allow Parallel ------------
 					with tool_c1:
 						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 					
+					# ---------- Max Calls ------------
 					with tool_c2:
 						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=5,
 							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
@@ -3240,6 +3242,7 @@ elif mode == 'Text':
 						
 						text_max_calls = st.session_state[ 'text_max_calls' ]
 					
+					# ---------- Choice ------------
 					with tool_c3:
 						choice_options = list( text.choice_options )
 						set_text_choice = st.selectbox( label='Tool Choice:', options=choice_options,
@@ -3247,6 +3250,7 @@ elif mode == 'Text':
 						
 						text_tool_choice = st.session_state[ 'text_tool_choice' ]
 					
+					# ---------- Tools ------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
 						set_text_tools = st.multiselect( label='Tools:', options=tool_options,
@@ -3257,10 +3261,8 @@ elif mode == 'Text':
 						
 						text_tools = st.session_state[ 'text_tools' ]
 					
+					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Tool Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_parallel_tools', 'text_tool_choice',
 						             'text_tools', 'text_max_calls' ]:
 							if key in st.session_state:
@@ -3268,31 +3270,32 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				# ------------------------------------------------------------------
-				# Expander — Text Generation Response
-				# ------------------------------------------------------------------
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
+					# ---------- Stream ------------
 					with resp_c1:
 						set_text_stream = st.toggle( label='Stream', key='text_stream',
 							help=cfg.STREAM )
 						
 						text_stream = st.session_state[ 'text_stream' ]
 					
+					# ---------- Store ------------
 					with resp_c2:
 						set_text_store = st.toggle( label='Store', key='text_store',
 							help=cfg.STORE )
 						
 						text_store = st.session_state[ 'text_store' ]
 					
+					# ---------- Background ------------
 					with resp_c3:
 						set_text_background = st.toggle( label='Background', key='text_background',
 							help=cfg.BACKGROUND_MODE )
 						
 						text_background = st.session_state[ 'text_background' ]
 					
+					# ---------- Stops ------------
 					with resp_c4:
 						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
 							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
@@ -3300,6 +3303,7 @@ elif mode == 'Text':
 						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
 						               if d.strip( ) ]
 					
+					# ---------- Max Tokens ------------
 					with resp_c5:
 						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
@@ -3307,10 +3311,8 @@ elif mode == 'Text':
 						
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
+					#---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Response Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
 						             'text_max_tokens' ]:
 							if key in st.session_state:
@@ -3436,7 +3438,9 @@ elif mode == "Images":
 	image_input = st.session_state.get( 'image_input', '' )
 	image_mode = st.session_state.get( 'image_mode', '' )
 	image_quality = st.session_state.get( 'image_quality', '' )
+	image_resolution = st.session_state.get( 'image_resolution', '' )
 	image_size = st.session_state.get( 'image_size', '' )
+	image_aspect_ratio = st.session_state.get( 'image_aspect_ratio', '' )
 	image_stops = st.session_state.get( 'image_stops', [ ] )
 	image_modalities = st.session_state.get( 'image_modalities', [ ] )
 	image_domains = st.session_state.get( 'image_domains', [ ] )
@@ -4030,12 +4034,12 @@ elif mode == "Images":
 							help=cfg.IMAGE_RESPONSE, key='image_output',
 							placeholder='Options', index=None )
 						
-						image_output = st.session_state[ 'image_output' ]
+						image_response_format = st.session_state[ 'image_output' ]
 					
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
 						for key in [ 'image_resolution', 'image_mime_type',
-						             'image_output', 'image_aspect_ratio' ]:
+						             'image_response_format', 'image_aspect_ratio' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						

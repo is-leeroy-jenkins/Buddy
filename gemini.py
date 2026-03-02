@@ -288,6 +288,20 @@ class Chat( Gemini ):
 		         'computer_use' ]
 	
 	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'AUTO',
+		         'ANY',
+		         'NONE',
+		         'VALIDATED' ]
+	
+	@property
 	def reasoning_options( self ) -> List[ str ] | None:
 		'''
 
@@ -624,6 +638,20 @@ class Images( Gemini ):
 		         'file_search',
 		         'code_execution',
 		         'computer_use' ]
+	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'AUTO',
+		         'ANY',
+		         'NONE',
+		         'VALIDATED' ]
 	
 	@property
 	def format_options( self ) -> List[ str ] | None:
