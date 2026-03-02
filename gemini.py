@@ -198,6 +198,7 @@ class Chat( Gemini ):
 	image_uri: Optional[ str ]
 	audio_uri: Optional[ str ]
 	file_path: Optional[ str ]
+	tool_choice: Optional[ str ]
 	response_modalities: Optional[ List[ str ] ]
 	files: Optional[ List[ str ] ]
 	
@@ -215,6 +216,7 @@ class Chat( Gemini ):
 		self.max_output_tokens = None
 		self.use_vertex = None
 		self.instructions = None
+		self.tool_choice = None
 		self.contents = None
 		self.http_options = { }
 		self.client = None
