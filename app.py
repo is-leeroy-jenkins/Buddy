@@ -3820,11 +3820,12 @@ elif mode == "Images":
 					# ---------  Reasoning --------
 					with llm_c4:
 						reasonings = list( image.reasoning_options )
-						set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
+						set_image_reasoning = st.selectbox( label='Thinking Level:', placeholder='Options',
 							options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
 						
 						image_reasoning = st.session_state[ 'image_reasoning' ]
 					
+					# ---------  Reset Settings --------
 					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
 						# ----------------------------------------------------------
 						# Remove Image Model Settings session keys
@@ -3840,7 +3841,7 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='xxsmall' )
 					
 					# ---------  Top-P --------
@@ -3877,19 +3878,10 @@ elif mode == "Images":
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
-					# ---------  Number --------
-					with prm_c5:
-						set_image_number = st.slider( label='Number', min_value=0, max_value=100,
-							value=int( st.session_state.get( 'image_number', 0 ) ),
-							step=1, help='Optional. Upper limit on the responses returned by the model',
-							key='image_number' )
-						
-						image_number = st.session_state[ 'image_number' ]
-					
 					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
 						for key in [ 'image_top_percent', 'image_frequency_penalty',
-						             'image_presense_penalty', 'image_temperature', 'image_number' ]:
+						             'image_presense_penalty', 'image_temperature', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -3986,8 +3978,8 @@ elif mode == "Images":
 					
 					# ------- Reset Settings -----------
 					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						for key in [ 'image_stream', 'image_store',
-						             'image_modalities'  'image_response_format', 'image_max_tokens', ]:
+						for key in [ 'image_stream', 'image_store', 'image_modalities',
+						             'image_response_format', 'image_max_tokens', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						# If canonical separation used
@@ -4027,19 +4019,19 @@ elif mode == "Images":
 						
 						image_aspect_ratio = st.session_state[ 'image_aspect_ratio' ]
 					
-					# ------------ Image Response Format ------
+					# ---------  Number --------
 					with img_c4:
-						formats= list( image.format_options )
-						set_image_format = st.selectbox( label='Response Format', options=formats,
-							help=cfg.IMAGE_RESPONSE, key='image_output',
-							placeholder='Options', index=None )
+						set_image_number = st.slider( label='Candidates:', min_value=0, max_value=100,
+							value=int( st.session_state.get( 'image_number', 0 ) ),
+							step=1, help='Optional. Upper limit on the responses returned by the model',
+							key='image_number' )
 						
-						image_response_format = st.session_state[ 'image_output' ]
+						image_number = st.session_state[ 'image_number' ]
 					
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
 						for key in [ 'image_resolution', 'image_mime_type',
-						             'image_response_format', 'image_aspect_ratio' ]:
+						             'image_number', 'image_aspect_ratio' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
