@@ -58,7 +58,7 @@ from google.genai.types import (Part, GenerateContentConfig, ImageConfig, Functi
                                 GeneratedImage, EmbedContentConfig, Content, ContentEmbedding,
                                 Candidate, HttpOptions, GenerateImagesResponse, Field, FileSearchStore,
                                 GenerateContentResponse, GenerateVideosResponse, Image, File,
-                                SpeakerVoiceConfig, VoiceConfig )
+                                SpeakerVoiceConfig, VoiceConfig, SpeechConfig  )
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -312,11 +312,8 @@ class Chat( Gemini ):
 			A List[ str ] of thinking effort options
 
 		'''
-		return [ 'minimal',
-		         'low',
-		         'high',
-		         'medium',
-		         'high' ]
+		return [ 'THINKING_LEVEL_UNSPECIFIED','MINIMAL',
+		         'LOW', 'MEDIUM', 'HIGH' ]
 	
 	@property
 	def include_options( self ) -> List[ str ] | None:
@@ -341,7 +338,7 @@ class Chat( Gemini ):
 			A List[ str ] of available modality options
 
 		'''
-		return [ 'TEXT', 'IMAGE', 'AUDIO' ]
+		return [ 'MODALITY_UNSPECIFIED', 'TEXT', 'IMAGE', 'AUDIO' ]
 	
 	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
@@ -548,7 +545,7 @@ class Images( Gemini ):
 	use_vertex: Optional[ bool ]
 	resolution: Optional[ str ]
 	
-	def __init__( self, model: str='gemini-2.0-flash-image' ):
+	def __init__( self, model: str='gemini-2.5-flash-image' ):
 		super( ).__init__( )
 		self.number = None
 		self.model = model
@@ -571,8 +568,8 @@ class Images( Gemini ):
 			Returns list of image generation models.
 			
 		"""
-		return [ 'gemini-2.5-flash-image',
-		         'gemini-3-pro-image-preview' ]
+		return [ 'gemini-2.5-flash-image', 'gemini-2.5-flash', 'gemini-2.5-flash-lite',
+		         'gemini-3-flash-preview', 'gemini-3.1-flash-image-preview', ]
 	
 	@property
 	def include_options( self ) -> List[ str ] | None:
@@ -620,11 +617,8 @@ class Images( Gemini ):
 			A List[ str ] of thinking effort options
 
 		'''
-		return [ 'minimal',
-		         'low',
-		         'high',
-		         'medium',
-		         'high' ]
+		return [ 'THINKING_LEVEL_UNSPECIFIED', 'MINIMAL',
+		         'LOW', 'MEDIUM', 'HIGH' ]
 	
 	@property
 	def tool_options( self ) -> List[ str ] | None:
@@ -988,28 +982,37 @@ class TTS( Gemini ):
 	response: Optional[ GenerateContentResponse ]
 	voice_config: Optional[ VoiceConfig ]
 	speaker_config: Optional[ SpeakerVoiceConfig ]
+	speech_config: Optional[ SpeechConfig ]
 	client: Optional[ genai.Client ]
+	language_code: Optional[ str ]
 	audio_path: Optional[ str ]
 	response_format: Optional[ str ]
+	response_modalities = Optional[ List[ str ] ]
 	input_text: Optional[ str ]
 	
 	def __init__( self, model: str='gemini-2.5-flash-preview-tts'  ):
 		super( ).__init__( )
 		self.number = None
 		self.model = model
+		self.speech_client = None
 		self.temperature = None
 		self.top_p = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
 		self.max_tokens = None
 		self.instructions = None
+		self.language_code = None
+		self.voice_config = None
+		self.speaker_config = None
+		self.speech_config = None
+		self.content_config = None
 		self.client = None
 		self.voice = None
 		self.speed = None
 		self.response_format = None
 		self.audio_path = None
 		self.input_text = None
-		self.content_config = None
+		self.response_modalities = [ ]
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
@@ -1039,6 +1042,57 @@ class TTS( Gemini ):
 		         'Algenib', 'Rasalgethi', 'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux',
 		         'Pulcherrima', 'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia',
 		         'Sadaltager', 'Sulafar' ]
+	
+	@property
+	def language_options( self ) -> List[ str ] | None:
+		'''
+			
+			Purpose:
+			--------
+			Returns a list of language options
+			
+		'''
+		return [ 'de-DE',
+				'en-AU',
+				'en-GB',
+				'en-IN',
+				'en-US',
+				'es-US',
+				'fr-FR',
+				'hi-IN',
+				'pt-BR',
+				'ar-XA',
+				'es-ES',
+				'fr-CA',
+				'id-ID',
+				'it-IT',
+				'ja-JP',
+				'tr-TR',
+				'vi-VN',
+				'bn-IN',
+				'gu-IN',
+				'kn-IN',
+				'ml-IN',
+				'mr-IN',
+				'ta-IN',
+				'te-IN',
+				'nl-NL',
+				'ko-KR',
+				'cmn-CN',
+				'pl-PL',
+				'ru-RU',
+				'th-TH' ]
+	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+			
+			Purpose:
+			---------
+			Returns a list of audio mime types
+			
+		'''
+		return [ 'audio/wav', 'audio/mp3', 'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac' ]
 	
 	def create_speech( self, text: str, filepath: str, model: str, format: str=None,
 			speed: float=None, voice: str=None, frequency: float=None, presense: float=None,
@@ -1076,8 +1130,12 @@ class TTS( Gemini ):
 			self.frequency_penalty = frequency
 			self.presence_penalty = presense
 			self.instructions = instruct
+			self.response_modalities.append( 'AUDIO' )
+			self.voice_config = VoiceConfig( )
+			self.speaker_config = SpeakerVoiceConfig( )
+			self.speech_config = SpeechConfig( )
 			prompt = f"Read the following aloud with a {self.voice} persona: {self.input_text}"
-			self.content_config = GenerateContentConfig( response_modalities=[ 'AUDIO' ],
+			self.content_config = GenerateContentConfig( response_modalities=self.response_modalities,
 				temperature=self.temperature )
 			self.client = genai.Client( api_key=self.gemini_api_key )
 			self.response = self.client.models.generate_content( model=self.model,
@@ -1266,6 +1324,17 @@ class Translation( Gemini ):
 		"""
 		return [ 'gemini-2.0-flash',
 		         'gemini-1.5-pro' ]
+	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+			
+			Purpose:
+			---------
+			Returns a list of audio mime types
+			
+		'''
+		return [ 'audio/wav', 'audio/mp3', 'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac' ]
 	
 	@property
 	def language_options( self ) -> List[ str ] | None:

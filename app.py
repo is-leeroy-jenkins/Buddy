@@ -2936,7 +2936,7 @@ elif mode == 'Text':
 					# ---------- Reasoning ------------
 					with llm_c4:
 						reasoning_options = list( text.reasoning_options )
-						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
+						set_text_reasoning = st.selectbox( label='Thinking Level:',
 							options=reasoning_options, key='text_reasoning',
 							help=cfg.REASONING, index=None, placeholder='Options' )
 						
@@ -2989,7 +2989,7 @@ elif mode == 'Text':
 					
 					# ---------- Number ------------
 					with prm_c5:
-						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
+						set_text_number = st.slider( label='Candidates', min_value=0, max_value=10,
 							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
 							help='Optional. Upper limit on the responses returned by the model',
 							key='text_number' )
@@ -3463,7 +3463,7 @@ elif mode == "Images":
 	model_options = [ ]
 	image = provider_module.Images( )
 	
-	for key in [ 'image_domains', 'image_tools', 'image_stops', ]:
+	for key in [ 'image_domains', 'image_tools', 'image_stops', 'image_stops_input' ]:
 		if key in st.session_state and isinstance( st.session_state[ key ], list ):
 			del st.session_state[ key ]
 		
@@ -3783,7 +3783,7 @@ elif mode == "Images":
 					# ---------  Model --------
 					with llm_c2:
 						if st.session_state[ 'image_mode' ] == 'Generation':
-							generation = list( cfg.GPT_GENERATION )
+							generation = list( cfg.GEMINI_GENERATION )
 							set_image_model = st.selectbox( label='Select Model', options=generation,
 								help='REQUIRED. Images Generation model used by the AI', key='image_model',
 								placeholder='Options', index=None )
@@ -3791,7 +3791,7 @@ elif mode == "Images":
 							image_model = st.session_state[ 'image_model' ]
 						
 						elif st.session_state[ 'image_mode' ] == 'Analysis':
-							analysis = list( cfg.GPT_ANALYSIS )
+							analysis = list( cfg.GEMINI_ANALYSIS )
 							set_image_model = st.selectbox( label='Select Model', options=analysis,
 								help='REQUIRED. Images Generation model used by the AI', key='image_model',
 								placeholder='Options', index=None )
@@ -3799,14 +3799,14 @@ elif mode == "Images":
 							image_model = st.session_state[ 'image_model' ]
 						
 						elif st.session_state[ 'image_mode' ] == 'Editing':
-							editing = list( cfg.GPT_EDITING )
+							editing = list( cfg.GEMINI_EDITING )
 							set_image_model = st.selectbox( label='Select Model', options=editing,
 								help='REQUIRED. Images Generationmodel used by the AI', key='image_model',
 								placeholder='Options', index=None, )
 							
 							image_model = st.session_state[ 'image_model' ]
-						else:
-							all = list( cfg.GPT_GENERATION )
+						elif st.session_state[ 'image_mode' ] is None:
+							all = list( image.model_options )
 							set_image_model = st.selectbox( label='Select Model', options=all,
 								help='REQUIRED. Images Generation model used by the AI', key='image_model',
 								placeholder='Options', index=None )
@@ -3848,11 +3848,11 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='xxsmall' )
+					inf_c1, inf_c2, inf_c3, inf_c4, inf_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------  Top-P --------
-					with prm_c1:
+					with inf_c1:
 						set_image_top_p = st.slider( label='Top-P', key='image_top_percent',
 							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
 							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TOP_P )
@@ -3860,7 +3860,7 @@ elif mode == "Images":
 						image_top_percent = st.session_state[ 'image_top_percent' ]
 					
 					# ---------  Frequency --------
-					with prm_c2:
+					with inf_c2:
 						set_image_freq = st.slider( label='Frequency Penalty',
 							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'image_frequency_penalty', 0.0 ) ),
@@ -3869,7 +3869,7 @@ elif mode == "Images":
 						image_fequency = st.session_state[ 'image_frequency_penalty' ]
 					
 					# ---------  Presense --------
-					with prm_c3:
+					with inf_c3:
 						set_image_presense = st.slider( label='Presence Penalty',
 							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'image_presence_penalty', 0.0 ) ),
@@ -3878,19 +3878,30 @@ elif mode == "Images":
 						image_presense = st.session_state[ 'image_presense_penalty' ]
 					
 					# ---------  Temperature --------
-					with prm_c4:
+					with inf_c4:
 						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
 							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
 							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
+					# ---------- Stops ------------
+					with inf_c5:
+						set_image_stops = st.text_input( label='Stop Sequences', key='image_stops',
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+						
+						image_stops = [ d.strip( ) for d in set_image_stops.split( ',' )
+						               if d.strip( ) ]
+					
 					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						for key in [ 'image_top_percent', 'image_frequency_penalty',
+						for key in [ 'image_top_percent', 'image_frequency_penalty', 'image_stops',
 						             'image_presense_penalty', 'image_temperature', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
+								
+						if 'image_stops_input' in st.session_state:
+							del st.session_state[ 'image_stops_input' ]
 						
 						st.rerun( )
 				
@@ -3989,9 +4000,6 @@ elif mode == "Images":
 						             'image_response_format', 'image_max_tokens', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
-						# If canonical separation used
-						if 'image_stops_input' in st.session_state:
-							del st.session_state[ 'image_stops_input' ]
 						
 						st.rerun( )
 				

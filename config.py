@@ -166,6 +166,15 @@ GEMINI_MODES = [ 'Text',
                  'Data Management',
                  'Export' ]
 
+GEMINI_GENERATION = [ 'gemini-2.5-flash-image', 'gemini-3-flash-preview',
+                      'gemini-3-pro-image-preview', 'gemini-3.1-flash-image-preview',  ]
+
+GEMINI_ANALYSIS = [ 'gemini-2.5-flash-image', 'gemini-2.5-flash-lite',
+                    'gemini-3.1-flash-image-preview', ]
+
+GEMINI_EDITING = [ 'gemini-2.5-flash-image', 'gemini-2.5-flash-lite',
+                   'gemini-3.1-flash-image-preview' ]
+
 #----------------- MAPS ---------------------------
 MODE_CLASS_MAP = {
 		'Chat': None,
