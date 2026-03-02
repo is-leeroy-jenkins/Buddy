@@ -268,6 +268,21 @@ class Chat( Gemini ):
 			A List[ str ] of mime types
 			
 		'''
+		return [ 'image/jpeg',
+		         'image/png',
+		         'image/webp',
+		         'image/heic',
+		         'image/heif' ]
+	
+	@property
+	def format_options( self ):
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of mime types
+			
+		'''
 		return [ 'text/plain',
 		         'application/json',
 		         'text/x.enum' ]
@@ -530,8 +545,9 @@ class Images( Gemini ):
 	client: Optional[ genai.Client ]
 	aspect_ratio: Optional[ str ]
 	use_vertex: Optional[ bool ]
+	resolution: Optional[ str ]
 	
-	def __init__( self, model: str='gemini-2.0-flash' ):
+	def __init__( self, model: str='gemini-2.0-flash-image' ):
 		super( ).__init__( )
 		self.number = None
 		self.model = model
@@ -580,11 +596,8 @@ class Images( Gemini ):
 			Returns list of allowed aspect ratios.
 			
 		"""
-		return [ '1:1',
-		         '3:4',
-		         '4:3',
-		         '9:16',
-		         '16:9' ]
+		return [ '1:1', '1:4', '1:8', '2:3', '3:2', '3:4', '4:1', '4:3', '4:5', '5:4', '8:1',
+		         '9:16', '16:9', '21:9' ]
 	
 	@property
 	def modality_options( self ) -> List[ str ] | None:
@@ -626,6 +639,32 @@ class Images( Gemini ):
 		         'file_search',
 		         'code_execution',
 		         'computer_use' ]
+	
+	@property
+	def format_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'google_search',
+		         'google_maps',
+		         'file_search',
+		         'code_execution',
+		         'computer_use' ]
+	
+	@property
+	def resolution_options( self ) -> List[ str ] | None:
+		'''
+			
+			Purpose:
+			-------
+			Returns a list of resolution options
+			
+		'''
+		return [ '512px', '1K', '2K', '4K' ]
 	
 	def generate( self, prompt: str, model: str='gemini-2.5-flash-image', aspect: str=None,
 			number: int=None, temperature: float=None, top_p: float=None,
