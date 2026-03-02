@@ -260,21 +260,6 @@ class Chat( Gemini ):
 		         'v1beta1' ]
 	
 	@property
-	def mime_options( self ):
-		'''
-			
-			Returns:
-			--------
-			A List[ str ] of mime types
-			
-		'''
-		return [ 'image/jpeg',
-		         'image/png',
-		         'image/webp',
-		         'image/heic',
-		         'image/heif' ]
-	
-	@property
 	def format_options( self ):
 		'''
 			
@@ -641,19 +626,32 @@ class Images( Gemini ):
 		         'computer_use' ]
 	
 	@property
-	def format_options( self ) -> List[ str ] | None:
+	def format_options( self ):
 		'''
-
+			
 			Returns:
 			--------
-			A List[ str ] of available tools options
-
+			A List[ str ] of mime types
+			
 		'''
-		return [ 'google_search',
-		         'google_maps',
-		         'file_search',
-		         'code_execution',
-		         'computer_use' ]
+		return [ 'text/plain',
+		         'application/json',
+		         'text/x.enum' ]
+	
+	@property
+	def mime_options( self ):
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of mime types
+			
+		'''
+		return [ 'image/jpeg',
+		         'image/png',
+		         'image/webp',
+		         'image/heic',
+		         'image/heif' ]
 	
 	@property
 	def resolution_options( self ) -> List[ str ] | None:
