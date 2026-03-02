@@ -317,17 +317,6 @@ class Chat( Gemini ):
 		         'reasoning.encrypted_content' ]
 	
 	@property
-	def choice_options( self ) -> List[ str ] | None:
-		'''
-
-			Returns:
-			--------
-			A List[ str ] of available tools options
-
-		'''
-		return [ 'none', ]
-	
-	@property
 	def modality_options( self ) -> List[ str ] | None:
 		'''
 
@@ -623,6 +612,21 @@ class Images( Gemini ):
 		         'medium',
 		         'high' ]
 	
+	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'google_search',
+		         'google_maps',
+		         'file_search',
+		         'code_execution',
+		         'computer_use' ]
+	
 	def generate( self, prompt: str, model: str='gemini-2.5-flash-image', aspect: str=None,
 			number: int=None, temperature: float=None, top_p: float=None,
 			frequency: float=None, presence: float=None, max_tokens: int=None,
@@ -668,10 +672,10 @@ class Images( Gemini ):
 			exception.method = 'generate( self, prompt, aspect ) -> Image'
 			raise exception
 	
-	def analyze( self, prompt: str, model: str = 'gemini-2.5-flash-image', aspect: str = None,
-			number: int = None, temperature: float = None, top_p: float = None,
-			frequency: float = None, presence: float = None, max_tokens: int = None,
-			instruct: str = None ) -> Optional[ Image ]:
+	def analyze( self, prompt: str, model: str='gemini-2.5-flash-image', aspect: str=None,
+			number: int=None, temperature: float=None, top_p: float=None,
+			frequency: float=None, presence: float=None, max_tokens: int=None,
+			instruct: str=None ) -> Optional[ Image ]:
 		"""
 			
 			Purpose:
@@ -834,6 +838,18 @@ class Embeddings( Gemini ):
 
 		'''
 		return [ 'float', 'base64' ]
+	
+	@property
+	def task_options( self ) -> List[ str ]:
+		'''
+			
+			Returns:
+			--------
+			List[ str ] of available embedding tasks
+
+		'''
+		return [ 'RETRIEVAL_QUERY', 'RETRIEVAL_DOCUMENT', 'SEMANTIC_SIMILARITY',
+		         'CLASSIFICATION', 'CLUSTERING' ]
 	
 	def create( self, text: str, model: str='text-embedding-004', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,

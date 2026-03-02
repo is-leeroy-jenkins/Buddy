@@ -2107,6 +2107,9 @@ if 'text_input' not in st.session_state:
 if 'text_stops' not in st.session_state:
 	st.session_state[ 'text_stops' ] = [ ]
 
+if 'text_modalities' not in st.session_state:
+	st.session_state[ 'text_modalities' ] = [ ]
+
 if 'text_include' not in st.session_state:
 	st.session_state[ 'text_include' ] = [ ]
 
@@ -2173,7 +2176,10 @@ if 'image_include' not in st.session_state:
 
 if 'image_tools' not in st.session_state:
 	st.session_state.image_tools: List[ Dict[ str, Any ] ] = [ ]
-
+	
+if 'image_modalities' not in st.session_state:
+	st.session_state[ 'image_modalities' ] = [ ]
+	
 if 'image_context' not in st.session_state:
 	st.session_state.image_context: List[ Dict[ str, Any ] ] = [ ]
 
@@ -2650,6 +2656,7 @@ elif mode == 'Text':
 	text_content = st.session_state.get( 'text_content', '' )
 	text_input = st.session_state.get( 'text_input', '' )
 	text_tools = st.session_state.get( 'text_tools', [ ] )
+	text_modalities = st.session_state.get( 'text_modalities', [ ] )
 	text_context = st.session_state.get( 'text_context', [ ] )
 	text_include = st.session_state.get( 'text_include', [ ] )
 	text_domains = st.session_state.get( 'text_domains', [ ] )
@@ -2991,8 +2998,8 @@ elif mode == 'Text':
 				# Text Generation Tool Options
 				# ------------------------------------------------------------------
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
-					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
-						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
 					with tool_c1:
 						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
@@ -3024,12 +3031,23 @@ elif mode == 'Text':
 						
 						text_tools = st.session_state[ 'text_tools' ]
 					
+					with tool_c5:
+						modality_options = list( text.modality_options )
+						set_text_modalities = st.multiselect( label='Modalities', options=modality_options,
+							key='text_modalities', help='Optional. Modality of the response',
+							placeholder='Options' )
+						
+						text_modalities = [ d.strip( ) for d in set_text_modalities
+						               if d.strip( ) ]
+						
+						text_modalities = st.session_state[ 'text_modalities' ]
+					
 					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
 						# ----------------------------------------------------------
 						# Remove Tool Settings session keys
 						# ----------------------------------------------------------
 						for key in [ 'text_parallel_tools', 'text_tool_choice',
-						             'text_tools', 'text_max_calls' ]:
+						             'text_tools', 'text_max_calls', 'text_modalities' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -3420,6 +3438,7 @@ elif mode == "Images":
 	image_quality = st.session_state.get( 'image_quality', '' )
 	image_size = st.session_state.get( 'image_size', '' )
 	image_stops = st.session_state.get( 'image_stops', [ ] )
+	image_modalities = st.session_state.get( 'image_modalities', [ ] )
 	image_domains = st.session_state.get( 'image_domains', [ ] )
 	image_include = st.session_state.get( 'image_include', [ ] )
 	image_tools = st.session_state.get( 'image_tools', [ ] )
@@ -3738,8 +3757,7 @@ elif mode == "Images":
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
-					                                                       0.20 ],
+					llm_c1, llm_c2, llm_c3, llm_c4,  = st.columns( [ 0.25, 0.25, 0.25, 0.25, ],
 						border=True, gap='xxsmall' )
 					
 					# ---------  Mode  --------
@@ -3784,17 +3802,8 @@ elif mode == "Images":
 							
 							image_model = st.session_state[ 'image_model' ]
 					
-					# ---------  Include --------
-					with llm_c3:
-						includes = list( image.include_options )
-						set_image_include = st.multiselect( label='Include:',
-							options=includes, key='image_include',
-							help=cfg.INCLUDE, placeholder='Options' )
-						
-						image_include = st.session_state[ 'image_include' ]
-					
 					# ---------  Domains --------
-					with llm_c4:
+					with llm_c3:
 						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains',
 							placeholder='Enter Domains',
 							help=cfg.ALLOWED_DOMAINS, width='stretch' )
@@ -3805,7 +3814,7 @@ elif mode == "Images":
 						image_domains = st.session_state[ 'image_domains' ]
 					
 					# ---------  Reasoning --------
-					with llm_c5:
+					with llm_c4:
 						reasonings = list( image.reasoning_options )
 						set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
 							options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
@@ -3816,8 +3825,8 @@ elif mode == "Images":
 						# ----------------------------------------------------------
 						# Remove Image Model Settings session keys
 						# ----------------------------------------------------------
-						for key in [ 'image_mode', 'image_model', 'image_include',
-						             'image_domains', 'image_stops', 'image_reasoning', ]:
+						for key in [ 'image_mode', 'image_model',
+						             'image_domains',  'image_reasoning', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 							
@@ -3901,13 +3910,14 @@ elif mode == "Images":
 						
 						image_max_tools = st.session_state[ 'image_max_tools' ]
 					
-					# ---------  Tool Choice --------
+					# ---------  Include --------
 					with tool_c3:
-						choices = list( image.choice_options )
-						set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
-							key='image_choice', help=cfg.CHOICE, placeholder='Options', index=None )
+						includes = list( image.include_options )
+						set_image_include = st.multiselect( label='Include:',
+							options=includes, key='image_include',
+							help=cfg.INCLUDE, placeholder='Options' )
 						
-						image_tool_choice = st.session_state[ 'image_choice' ]
+						image_include = st.session_state[ 'image_include' ]
 					
 					# ---------  Tool Options --------
 					with tool_c4:
@@ -3920,7 +3930,7 @@ elif mode == "Images":
 					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
 						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
-						             'image_tools', ]:
+						             'image_tools', 'image_include' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -3942,12 +3952,17 @@ elif mode == "Images":
 						
 						text_store = st.session_state[ 'image_store' ]
 					
-					# ---------  Background --------
+					# ---------  Modalities --------
 					with res_three:
-						set_image_background = st.toggle( label='Background', key='image_background',
-							help=cfg.BACKGROUND_MODE )
+						modality_options = list( image.modality_options )
+						set_image_modalities = st.multiselect( label='Modalities', options=modality_options,
+							key='image_modalities', help='Optional. Modality of the response',
+							placeholder='Options' )
 						
-						image_background = st.session_state[ 'image_background' ]
+						image_modalities = [ d.strip( ) for d in set_image_modalities
+						                    if d.strip( ) ]
+						
+						image_modalities = st.session_state[ 'image_modalities' ]
 					
 					# ---------  Response Format --------
 					with res_four:
@@ -3967,8 +3982,8 @@ elif mode == "Images":
 					
 					# ------- Reset Settings -----------
 					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						for key in [ 'image_stream', 'image_store', 'image_background',
-						             'image_response_format', 'image_max_tokens', ]:
+						for key in [ 'image_stream', 'image_store',
+						             'image_modalities'  'image_response_format', 'image_max_tokens', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						# If canonical separation used
@@ -4008,14 +4023,14 @@ elif mode == "Images":
 						
 						image_quality = st.session_state[ 'image_quality' ]
 					
-					# ------------ Image Backcolor -------
+					# ------------ Image Aspect Ratio -------
 					with img_c4:
-						colors = list( image.backcolor_options )
-						set_image_backcolor = st.selectbox( label='Image Backcolor',
-							options=colors, help=cfg.IMAGE_BACKGROUND,
-							key='image_backcolor', placeholder='Options', index=None )
+						ratios = list( image.aspect_options )
+						set_image_aspect = st.selectbox( label='Aspect Ratio',
+							options=ratios, help=cfg.IMAGE_BACKGROUND,
+							key='image_aspect_ratio', placeholder='Options', index=None )
 						
-						image_backcolor = st.session_state[ 'image_backcolor' ]
+						image_aspect_ratio = st.session_state[ 'image_aspect_ratio' ]
 					
 					# ------------ Image Output Format ------
 					with img_c5:
@@ -4029,7 +4044,7 @@ elif mode == "Images":
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
 						for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
-						             'image_size', 'image_output' ]:
+						             'image_size', 'image_output', 'image_aspect_ratio' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
