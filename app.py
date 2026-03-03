@@ -2986,8 +2986,8 @@ elif mode == 'Text':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='medium' )
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
 					# ---------- Model ------------
 					with llm_c1:
@@ -3030,18 +3030,18 @@ elif mode == 'Text':
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
 					# ---------- Media Resolution ------------
-					with llm_c4:
-						reasoning_options = list( text.reasoning_options )
-						set_text_reasoning = st.selectbox( label='Thinking Level:',
-							options=reasoning_options, key='text_reasoning',
+					with llm_c5:
+						media_options = list( text.media_options)
+						set_media_resolution = st.selectbox( label='Media Resolution',
+							options=resolution_options, key='text_media_resolution',
 							help=cfg.REASONING, index=None, placeholder='Options' )
 						
-						text_reasoning = st.session_state[ 'text_reasoning' ]
+						media_resolution = st.session_state[ 'text_media_resolution' ]
 					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
 						for key in [ 'text_model', 'text_include', 'text_domains',
-						             'text_reasoning' ]:
+						             'text_reasoning', 'text_media_resolution' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -3083,7 +3083,7 @@ elif mode == 'Text':
 						
 						text_temperature = st.session_state[ 'text_temperature' ]
 					
-					# ---------- Top K ------------
+					# ---------- Top-K ------------
 					with prm_c5:
 						set_text_topk= st.slider( label='Top K', min_value=0, max_value=20,
 							value=int( st.session_state.get( 'text_top_k', 0 ) ), step=1,
@@ -3130,7 +3130,7 @@ elif mode == 'Text':
 						
 						text_tool_choice = st.session_state[ 'text_tool_choice' ]
 					
-					# ---------- Tools/Functions ------------
+					# ---------- Tools ------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
 						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
@@ -3166,7 +3166,7 @@ elif mode == 'Text':
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
-					# ---------- Reset Settings ------------
+					# ---------- Stream ------------
 					with resp_c1:
 						set_text_stream = st.toggle( label='Stream', key='text_stream',
 							help=cfg.STREAM )
@@ -3932,7 +3932,7 @@ elif mode == "Images":
 						image_stops = [ d.strip( ) for d in set_image_stops.split( ',' )
 						                if d.strip( ) ]
 						
-					# ---------  Reasoning --------
+					# ---------  Reasoning/Thinking Level --------
 					with llm_c5:
 						reasonings = list( image.reasoning_options )
 						set_image_reasoning = st.selectbox( label='Thinking Level:', placeholder='Options',
@@ -3991,9 +3991,9 @@ elif mode == "Images":
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
-					# ---------- Top K ------------
+					# ---------- Top-K ------------
 					with inf_c5:
-						set_image_topK = st.slider( label='Top K',
+						set_image_topK = st.slider( label='Top-K',
 							key='image_top_k', min_value=0, max_value=20,
 							value=int( st.session_state.get( 'image_top_k', 0 ) ),
 							step=1, help=cfg.TOP_K )
@@ -4013,8 +4013,8 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
-					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='medium' )
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
 					# ---------  Allow Parallel --------
 					with tool_c1:
@@ -4031,10 +4031,10 @@ elif mode == "Images":
 						
 						image_max_tools = st.session_state[ 'image_max_tools' ]
 					
-					# ---------  Include --------
+					# ---------  Include/Call Mode --------
 					with tool_c3:
 						includes = list( image.include_options )
-						set_image_include = st.multiselect( label='Include:',
+						set_image_include = st.multiselect( label='Calling Mode',
 							options=includes, key='image_include',
 							help=cfg.INCLUDE, placeholder='Options' )
 						
@@ -4043,10 +4043,19 @@ elif mode == "Images":
 					# ---------  Tool Options --------
 					with tool_c4:
 						tool_options = list( image.tool_options )
-						set_image_tools = st.multiselect( label='Tools:', options=tool_options,
+						set_image_tools = st.multiselect( label='Tools', options=tool_options,
 							key='image_tools', help=cfg.TOOLS, placeholder='Options' )
 						
 						image_tools = st.session_state[ 'image_tools' ]
+					
+					# ---------- Media Resolution ------------
+					with tool_c5:
+						resolution_options = list( image.media_options )
+						set_media_options = st.selectbox( label='Media Resolution',
+							options=resolution_options, key='image_media_resolution',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						media_resolution = st.session_state[ 'image_media_resolution' ]
 					
 					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
