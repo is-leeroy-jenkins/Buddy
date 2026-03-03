@@ -211,6 +211,13 @@ TOP_P = r'''Optional. The maximum cumulative probability of tokens to consider w
 		Top-k sampling directly limits the maximum number of tokens to consider,
 		while Nucleus sampling limits the number of tokens based on the cumulative probability.'''
 
+TOP_K = r'''Optional. The maximum number of tokens to consider when sampling. Gemini models use
+		Top-p (nucleus) sampling or a combination of Top-k and nucleus sampling. Top-k sampling considers
+		the set of topK most probable tokens. Models running with nucleus sampling don't allow topK setting.
+		Note: The default value varies by Model and is specified by theModel.top_p attribute returned
+		from the getModel function. An empty topK attribute indicates that the model doesn't apply
+		top-k sampling and doesn't allow setting topK on requests.'''
+
 PRESENCE_PENALTY = r'''Optional. Presence penalty applied to the next token's logprobs
 		if the token has already been seen in the response. This penalty is binary on/off
 		and not dependant on the number of times the token is used (after the first).'''
@@ -226,7 +233,8 @@ MAX_OUTPUT_TOKENS = r'''Optional. The maximum number of tokens used in generatin
 
 ALLOWED_DOMAINS = r'''Optional. The allowed domains used in generating output content'''
 
-PARALLEL_TOOL_CALLS = r'''Optional. Processes tool calls asynchronously'''
+PARALLEL_TOOL_CALLS = r'''Optional.  Parallel function calling lets you execute multiple functions
+		at once and is used when the functions are not dependent on each other. '''
 
 MAX_TOOL_CALLS = r'''Optional. An integer representing the upper threshold on the number of tool calls
 		allowed during generation'''

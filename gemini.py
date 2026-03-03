@@ -58,7 +58,8 @@ from google.genai.types import (Part, GenerateContentConfig, ImageConfig, Functi
                                 GeneratedImage, EmbedContentConfig, Content, ContentEmbedding,
                                 Candidate, HttpOptions, GenerateImagesResponse, Field, FileSearchStore,
                                 GenerateContentResponse, GenerateVideosResponse, Image, File,
-                                SpeakerVoiceConfig, VoiceConfig, SpeechConfig  )
+                                SpeakerVoiceConfig, VoiceConfig, SpeechConfig, Tool, ToolConfig,
+                                GoogleSearch, UrlContext )
 
 def throw_if( name: str, value: object ):
 	if value is None:
@@ -121,12 +122,6 @@ class Gemini( ):
 	temperature: Optional[ float ]
 	top_p: Optional[ float ]
 	top_k: Optional[ int ]
-	content_config: Optional[ GenerateContentConfig ]
-	function_config: Optional[ FunctionCallingConfig ]
-	thought_config: Optional[ ThinkingConfig ]
-	genimg_config: Optional[ GenerateImagesConfig ]
-	image_config: Optional[ ImageConfig ]
-	tool_config: Optional[ List[ types.Tool ] ]
 	candidate_count: Optional[ int ]
 	response_modalities: Optional[ List[ str ] ]
 	stops: Optional[ List[ str ] ]
@@ -138,12 +133,6 @@ class Gemini( ):
 		self.google_api_key = cfg.GOOGLE_API_KEY
 		self.gemini_api_key = cfg.GEMINI_API_KEY
 		self.model = None
-		self.content_config = None
-		self.image_config = None
-		self.function_config = None
-		self.thought_config = None
-		self.genimg_config = None
-		self.tool_config = [ ]
 		self.api_version = None
 		self.temperature = None
 		self.top_p = None
@@ -195,16 +184,30 @@ class Chat( Gemini ):
 	contents: Optional[ Union[ str, List[ str ] ] ]
 	content_response: Optional[ GenerateContentResponse ]
 	image_response: Optional[ GenerateImagesResponse ]
+	content_config: Optional[ GenerateContentConfig ]
+	function_config: Optional[ FunctionCallingConfig ]
+	thought_config: Optional[ ThinkingConfig ]
+	genimg_config: Optional[ GenerateImagesConfig ]
+	image_config: Optional[ ImageConfig ]
+	tool_config: Optional[ List[ types.Tool ] ]
 	image_uri: Optional[ str ]
 	audio_uri: Optional[ str ]
 	file_path: Optional[ str ]
 	tool_choice: Optional[ str ]
+	tool: Optional[ Tool ]
 	response_modalities: Optional[ List[ str ] ]
 	files: Optional[ List[ str ] ]
 	
-	def __init__( self, model: str='gemini-2.5-flash' ):
+	def __init__( self, model: str='gemini-2.5-flash-lite' ):
 		super( ).__init__( )
 		self.client = None
+		self.content_config = None
+		self.image_config = None
+		self.function_config = None
+		self.thought_config = None
+		self.genimg_config = None
+		self.tool_config = None
+		self.tool = None
 		self.number = None
 		self.model = model
 		self.api_version = None
@@ -222,11 +225,6 @@ class Chat( Gemini ):
 		self.client = None
 		self.storage_client = None
 		self.response_modalities = [ ]
-		self.content_config = None
-		self.image_config = None
-		self.function_config = None
-		self.thought_config = None
-		self.tool_config = None
 		self.content_response = None
 		self.image_response = None
 		self.image_uri = None
@@ -286,6 +284,7 @@ class Chat( Gemini ):
 		return [ 'google_search',
 		         'google_maps',
 		         'file_search',
+		         'url_context',
 		         'code_execution',
 		         'computer_use' ]
 	
@@ -340,7 +339,7 @@ class Chat( Gemini ):
 		'''
 		return [ 'MODALITY_UNSPECIFIED', 'TEXT', 'IMAGE', 'AUDIO' ]
 	
-	def generate_text( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=None,
+	def generate_text( self, prompt: str, model: str='gemini-2.5-flash-lite', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[str]=None, instruct: str=None ) -> str | None:
 		"""
@@ -384,7 +383,7 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def web_search( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=None,
+	def web_search( self, prompt: str, model: str='gemini-2.5-flash-lite', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
 		"""
@@ -430,7 +429,7 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def search_maps( self, prompt: str, model: str='gemini-2.0-flash', temperature: float=None,
+	def search_maps( self, prompt: str, model: str='gemini-2.5-flash-lite', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
 		"""
@@ -459,6 +458,7 @@ class Chat( Gemini ):
 			self.presence_penalty = presence
 			self.max_tokens = max_tokens
 			self.stops = stops
+			self.instructions = instruct
 			self.tool_config = [ types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
 			self.content_config = GenerateContentConfig( temperature=self.temperature,
 				tools=self.tool_config  )
@@ -474,7 +474,7 @@ class Chat( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def analyze_image( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
+	def analyze_image( self, prompt: str, filepath: str, model: str='gemini-2.5-flash-lite',
 			temperature: float=None, top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
 		"""
@@ -606,7 +606,7 @@ class Images( Gemini ):
 			A List[ str ] of available modality options
 
 		'''
-		return [ 'TEXT', 'IMAGE', 'AUDIO' ]
+		return [ 'MODALITY_UNSPECIFIED', 'TEXT', 'IMAGE', 'AUDIO', 'DOCUMENT' ]
 	
 	@property
 	def reasoning_options( self ) -> List[ str ] | None:
@@ -619,6 +619,17 @@ class Images( Gemini ):
 		'''
 		return [ 'THINKING_LEVEL_UNSPECIFIED', 'MINIMAL',
 		         'LOW', 'MEDIUM', 'HIGH' ]
+	
+	@property
+	def size_options( self ):
+		'''
+			
+			Purpose:
+			---------
+			Returns list of image sizes
+			
+		'''
+		return [ '1K', '2K', '4K' ]
 	
 	@property
 	def tool_options( self ) -> List[ str ] | None:
@@ -863,7 +874,7 @@ class Embeddings( Gemini ):
 	file_path: Optional[ str ]
 	response_modalities: Optional[ str ]
 	
-	def __init__( self, model: str='text-embedding-004'  ):
+	def __init__( self, model: str='gemini-embedding-001'  ):
 		super( ).__init__( )
 		self.model = model
 		self.temperature = None
@@ -886,7 +897,7 @@ class Embeddings( Gemini ):
 	@property
 	def model_options( self ) -> List[ str ] | None:
 		"""Returns list of embedding models."""
-		return [ 'text-embedding-004',
+		return [ 'gemini-embedding-001',
 		         'text-multilingual-embedding-002' ]
 	
 	@property
@@ -912,7 +923,7 @@ class Embeddings( Gemini ):
 		return [ 'RETRIEVAL_QUERY', 'RETRIEVAL_DOCUMENT', 'SEMANTIC_SIMILARITY',
 		         'CLASSIFICATION', 'CLUSTERING' ]
 	
-	def create( self, text: str, model: str='text-embedding-004', temperature: float=None,
+	def create( self, text: str, model: str='gemini-embedding-001', temperature: float=None,
 			top_p: float=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None ) -> List[ float ] | None:
 		"""
@@ -1025,8 +1036,7 @@ class TTS( Gemini ):
 			
 		"""
 		return [ 'gemini-2.5-flash-preview-tts',
-		         'gemini-2.0-flash',
-		         'gemini-1.5-flash' ]
+		         'gemini-2.5-pro-preview-tts' ]
 	
 	@property
 	def voice_options( self ) -> List[ str ] | None:
@@ -1053,35 +1063,35 @@ class TTS( Gemini ):
 			
 		'''
 		return [ 'de-DE',
-				'en-AU',
-				'en-GB',
-				'en-IN',
-				'en-US',
-				'es-US',
-				'fr-FR',
-				'hi-IN',
-				'pt-BR',
-				'ar-XA',
-				'es-ES',
-				'fr-CA',
-				'id-ID',
-				'it-IT',
-				'ja-JP',
-				'tr-TR',
-				'vi-VN',
-				'bn-IN',
-				'gu-IN',
-				'kn-IN',
-				'ml-IN',
-				'mr-IN',
-				'ta-IN',
-				'te-IN',
-				'nl-NL',
-				'ko-KR',
-				'cmn-CN',
-				'pl-PL',
-				'ru-RU',
-				'th-TH' ]
+		         'en-AU',
+		         'en-GB',
+		         'en-IN',
+		         'en-US',
+		         'es-US',
+		         'fr-FR',
+		         'hi-IN',
+		         'pt-BR',
+		         'ar-XA',
+		         'es-ES',
+		         'fr-CA',
+		         'id-ID',
+		         'it-IT',
+		         'ja-JP',
+		         'tr-TR',
+		         'vi-VN',
+		         'bn-IN',
+		         'gu-IN',
+		         'kn-IN',
+		         'ml-IN',
+		         'mr-IN',
+		         'ta-IN',
+		         'te-IN',
+		         'nl-NL',
+		         'ko-KR',
+		         'cmn-CN',
+		         'pl-PL',
+		         'ru-RU',
+		         'th-TH' ]
 	
 	@property
 	def format_options( self ) -> List[ str ] | None:
@@ -1202,7 +1212,7 @@ class Transcription( Gemini ):
 			Returns list of models supporting audio input.
 			
 		"""
-		return [ 'gemini-3-flash-preview', 'gemini-2.0-flash', 'gemini-1.5-flash' ]
+		return [ 'gemini-3-flash-preview', 'gemini-2.0-flash',  ]
 	
 	@property
 	def language_options( self ) -> List[ str ] | None:

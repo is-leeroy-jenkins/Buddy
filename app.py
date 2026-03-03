@@ -2062,6 +2062,9 @@ if 'text_number' not in st.session_state:
 if 'text_max_calls' not in st.session_state:
 	st.session_state[ 'text_max_calls' ] = 0
 
+if 'text_top_k' not in st.session_state:
+	st.session_state[ 'text_top_k' ] = 0
+
 if 'text_max_searches' not in st.session_state:
 	st.session_state[ 'text_max_searches' ] = 0
 
@@ -2134,6 +2137,9 @@ if 'image_max_calls' not in st.session_state:
 
 if 'image_max_searches' not in st.session_state:
 	st.session_state[ 'image_max_searches' ] = 0
+
+if 'image_top_k' not in st.session_state:
+	st.session_state[ 'image_top_k' ] = 0
 
 if 'image_temperature' not in st.session_state:
 	st.session_state[ 'image_temperature' ] = 0.0
@@ -2654,6 +2660,7 @@ elif mode == 'Text':
 	text_max_searches = st.session_state.get( 'text_max_searches', 0 )
 	text_max_tokens = st.session_state.get( 'text_max_tokens', 0 )
 	text_top_percent = st.session_state.get( 'text_top_percent', 0.0 )
+	text_top_k = st.session_state.get( 'text_top_k', 0 )
 	text_freq = st.session_state.get( 'text_frequency_penalty', 0.0 )
 	text_presense = st.session_state.get( 'text_presense_penalty', 0.0 )
 	text_temperature = st.session_state.get( 'text_temperature', 0.0 )
@@ -2933,7 +2940,7 @@ elif mode == 'Text':
 						
 						st.session_state[ 'text_domains' ] = text_domains
 					
-					# ---------- Reasoning ------------
+					# ---------- Reasoning/Thinking Level ------------
 					with llm_c4:
 						reasoning_options = list( text.reasoning_options )
 						set_text_reasoning = st.selectbox( label='Thinking Level:',
@@ -2958,7 +2965,7 @@ elif mode == 'Text':
 					# ---------- Top-P ------------
 					with prm_c1:
 						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
+							value=float( st.session_state.get( 'text_top_percent' ) ),
 							step=0.01, help=cfg.TOP_P, key='text_top_percent' )
 						
 						text_top_percent = st.session_state[ 'text_top_percent' ]
@@ -2987,19 +2994,19 @@ elif mode == 'Text':
 						
 						text_temperature = st.session_state[ 'text_temperature' ]
 					
-					# ---------- Number ------------
+					# ---------- Top K ------------
 					with prm_c5:
-						set_text_number = st.slider( label='Candidates', min_value=0, max_value=10,
-							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
-							help='Optional. Upper limit on the responses returned by the model',
-							key='text_number' )
+						set_text_topk= st.slider( label='Top K', min_value=0, max_value=20,
+							value=int( st.session_state.get( 'text_top_k', 0 ) ), step=1,
+							help=cfg.TOP_K,
+							key='text_top_k' )
 						
-						text_number = st.session_state[ 'text_number' ]
+						text_number = st.session_state[ 'text_top_k' ]
 					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
 						for key in [ 'text_top_percent', 'text_frequency_penalty',
-						             'text_presense_penalty', 'text_temperature', 'text_number', ]:
+						             'text_presense_penalty', 'text_temperature', 'text_top_k', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -3009,34 +3016,36 @@ elif mode == 'Text':
 					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
-					# ---------- Allow Parallel ------------
+					# ---------- Number/Candidates ------------
 					with tool_c1:
-						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
-							help=cfg.PARALLEL_TOOL_CALLS )
+						set_text_number = st.slider( label='Candidates', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='text_number' )
 						
-						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
+						text_number = st.session_state[ 'text_number' ]
 					
 					# ---------- Max Calls ------------
 					with tool_c2:
-						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=5,
+						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
 							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
 							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
 						
 						text_max_calls = st.session_state[ 'text_max_calls' ]
 					
-					# ---------- Choice ------------
+					# ---------- Choice/Calling Mode ------------
 					with tool_c3:
 						choice_options = list( text.choice_options )
-						set_text_choice = st.selectbox( label='Tool Choice:', options=choice_options,
+						set_text_choice = st.selectbox( label='Calling Mode', options=choice_options,
 							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
 						
 						text_tool_choice = st.session_state[ 'text_tool_choice' ]
 					
-					# ---------- Tools ------------
+					# ---------- Tools/Functions ------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
-						set_text_tools = st.multiselect( label='Tools:', options=tool_options,
-							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
+							key='text_tools', help=cfg.TOOLS, placeholder='Options'  )
 						
 						text_tools = [ d.strip( ) for d in set_text_tools
 						               if d.strip( ) ]
@@ -3057,7 +3066,7 @@ elif mode == 'Text':
 					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						for key in [ 'text_parallel_tools', 'text_tool_choice',
+						for key in [ 'text_parallel_tools', 'text_tool_choice', 'text_number',
 						             'text_tools', 'text_max_calls', 'text_modalities' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
@@ -3066,7 +3075,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xsmall' )
 					
 					# ---------- Reset Settings ------------
 					with resp_c1:
@@ -3426,6 +3435,7 @@ elif mode == "Images":
 	image_max_searches = st.session_state.get( 'image_max_searches', 0 )
 	image_max_tokens = st.session_state.get( 'image_max_tokens', 0 )
 	image_top_percent = st.session_state.get( 'image_top_percent', 0.0 )
+	image_top_k = st.session_state.get( 'image_top_k', 0.0 )
 	image_frequency = st.session_state.get( 'image_frequency_penalty', 0.0 )
 	image_presense = st.session_state.get( 'image_presense_penalty', 0.0 )
 	image_temperature = st.session_state.get( 'image_temperature', 0.0 )
@@ -3768,7 +3778,7 @@ elif mode == "Images":
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4,  = st.columns( [ 0.25, 0.25, 0.25, 0.25, ],
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
 					
 					# ---------  Mode  --------
@@ -3824,8 +3834,16 @@ elif mode == "Images":
 						
 						image_domains = st.session_state[ 'image_domains' ]
 					
-					# ---------  Reasoning --------
+					# ------------ Stops -------------
 					with llm_c4:
+						set_image_stops = st.text_input( label='Stop Sequences', key='image_stops',
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+						
+						image_stops = [ d.strip( ) for d in set_image_stops.split( ',' )
+						                if d.strip( ) ]
+						
+					# ---------  Reasoning --------
+					with llm_c5:
 						reasonings = list( image.reasoning_options )
 						set_image_reasoning = st.selectbox( label='Thinking Level:', placeholder='Options',
 							options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
@@ -3837,13 +3855,11 @@ elif mode == "Images":
 						# ----------------------------------------------------------
 						# Remove Image Model Settings session keys
 						# ----------------------------------------------------------
-						for key in [ 'image_mode', 'image_model',
+						for key in [ 'image_mode', 'image_model', 'image_stops',
 						             'image_domains',  'image_reasoning', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
-							
-							if 'image_domains_input' in st.session_state:
-								del st.session_state[ 'image_domains_input' ]
+								
 						
 						st.rerun( )
 				
@@ -3885,17 +3901,18 @@ elif mode == "Images":
 						
 						image_temperature = st.session_state[ 'image_temperature' ]
 					
-					# ---------- Stops ------------
+					# ---------- Top K ------------
 					with inf_c5:
-						set_image_stops = st.text_input( label='Stop Sequences', key='image_stops',
-							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+						set_image_topK = st.slider( label='Top K',
+							key='image_top_k', min_value=0, max_value=20,
+							value=int( st.session_state.get( 'image_top_k', 0 ) ),
+							step=1, help=cfg.TOP_K )
 						
-						image_stops = [ d.strip( ) for d in set_image_stops.split( ',' )
-						               if d.strip( ) ]
-					
+						image_top_k = st.session_state[ 'image_top_k' ]
+						
 					# --------- Reset Settings --------
 					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						for key in [ 'image_top_percent', 'image_frequency_penalty', 'image_stops',
+						for key in [ 'image_top_percent', 'image_frequency_penalty', 'image_top_k',
 						             'image_presense_penalty', 'image_temperature', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
@@ -4004,8 +4021,8 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
-					img_c1, img_c2, img_c3, img_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='medium' )
+					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
 					# ------------ Image Resolution -------
 					with img_c1:
@@ -4038,11 +4055,21 @@ elif mode == "Images":
 					with img_c4:
 						set_image_number = st.slider( label='Candidates:', min_value=0, max_value=100,
 							value=int( st.session_state.get( 'image_number', 0 ) ),
-							step=1, help='Optional. Upper limit on the responses returned by the model',
+							step=1, help='Optional. A response candidate generated from the model',
 							key='image_number' )
 						
 						image_number = st.session_state[ 'image_number' ]
 					
+					# ---------  Image Size --------
+					with img_c5:
+						size_options = list( image.size_options )
+						set_image_size = st.selectbox( label='Image Size',
+							options=size_options, help='Optional. Image sizes',
+							key='image_size', placeholder='Options', index=None )
+						
+						image_size = st.session_state[ 'image_size' ]
+						
+						
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
 						for key in [ 'image_resolution', 'image_mime_type',
