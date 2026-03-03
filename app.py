@@ -2101,6 +2101,12 @@ if 'text_response_format' not in st.session_state:
 if 'text_tool_choice' not in st.session_state:
 	st.session_state[ 'text_tool_choice' ] = ''
 
+if 'text_resolution' not in st.session_state:
+	st.session_state[ 'text_resolution' ] = ''
+
+if 'text_media_resolution' not in st.session_state:
+	st.session_state[ 'text_media_resolution' ] = ''
+
 if 'text_reasoning' not in st.session_state:
 	st.session_state[ 'text_reasoning' ] = ''
 
@@ -2170,6 +2176,9 @@ if 'image_stream' not in st.session_state:
 
 if 'image_tool_choice' not in st.session_state:
 	st.session_state[ 'image_tool_choice' ] = ''
+
+if 'image_media_resolution' not in st.session_state:
+	st.session_state[ 'image_media_resolution' ] = ''
 
 if 'image_reasoning' not in st.session_state:
 	st.session_state[ 'image_reasoning' ] = ''
@@ -2269,6 +2278,9 @@ if 'audio_response_format' not in st.session_state:
 if 'audio_input' not in st.session_state:
 	st.session_state[ 'audio_input' ] = ''
 
+if 'audio_media_resolution' not in st.session_state:
+	st.session_state[ 'audio_media_resolution' ] = ''
+
 if 'audio_stops' not in st.session_state:
 	st.session_state[ 'audio_stops' ] = [ ]
 
@@ -2348,7 +2360,6 @@ if 'files_table' not in st.session_state:
 	st.session_state[ 'files_table' ] = ''
 	
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
-
 if 'stores_temperature' not in st.session_state:
 	st.session_state[ 'stores_temperature' ] = 0.0
 
@@ -2375,6 +2386,12 @@ if 'stores_response_format' not in st.session_state:
 
 if 'stores_reasoning' not in st.session_state:
 	st.session_state[ 'stores_reasoning' ] = ''
+
+if 'stores_resolution' not in st.session_state:
+	st.session_state[ 'stores_resolution' ] = ''
+
+if 'stores_media_resolution' not in st.session_state:
+	st.session_state[ 'stores_media_resolution' ] = ''
 
 if 'stores_parallel_tools' not in st.session_state:
 	st.session_state[ 'stores_parallel_tools' ] = False
@@ -2426,7 +2443,68 @@ if 'docqna_frequency_penalty' not in st.session_state:
 
 if 'docqna_presense_penalty' not in st.session_state:
 	st.session_state[ 'docqna_presense_penalty' ] = 0.0
-	
+
+# --------DOCQNA PARAMETERS--------------------
+if 'docqna_number' not in st.session_state:
+	st.session_state[ 'docqna_number' ] = 0
+
+if 'docqna_top_k' not in st.session_state:
+	st.session_state[ 'docqna_top_k' ] = 0
+
+if 'docqna_max_searches' not in st.session_state:
+	st.session_state[ 'docqna_max_searches' ] = 0
+
+if 'docqna_parallel_tools' not in st.session_state:
+	st.session_state[ 'docqna_parallel_tools' ] = False
+
+if 'docqna_background' not in st.session_state:
+	st.session_state[ 'docqna_background' ] = False
+
+if 'docqna_store' not in st.session_state:
+	st.session_state[ 'docqna_store' ] = False
+
+if 'docqna_stream' not in st.session_state:
+	st.session_state[ 'docqna_stream' ] = False
+
+if 'docqna_response_format' not in st.session_state:
+	st.session_state[ 'docqna_response_format' ] = ''
+
+if 'docqna_tool_choice' not in st.session_state:
+	st.session_state[ 'docqna_tool_choice' ] = ''
+
+if 'docqna_resolution' not in st.session_state:
+	st.session_state[ 'docqna_resolution' ] = ''
+
+if 'docqna_media_resolution' not in st.session_state:
+	st.session_state[ 'docqna_media_resolution' ] = ''
+
+if 'docqna_reasoning' not in st.session_state:
+	st.session_state[ 'docqna_reasoning' ] = ''
+
+if 'docqna_input' not in st.session_state:
+	st.session_state[ 'docqna_input' ] = ''
+
+if 'docqna_stops' not in st.session_state:
+	st.session_state[ 'docqna_stops' ] = [ ]
+
+if 'docqna_modalities' not in st.session_state:
+	st.session_state[ 'docqna_modalities' ] = [ ]
+
+if 'docqna_include' not in st.session_state:
+	st.session_state[ 'docqna_include' ] = [ ]
+
+if 'docqna_domains' not in st.session_state:
+	st.session_state[ 'docqna_domains' ] = [ ]
+
+if 'docqna_tools' not in st.session_state:
+	st.session_state[ 'docqna_tools' ] = [ ]
+
+if 'docqna_context' not in st.session_state:
+	st.session_state[ 'docqna_context' ] = [ ]
+
+if 'docqna_content' not in st.session_state:
+	st.session_state[ 'docqna_content' ] = [ ]
+
 #------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
 if 'docqna_files' not in st.session_state:
 	st.session_state[ 'docqna_files' ] = [ ]
@@ -2670,6 +2748,8 @@ elif mode == 'Text':
 	text_background = st.session_state.get( 'text_background', False )
 	text_model = st.session_state.get( 'text_model', '' )
 	text_reasoning = st.session_state.get( 'text_reasoning', '' )
+	text_resolution = st.session_state.get( 'text_resolution', '' )
+	text_media_resolution = st.session_state.get( 'text_media_resolution', '' )
 	text_response_format = st.session_state.get( 'text_response_format', '' )
 	text_tool_choice = st.session_state.get( 'text_tool_choice', '' )
 	text_content = st.session_state.get( 'text_content', '' )
@@ -2949,6 +3029,15 @@ elif mode == 'Text':
 						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
+					# ---------- Media Resolution ------------
+					with llm_c4:
+						reasoning_options = list( text.reasoning_options )
+						set_text_reasoning = st.selectbox( label='Thinking Level:',
+							options=reasoning_options, key='text_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						text_reasoning = st.session_state[ 'text_reasoning' ]
+					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
 						for key in [ 'text_model', 'text_include', 'text_domains',
@@ -2960,7 +3049,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
 					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
 					# ---------- Top-P ------------
 					with prm_c1:
@@ -3075,7 +3164,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xsmall' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
 					
 					# ---------- Reset Settings ------------
 					with resp_c1:
@@ -3456,6 +3545,7 @@ elif mode == "Images":
 	image_mode = st.session_state.get( 'image_mode', '' )
 	image_quality = st.session_state.get( 'image_quality', '' )
 	image_resolution = st.session_state.get( 'image_resolution', '' )
+	image_media_resolution = st.session_state.get( 'image_media_resolution', '' )
 	image_size = st.session_state.get( 'image_size', '' )
 	image_aspect_ratio = st.session_state.get( 'image_aspect_ratio', '' )
 	image_stops = st.session_state.get( 'image_stops', [ ] )
@@ -4618,6 +4708,7 @@ elif mode == 'Audio':
 	audio_language = st.session_state.get( 'audio_language', '' )
 	audio_format = st.session_state.get( 'audio_format', '' )
 	audio_file = st.session_state.get( 'audio_file', '' )
+	audio_media_resolution = st.session_state.get( 'audio_media_resolution', '' )
 	audio_reasoning = st.session_state.get( 'audio_reasoning', '' )
 	audio_choice = st.session_state.get( 'audio_tool_choice', '' )
 	audio_voice = st.session_state.get( 'audio_voice', '' )

@@ -118,16 +118,28 @@ class Gemini( ):
 	prompt: Optional[ str ]
 	model: Optional[ str ]
 	api_version: Optional[ str ]
-	max_output_tokens: Optional[ int ]
+	max_tokens: Optional[ int ]
 	temperature: Optional[ float ]
 	top_p: Optional[ float ]
 	top_k: Optional[ int ]
 	candidate_count: Optional[ int ]
+	media_resolution: Optional[ str ]
 	response_modalities: Optional[ List[ str ] ]
 	stops: Optional[ List[ str ] ]
+	domains: Optional[ List[ str ] ]
 	frequency_penalty: Optional[ float ]
 	presence_penalty: Optional[ float ]
 	response_format: Optional[ str ]
+	content_response: Optional[ GenerateContentResponse ]
+	image_response: Optional[ GenerateImagesResponse ]
+	content_config: Optional[ GenerateContentConfig ]
+	function_config: Optional[ FunctionCallingConfig ]
+	thought_config: Optional[ ThinkingConfig ]
+	genimg_config: Optional[ GenerateImagesConfig ]
+	image_config: Optional[ ImageConfig ]
+	tool_config: Optional[ List[ types.Tool ] ]
+	tool_choice: Optional[ str ]
+	tools: Optional[ List[ str ] ]
 	
 	def __init__( self ):
 		self.google_api_key = cfg.GOOGLE_API_KEY
@@ -140,13 +152,14 @@ class Gemini( ):
 		self.candidate_count = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
-		self.max_output_tokens = None
+		self.max_tokens = None
 		self.instructions = None
 		self.prompt = None
 		self.response_format = None
 		self.number = None
 		self.response_modalities = [ ]
 		self.stops = [ ]
+		self.tools = [ ]
 
 class Chat( Gemini ):
 	'''
@@ -182,24 +195,14 @@ class Chat( Gemini ):
 	client: Optional[ genai.Client ]
 	storage_client: Optional[ storage.Client ]
 	contents: Optional[ Union[ str, List[ str ] ] ]
-	content_response: Optional[ GenerateContentResponse ]
-	image_response: Optional[ GenerateImagesResponse ]
-	content_config: Optional[ GenerateContentConfig ]
-	function_config: Optional[ FunctionCallingConfig ]
-	thought_config: Optional[ ThinkingConfig ]
-	genimg_config: Optional[ GenerateImagesConfig ]
-	image_config: Optional[ ImageConfig ]
-	tool_config: Optional[ List[ types.Tool ] ]
 	image_uri: Optional[ str ]
 	audio_uri: Optional[ str ]
 	file_path: Optional[ str ]
-	tool_choice: Optional[ str ]
-	tool: Optional[ Tool ]
-	response_modalities: Optional[ List[ str ] ]
 	files: Optional[ List[ str ] ]
 	
 	def __init__( self, model: str='gemini-2.5-flash-lite' ):
 		super( ).__init__( )
+		self.api_version = None
 		self.client = None
 		self.content_config = None
 		self.image_config = None
@@ -207,30 +210,31 @@ class Chat( Gemini ):
 		self.thought_config = None
 		self.genimg_config = None
 		self.tool_config = None
-		self.tool = None
+		self.tools = [ ]
+		self.response_modalities = [ ]
+		self.files = [ ]
+		self.http_options = { }
 		self.number = None
 		self.model = model
-		self.api_version = None
 		self.top_p = None
+		self.top_k = None
 		self.temperature = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
 		self.candidate_count = None
-		self.max_output_tokens = None
+		self.max_tokens = None
 		self.use_vertex = None
 		self.instructions = None
+		self.media_resolution = None
 		self.tool_choice = None
 		self.contents = None
-		self.http_options = { }
 		self.client = None
 		self.storage_client = None
-		self.response_modalities = [ ]
 		self.content_response = None
 		self.image_response = None
 		self.image_uri = None
 		self.audio_uri = None
 		self.file_path = None
-		self.files = [ ]
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
@@ -287,6 +291,19 @@ class Chat( Gemini ):
 		         'url_context',
 		         'code_execution',
 		         'computer_use' ]
+	
+	@property
+	def media_options( self ):
+		'''
+		
+		Purpose:
+		--------
+		Returns a List[ str ] of media resolution options.
+		
+		'''
+		return [ 'media_resolution_high',
+		         'media_resolution_medium',
+		         'media_resolution_low' ]
 	
 	@property
 	def choice_options( self ) -> List[ str ] | None:
@@ -544,20 +561,37 @@ class Images( Gemini ):
 	aspect_ratio: Optional[ str ]
 	use_vertex: Optional[ bool ]
 	resolution: Optional[ str ]
+	size: Optional[ str ]
 	
 	def __init__( self, model: str='gemini-2.5-flash-image' ):
 		super( ).__init__( )
 		self.number = None
 		self.model = model
+		self.client = None
+		self.instructions = None
+		self.content_config = None
+		self.image_config = None
+		self.function_config = None
+		self.thought_config = None
+		self.genimg_config = None
+		self.tool_config = None
+		self.response_modalities = [ ]
+		self.tools = [ ]
+		self.stops = [ ]
+		self.domains = [ ]
+		self.http_options = { }
 		self.temperature = None
+		self.size = None
 		self.top_p = None
+		self.top_k = None
 		self.aspect_ratio = None
 		self.frequency_penalty = None
 		self.presence_penalty = None
-		self.max_tokens = None
-		self.instructions = None
-		self.client = None
-		self.genimg_config = None
+		self.candidate_count = None
+		self.max_output_tokens = None
+		self.use_vertex = None
+		self.media_resolution = None
+		self.tool_choice = None
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
@@ -596,6 +630,19 @@ class Images( Gemini ):
 		"""
 		return [ '1:1', '1:4', '1:8', '2:3', '3:2', '3:4', '4:1', '4:3', '4:5', '5:4', '8:1',
 		         '9:16', '16:9', '21:9' ]
+	
+	@property
+	def media_options( self ):
+		'''
+		
+		Purpose:
+		--------
+		Returns a List[ str ] of media resolution options.
+		
+		'''
+		return [ 'media_resolution_high',
+		         'media_resolution_medium',
+		         'media_resolution_low' ]
 	
 	@property
 	def modality_options( self ) -> List[ str ] | None:
@@ -833,6 +880,99 @@ class Images( Gemini ):
 			exception.cause = 'Images'
 			exception.method = 'edit( self, prompt, aspect ) -> Image'
 			raise exception
+	
+	def web_search( self, prompt: str, model: str = 'gemini-2.5-flash-lite', temperature: float = None,
+			top_p: float = None, frequency: float = None, presence: float = None,
+			max_tokens: int = None, stops: List[ str ] = None, instruct: str = None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Generates a response grounded in Google Search results.
+			
+			Parameters:
+			-----------
+			prompt: str - The query for search-augmented generation.
+			model: str - The Gemini model identifier.
+			
+			Returns:
+			--------
+			Optional[ str ] - The grounded text response.
+		
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.contents = prompt;
+			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.instructions = instruct
+			self.tool_config = [
+					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
+			self.content_config = GenerateContentConfig( temperature=self.temperature,
+				tools=self.tool_config, system_instruction=self.instructions )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			response = self.client.models.generate_content( model=self.model,
+				contents=self.contents, config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'web_search( self, prompt, model ) -> Optional[ str ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search_maps( self, prompt: str, model: str = 'gemini-2.5-flash-lite', temperature: float = None,
+			top_p: float = None, frequency: float = None, presence: float = None,
+			max_tokens: int = None, stops: List[ str ] = None, instruct: str = None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Uses Google Search grounding specifically for location and place-based queries.
+			
+			Parameters:
+			-----------
+			prompt: str - The location or directions query.
+			model: str - The Gemini model identifier.
+			Returns:
+			--------
+			Optional[ str ] - The grounded response containing place data.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.contents = f"Using Google Search and Maps data, answer: {prompt}"
+			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.instructions = instruct
+			self.tool_config = [
+					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
+			self.content_config = GenerateContentConfig( temperature=self.temperature,
+				tools=self.tool_config )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			response = self.client.models.generate_content( model=self.model,
+				contents=self.contents, config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'search_maps( self, prompt, model ) -> Optional[ str ]'
+			error = ErrorDialog( exception )
+			error.show( )
 
 class Embeddings( Gemini ):
 	'''
@@ -1441,26 +1581,32 @@ class Files( Gemini ):
 	collections: Optional[ Dict[ str, str ] ]
 	documents: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, model: str='gemini-2.0-flash', temperature: float=None, top_p: float=None,
-			frequency: float=None, presence: float=None, max_tokens: int=None, stops: List[str ]=None ):
+	def __init__( self, model: str='gemini-2.0-flash' ):
 		super( ).__init__( )
 		self.google_api_key = cfg.GOOGLE_API_KEY
 		self.project_id = cfg.GOOGLE_CLOUD_PROJECT_ID
 		self.project_location = cfg.GOOGLE_CLOUD_LOCATION
-		self.model = model
-		self.top_p = top_p;
-		self.temperature = temperature
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_tokens = max_tokens
-		self.stops = stops
+		self.model = None
+		self.top_p = None
+		self.top_k = None
+		self.temperature = None
+		self.frequency_penalty = None
+		self.presence_penalty = None
+		self.max_tokens = None
+		self.tool_choice = None
+		self.stops = [ ]
+		self.response_modalities = [ ]
+		self.tools = [ ]
+		self.domains = [ ]
+		self.http_options = { }
 		self.storage_client = None
 		self.bucket_id = None
-		self.file_id = None;
-		self.display_name = None;
+		self.file_id = None
+		self.display_name = None
+		self.media_resolution = None
 		self.mime_type = None
-		self.file_path = None;
-		self.file_list = [ ];
+		self.file_path = None
+		self.file_list = [ ]
 		self.response = None
 		self.collections = { }
 		self.documents = { }
@@ -1489,6 +1635,19 @@ class Files( Gemini ):
 		         'gemini-3.5 flash-lite',
 		         'gemini-3.0-flash',
 		         'gemini-3.0-flash-lite' ]
+	
+	@property
+	def media_options( self ):
+		'''
+		
+		Purpose:
+		--------
+		Returns a List[ str ] of media resolution options.
+		
+		'''
+		return [ 'media_resolution_high',
+		         'media_resolution_medium',
+		         'media_resolution_low' ]
 	
 	def upload( self, filepath: str, name: str=None ) -> File | None:
 		"""
@@ -1744,6 +1903,99 @@ class Files( Gemini ):
 			ex.method = 'survey( self, prompt, filepaths, model ) -> str'
 			raise ex
 	
+	def web_search( self, prompt: str, model: str='gemini-2.5-flash-lite', temperature: float=None,
+			top_p: float=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Generates a response grounded in Google Search results.
+			
+			Parameters:
+			-----------
+			prompt: str - The query for search-augmented generation.
+			model: str - The Gemini model identifier.
+			
+			Returns:
+			--------
+			Optional[ str ] - The grounded text response.
+		
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.contents = prompt;
+			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.instructions = instruct
+			self.tool_config = [
+					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
+			self.content_config = GenerateContentConfig( temperature=self.temperature,
+				tools=self.tool_config, system_instruction=self.instructions )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			response = self.client.models.generate_content( model=self.model,
+				contents=self.contents, config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'web_search( self, prompt, model ) -> Optional[ str ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search_maps( self, prompt: str, model: str='gemini-2.5-flash-lite', temperature: float=None,
+			top_p: float=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Uses Google Search grounding specifically for location and place-based queries.
+			
+			Parameters:
+			-----------
+			prompt: str - The location or directions query.
+			model: str - The Gemini model identifier.
+			Returns:
+			--------
+			Optional[ str ] - The grounded response containing place data.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.contents = f"Using Google Search and Maps data, answer: {prompt}"
+			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.instructions = instruct
+			self.tool_config = [
+					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
+			self.content_config = GenerateContentConfig( temperature=self.temperature,
+				tools=self.tool_config )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			response = self.client.models.generate_content( model=self.model,
+				contents=self.contents, config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'search_maps( self, prompt, model ) -> Optional[ str ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
 	def delete( self, file_id: str ) -> bool | None:
 		"""
 		
@@ -1819,24 +2071,30 @@ class VectorStores( Gemini ):
 		self.bucket_name = None
 		self.object_name = None
 		self.file_path = None
+		self.media_resolution = None
 		self.file_ids = [ ]
 		self.store_ids = [ ]
+		self.stops = [ ]
+		self.response_modalities = [ ]
+		self.tools = [ ]
+		self.domains = [ ]
+		self.http_options = { }
 		self.bucket = None
 		self.response = None
 		self.collections = \
 		{
-				'Federal Financial Data': 'jeni-financial/data',
-				'Federal Financial Regulations': 'jeni-financial/regulations',
-				'DoW Financial Data': 'jeni_dow/budget/data',
-				'DoW Financial Regulations': 'jeni_dow/budget/regulations',
-				'DoA Financial Data': 'jenni-doa/Financial Data',
+			'Federal Financial Data': 'jeni-financial/data',
+			'Federal Financial Regulations': 'jeni-financial/regulations',
+			'DoW Financial Data': 'jeni_dow/budget/data',
+			'DoW Financial Regulations': 'jeni_dow/budget/regulations',
+			'DoA Financial Data': 'jenni-doa/Financial Data',
 		}
 		self.documents = \
 		{
-				'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
-				'SF133.csv': 'file-32s641QK1Xb5QUatY3zfWF',
-				'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
-				'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
+			'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
+			'SF133.csv': 'file-32s641QK1Xb5QUatY3zfWF',
+			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
+			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn'
 		}
 	
 	@property
@@ -1848,6 +2106,19 @@ class VectorStores( Gemini ):
 		         'gemini-2.5 flash-lite',
 		         'gemini-2.0-flash',
 		         'gemini-2.0-flash-lite' ]
+	
+	@property
+	def media_options( self ):
+		'''
+		
+		Purpose:
+		--------
+		Returns a List[ str ] of media resolution options.
+		
+		'''
+		return [ 'media_resolution_high',
+		         'media_resolution_medium',
+		         'media_resolution_low' ]
 	
 	def create( self, bucket: str, name: str ):
 		"""
@@ -1987,6 +2258,99 @@ class VectorStores( Gemini ):
 			ex.cause = 'VectorStores'
 			ex.method = 'list( self, bucket )'
 			raise ex
+	
+	def web_search( self, prompt: str, model: str = 'gemini-2.5-flash-lite', temperature: float = None,
+			top_p: float = None, frequency: float = None, presence: float = None,
+			max_tokens: int = None, stops: List[ str ] = None, instruct: str = None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Generates a response grounded in Google Search results.
+			
+			Parameters:
+			-----------
+			prompt: str - The query for search-augmented generation.
+			model: str - The Gemini model identifier.
+			
+			Returns:
+			--------
+			Optional[ str ] - The grounded text response.
+		
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.contents = prompt;
+			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.instructions = instruct
+			self.tool_config = [
+					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
+			self.content_config = GenerateContentConfig( temperature=self.temperature,
+				tools=self.tool_config, system_instruction=self.instructions )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			response = self.client.models.generate_content( model=self.model,
+				contents=self.contents, config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e );
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'web_search( self, prompt, model ) -> Optional[ str ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search_maps( self, prompt: str, model: str='gemini-2.5-flash-lite', temperature: float=None,
+			top_p: float=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Uses Google Search grounding specifically for location and place-based queries.
+			
+			Parameters:
+			-----------
+			prompt: str - The location or directions query.
+			model: str - The Gemini model identifier.
+			Returns:
+			--------
+			Optional[ str ] - The grounded response containing place data.
+			
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			self.contents = f"Using Google Search and Maps data, answer: {prompt}"
+			self.model = model
+			self.contents = prompt;
+			self.top_p = top_p;
+			self.temperature = temperature
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.stops = stops
+			self.instructions = instruct
+			self.tool_config = [
+					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
+			self.content_config = GenerateContentConfig( temperature=self.temperature,
+				tools=self.tool_config )
+			self.client = genai.Client( api_key=self.gemini_api_key )
+			response = self.client.models.generate_content( model=self.model,
+				contents=self.contents, config=self.content_config )
+			return response.text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'search_maps( self, prompt, model ) -> Optional[ str ]'
+			error = ErrorDialog( exception )
+			error.show( )
 	
 	def delete( self, bucket: str, name: str ):
 		"""
