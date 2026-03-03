@@ -3144,7 +3144,7 @@ elif mode == 'Text':
 					# ---------- Modalities ------------
 					with tool_c5:
 						modality_options = list( text.modality_options )
-						set_text_modalities = st.multiselect( label='Modalities', options=modality_options,
+						set_text_modalities = st.multiselect( label='Response Modalities', options=modality_options,
 							key='text_modalities', help='Optional. Modality of the response',
 							placeholder='Options' )
 						
@@ -4025,25 +4025,25 @@ elif mode == "Images":
 					
 					# ---------  Max Tools --------
 					with tool_c2:
-						set_image_calls = st.slider( label='Max Tools', min_value=0, max_value=6,
+						set_image_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=6,
 							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
 							step=1, help=cfg.MAX_TOOL_CALLS, key='image_max_tools' )
 						
 						image_max_tools = st.session_state[ 'image_max_tools' ]
 					
-					# ---------  Include/Call Mode --------
+					# ---------  Choice/Call Mode --------
 					with tool_c3:
-						includes = list( image.include_options )
-						set_image_include = st.multiselect( label='Calling Mode',
-							options=includes, key='image_include',
+						choice_options = list( image.choice_options )
+						set_image_choice = st.multiselect( label='Calling Mode',
+							options=choice_options, key='image_tool_choice',
 							help=cfg.INCLUDE, placeholder='Options' )
 						
-						image_include = st.session_state[ 'image_include' ]
+						image_include = st.session_state[ 'image_tool_choice' ]
 					
 					# ---------  Tool Options --------
 					with tool_c4:
 						tool_options = list( image.tool_options )
-						set_image_tools = st.multiselect( label='Tools', options=tool_options,
+						set_image_tools = st.multiselect( label='Available Tools', options=tool_options,
 							key='image_tools', help=cfg.TOOLS, placeholder='Options' )
 						
 						image_tools = st.session_state[ 'image_tools' ]
@@ -4085,8 +4085,9 @@ elif mode == "Images":
 					# ---------  Modalities --------
 					with res_three:
 						modality_options = list( image.modality_options )
-						set_image_modalities = st.multiselect( label='Modalities', options=modality_options,
-							key='image_modalities', help='Optional. Modality of the response',
+						set_image_modalities = st.multiselect( label='Response Modalities',
+							options=modality_options, key='image_modalities',
+							help='Optional. Modality of the response',
 							placeholder='Options' )
 						
 						image_modalities = [ d.strip( ) for d in set_image_modalities
@@ -4105,7 +4106,7 @@ elif mode == "Images":
 					
 					# ---------  Max Tokens --------
 					with res_five:
-						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+						set_image_tokens = st.slider( label='Max Output Tokens', min_value=0, max_value=100000,
 							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 						
 						image_tokens = st.session_state[ 'image_max_tokens' ]
@@ -4150,9 +4151,9 @@ elif mode == "Images":
 						
 						image_aspect_ratio = st.session_state[ 'image_aspect_ratio' ]
 					
-					# ---------  Number --------
+					# ---------  Number/Candidates --------
 					with img_c4:
-						set_image_number = st.slider( label='Candidates:', min_value=0, max_value=100,
+						set_image_number = st.slider( label='Candidates Count', min_value=0, max_value=100,
 							value=int( st.session_state.get( 'image_number', 0 ) ),
 							step=1, help='Optional. A response candidate generated from the model',
 							key='image_number' )
