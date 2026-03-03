@@ -2987,7 +2987,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------- Model ------------
 					with llm_c1:
@@ -3033,7 +3033,7 @@ elif mode == 'Text':
 					with llm_c5:
 						media_options = list( text.media_options)
 						set_media_resolution = st.selectbox( label='Media Resolution',
-							options=resolution_options, key='text_media_resolution',
+							options=media_options, key='text_media_resolution',
 							help=cfg.REASONING, index=None, placeholder='Options' )
 						
 						media_resolution = st.session_state[ 'text_media_resolution' ]
@@ -3049,7 +3049,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
 					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------- Top-P ------------
 					with prm_c1:
@@ -3103,7 +3103,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------- Number/Candidates ------------
 					with tool_c1:
@@ -3164,7 +3164,7 @@ elif mode == 'Text':
 				
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------- Stream ------------
 					with resp_c1:
@@ -3874,7 +3874,7 @@ elif mode == "Images":
 					# ---------  Mode  --------
 					with llm_c1:
 						_modes = [ 'Generation', 'Analysis', 'Editing' ]
-						set_image_mode = st.selectbox( label='Image Mode:', options=_modes,
+						set_image_mode = st.selectbox( label='Image Mode', options=_modes,
 							key='image_mode', help='Available Image API modes', index=None,
 							placeholder='Options' )
 						
@@ -4014,7 +4014,7 @@ elif mode == "Images":
 				
 				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------  Allow Parallel --------
 					with tool_c1:
@@ -4121,7 +4121,7 @@ elif mode == "Images":
 				
 				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
 					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='medium' )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ------------ Image Resolution -------
 					with img_c1:
@@ -4172,7 +4172,7 @@ elif mode == "Images":
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
 						for key in [ 'image_resolution', 'image_mime_type',
-						             'image_number', 'image_aspect_ratio' ]:
+						             'image_media_resolution', 'image_number', 'image_aspect_ratio' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
