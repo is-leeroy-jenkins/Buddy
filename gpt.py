@@ -2189,7 +2189,7 @@ class Files( GPT ):
 			exception.method = 'upload( self, filepath: str, purpose: str=user_data ) -> str'
 			raise  exception
 	
-	def list( self, purpose: str = 'user_data' ):
+	def list( self, purpose: str='user_data' ):
 		try:
 			self.purpose = purpose
 			self.client = OpenAI( api_key=self.api_key )
@@ -2207,8 +2207,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'list( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def retrieve( self, id: str ) -> Any | None:
 		"""
@@ -2236,8 +2235,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'retrieve( self, id: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def summarize( self, prompt: str, filepath: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
@@ -2277,8 +2275,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'summarize( self, prompt: str, path: str, model: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def search( self, prompt: str, store_id: str, model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
@@ -2320,8 +2317,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
 			exception.method = 'search( self, prompt: str, store_id: str, model: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def survey( self, prompt: str, store_ids: List[ str ], model: str='gpt-4.1-nano-2025-04-14' ) -> str | None:
 		"""
@@ -2359,8 +2355,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'survey( self, prompt: str, store_ids: List[ str ], model: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def extract( self, id: str ) -> str | None:
 		'''
@@ -2380,8 +2375,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'extract( self, id: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def delete( self, id: str ) -> None:
 		'''
@@ -2400,8 +2394,7 @@ class Files( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'Files'
 			exception.method = 'delete( self, id: str ) -> FileDeleted '
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def __dir__( self ) -> List[ str ] | None:
 		return [ 'client',

@@ -5116,11 +5116,11 @@ elif mode == 'Audio':
 # EMBEDDINGS MODE
 # ======================================================================================
 elif mode == 'Embeddings':
-	st.subheader( '🔣 Embeddings', help=cfg.EMBEDDINGS_API )
+	st.subheader( '🔢 Embeddings', help=cfg.EMBEDDINGS_API )
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', 0 )
+	embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', )
 	embeddings_chunk_size = st.session_state.get( 'embeddings_chunk_size', 0  )
 	embeddings_overlap_amount = st.session_state.get( 'embeddings_overlap_amount', 0  )
 	embedding_model = st.session_state.get( 'embedding_model', '' )
@@ -5190,7 +5190,7 @@ elif mode == 'Embeddings':
 				# ---------  Reset --------
 				if st.button( label='Reset', key='embedding_reset', width='stretch' ):
 					for key in [ 'embedding_model', 'embeddings_dimensions',
-					             'embeddings_encoding', 'embeddings_input_text',
+					             'embeddings_encoding_format', 'embeddings_input_text',
 					             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
 						if key in st.session_state:
 							del st.session_state[ key ]
@@ -5202,9 +5202,8 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
-				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,
-				                                                       0.20 ],
-					border=True, gap='xxsmall' )
+				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				# ---------  Model --------
 				with emb_c1:
@@ -5255,7 +5254,7 @@ elif mode == 'Embeddings':
 				# ---------  Reset --------
 				if st.button( label='Reset', key='embedding_reset', width='stretch' ):
 					for key in [ 'embedding_model', 'embeddings_dimensions',
-					             'embeddings_encoding', 'embeddings_input_text',
+					             'embeddings_encoding_format', 'embeddings_input_text',
 					             'embeddings_overlap_amount', 'embeddings_chunk_size' ]:
 						if key in st.session_state:
 							del st.session_state[ key ]

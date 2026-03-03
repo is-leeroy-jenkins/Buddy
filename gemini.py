@@ -1104,9 +1104,9 @@ class TTS( Gemini ):
 		'''
 		return [ 'audio/wav', 'audio/mp3', 'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac' ]
 	
-	def create_speech( self, text: str, filepath: str, model: str, format: str=None,
-			speed: float=None, voice: str=None, frequency: float=None, presense: float=None,
-			max_tokens: int=None, instruct: str=None ) -> str | None:
+	def create_speech( self, text: str, filepath: str, model: str='gemini-2.5-flash-preview-tts',
+			format: str=None, speed: float=None, voice: str=None, frequency: float=None,
+			presense: float=None, max_tokens: int=None, instruct: str=None ) -> str | None:
 		"""
 		
 			Purpose:
