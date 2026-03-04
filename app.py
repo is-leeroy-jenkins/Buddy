@@ -6175,9 +6175,9 @@ elif mode == 'Document Q&A':
 						docqna_top_k = st.session_state[ 'docqna_top_k' ]
 					
 					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						for key in [ 'text_top_percent', 'text_frequency_penalty',
-						             'text_presense_penalty', 'text_temperature', 'text_top_k', ]:
+					if st.button( label='Reset', key='docqna_inference_reset', width='stretch' ):
+						for key in [ 'docqna_top_percent', 'docqna_frequency_penalty',
+						             'docqna_presense_penalty', 'docqna_temperature', 'docqna_top_k', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
