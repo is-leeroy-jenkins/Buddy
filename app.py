@@ -2343,6 +2343,58 @@ if 'embeddings_encoding_format' not in st.session_state:
 if 'embeddings_method' not in st.session_state:
 	st.session_state[ 'embeddings_method' ] = ''
 
+# --------FILES-GENERATION PARAMETERS--------------------
+if 'files_max_tokens' not in st.session_state:
+	st.session_state[ 'files_max_tokens' ] = 0
+
+if 'files_temperature' not in st.session_state:
+	st.session_state[ 'files_temperature' ] = 0.0
+
+if 'files_top_percent' not in st.session_state:
+	st.session_state[ 'files_top_percent' ] = 0.0
+
+if 'files_frequency_penalty' not in st.session_state:
+	st.session_state[ 'files_frequency_penalty' ] = 0.0
+
+if 'files_presense_penalty' not in st.session_state:
+	st.session_state[ 'files_presense_penalty' ] = 0.0
+
+if 'files_background' not in st.session_state:
+	st.session_state[ 'files_background' ] = False
+
+if 'files_store' not in st.session_state:
+	st.session_state[ 'files_store' ] = False
+
+if 'files_stream' not in st.session_state:
+	st.session_state[ 'files_stream' ] = False
+
+if 'files_tool_choice' not in st.session_state:
+	st.session_state[ 'files_tool_choice' ] = ''
+
+if 'files_reasoning' not in st.session_state:
+	st.session_state[ 'files_reasoning' ] = ''
+
+if 'files_response_format' not in st.session_state:
+	st.session_state[ 'files_response_format' ] = ''
+
+if 'files_input' not in st.session_state:
+	st.session_state[ 'files_input' ] = ''
+
+if 'files_media_resolution' not in st.session_state:
+	st.session_state[ 'files_media_resolution' ] = ''
+
+if 'files_stops' not in st.session_state:
+	st.session_state[ 'files_stops' ] = [ ]
+
+if 'files_includes' not in st.session_state:
+	st.session_state[ 'files_includes' ] = [ ]
+
+if 'files_tools' not in st.session_state:
+	st.session_state.files_tools: List[ Dict[ str, Any ] ] = [ ]
+
+if 'files_context' not in st.session_state:
+	st.session_state.files_context: List[ Dict[ str, Any ] ] = [ ]
+
 # ------- FILES-SPECIFIC PARAMETERS --------------------------
 if 'files_purpose' not in st.session_state:
 	st.session_state[ 'files_purpose' ] = ''
@@ -2421,7 +2473,6 @@ if 'stores_include' not in st.session_state:
 	st.session_state[ 'stores_include' ] = [ ]
 
 # ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
-
 if 'stores_id' not in st.session_state:
 	st.session_state[ 'stores_id' ] = ''
 
@@ -3333,14 +3384,15 @@ elif mode == 'Text':
 					
 					# ---------- Allow Parallel ------------
 					with tool_c1:
-						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_tools',
+						set_text_parallel = st.toggle( label='Asychronous Calls',
+							key='text_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
 					
 					# ---------- Max Calls ------------
 					with tool_c2:
-						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=5,
+						set_text_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=5,
 							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
 							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
 						
@@ -3357,7 +3409,7 @@ elif mode == 'Text':
 					# ---------- Tools ------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
-						set_text_tools = st.multiselect( label='Tools:', options=tool_options,
+						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
 							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
 						
 						text_tools = [ d.strip( ) for d in set_text_tools
@@ -3409,7 +3461,7 @@ elif mode == 'Text':
 					
 					# ---------- Max Tokens ------------
 					with resp_c5:
-						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+						set_text_tokens = st.slider( label='Max Output Tokens', min_value=0, max_value=100000,
 							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
 							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						
@@ -4169,11 +4221,10 @@ elif mode == "Images":
 						
 						image_size = st.session_state[ 'image_size' ]
 						
-						
 					# -------- Reset Settings ------------------
 					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
-						for key in [ 'image_resolution', 'image_mime_type',
-						             'image_media_resolution', 'image_number', 'image_aspect_ratio' ]:
+						for key in [ 'image_resolution', 'image_mime_type', 'image_size',
+						             'image_number', 'image_aspect_ratio' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -4254,7 +4305,7 @@ elif mode == "Images":
 					# ---------  Reasoning --------
 					with llm_c5:
 						reasonings = list( image.reasoning_options )
-						set_image_reasoning = st.selectbox( label='Reasoning:', placeholder='Options',
+						set_image_reasoning = st.selectbox( label='Reasoning Effort', placeholder='Options',
 							options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
 						
 						image_reasoning = st.session_state[ 'image_reasoning' ]
@@ -4272,7 +4323,7 @@ elif mode == "Images":
 						st.rerun( )
 				
 				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
 					
 					# ---------  Top-P --------
@@ -4333,14 +4384,14 @@ elif mode == "Images":
 					
 					# ---------  Allow Parallel --------
 					with tool_c1:
-						set_image_parallel = st.toggle( label='Allow Parallel', key='image_parallel_tools',
+						set_image_parallel = st.toggle( label='Asynchronous Calls', key='image_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
 						image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
 					
 					# ---------  Max Tools --------
 					with tool_c2:
-						set_image_calls = st.slider( label='Max Tools', min_value=0, max_value=6,
+						set_image_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=6,
 							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
 							step=1, help=cfg.MAX_TOOL_CALLS, key='image_max_tools' )
 						
@@ -4357,7 +4408,7 @@ elif mode == "Images":
 					# ---------  Tool Options --------
 					with tool_c4:
 						tool_options = list( image.tool_options )
-						set_image_tools = st.multiselect( label='Tools:', options=tool_options,
+						set_image_tools = st.multiselect( label='Available Tools', options=tool_options,
 							key='image_tools', help=cfg.TOOLS, placeholder='Options' )
 						
 						image_tools = st.session_state[ 'image_tools' ]
@@ -4465,7 +4516,7 @@ elif mode == "Images":
 					# ------------ Image Output Format
 					with img_c5:
 						outputs = list( image.output_options )
-						set_image_output = st.selectbox( label='Image Format', options=outputs,
+						set_image_output = st.selectbox( label='MIME Format', options=outputs,
 							help=cfg.IMAGE_RESPONSE, key='image_output',
 							placeholder='Options', index=None )
 						
@@ -4917,7 +4968,7 @@ elif mode == 'Audio':
 					
 					# --------- Max Tokens --------
 					with resp_c5:
-						set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
+						set_max_tokens = st.slider( label='Max Output Tokens', min_value=1, max_value=100000,
 							value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
 							help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
 						
@@ -4937,6 +4988,7 @@ elif mode == 'Audio':
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+				
 				with st.expander( 'Model Options', expanded=False, width='stretch' ):
 					aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
 						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
@@ -4972,7 +5024,7 @@ elif mode == 'Audio':
 						if audio_task in ('Transcribe', 'Translate'):
 							obj = transcriber if audio_task == 'Transcribe' else translator
 							if obj and hasattr( obj, 'language_options' ):
-								audio_language = st.selectbox( label='Language', options=obj.language_options,
+								audio_language = st.selectbox( label='Language Options', options=obj.language_options,
 									key='audio_language', placeholder='Options', index=None )
 								
 								audio_language = st.session_state[ 'audio_language' ]
@@ -4983,8 +5035,7 @@ elif mode == 'Audio':
 									key='audio_voice', placeholder='Options', index=None )
 								
 								audio_voice = st.session_state[ 'audio_voice' ]
-					# ---------------- Sample Rate ----------------
-					
+				
 					# ---------- Sample Rate ----------
 					with aud_c4:
 						audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
@@ -5003,7 +5054,7 @@ elif mode == 'Audio':
 							format_options = list( tts.format_options )
 						
 						if format_options:
-							audio_format = st.selectbox( label='Format', options=format_options,
+							audio_format = st.selectbox( label='Response Format', options=format_options,
 								key='audio_format', placeholder='Options', index=None )
 							
 							audio_format = st.session_state[ 'audio_format' ]
@@ -5766,12 +5817,40 @@ elif mode == 'Document Q&A':
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
+	docqna_number = st.session_state.get( 'docqna_number', 0 )
+	docqna_max_calls = st.session_state.get( 'docqna_max_calls', 0 )
+	docqna_max_searches = st.session_state.get( 'docqna_max_searches', 0 )
+	docqna_max_tokens = st.session_state.get( 'docqna_max_tokens', 0 )
+	docqna_top_percent = st.session_state.get( 'docqna_top_percent', 0.0 )
+	docqna_top_k = st.session_state.get( 'docqna_top_k', 0 )
+	docqna_freq = st.session_state.get( 'docqna_frequency_penalty', 0.0 )
+	docqna_presense = st.session_state.get( 'docqna_presense_penalty', 0.0 )
+	docqna_temperature = st.session_state.get( 'docqna_temperature', 0.0 )
+	docqna_stream = st.session_state.get( 'docqna_stream', False )
+	docqna_parallel_tools = st.session_state.get( 'docqna_parallel_tools', False )
+	docqna_store = st.session_state.get( 'docqna_store', False )
+	docqna_background = st.session_state.get( 'docqna_background', False )
+	docqna_model = st.session_state.get( 'docqna_model', '' )
+	docqna_reasoning = st.session_state.get( 'docqna_reasoning', '' )
+	docqna_resolution = st.session_state.get( 'docqna_resolution', '' )
+	docqna_media_resolution = st.session_state.get( 'docqna_media_resolution', '' )
+	docqna_response_format = st.session_state.get( 'docqna_response_format', '' )
+	docqna_tool_choice = st.session_state.get( 'docqna_tool_choice', '' )
+	docqna_content = st.session_state.get( 'docqna_content', '' )
+	docqna_input = st.session_state.get( 'docqna_input', '' )
+	docqna_tools = st.session_state.get( 'docqna_tools', [ ] )
+	docqna_modalities = st.session_state.get( 'docqna_modalities', [ ] )
+	docqna_context = st.session_state.get( 'docqna_context', [ ] )
+	docqna_include = st.session_state.get( 'docqna_include', [ ] )
+	docqna_domains = st.session_state.get( 'docqna_domains', [ ] )
+	docqna_stops = st.session_state.get( 'docqna_stops', [ ] )
 	files = st.session_state.get( 'docqna_files' )
 	uploaded = st.session_state.get( 'docqna_uploaded' )
 	docqna_messages = st.session_state.get( 'docqna_messages' )
 	doc_active_docs = st.session_state.get( 'docqna_active_docs' )
 	doc_source = st.session_state.get( 'docqna_source' )
 	doc_multi_mode = st.session_state.get( 'docqna_multi_mode' )
+	docqna = provider_module.Files( )
 	
 	# ------------------------------------------------------------------
 	#  DOCQA SETTINGS
@@ -5787,50 +5866,649 @@ elif mode == 'Document Q&A':
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — DocQA Inference Parameters
+		# Expander — Grok DOCQNA LLM Configuration
 		# ------------------------------------------------------------------
-		with st.expander( label='Inference Settings', icon='🧠', expanded=False, width='stretch' ):
-			stores_c1, stores_c2, stores_c3, stores_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-				border=True, gap='medium' )
-			
-			with stores_c1:
-				set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-					value=float( st.session_state.get( 'docqna_top_percent', 0.0 ) ), step=0.01,
-					help=cfg.TOP_P, key='docqna_top_percent' )
+		if provider_name == 'Grok':
+			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 				
-				text_top_percent = st.session_state[ 'docqna_top_percent' ]
-			
-			with stores_c2:
-				set_docqna_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
-					value=float( st.session_state.get( 'docqna_frequency_penalty', 0.0 ) ),
-					step=0.01, help=cfg.FREQUENCY_PENALTY )
+				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
+					
+					# ------------- Model Options ----------
+					with llm_c1:
+						model_options = list( text.model_options )
+						set_text_model = st.selectbox( label='Select LLM', options=model_options,
+							key='text_model', placeholder='Options', index=None,
+							help='REQUIRED. Text Generation model used by the AI', )
+						
+						text_model = st.session_state[ 'text_model' ]
+					
+					# ------------- Include Options ----------
+					with llm_c2:
+						include_options = list( text.include_options )
+						set_text_include = st.multiselect( label='Include:', options=include_options,
+							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						text_include = [ d.strip( ) for d in set_text_include
+						                 if d.strip( ) ]
+						
+						text_include = st.session_state[ 'text_include' ]
+					
+					# ------------- Reasoning Options ----------
+					with llm_c3:
+						reasoning_options = list( text.reasoning_options )
+						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
+							options=reasoning_options, key='text_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						text_reasoning = st.session_state[ 'text_reasoning' ]
+					
+					# ------------- Choice Options ----------
+					with llm_c4:
+						choice_options = list( text.choice_options )
+						set_text_choice = st.multiselect( label='Tool Choice:', options=choice_options,
+							key='text_tool_choice', help=cfg.INCLUDE, placeholder='Options' )
+						
+						text_tool_choice = st.session_state[ 'text_tool_choice' ]
+					
+					# ------------- Reset Settings ----------
+					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
+						for key in [ 'text_model', 'text_include',
+						             'text_reasoning', 'text_tool_choice' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
 				
-				docqna_fequency = st.session_state[ 'docqna_frequency_penalty' ]
-			
-			with stores_c3:
-				set_docqna_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
-					value=float( st.session_state.get( 'docqna_presense_penalty', 0.0 ) ),
-					step=0.01, help=cfg.PRESENCE_PENALTY )
+				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
+					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
+					
+					# ------------- Top P ----------
+					with prm_c1:
+						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
+							step=0.01, help=cfg.TOP_P, key='text_top_percent' )
+						
+						text_top_percent = st.session_state[ 'text_top_percent' ]
+					
+					# ------------- Temperature  ----------
+					with prm_c2:
+						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
+							help=cfg.TEMPERATURE, key='text_temperature' )
+						
+						text_temperature = st.session_state[ 'text_temperature' ]
+					
+					# ------------- Number ----------
+					with prm_c3:
+						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='text_number' )
+						
+						text_number = st.session_state[ 'text_number' ]
+					
+					# ------------- Max tokens  ------------------
+					with prm_c4:
+						set_text_tokens = st.slider( label='Max Tokens',
+							min_value=0, max_value=100000, step=500,
+							value=int( st.session_state.get( 'text_max_tokens', 0 ) ),
+							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						
+						text_tokens = st.session_state[ 'text_max_tokens' ]
+					
+					# ------------- Reset Setting ----------
+					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
+						for key in [ 'text_top_percent', 'text_max_tokens',
+						             'text_temperature', 'text_number', ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
 				
-				docqna_presense = st.session_state[ 'docqna_presense_penalty' ]
-			
-			with stores_c4:
-				set_docqna_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
-					value=float( st.session_state.get( 'docqna_temperature', 0.7 ) ), step=0.01,
-					help=cfg.TEMPERATURE )
+				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
+					
+					# ------------- Asynchronous  ------------------
+					with tool_c1:
+						set_text_parallel = st.toggle( label='Asynchronous Tool Calls', key='text_parallel_tools',
+							help=cfg.PARALLEL_TOOL_CALLS )
+						
+						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
+					
+					# ------------- Max Tool Calls ------------------
+					with tool_c2:
+						set_text_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=4,
+							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+						
+						text_max_calls = st.session_state[ 'text_max_calls' ]
+					
+					# -------------  Max Web Searches ------------------
+					with tool_c3:
+						set_max_results = st.slider( label='Max Websearch Results', key='text_max_searches',
+							value=int( st.session_state.get( 'text_max_searches', 0 ) ),
+							min_value=0, max_value=30, step=1,
+							help='Optional. Upper limit on the number web search results' )
+						
+						text_max_searches = st.session_state[ 'text_max_searches' ]
+					
+					# ------------- Tools ------------------
+					with tool_c4:
+						tool_options = list( text.tool_options )
+						set_text_tools = st.multiselect( label='Tools:', options=tool_options,
+							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						text_tools = [ d.strip( ) for d in set_text_tools
+						               if d.strip( ) ]
+						
+						text_tools = st.session_state[ 'text_tools' ]
+					
+					# ------------- Reset Settings -------------
+					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
+						for key in [ 'text_parallel_tools', 'text_max_searches',
+						             'text_tools', 'text_max_calls' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
 				
-				docqna_temperature = st.session_state[ 'docqna_temperature' ]
-			
-			if st.button( 'Reset', key='docqa_inference_reset', width='stretch' ):
-				# ----------------------------------------------------------
-				# Remove DocQA Inference session keys
-				# ----------------------------------------------------------
-				for key in [ 'docqa_temperature', 'docqa_top_percent', 'docqa_max_tokens',
-						'docqa_presense_penalty', 'docqa_frequency_penalty', ]:
-					if key in st.session_state:
-						del st.session_state[ key ]
+				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
+					
+					# ------------- Stream  ------------------
+					with resp_c1:
+						set_text_stream = st.toggle( label='Stream', key='text_stream',
+							help=cfg.STREAM )
+						
+						text_stream = st.session_state[ 'text_stream' ]
+					
+					# ------------- Store  ------------------
+					with resp_c2:
+						set_text_store = st.toggle( label='Store', key='text_store',
+							help=cfg.STORE )
+						
+						text_store = st.session_state[ 'text_store' ]
+					
+					# ------------- Background  ------------------
+					with resp_c3:
+						set_text_background = st.toggle( label='Background', key='text_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						text_background = st.session_state[ 'text_background' ]
+					
+					# ------------- Domains  ------------------
+					with resp_c4:
+						set_text_domains = st.text_input( label='Allowed Websites', key='text_domains',
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Web Domains' )
+						
+						text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
+						                 if d.strip( ) ]
+					
+					# ------------- Reset Settings  ------------------
+					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
+						for key in [ 'text_stream', 'text_store',
+						             'text_background', 'text_domains' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						# If using separated UI key for stops
+						if 'text_stops_input' in st.session_state:
+							del st.session_state[ 'text_stops_input' ]
+						
+						st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# Expander — Gemini DOCQNA Text LLM Configuration
+		# ------------------------------------------------------------------
+		elif provider_name == 'Gemini':
+			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
 				
-				st.rerun( )
+				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Model ------------
+					with llm_c1:
+						model_options = list( docqna.model_options )
+						set_text_model = st.selectbox( label='Select Model', options=model_options,
+							key='docqna_model', placeholder='Options', index=None,
+							help='REQUIRED. Text Generation model used by the AI', )
+						
+						text_model = st.session_state[ 'docqna_model' ]
+					
+					# ---------- Include ------------
+					with llm_c2:
+						include_options = list( text.include_options )
+						set_docqna_include = st.multiselect( label='Include', options=include_options,
+							key='docqna_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						docqna_include = [ d.strip( ) for d in set_docqna_include
+						                 if d.strip( ) ]
+						
+						docqna_include = st.session_state[ 'docqna_include' ]
+					
+					# ---------- Allowed Domains ------------
+					with llm_c3:
+						set_docqna_domains = st.docqna_input( label='Allowed Domains', key='docqna_domains_input',
+							value=','.join( st.session_state.get( 'docqna_domains', [ ] ) ),
+							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						
+						docqna_domains = [ d.strip( ) for d in set_docqna_domains.split( ',' )
+						                 if d.strip( ) ]
+						
+						st.session_state[ 'docqna_domains' ] = docqna_domains
+					
+					# ---------- Reasoning/Thinking Level ------------
+					with llm_c4:
+						reasoning_options = list( docqna.reasoning_options )
+						set_docqna_reasoning = st.selectbox( label='Thinking Level:',
+							options=reasoning_options, key='docqna_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						docqna_reasoning = st.session_state[ 'docqna_reasoning' ]
+					
+					# ---------- Media Resolution ------------
+					with llm_c5:
+						media_options = list( docqna.media_options )
+						set_media_resolution = st.selectbox( label='Media Resolution',
+							options=media_options, key='docqna_media_resolution',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						media_resolution = st.session_state[ 'docqna_media_resolution' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='docqna_model_reset', width='stretch' ):
+						for key in [ 'docqna_model', 'docqna_include', 'docqna_text_domains',
+						             'docqna_reasoning', 'docqna_media_resolution' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Top-P ------------
+					with prm_c1:
+						set_docqna_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'docqna_top_percent' ) ),
+							step=0.01, help=cfg.TOP_P, key='docqna_top_percent' )
+						
+						docqna_top_percent = st.session_state[ 'docqna_top_percent' ]
+					
+					# ---------- Frequency ------------
+					with prm_c2:
+						set_docqna_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'docqna_frequency_penalty', 0.0 ) ),
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='docqna_frequency_penalty' )
+						
+						docqna_fequency = st.session_state[ 'docqna_frequency_penalty' ]
+					
+					# ---------- Presense ------------
+					with prm_c3:
+						set_docqna_presense = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'docqna_presense_penalty', 0.0 ) ),
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='docqna_presense_penalty' )
+						
+						docqna_presense = st.session_state[ 'docqna_presense_penalty' ]
+					
+					# ---------- Temperature ------------
+					with prm_c4:
+						set_docqna_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'docqna_temperature', 0.0 ) ), step=0.01,
+							help=cfg.TEMPERATURE, key='docqna_temperature' )
+						
+						docqna_temperature = st.session_state[ 'docqna_temperature' ]
+					
+					# ---------- Top-K ------------
+					with prm_c5:
+						set_docqna_topk = st.slider( label='Top K', min_value=0, max_value=20,
+							value=int( st.session_state.get( 'docqna_top_k', 0 ) ), step=1,
+							help=cfg.TOP_K,
+							key='docqna_top_k' )
+						
+						docqna_top_k = st.session_state[ 'docqna_top_k' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
+						for key in [ 'text_top_percent', 'text_frequency_penalty',
+						             'text_presense_penalty', 'text_temperature', 'text_top_k', ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Number/Candidates ------------
+					with tool_c1:
+						set_text_number = st.slider( label='Candidates', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='text_number' )
+						
+						text_number = st.session_state[ 'text_number' ]
+					
+					# ---------- Max Calls ------------
+					with tool_c2:
+						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+						
+						text_max_calls = st.session_state[ 'text_max_calls' ]
+					
+					# ---------- Choice/Calling Mode ------------
+					with tool_c3:
+						choice_options = list( text.choice_options )
+						set_text_choice = st.selectbox( label='Calling Mode', options=choice_options,
+							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						text_tool_choice = st.session_state[ 'text_tool_choice' ]
+					
+					# ---------- Tools ------------
+					with tool_c4:
+						tool_options = list( text.tool_options )
+						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
+							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						text_tools = [ d.strip( ) for d in set_text_tools
+						               if d.strip( ) ]
+						
+						text_tools = st.session_state[ 'text_tools' ]
+					
+					# ---------- Modalities ------------
+					with tool_c5:
+						modality_options = list( text.modality_options )
+						set_text_modalities = st.multiselect( label='Response Modalities', options=modality_options,
+							key='text_modalities', help='Optional. Modality of the response',
+							placeholder='Options' )
+						
+						text_modalities = [ d.strip( ) for d in set_text_modalities
+						                    if d.strip( ) ]
+						
+						text_modalities = st.session_state[ 'text_modalities' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
+						for key in [ 'text_parallel_tools', 'text_tool_choice', 'text_number',
+						             'text_tools', 'text_max_calls', 'text_modalities' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Stream ------------
+					with resp_c1:
+						set_text_stream = st.toggle( label='Stream', key='text_stream',
+							help=cfg.STREAM )
+						
+						text_stream = st.session_state[ 'text_stream' ]
+					
+					# ---------- Store ------------
+					with resp_c2:
+						set_text_store = st.toggle( label='Store', key='text_store', help=cfg.STORE )
+						
+						text_store = st.session_state[ 'text_store' ]
+					
+					# ---------- Background ------------
+					with resp_c3:
+						set_text_background = st.toggle( label='Background', key='text_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						text_background = st.session_state[ 'text_background' ]
+					
+					# ---------- Stops ------------
+					with resp_c4:
+						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+						
+						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
+						               if d.strip( ) ]
+					
+					# ---------- Max Tokens ------------
+					with resp_c5:
+						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						
+						text_tokens = st.session_state[ 'text_max_tokens' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
+						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
+						             'text_max_tokens' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						# If using separated UI key for stops
+						if 'text_stops_input' in st.session_state:
+							del st.session_state[ 'text_stops_input' ]
+						
+						st.rerun( )
+		
+		# ------------------------------------------------------------------
+		# Expander — GPT DOCQNA Text LLM Configuration
+		# ------------------------------------------------------------------
+		elif provider_name == 'GPT':
+			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+				
+				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
+					
+					# ---------- Model ------------
+					with llm_c1:
+						model_options = list( text.model_options )
+						set_text_model = st.selectbox( label='Select Model', options=model_options,
+							key='text_model', placeholder='Options', index=None,
+							help='REQUIRED. Text Generation model used by the AI', )
+						
+						text_model = st.session_state[ 'text_model' ]
+					
+					# ---------- Include ------------
+					with llm_c2:
+						include_options = list( text.include_options )
+						set_text_include = st.multiselect( label='Include:', options=include_options,
+							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						text_include = [ d.strip( ) for d in set_text_include
+						                 if d.strip( ) ]
+						
+						text_include = st.session_state[ 'text_include' ]
+					
+					# ---------- Allowed Domains ------------
+					with llm_c3:
+						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
+							value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
+							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						
+						text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
+						                 if d.strip( ) ]
+						
+						st.session_state[ 'text_domains' ] = text_domains
+					
+					# ---------- Reasoning ------------
+					with llm_c4:
+						reasoning_options = list( text.reasoning_options )
+						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
+							options=reasoning_options, key='text_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						text_reasoning = st.session_state[ 'text_reasoning' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
+						for key in [ 'text_model', 'text_include', 'text_domains',
+						             'text_reasoning' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Top-P ------------
+					with prm_c1:
+						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
+							step=0.01, help=cfg.TOP_P, key='text_top_percent' )
+						
+						text_top_percent = st.session_state[ 'text_top_percent' ]
+					
+					# ---------- Frequency ------------
+					with prm_c2:
+						set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'text_frequency_penalty', 0.0 ) ),
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='text_frequency_penalty' )
+						
+						text_fequency = st.session_state[ 'text_frequency_penalty' ]
+					
+					# ---------- Presense ------------
+					with prm_c3:
+						set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presense_penalty' )
+						
+						text_presense = st.session_state[ 'text_presense_penalty' ]
+					
+					# ---------- Temperature ------------
+					with prm_c4:
+						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
+							help=cfg.TEMPERATURE, key='text_temperature' )
+						
+						text_temperature = st.session_state[ 'text_temperature' ]
+					
+					# ---------- Number ------------
+					with prm_c5:
+						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='text_number' )
+						
+						text_number = st.session_state[ 'text_number' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
+						for key in [ 'text_top_percent', 'text_frequency_penalty',
+						             'text_presense_penalty', 'text_temperature', 'text_number', ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
+					
+					# ---------- Allow Parallel ------------
+					with tool_c1:
+						set_text_parallel = st.toggle( label='Asychronous Calls',
+							key='text_parallel_tools',
+							help=cfg.PARALLEL_TOOL_CALLS )
+						
+						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
+					
+					# ---------- Max Calls ------------
+					with tool_c2:
+						set_text_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=5,
+							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+						
+						text_max_calls = st.session_state[ 'text_max_calls' ]
+					
+					# ---------- Choice ------------
+					with tool_c3:
+						choice_options = list( text.choice_options )
+						set_text_choice = st.selectbox( label='Tool Choice:', options=choice_options,
+							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						text_tool_choice = st.session_state[ 'text_tool_choice' ]
+					
+					# ---------- Tools ------------
+					with tool_c4:
+						tool_options = list( text.tool_options )
+						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
+							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						text_tools = [ d.strip( ) for d in set_text_tools
+						               if d.strip( ) ]
+						
+						text_tools = st.session_state[ 'text_tools' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
+						for key in [ 'text_parallel_tools', 'text_tool_choice',
+						             'text_tools', 'text_max_calls' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Stream ------------
+					with resp_c1:
+						set_text_stream = st.toggle( label='Stream', key='text_stream',
+							help=cfg.STREAM )
+						
+						text_stream = st.session_state[ 'text_stream' ]
+					
+					# ---------- Store ------------
+					with resp_c2:
+						set_text_store = st.toggle( label='Store', key='text_store',
+							help=cfg.STORE )
+						
+						text_store = st.session_state[ 'text_store' ]
+					
+					# ---------- Background ------------
+					with resp_c3:
+						set_text_background = st.toggle( label='Background', key='text_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						text_background = st.session_state[ 'text_background' ]
+					
+					# ---------- Stops ------------
+					with resp_c4:
+						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+						
+						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
+						               if d.strip( ) ]
+					
+					# ---------- Max Tokens ------------
+					with resp_c5:
+						set_text_tokens = st.slider( label='Max Output Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+						
+						text_tokens = st.session_state[ 'text_max_tokens' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
+						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
+						             'text_max_tokens' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						# If using separated UI key for stops
+						if 'text_stops_input' in st.session_state:
+							del st.session_state[ 'text_stops_input' ]
+						
+						st.rerun( )
 		
 		# ------------------------------------------------------------------
 		# Expander — DocQA System Instructions
@@ -5907,11 +6585,8 @@ elif mode == 'Files':
 	files_id = st.session_state.get( 'files_id' )
 	files_url = st.session_state.get( 'files_url' )
 	files_table = st.session_state.get( 'files_table' )
-	try:
-		chat  # type: ignore
-	except NameError:
-		provider_module = get_provider_module( )
-		files = get_provider_module( ).Files( )
+	provider_module = get_provider_module( )
+	files = get_provider_module( ).Files( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
