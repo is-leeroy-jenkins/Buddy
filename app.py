@@ -6250,10 +6250,10 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Stream ------------
 					with resp_c1:
-						set_text_stream = st.toggle( label='Stream', key='text_stream',
+						set_docqna_stream = st.toggle( label='Stream', key='docqna_stream',
 							help=cfg.STREAM )
 						
-						text_stream = st.session_state[ 'text_stream' ]
+						docqna_stream = st.session_state[ 'docqna_stream' ]
 					
 					# ---------- Store ------------
 					with resp_c2:
