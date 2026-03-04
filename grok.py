@@ -1497,6 +1497,7 @@ class Files( Grok ):
 		super( ).__init__( )
 		self.client = None
 		self.model = None
+		self.instructions = None
 		self.content = None
 		self.prompt = None
 		self.response = None
@@ -1557,6 +1558,51 @@ class Files( Grok ):
 		"""
 		return [ 'code_execution()' ]
 	
+	@property
+	def include_options( self ) -> List[ str ]:
+		return [ 'web_search_call_output',
+		         'x_search_call_output',
+		         'code_execution_call_output',
+		         'collections_search_call_output',
+		         'attachment_search_call_output',
+		         'mcp_call_output',
+		         'inline_citations',
+		         'verbose_streaming' ]
+	
+	@property
+	def reasoning_options( self ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Return supported reasoning effort levels.
+
+			Notes:
+			------
+			Only valid for model = 'grok-3-mini'.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		
+		"""
+		return [ 'low', 'high' ]
+	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'auto', 'required', 'none' ]
+	
 	def upload( self, filepath: str, filename: str ) -> None:
 		"""
 		
@@ -1591,7 +1637,7 @@ class Files( Grok ):
 			ex.method = 'upload( self, filepath: str, filename: str ) -> None'
 			raise ex
 	
-	def list( self ) -> List[ Any ]:
+	def list( self ) -> ListFilesResponse | None:
 		"""
 		
 			Purpose:
@@ -1609,9 +1655,8 @@ class Files( Grok ):
 		"""
 		try:
 			self.client = Client( api_key=self.api_key )
-			self.client.headers.update( { 'Authorization': f'Bearer {cfg.GROK_API_KEY}' } )
 			files_response = self.client.files.list( )
-			return list( files_response )
+			return files_response
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'

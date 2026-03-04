@@ -2156,6 +2156,66 @@ class Files( GPT ):
 		         'user_data',
 		         'evals' ]
 	
+	@property
+	def include_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of the includeable options
+
+		'''
+		return [ 'file_search_call.results',
+		         'web_search_call.results',
+		         'web_search_call.action.sources',
+		         'message.input_image.image_url',
+		         'computer_call_output.output.image_url',
+		         'code_interpreter_call.outputs',
+		         'reasoning.encrypted_content',
+		         'message.output_text.logprobs' ]
+	
+	@property
+	def reasoning_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of reasoning effort options
+
+		'''
+		return [ 'none',
+		         'low',
+		         'medium',
+		         'high',
+		         'minimal',
+		         'xhigh' ]
+	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'auto', 'required', 'none' ]
+	
+	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'web_search',
+		         'image_generation',
+		         'file_search',
+		         'code_interpreter',
+		         'computer_use_preview' ]
+	
 	def upload( self, filepath: str, purpose: str='user_data' ) -> str | None:
 		"""
 	

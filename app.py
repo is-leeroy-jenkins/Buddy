@@ -2483,6 +2483,9 @@ if 'docqna_max_tools' not in st.session_state:
 if 'docqna_max_tokens' not in st.session_state:
 	st.session_state[ 'docqna_max_tokens' ] = 0
 
+if 'docqna_max_calls' not in st.session_state:
+	st.session_state[ 'docqna_max_calls' ] = 0
+
 if 'docqna_temperature' not in st.session_state:
 	st.session_state[ 'docqna_temperature' ] = 0.0
 
@@ -3821,8 +3824,8 @@ elif mode == "Images":
 						st.rerun( )
 	
 				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
-					res_one, res_two, res_three, res_four, res_five = st.columns(
-						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
+					res_one, res_two, res_three, res_four  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+						border=True, gap='medium' )
 					
 					# ---------  Stream --------
 					with res_one:
@@ -5852,6 +5855,9 @@ elif mode == 'Document Q&A':
 	docqna_multi_mode = st.session_state.get( 'docqna_multi_mode' )
 	docqna = provider_module.Files( )
 	
+	for key in [ 'docqna_domains', 'docqna_stops', 'docqna_includes', 'docqna_input', ]:
+		if key in st.session_state and isinstance( st.session_state[ key ], list ):
+			del st.session_state[ key ]
 	# ------------------------------------------------------------------
 	#  DOCQNA SETTINGS
 	# ------------------------------------------------------------------
@@ -5877,7 +5883,7 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Model Options ----------
 					with llm_c1:
-						model_options = list( text.model_options )
+						model_options = list( docqna.model_options )
 						set_docqna_model = st.selectbox( label='Select LLM', options=model_options,
 							key='docqna_model', placeholder='Options', index=None,
 							help='REQUIRED. Text Generation model used by the AI', )
@@ -5886,7 +5892,7 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Include Options ----------
 					with llm_c2:
-						include_options = list( text.include_options )
+						include_options = list( docqna.include_options )
 						set_docqna_include = st.multiselect( label='Include:', options=include_options,
 							key='docqna_include', help=cfg.INCLUDE, placeholder='Options' )
 						
@@ -5897,7 +5903,7 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Reasoning Options ----------
 					with llm_c3:
-						reasoning_options = list( text.reasoning_options )
+						reasoning_options = list( docqna.reasoning_options )
 						set_docqna_reasoning = st.selectbox( label='Reasoning Effort:',
 							options=reasoning_options, key='docqna_reasoning',
 							help=cfg.REASONING, index=None, placeholder='Options' )
@@ -5906,7 +5912,7 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Choice Options ----------
 					with llm_c4:
-						choice_options = list( text.choice_options )
+						choice_options = list( docqna.choice_options )
 						set_docqna_choice = st.multiselect( label='Tool Choice:', options=choice_options,
 							key='docqna_tool_choice', help=cfg.INCLUDE, placeholder='Options' )
 						
@@ -5998,7 +6004,7 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Tools ------------------
 					with tool_c4:
-						tool_options = list( text.tool_options )
+						tool_options = list( docqna.tool_options )
 						set_docqna_tools = st.multiselect( label='Tools:', options=tool_options,
 							key='docqna_tools', help=cfg.TOOLS, placeholder='Options' )
 						
@@ -6082,7 +6088,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Include ------------
 					with llm_c2:
-						include_options = list( text.include_options )
+						include_options = list( docqna.include_options )
 						set_docqna_include = st.multiselect( label='Include', options=include_options,
 							key='docqna_include', help=cfg.INCLUDE, placeholder='Options' )
 						
@@ -6093,7 +6099,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Allowed Domains ------------
 					with llm_c3:
-						set_docqna_domains = st.docqna_input( label='Allowed Domains', key='docqna_domains_input',
+						set_docqna_domains = st.text_input( label='Allowed Domains', key='docqna_domains_input',
 							value=','.join( st.session_state.get( 'docqna_domains', [ ] ) ),
 							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
 						
@@ -6136,7 +6142,7 @@ elif mode == 'Document Q&A':
 					# ---------- Top-P ------------
 					with prm_c1:
 						set_docqna_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'docqna_top_percent' ) ),
+							value=float( st.session_state.get( 'docqna_top_percent', 0.0 ) ),
 							step=0.01, help=cfg.TOP_P, key='docqna_top_percent' )
 						
 						docqna_top_percent = st.session_state[ 'docqna_top_percent' ]
@@ -6198,7 +6204,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Max Calls ------------
 					with tool_c2:
-						set_docqna_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+						set_docqna_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=10,
 							value=int( st.session_state.get( 'docqna_max_calls', 0 ) ), step=1,
 							help=cfg.MAX_TOOL_CALLS, key='docqna_max_calls' )
 						
@@ -6206,7 +6212,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Choice/Calling Mode ------------
 					with tool_c3:
-						choice_options = list( text.choice_options )
+						choice_options = list( docqna.choice_options )
 						set_docqna_choice = st.selectbox( label='Calling Mode', options=choice_options,
 							key='docqna_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
 						
@@ -6214,7 +6220,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Tools ------------
 					with tool_c4:
-						tool_options = list( text.tool_options )
+						tool_options = list( docqna.tool_options )
 						set_docqna_tools = st.multiselect( label='Available Tools', options=tool_options,
 							key='docqna_tools', help=cfg.TOOLS, placeholder='Options' )
 						
@@ -6225,7 +6231,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Modalities ------------
 					with tool_c5:
-						modality_options = list( text.modality_options )
+						modality_options = list( docqna.modality_options )
 						set_docqna_modalities = st.multiselect( label='Response Modalities', options=modality_options,
 							key='docqna_modalities', help='Optional. Modality of the response',
 							placeholder='Options' )
@@ -6308,7 +6314,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Model ------------
 					with llm_c1:
-						model_options = list( text.model_options )
+						model_options = list( docqna.model_options )
 						set_docqna_model = st.selectbox( label='Select Model', options=model_options,
 							key='docqna_model', placeholder='Options', index=None,
 							help='REQUIRED. Text Generation model used by the AI', )
@@ -6317,7 +6323,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Include ------------
 					with llm_c2:
-						include_options = list( text.include_options )
+						include_options = list( docqna.include_options )
 						set_docqna_include = st.multiselect( label='Include:', options=include_options,
 							key='docqna_include', help=cfg.INCLUDE, placeholder='Options' )
 						
@@ -6339,7 +6345,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Reasoning ------------
 					with llm_c4:
-						reasoning_options = list( text.reasoning_options )
+						reasoning_options = list( docqna.reasoning_options )
 						set_docqna_reasoning = st.selectbox( label='Reasoning Effort:',
 							options=reasoning_options, key='docqna_reasoning',
 							help=cfg.REASONING, index=None, placeholder='Options' )
@@ -6431,7 +6437,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Choice ------------
 					with tool_c3:
-						choice_options = list( text.choice_options )
+						choice_options = list( docqna.choice_options )
 						set_docqna_choice = st.selectbox( label='Tool Choice:', options=choice_options,
 							key='docqna_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
 						
@@ -6439,7 +6445,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Tools ------------
 					with tool_c4:
-						tool_options = list( text.tool_options )
+						tool_options = list( docqna.tool_options )
 						set_docqna_tools = st.multiselect( label='Available Tools', options=tool_options,
 							key='docqna_tools', help=cfg.TOOLS, placeholder='Options' )
 						
@@ -6580,6 +6586,7 @@ elif mode == 'Document Q&A':
 elif mode == 'Files':
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
+	provider_module = get_provider_module( )
 	files = provider_module.Files( )
 	provider_module = get_provider_module( )
 	files_purpose = st.session_state.get( 'files_purpose' )
@@ -6588,6 +6595,9 @@ elif mode == 'Files':
 	files_url = st.session_state.get( 'files_url' )
 	files_table = st.session_state.get( 'files_table' )
 	
+	for key in [ 'files_domains', 'files_stops', 'files_includes', 'files_input', ]:
+		if key in st.session_state and isinstance( st.session_state[ key ], list ):
+			del st.session_state[ key ]
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------

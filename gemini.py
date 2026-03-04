@@ -1649,6 +1649,86 @@ class Files( Gemini ):
 		         'media_resolution_medium',
 		         'media_resolution_low' ]
 	
+	@property
+	def include_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of the includeable options
+
+		'''
+		return [ 'file_search_call.results',
+		         'message.input_image.image_url',
+		         'message.output_text.logprobs',
+		         'reasoning.encrypted_content' ]
+	
+	@property
+	def reasoning_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of thinking effort options
+
+		'''
+		return [ 'THINKING_LEVEL_UNSPECIFIED', 'MINIMAL',
+		         'LOW', 'MEDIUM', 'HIGH' ]
+	
+	@property
+	def choice_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'AUTO',
+		         'ANY',
+		         'NONE',
+		         'VALIDATED' ]
+	
+	@property
+	def tool_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available tools options
+
+		'''
+		return [ 'google_search',
+		         'google_maps',
+		         'file_search',
+		         'url_context',
+		         'code_execution',
+		         'computer_use' ]
+	
+	@property
+	def modality_options( self ) -> List[ str ] | None:
+		'''
+
+			Returns:
+			--------
+			A List[ str ] of available modality options
+
+		'''
+		return [ 'MODALITY_UNSPECIFIED', 'TEXT', 'IMAGE', 'AUDIO' ]
+	
+	@property
+	def media_options( self ):
+		'''
+		
+		Purpose:
+		--------
+		Returns a List[ str ] of media resolution options.
+		
+		'''
+		return [ 'media_resolution_high',
+		         'media_resolution_medium',
+		         'media_resolution_low' ]
+	
 	def upload( self, filepath: str, name: str=None ) -> File | None:
 		"""
 		
