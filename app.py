@@ -5528,7 +5528,7 @@ elif mode == 'Embeddings':
 					key='embedding_vectors' )
 					
 # ======================================================================================
-# VECTOR MODE
+# VECTORSTORES MODE
 # ======================================================================================
 elif mode == 'Vector Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
@@ -5844,16 +5844,16 @@ elif mode == 'Document Q&A':
 	docqna_include = st.session_state.get( 'docqna_include', [ ] )
 	docqna_domains = st.session_state.get( 'docqna_domains', [ ] )
 	docqna_stops = st.session_state.get( 'docqna_stops', [ ] )
-	files = st.session_state.get( 'docqna_files' )
-	uploaded = st.session_state.get( 'docqna_uploaded' )
+	docqna_files = st.session_state.get( 'docqna_files' )
+	docqna_uploaded = st.session_state.get( 'docqna_uploaded' )
 	docqna_messages = st.session_state.get( 'docqna_messages' )
-	doc_active_docs = st.session_state.get( 'docqna_active_docs' )
-	doc_source = st.session_state.get( 'docqna_source' )
-	doc_multi_mode = st.session_state.get( 'docqna_multi_mode' )
+	docqna_active_docs = st.session_state.get( 'docqna_active_docs' )
+	docqna_source = st.session_state.get( 'docqna_source' )
+	docqna_multi_mode = st.session_state.get( 'docqna_multi_mode' )
 	docqna = provider_module.Files( )
 	
 	# ------------------------------------------------------------------
-	#  DOCQA SETTINGS
+	#  DOCQNA SETTINGS
 	# ------------------------------------------------------------------
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'docqna_system_instructions' ] = ''
@@ -5866,7 +5866,7 @@ elif mode == 'Document Q&A':
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		# ------------------------------------------------------------------
-		# Expander — Grok DOCQNA LLM Configuration
+		# EXPANDER — GROK DOCQNA LLM CONFIGURATION
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -5878,44 +5878,44 @@ elif mode == 'Document Q&A':
 					# ------------- Model Options ----------
 					with llm_c1:
 						model_options = list( text.model_options )
-						set_text_model = st.selectbox( label='Select LLM', options=model_options,
-							key='text_model', placeholder='Options', index=None,
+						set_docqna_model = st.selectbox( label='Select LLM', options=model_options,
+							key='docqna_model', placeholder='Options', index=None,
 							help='REQUIRED. Text Generation model used by the AI', )
 						
-						text_model = st.session_state[ 'text_model' ]
+						docqna_model = st.session_state[ 'docqna_model' ]
 					
 					# ------------- Include Options ----------
 					with llm_c2:
 						include_options = list( text.include_options )
-						set_text_include = st.multiselect( label='Include:', options=include_options,
-							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
+						set_docqna_include = st.multiselect( label='Include:', options=include_options,
+							key='docqna_include', help=cfg.INCLUDE, placeholder='Options' )
 						
-						text_include = [ d.strip( ) for d in set_text_include
+						docqna_include = [ d.strip( ) for d in set_docqna_include
 						                 if d.strip( ) ]
 						
-						text_include = st.session_state[ 'text_include' ]
+						docqna_include = st.session_state[ 'docqna_include' ]
 					
 					# ------------- Reasoning Options ----------
 					with llm_c3:
 						reasoning_options = list( text.reasoning_options )
-						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
-							options=reasoning_options, key='text_reasoning',
+						set_docqna_reasoning = st.selectbox( label='Reasoning Effort:',
+							options=reasoning_options, key='docqna_reasoning',
 							help=cfg.REASONING, index=None, placeholder='Options' )
 						
-						text_reasoning = st.session_state[ 'text_reasoning' ]
+						docqna_reasoning = st.session_state[ 'docqna_reasoning' ]
 					
 					# ------------- Choice Options ----------
 					with llm_c4:
 						choice_options = list( text.choice_options )
-						set_text_choice = st.multiselect( label='Tool Choice:', options=choice_options,
-							key='text_tool_choice', help=cfg.INCLUDE, placeholder='Options' )
+						set_docqna_choice = st.multiselect( label='Tool Choice:', options=choice_options,
+							key='docqna_tool_choice', help=cfg.INCLUDE, placeholder='Options' )
 						
-						text_tool_choice = st.session_state[ 'text_tool_choice' ]
+						docqna_tool_choice = st.session_state[ 'docqna_tool_choice' ]
 					
 					# ------------- Reset Settings ----------
-					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
-						for key in [ 'text_model', 'text_include',
-						             'text_reasoning', 'text_tool_choice' ]:
+					if st.button( label='Reset', key='docqna_model_reset', width='stretch' ):
+						for key in [ 'docqna_model', 'docqna_include',
+						             'docqna_reasoning', 'docqna_tool_choice' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -5927,42 +5927,42 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Top P ----------
 					with prm_c1:
-						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
-							step=0.01, help=cfg.TOP_P, key='text_top_percent' )
+						set_docqna_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'docqna_top_percent', 0.0 ) ),
+							step=0.01, help=cfg.TOP_P, key='docqna_top_percent' )
 						
-						text_top_percent = st.session_state[ 'text_top_percent' ]
+						docqna_top_percent = st.session_state[ 'docqna_top_percent' ]
 					
 					# ------------- Temperature  ----------
 					with prm_c2:
-						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
-							help=cfg.TEMPERATURE, key='text_temperature' )
+						set_docqna_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'docqna_temperature', 0.0 ) ), step=0.01,
+							help=cfg.TEMPERATURE, key='docqna_temperature' )
 						
-						text_temperature = st.session_state[ 'text_temperature' ]
+						docqna_temperature = st.session_state[ 'docqna_temperature' ]
 					
 					# ------------- Number ----------
 					with prm_c3:
-						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
-							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+						set_docqna_number = st.slider( label='Number', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'docqna_number', 0 ) ), step=1,
 							help='Optional. Upper limit on the responses returned by the model',
-							key='text_number' )
+							key='docqna_number' )
 						
-						text_number = st.session_state[ 'text_number' ]
+						docqna_number = st.session_state[ 'docqna_number' ]
 					
 					# ------------- Max tokens  ------------------
 					with prm_c4:
-						set_text_tokens = st.slider( label='Max Tokens',
+						set_docqna_tokens = st.slider( label='Max Tokens',
 							min_value=0, max_value=100000, step=500,
-							value=int( st.session_state.get( 'text_max_tokens', 0 ) ),
-							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+							value=int( st.session_state.get( 'docqna_max_tokens', 0 ) ),
+							help=cfg.MAX_OUTPUT_TOKENS, key='docqna_max_tokens' )
 						
-						text_tokens = st.session_state[ 'text_max_tokens' ]
+						docqna_tokens = st.session_state[ 'docqna_max_tokens' ]
 					
 					# ------------- Reset Setting ----------
-					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						for key in [ 'text_top_percent', 'text_max_tokens',
-						             'text_temperature', 'text_number', ]:
+					if st.button( label='Reset', key='docqna_inference_reset', width='stretch' ):
+						for key in [ 'docqna_top_percent', 'docqna_max_tokens',
+						             'docqna_temperature', 'docqna_number', ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -5974,43 +5974,43 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Asynchronous  ------------------
 					with tool_c1:
-						set_text_parallel = st.toggle( label='Asynchronous Tool Calls', key='text_parallel_tools',
+						set_docqna_parallel = st.toggle( label='Asynchronous Tool Calls', key='docqna_parallel_tools',
 							help=cfg.PARALLEL_TOOL_CALLS )
 						
-						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
+						docqna_parallel_tools = st.session_state[ 'docqna_parallel_tools' ]
 					
 					# ------------- Max Tool Calls ------------------
 					with tool_c2:
-						set_text_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=4,
-							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
-							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+						set_docqna_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=4,
+							value=int( st.session_state.get( 'docqna_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='docqna_max_calls' )
 						
-						text_max_calls = st.session_state[ 'text_max_calls' ]
+						docqna_max_calls = st.session_state[ 'docqna_max_calls' ]
 					
 					# -------------  Max Web Searches ------------------
 					with tool_c3:
-						set_max_results = st.slider( label='Max Websearch Results', key='text_max_searches',
-							value=int( st.session_state.get( 'text_max_searches', 0 ) ),
+						set_max_results = st.slider( label='Max Websearch Results', key='docqna_max_searches',
+							value=int( st.session_state.get( 'docqna_max_searches', 0 ) ),
 							min_value=0, max_value=30, step=1,
 							help='Optional. Upper limit on the number web search results' )
 						
-						text_max_searches = st.session_state[ 'text_max_searches' ]
+						docqna_max_searches = st.session_state[ 'docqna_max_searches' ]
 					
 					# ------------- Tools ------------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
-						set_text_tools = st.multiselect( label='Tools:', options=tool_options,
-							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+						set_docqna_tools = st.multiselect( label='Tools:', options=tool_options,
+							key='docqna_tools', help=cfg.TOOLS, placeholder='Options' )
 						
-						text_tools = [ d.strip( ) for d in set_text_tools
+						docqna_tools = [ d.strip( ) for d in set_docqna_tools
 						               if d.strip( ) ]
 						
-						text_tools = st.session_state[ 'text_tools' ]
+						docqna_tools = st.session_state[ 'docqna_tools' ]
 					
 					# ------------- Reset Settings -------------
-					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						for key in [ 'text_parallel_tools', 'text_max_searches',
-						             'text_tools', 'text_max_calls' ]:
+					if st.button( label='Reset', key='docqna_tools_reset', width='stretch' ):
+						for key in [ 'docqna_parallel_tools', 'docqna_max_searches',
+						             'docqna_tools', 'docqna_max_calls' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -6022,47 +6022,47 @@ elif mode == 'Document Q&A':
 					
 					# ------------- Stream  ------------------
 					with resp_c1:
-						set_text_stream = st.toggle( label='Stream', key='text_stream',
+						set_docqna_stream = st.toggle( label='Stream', key='docqna_stream',
 							help=cfg.STREAM )
 						
-						text_stream = st.session_state[ 'text_stream' ]
+						docqna_stream = st.session_state[ 'docqna_stream' ]
 					
 					# ------------- Store  ------------------
 					with resp_c2:
-						set_text_store = st.toggle( label='Store', key='text_store',
+						set_docqna_store = st.toggle( label='Store', key='docqna_store',
 							help=cfg.STORE )
 						
-						text_store = st.session_state[ 'text_store' ]
+						docqna_store = st.session_state[ 'docqna_store' ]
 					
 					# ------------- Background  ------------------
 					with resp_c3:
-						set_text_background = st.toggle( label='Background', key='text_background',
+						set_docqna_background = st.toggle( label='Background', key='docqna_background',
 							help=cfg.BACKGROUND_MODE )
 						
-						text_background = st.session_state[ 'text_background' ]
+						docqna_background = st.session_state[ 'docqna_background' ]
 					
 					# ------------- Domains  ------------------
 					with resp_c4:
-						set_text_domains = st.text_input( label='Allowed Websites', key='text_domains',
+						set_docqna_domains = st.text_input( label='Allowed Websites', key='docqna_domains',
 							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Web Domains' )
 						
-						text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
+						docqna_domains = [ d.strip( ) for d in set_docqna_domains.split( ',' )
 						                 if d.strip( ) ]
 					
 					# ------------- Reset Settings  ------------------
-					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
-						for key in [ 'text_stream', 'text_store',
-						             'text_background', 'text_domains' ]:
+					if st.button( label='Reset', key='docqna_response_reset', width='stretch' ):
+						for key in [ 'docqna_stream', 'docqna_store',
+						             'docqna_background', 'docqna_domains' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						# If using separated UI key for stops
-						if 'text_stops_input' in st.session_state:
-							del st.session_state[ 'text_stops_input' ]
+						if 'docqna_stops_input' in st.session_state:
+							del st.session_state[ 'docqna_stops_input' ]
 						
 						st.rerun( )
 		
 		# ------------------------------------------------------------------
-		# Expander — Gemini DOCQNA Text LLM Configuration
+		# EXPANDER — GEMINI DOCQNA LLM CONFIGURATION
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -6074,11 +6074,11 @@ elif mode == 'Document Q&A':
 					# ---------- Model ------------
 					with llm_c1:
 						model_options = list( docqna.model_options )
-						set_text_model = st.selectbox( label='Select Model', options=model_options,
+						set_docqna_model = st.selectbox( label='Select Model', options=model_options,
 							key='docqna_model', placeholder='Options', index=None,
 							help='REQUIRED. Text Generation model used by the AI', )
 						
-						text_model = st.session_state[ 'docqna_model' ]
+						docqna_model = st.session_state[ 'docqna_model' ]
 					
 					# ---------- Include ------------
 					with llm_c2:
@@ -6122,7 +6122,7 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='docqna_model_reset', width='stretch' ):
-						for key in [ 'docqna_model', 'docqna_include', 'docqna_text_domains',
+						for key in [ 'docqna_model', 'docqna_include', 'docqna_domains',
 						             'docqna_reasoning', 'docqna_media_resolution' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
@@ -6189,56 +6189,56 @@ elif mode == 'Document Q&A':
 					
 					# ---------- Number/Candidates ------------
 					with tool_c1:
-						set_text_number = st.slider( label='Candidates', min_value=0, max_value=50,
-							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
+						set_docqna_number = st.slider( label='Candidates', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'docqna_number', 0 ) ), step=1,
 							help='Optional. Upper limit on the responses returned by the model',
-							key='text_number' )
+							key='docqna_number' )
 						
-						text_number = st.session_state[ 'text_number' ]
+						docqna_number = st.session_state[ 'docqna_number' ]
 					
 					# ---------- Max Calls ------------
 					with tool_c2:
-						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
-							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
-							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+						set_docqna_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'docqna_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='docqna_max_calls' )
 						
-						text_max_calls = st.session_state[ 'text_max_calls' ]
+						docqna_max_calls = st.session_state[ 'docqna_max_calls' ]
 					
 					# ---------- Choice/Calling Mode ------------
 					with tool_c3:
 						choice_options = list( text.choice_options )
-						set_text_choice = st.selectbox( label='Calling Mode', options=choice_options,
-							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						set_docqna_choice = st.selectbox( label='Calling Mode', options=choice_options,
+							key='docqna_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
 						
-						text_tool_choice = st.session_state[ 'text_tool_choice' ]
+						docqna_tool_choice = st.session_state[ 'docqna_tool_choice' ]
 					
 					# ---------- Tools ------------
 					with tool_c4:
 						tool_options = list( text.tool_options )
-						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
-							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
+						set_docqna_tools = st.multiselect( label='Available Tools', options=tool_options,
+							key='docqna_tools', help=cfg.TOOLS, placeholder='Options' )
 						
-						text_tools = [ d.strip( ) for d in set_text_tools
+						docqna_tools = [ d.strip( ) for d in set_docqna_tools
 						               if d.strip( ) ]
 						
-						text_tools = st.session_state[ 'text_tools' ]
+						docqna_tools = st.session_state[ 'docqna_tools' ]
 					
 					# ---------- Modalities ------------
 					with tool_c5:
 						modality_options = list( text.modality_options )
-						set_text_modalities = st.multiselect( label='Response Modalities', options=modality_options,
-							key='text_modalities', help='Optional. Modality of the response',
+						set_docqna_modalities = st.multiselect( label='Response Modalities', options=modality_options,
+							key='docqna_modalities', help='Optional. Modality of the response',
 							placeholder='Options' )
 						
-						text_modalities = [ d.strip( ) for d in set_text_modalities
+						docqna_modalities = [ d.strip( ) for d in set_docqna_modalities
 						                    if d.strip( ) ]
 						
-						text_modalities = st.session_state[ 'text_modalities' ]
+						docqna_modalities = st.session_state[ 'docqna_modalities' ]
 					
 					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						for key in [ 'text_parallel_tools', 'text_tool_choice', 'text_number',
-						             'text_tools', 'text_max_calls', 'text_modalities' ]:
+					if st.button( label='Reset', key='docqna_tools_reset', width='stretch' ):
+						for key in [ 'docqna_parallel_tools', 'docqna_tool_choice', 'docqna_number',
+						             'docqna_tools', 'docqna_max_calls', 'docqna_modalities' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
@@ -6297,7 +6297,7 @@ elif mode == 'Document Q&A':
 						st.rerun( )
 		
 		# ------------------------------------------------------------------
-		# Expander — GPT DOCQNA Text LLM Configuration
+		# EXPANDER — GPT DOCQNA LLM CONFIGURATION
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
@@ -6542,19 +6542,19 @@ elif mode == 'Document Q&A':
 		
 		doc_left, doc_right = st.columns( [ 0.2, 0.8 ], border=True )
 		with doc_left:
-			uploaded = st.file_uploader( 'Upload', type=[ 'pdf', 'txt', 'md', 'docx' ],
+			docqna_uploaded= st.file_uploader( 'Upload', type=[ 'pdf', 'txt', 'md', 'docx' ],
 				accept_multiple_files=False, label_visibility='visible' )
 			
-			if uploaded is not None:
-				st.session_state.docqna_active_docs = [ uploaded.name ]
-				st.session_state.doc_bytes = { uploaded.name: uploaded.getvalue( ) }
-				st.success( f'{uploaded.name} has been loaded!' )
+			if docqna_uploaded is not None:
+				st.session_state.docqna_active_docs = [ docqna_uploaded.name ]
+				st.session_state.doc_bytes = { docqna_uploaded.name: docqna_uploaded.getvalue( ) }
+				st.success( f'{docqna_uploaded.name} has been loaded!' )
 			else:
 				st.info( 'Load a document.' )
 			
 			unload = st.button( label='Unload Document', width='stretch' )
 			if unload:
-				uploaded = None
+				docqna_uploaded= None
 				st.session_state.docqna_active_docs = None
 		
 		with doc_right:
@@ -6580,13 +6580,13 @@ elif mode == 'Document Q&A':
 elif mode == 'Files':
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
+	files = provider_module.Files( )
+	provider_module = get_provider_module( )
 	files_purpose = st.session_state.get( 'files_purpose' )
 	files_type = st.session_state.get( 'files_type' )
 	files_id = st.session_state.get( 'files_id' )
 	files_url = st.session_state.get( 'files_url' )
 	files_table = st.session_state.get( 'files_table' )
-	provider_module = get_provider_module( )
-	files = get_provider_module( ).Files( )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
