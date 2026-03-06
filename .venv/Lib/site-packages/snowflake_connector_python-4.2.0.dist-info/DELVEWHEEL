@@ -1,0 +1,2 @@
+Version: 1.11.2
+Arguments: ['C:\\Program Files\\Python311\\Lib\\site-packages\\delvewheel\\__main__.py', 'repair', '-vv', '-w', 'dist', '--namespace-pkg', 'snowflake', 'dist\\rawwheel\\*']

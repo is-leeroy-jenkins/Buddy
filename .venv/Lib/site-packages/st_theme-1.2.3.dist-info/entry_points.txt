@@ -1,0 +1,3 @@
+[console_scripts]
+st-theme = streamlit_theme:print_version
+

@@ -1,0 +1,75 @@
+Metadata-Version: 2.3
+Name: streamlit-image-coordinates
+Version: 0.4.0
+Summary: Streamlit component that displays an image and returns the coordinates when you click on it
+Keywords: python,streamlit,images,component,streamlit-component
+Author: Zachary Blackwood
+Author-email: Zachary Blackwood <zachary@streamlit.io>
+License: MIT License
+         
+         Copyright (c) 2022, Zachary Blackwood
+         
+         Permission is hereby granted, free of charge, to any person obtaining a copy
+         of this software and associated documentation files (the "Software"), to deal
+         in the Software without restriction, including without limitation the rights
+         to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+         copies of the Software, and to permit persons to whom the Software is
+         furnished to do so, subject to the following conditions:
+         
+         The above copyright notice and this permission notice shall be included in all
+         copies or substantial portions of the Software.
+         
+         THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+         IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+         FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+         AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+         SOFTWARE.
+         
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Requires-Dist: streamlit>=1.34
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+
+# Streamlit-Image-Coordinates
+
+[![Releases](https://img.shields.io/pypi/v/streamlit-image-coordinates)](https://pypi.org/project/streamlit-image-coordinates/)
+![Python Versions](https://img.shields.io/pypi/pyversions/streamlit-image-coordinates.svg)
+![License](https://img.shields.io/github/license/blackary/streamlit-image-coordinates)
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://image-coordinates.streamlit.app)
+
+Author: [@blackary](https://github.com/blackary)
+
+Code: https://github.com/blackary/streamlit-image-coordinates
+
+Streamlit component that displays an image and returns the coordinates when you click on it.
+Also returns click event time in unix format.
+
+## Installation instructions
+
+```sh
+pip install streamlit-image-coordinates
+```
+
+## Usage instructions
+
+```python
+import streamlit as st
+
+from streamlit_image_coordinates import streamlit_image_coordinates
+
+value = streamlit_image_coordinates("https://placekitten.com/200/300")
+
+st.write(value)
+```
