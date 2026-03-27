@@ -604,6 +604,7 @@ if 'files_context' not in st.session_state:
 	st.session_state.files_context: List[ Dict[ str, Any ] ] = [ ]
 
 # ------- FILES-SPECIFIC PARAMETERS --------------------------
+
 if 'files_purpose' not in st.session_state:
 	st.session_state[ 'files_purpose' ] = ''
 
@@ -620,6 +621,7 @@ if 'files_table' not in st.session_state:
 	st.session_state[ 'files_table' ] = ''
 
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
+
 if 'stores_temperature' not in st.session_state:
 	st.session_state[ 'stores_temperature' ] = 0.0
 
