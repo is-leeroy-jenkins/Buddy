@@ -227,7 +227,7 @@ if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
 
 if 'execution_mode' not in st.session_state:
-	st.session_state[ 'execution_mode' ] = ''
+	st.session_state[ 'execution_mode' ] = 'Standard'
 
 if 'response_format' not in st.session_state:
 	st.session_state[ 'response_format' ] = ''
@@ -874,7 +874,7 @@ def convert_xml( text: str ) -> str:
 			Markdown-formatted text using level-2 headings (##).
 	"""
 	markdown_blocks: List[ str ] = [ ]
-	for match in XML_BLOCK_PATTERN.finditer( text ):
+	for match in cfg.XML_BLOCK_PATTERN.finditer( text ):
 		raw_tag: str = match.group( "tag" )
 		body: str = match.group( "body" ).strip( )
 		
@@ -1656,7 +1656,7 @@ def build_prompt( user_input: str ) -> str:
 	prompt = f"<|system|>\n{st.session_state.system_prompt}\n</s>\n"
 	
 	if st.session_state.use_semantic:
-		with sqlite3.connect( DB_PATH ) as conn:
+		with sqlite3.connect( cf.DB_PATH ) as conn:
 			rows = conn.execute( "SELECT chunk, vector FROM embeddings" ).fetchall( )
 		if rows:
 			q = embedder.encode( [ user_input ] )[ 0 ]
@@ -2453,6 +2453,7 @@ def route_document_query( prompt: str ) -> str:
 	source = st.session_state.get( 'doc_source' )
 	active_docs = st.session_state.get( 'docqna_active_docs', [ ] )
 	doc_bytes = st.session_state.get( 'doc_bytes', { } )
+	instructions = st.session_state.get( 'docqna_system_instructions' )
 	
 	if not source:
 		return 'No document source selected.'
@@ -2763,23 +2764,90 @@ if mode == 'Chat':
 			# -------------------------------
 			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
 				try:
-					chat = OpenAI( api_key=cfg.OPENAI_API_KEY )
+					chat = get_chat_module( )
 					with st.spinner( 'Running prompt...' ):
-						response = chat.responses.create(
-							prompt={ 'id': cfg.PROMPT_ID, 'version': cfg.PROMPT_VERSION, },
-							input=[ { 'role': 'user', 'content': [ { 'type': 'input_text',
-							                                         'text': user_input, } ], } ],
-							tools=[ { 'type': 'file_search', 'vector_store_ids': cfg.GPT_VECTORSTORES, },
-									{ 'type': 'web_search', 'filters': { 'allowed_domains': cfg.GPT_DOMAINS, },
-											'search_context_size': 'medium',
-											'user_location': { 'type': 'approximate' },
-									},
-									{ 'type': 'code_interpreter',
-									  'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
-									}, ],
-							include=[ 'web_search_call.action.sources',
-							          'code_interpreter_call.outputs', ], store=True, )
-					sources = st.session_state.get( "last_sources", [ ] )
+						if provider_name == 'GPT':
+							response = chat.completion(
+								prompt_id=cfg.PROMPT_ID,
+								prompt_version=cfg.PROMPT_VERSION,
+								model=chat_model or None,
+								user_input=user_input,
+								temperature=chat_temperature,
+								top_p=chat_top_p,
+								frequency=chat_freq,
+								presence=chat_presense,
+								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
+								store=True,
+								stream=chat_stream,
+								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								reasoning=chat_reasoning or None,
+								include=[
+										'web_search_call.action.sources',
+										'code_interpreter_call.outputs',
+								],
+								tools=[
+										{
+												'type': 'file_search',
+												'vector_store_ids': cfg.GPT_VECTORSTORES,
+										},
+										{
+												'type': 'web_search',
+												'filters': {
+														'allowed_domains': cfg.GPT_DOMAINS,
+												},
+												'search_context_size': 'medium',
+												'user_location': {
+														'type': 'approximate',
+												},
+										},
+										{
+												'type': 'code_interpreter',
+												'container': {
+														'type': 'auto',
+														'file_ids': cfg.GPT_FILES,
+												},
+										},
+								],
+								tool_choice=chat_choice or None,
+								is_parallel=chat_parallel,
+							)
+						else:
+							output_text = chat.generate_text(
+								prompt=user_input,
+								model=chat_model,
+								temperature=chat_temperature,
+								top_p=chat_top_p,
+								frequency=chat_freq,
+								presence=chat_presense,
+								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
+								store=chat_store,
+								stream=chat_stream,
+								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								reasoning=chat_reasoning or None,
+							)
+							response = None
+					
+					sources = [ ]
+					if response is not None:
+						try:
+							for item in getattr( response, 'output', [ ] ):
+								if getattr( item, 'type', '' ) == 'web_search_call':
+									action = getattr( item, 'action', None )
+									_found = getattr( action, 'sources', None )
+									if _found:
+										for src in _found:
+											sources.append(
+											{
+												'url': getattr( src, 'url', None ),
+												'title': getattr( src, 'title', None ),
+												'file_id': getattr( src, 'file_id', None ),
+												'file_name': getattr( src, 'filename', None ),
+											} )
+						except Exception:
+							sources = [ ]
+					
+					st.session_state.last_sources = sources
+					
 					if sources:
 						st.markdown( '#### Sources' )
 						for i, src in enumerate( sources, 1 ):
@@ -2789,28 +2857,36 @@ if mode == 'Chat':
 							if url:
 								st.markdown( f'- [{title}]({url})' )
 							elif src.get( 'file_id' ):
-								st.markdown( f"- {title} _(Vector Store File: `{src[ 'files_id' ]}`)_" )
+								st.markdown( f"- {title} _(File ID: `{src[ 'file_id' ]}`)_" )
 					
-					# -------------------------------
-					# Extract and render text output
-					# -------------------------------
-					output_text = ""
-					for item in response.output:
-						if item.type == 'message':
-							for part in item.content:
-								if part.type == 'output_text':
-									output_text += part.text
+					if response is not None:
+						output_text = ''
+						for item in getattr( response, 'output', [ ] ):
+							if getattr( item, 'type', '' ) == 'message':
+								for part in getattr( item, 'content', [ ] ):
+									if getattr( part, 'type', '' ) == 'output_text':
+										output_text += getattr( part, 'text', '' )
+					else:
+						output_text = output_text if isinstance( output_text, str ) else ''
 					
 					if output_text.strip( ):
 						st.markdown( output_text )
 					else:
 						st.warning( 'No text response returned by the prompt.' )
 					
-					# -------------------------------
-					# Persist minimal chat history
-					# -------------------------------
-					st.session_state.chat_history.append({'role': 'user', 'content': user_input})
-					st.session_state.chat_history.append({'role':'assistant', 'content':output_text})
+					st.session_state.chat_history.append(
+						{
+								'role': 'user',
+								'content': user_input
+						}
+					)
+					
+					st.session_state.chat_history.append(
+						{
+								'role': 'assistant',
+								'content': output_text
+						}
+					)
 				except Exception as e:
 					st.error( 'An error occurred while running the prompt.' )
 					st.exception( e )
