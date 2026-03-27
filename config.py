@@ -85,7 +85,7 @@ GPT_LOGO = r'resources/buddy_logo.ico'
 
 GPT_VECTOR_STORES = [ 'vs_699506f7d5348191990e0557c717fa9d',
                       'vs_699505df9ac48191a525c0ecb86fef66',
-                      'vs_712r5W5833G6aLxIYIbuvVcK']
+                      'vs_712r5W5833G6aLxIYIbuvVcK' ]
 
 GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
               'file-WPmTsHFYDLGHbyERqJdyqv',

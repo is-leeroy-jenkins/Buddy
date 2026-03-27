@@ -225,9 +225,12 @@ if 'store' not in st.session_state:
 
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
-
+	
 if 'execution_mode' not in st.session_state:
 	st.session_state[ 'execution_mode' ] = 'Standard'
+
+if 'chat_history' not in st.session_state:
+	st.session_state.chat_history: List[ Dict[ str, str ] ] = [ ]
 
 if 'response_format' not in st.session_state:
 	st.session_state[ 'response_format' ] = ''
@@ -2732,36 +2735,41 @@ if mode == 'Chat':
 	chat_input = st.session_state.get( 'input', [ ] )
 	chat_reasoning = st.session_state.get( 'reasoning', '' )
 	chat_choice = st.session_state.get( 'tool_choice', '' )
+	chat_parallel = st.session_state.get( 'parallel_tools', False )
 	chat_messages = st.session_state.get( 'messages', [ ] )
-	execution_mode = st.session_state.get( 'execution_mode', '' )
 	chat_history = st.session_state.get( 'chat_history', [ ] )
+	_modes = [ 'Standard', 'Guidance Only', 'Analysis Only' ]
+	_current_mode = st.session_state.get( 'execution_mode', 'Standard' )
+	
+	if _current_mode not in _modes:
+		_current_mode = 'Standard'
+		st.session_state.execution_mode = 'Standard'
 	
 	# ------------------------------------------------------------------
-	# Sidebar — Text Settings
+	# Sidebar — Chat Settings
 	# ------------------------------------------------------------------
 	with st.sidebar:
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		st.text( '⚙️  Chat Settings' )
-		st.radio( 'Execution Mode', options=[ 'Standard', 'Guidance Only', 'Analysis Only' ],
-			index=[ 'Standard', 'Guidance Only', 'Analysis Only' ].index( st.session_state.execution_mode ),
-			key='execution_mode', )
+		st.radio(
+			'Execution Mode',
+			options=_modes,
+			index=_modes.index( _current_mode ),
+			key='execution_mode',
+		)
+	
+	execution_mode = st.session_state.get( 'execution_mode', 'Standard' )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.25,  3.5,  0.25 ] )
+	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
 	with center:
 		user_input = st.chat_input( 'Have a Planning, Programming, or Budget Execution question?' )
 		if user_input:
-			# -------------------------------
-			# Render user message
-			# -------------------------------
 			with st.chat_message( 'user', avatar=cfg.ANALYST ):
 				st.markdown( user_input )
 			
-			# -------------------------------
-			# Run prompt
-			# -------------------------------
 			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
 				try:
 					chat = get_chat_module( )
@@ -2773,6 +2781,7 @@ if mode == 'Chat':
 								model=chat_model or None,
 								user_input=user_input,
 								temperature=chat_temperature,
+								format=chat_format if isinstance( chat_format, dict ) else None,
 								top_p=chat_top_p,
 								frequency=chat_freq,
 								presence=chat_presense,
@@ -2780,6 +2789,7 @@ if mode == 'Chat':
 								store=True,
 								stream=chat_stream,
 								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								background=chat_background,
 								reasoning=chat_reasoning or None,
 								include=[
 										'web_search_call.action.sources',
@@ -2797,7 +2807,7 @@ if mode == 'Chat':
 												},
 												'search_context_size': 'medium',
 												'user_location': {
-														'type': 'approximate',
+														'type': 'approximate'
 												},
 										},
 										{
@@ -2810,12 +2820,14 @@ if mode == 'Chat':
 								],
 								tool_choice=chat_choice or None,
 								is_parallel=chat_parallel,
+								previous_id=getattr( chat, 'previous_id', None ),
 							)
 						else:
 							output_text = chat.generate_text(
 								prompt=user_input,
 								model=chat_model,
 								temperature=chat_temperature,
+								format=chat_format if isinstance( chat_format, dict ) else None,
 								top_p=chat_top_p,
 								frequency=chat_freq,
 								presence=chat_presense,
@@ -2823,7 +2835,10 @@ if mode == 'Chat':
 								store=chat_store,
 								stream=chat_stream,
 								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								background=chat_background,
 								reasoning=chat_reasoning or None,
+								tool_choice=chat_choice or None,
+								is_parallel=chat_parallel,
 							)
 							response = None
 					
@@ -2837,12 +2852,13 @@ if mode == 'Chat':
 									if _found:
 										for src in _found:
 											sources.append(
-											{
-												'url': getattr( src, 'url', None ),
-												'title': getattr( src, 'title', None ),
-												'file_id': getattr( src, 'file_id', None ),
-												'file_name': getattr( src, 'filename', None ),
-											} )
+												{
+														'url': getattr( src, 'url', None ),
+														'title': getattr( src, 'title', None ),
+														'file_id': getattr( src, 'file_id', None ),
+														'file_name': getattr( src, 'filename', None ),
+												}
+											)
 						except Exception:
 							sources = [ ]
 					
@@ -2877,14 +2893,14 @@ if mode == 'Chat':
 					st.session_state.chat_history.append(
 						{
 								'role': 'user',
-								'content': user_input
+								'content': user_input,
 						}
 					)
 					
 					st.session_state.chat_history.append(
 						{
 								'role': 'assistant',
-								'content': output_text
+								'content': output_text,
 						}
 					)
 				except Exception as e:
