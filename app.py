@@ -81,6 +81,735 @@ from gemini import ( Chat, Images, Files, Embeddings, Transcription, TTS, Transl
 
 from grok import ( Chat, Images, Files, Transcription, TTS, Translation, VectorStores )
 
+# ======================================================================================
+# SESSION STATE PARAMETER DEFINITIONS
+# ======================================================================================
+if 'api_keys' not in st.session_state:
+	st.session_state.api_keys = { 'GPT': None, 'Grok': None, 'Gemini': None, }
+
+if 'openai_api_key' not in st.session_state:
+	st.session_state.openai_api_key = ''
+
+if 'gemini_api_key' not in st.session_state:
+	st.session_state.gemini_api_key = ''
+
+if 'groq_api_key' not in st.session_state:
+	st.session_state.groq_api_key = ''
+
+if 'google_api_key' not in st.session_state:
+	st.session_state.google_api_key = ''
+
+if 'xai_api_key' not in st.session_state:
+	st.session_state.xai_api_key = ''
+
+if st.session_state.openai_api_key == '':
+	default = cfg.OPENAI_API_KEY
+	if default:
+		st.session_state.openai_api_key = default
+		os.environ[ 'OPENAI_API_KEY' ] = default
+
+if st.session_state.gemini_api_key == '':
+	default = cfg.GEMINI_API_KEY
+	if default:
+		st.session_state.gemini_api_key = default
+		os.environ[ 'GEMINI_API_KEY' ] = default
+
+if st.session_state.groq_api_key == '':
+	default = cfg.GROQ_API_KEY
+	if default:
+		st.session_state.groq_api_key = default
+		os.environ[ 'GROQ_API_KEY' ] = default
+
+if st.session_state.google_api_key == '':
+	default = cfg.GOOGLE_API_KEY
+	if default:
+		st.session_state.google_api_key = default
+		os.environ[ 'GOOGLE_API_KEY' ] = default
+
+if st.session_state.xai_api_key == '':
+	default = cfg.XAI_API_KEY
+	if default:
+		st.session_state.xai_api_key = default
+		os.environ[ 'XAI_API_KEY' ] = default
+
+if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
+	st.session_state[ 'provider' ] = 'GPT'
+
+if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
+	st.session_state[ 'mode' ] = 'Chat'
+
+if 'files' not in st.session_state:
+	st.session_state.files: List[ str ] = [ ]
+
+# ----------MODEL PARAMETERS --------------------------------
+if 'chat_model' not in st.session_state:
+	st.session_state.chat_model = ''
+
+if 'text_model' not in st.session_state:
+	st.session_state[ 'text_model' ] = ''
+
+if 'image_model' not in st.session_state:
+	st.session_state[ 'image_model' ] = ''
+
+if 'audio_model' not in st.session_state:
+	st.session_state[ 'audio_model' ] = ''
+
+if 'embedding_model' not in st.session_state:
+	st.session_state[ 'embedding_model' ] = ''
+
+if 'docqna_model' not in st.session_state:
+	st.session_state[ 'docqna_model' ] = ''
+
+if 'files_model' not in st.session_state:
+	st.session_state[ 'files_model' ] = ''
+
+if 'stores_model' not in st.session_state:
+	st.session_state[ 'stores_model' ] = ''
+
+if 'tts_model' not in st.session_state:
+	st.session_state[ 'tts_model' ] = ''
+
+if 'transcription_model' not in st.session_state:
+	st.session_state[ 'transcription_model' ] = ''
+
+if 'translation_model' not in st.session_state:
+	st.session_state[ 'translation_model' ] = ''
+
+# --------SYSTEM PARAMETERS----------------------
+if 'instructions' not in st.session_state:
+	st.session_state[ 'instructions' ] = ''
+
+if 'chat_system_instructions' not in st.session_state:
+	st.session_state[ 'chat_system_instructions' ] = ''
+
+if 'text_system_instructions' not in st.session_state:
+	st.session_state[ 'text_system_instructions' ] = ''
+
+if 'image_system_instructions' not in st.session_state:
+	st.session_state[ 'image_system_instructions' ] = ''
+
+if 'audio_system_instructions' not in st.session_state:
+	st.session_state[ 'audio_system_instructions' ] = ''
+
+if 'docqna_system_instructions' not in st.session_state:
+	st.session_state[ 'docqna_systems_instructions' ] = ''
+
+# --------CHAT-GENERATION PARAMETERS--------------------
+
+if 'max_tools' not in st.session_state:
+	st.session_state[ 'max_tools' ] = 0
+
+if 'max_tokens' not in st.session_state:
+	st.session_state[ 'max_tokens' ] = 0
+
+if 'temperature' not in st.session_state:
+	st.session_state[ 'temperature' ] = 0.0
+
+if 'top_percent' not in st.session_state:
+	st.session_state[ 'top_percent' ] = 0.0
+
+if 'frequency_penalty' not in st.session_state:
+	st.session_state[ 'frequency_penalty' ] = 0.0
+
+if 'presense_penalty' not in st.session_state:
+	st.session_state[ 'presense_penalty' ] = 0.0
+
+if 'background' not in st.session_state:
+	st.session_state[ 'background' ] = False
+
+if 'parallel_tools' not in st.session_state:
+	st.session_state[ 'parallel_tools' ] = False
+
+if 'store' not in st.session_state:
+	st.session_state[ 'store' ] = False
+
+if 'stream' not in st.session_state:
+	st.session_state[ 'stream' ] = False
+
+if 'execution_mode' not in st.session_state:
+	st.session_state[ 'execution_mode' ] = ''
+
+if 'response_format' not in st.session_state:
+	st.session_state[ 'response_format' ] = ''
+
+if 'tool_choice' not in st.session_state:
+	st.session_state[ 'tool_choice' ] = ''
+
+if 'reasoning' not in st.session_state:
+	st.session_state[ 'reasoning' ] = ''
+
+if 'stops' not in st.session_state:
+	st.session_state[ 'stops' ] = [ ]
+
+if 'include' not in st.session_state:
+	st.session_state[ 'include' ] = [ ]
+
+if 'input' not in st.session_state:
+	st.session_state[ 'input' ] = [ ]
+
+if 'tools' not in st.session_state:
+	st.session_state[ 'tools' ] = [ ]
+
+if 'messages' not in st.session_state:
+	st.session_state[ 'messages' ] = [ ]
+
+if 'last_sources' not in st.session_state:
+	st.session_state[ 'last_sources' ] = [ ]
+
+# --------TEXT-GENERATION PARAMETERS--------------------
+if 'text_number' not in st.session_state:
+	st.session_state[ 'text_number' ] = 0
+
+if 'text_max_calls' not in st.session_state:
+	st.session_state[ 'text_max_calls' ] = 0
+
+if 'text_top_k' not in st.session_state:
+	st.session_state[ 'text_top_k' ] = 0
+
+if 'text_max_searches' not in st.session_state:
+	st.session_state[ 'text_max_searches' ] = 0
+
+if 'text_max_tokens' not in st.session_state:
+	st.session_state[ 'text_max_tokens' ] = 0
+
+if 'text_temperature' not in st.session_state:
+	st.session_state[ 'text_temperature' ] = 0.0
+
+if 'text_top_percent' not in st.session_state:
+	st.session_state[ 'text_top_percent' ] = 0.0
+
+if 'text_frequency_penalty' not in st.session_state:
+	st.session_state[ 'text_frequency_penalty' ] = 0.0
+
+if 'text_presense_penalty' not in st.session_state:
+	st.session_state[ 'text_presense_penalty' ] = 0.0
+
+if 'text_parallel_tools' not in st.session_state:
+	st.session_state[ 'text_parallel_tools' ] = False
+
+if 'text_background' not in st.session_state:
+	st.session_state[ 'text_background' ] = False
+
+if 'text_store' not in st.session_state:
+	st.session_state[ 'text_store' ] = False
+
+if 'text_stream' not in st.session_state:
+	st.session_state[ 'text_stream' ] = False
+
+if 'text_response_format' not in st.session_state:
+	st.session_state[ 'text_response_format' ] = ''
+
+if 'text_tool_choice' not in st.session_state:
+	st.session_state[ 'text_tool_choice' ] = ''
+
+if 'text_resolution' not in st.session_state:
+	st.session_state[ 'text_resolution' ] = ''
+
+if 'text_media_resolution' not in st.session_state:
+	st.session_state[ 'text_media_resolution' ] = ''
+
+if 'text_reasoning' not in st.session_state:
+	st.session_state[ 'text_reasoning' ] = ''
+
+if 'text_input' not in st.session_state:
+	st.session_state[ 'text_input' ] = ''
+
+if 'text_stops' not in st.session_state:
+	st.session_state[ 'text_stops' ] = [ ]
+
+if 'text_modalities' not in st.session_state:
+	st.session_state[ 'text_modalities' ] = [ ]
+
+if 'text_include' not in st.session_state:
+	st.session_state[ 'text_include' ] = [ ]
+
+if 'text_domains' not in st.session_state:
+	st.session_state[ 'text_domains' ] = [ ]
+
+if 'text_tools' not in st.session_state:
+	st.session_state[ 'text_tools' ] = [ ]
+
+if 'text_context' not in st.session_state:
+	st.session_state[ 'text_context' ] = [ ]
+
+if 'text_content' not in st.session_state:
+	st.session_state[ 'text_content' ] = [ ]
+
+# --------IMAGE-GENERATION PARAMETERS--------------------
+
+if 'image_max_tokens' not in st.session_state:
+	st.session_state[ 'image_max_tokens' ] = 0
+
+if 'image_max_calls' not in st.session_state:
+	st.session_state[ 'image_max_calls' ] = 0
+
+if 'image_max_searches' not in st.session_state:
+	st.session_state[ 'image_max_searches' ] = 0
+
+if 'image_number' not in st.session_state:
+	st.session_state[ 'image_number' ] = 0
+
+if 'image_compression' not in st.session_state:
+	st.session_state[ 'image_compression' ] = 0.0
+
+if 'image_temperature' not in st.session_state:
+	st.session_state[ 'image_temperature' ] = 0.0
+
+if 'image_top_percent' not in st.session_state:
+	st.session_state[ 'image_top_percent' ] = 0.0
+
+if 'image_frequency_penalty' not in st.session_state:
+	st.session_state[ 'image_frequency_penalty' ] = 0.0
+
+if 'image_presence_penalty' not in st.session_state:
+	st.session_state[ 'image_presence_penalty' ] = 0.0
+
+if 'image_parallel_calls' not in st.session_state:
+	st.session_state[ 'image_parallel_calls' ] = False
+
+if 'image_background' not in st.session_state:
+	st.session_state[ 'image_background' ] = False
+
+if 'image_store' not in st.session_state:
+	st.session_state[ 'image_store' ] = False
+
+if 'image_stream' not in st.session_state:
+	st.session_state[ 'image_stream' ] = False
+
+if 'image_tool_choice' not in st.session_state:
+	st.session_state[ 'image_tool_choice' ] = ''
+
+if 'image_reasoning' not in st.session_state:
+	st.session_state[ 'image_reasoning' ] = ''
+
+if 'image_mime_type' not in st.session_state:
+	st.session_state[ 'image_mime_type' ] = ''
+
+if 'image_response_format' not in st.session_state:
+	st.session_state[ 'image_response_format' ] = ''
+
+if 'image_previous_response_id' not in st.session_state:
+	st.session_state[ 'image_previous_response_id' ] = ''
+
+if 'image_input' not in st.session_state:
+	st.session_state[ 'image_input' ] = [ ]
+
+if 'image_include' not in st.session_state:
+	st.session_state[ 'image_include' ] = [ ]
+
+if 'image_tools' not in st.session_state:
+	st.session_state[ 'image_tools' ]: List[ Dict[ str, Any ] ] = [ ]
+
+if 'image_modalities' not in st.session_state:
+	st.session_state[ 'image_modalities' ] = [ ]
+
+if 'image_messages' not in st.session_state:
+	st.session_state[ 'image_messages' ] = [ ]
+
+if 'image_context' not in st.session_state:
+	st.session_state[ 'image_context' ]: List[ Dict[ str, Any ] ] = [ ]
+
+if 'image_domains' not in st.session_state:
+	st.session_state[ 'image_domains' ] = [ ]
+
+if 'image_content' not in st.session_state:
+	st.session_state[ 'image_content' ] = [ ]
+
+# ------- IMAGE-SPECIFIC PARAMETER---------------
+if 'image_mode' not in st.session_state:
+	st.session_state[ 'image_mode' ] = ''
+
+if 'image_style' not in st.session_state:
+	st.session_state[ 'image_style' ] = ''
+
+if 'image_detail' not in st.session_state:
+	st.session_state[ 'image_detail' ] = ''
+
+if 'image_backcolor' not in st.session_state:
+	st.session_state[ 'image_backcolor' ] = ''
+
+if 'image_output' not in st.session_state:
+	st.session_state[ 'image_output' ] = ''
+
+if 'image_url' not in st.session_state:
+	st.session_state[ 'image_url' ] = ''
+
+if 'image_size' not in st.session_state:
+	st.session_state[ 'image_size' ] = ''
+
+if 'image_quality' not in st.session_state:
+	st.session_state[ 'image_quality' ] = ''
+
+# --------AUDIO-GENERATION PARAMETERS--------------------
+
+if 'audio_max_tokens' not in st.session_state:
+	st.session_state[ 'audio_max_tokens' ] = 0
+
+if 'audio_temperature' not in st.session_state:
+	st.session_state[ 'audio_temperature' ] = 0.0
+
+if 'audio_top_percent' not in st.session_state:
+	st.session_state[ 'audio_top_percent' ] = 0.0
+
+if 'audio_frequency_penalty' not in st.session_state:
+	st.session_state[ 'audio_frequency_penalty' ] = 0.0
+
+if 'audio_presence_penalty' not in st.session_state:
+	st.session_state[ 'audio_presence_penalty' ] = 0.0
+
+if 'audio_background' not in st.session_state:
+	st.session_state[ 'audio_background' ] = False
+
+if 'audio_store' not in st.session_state:
+	st.session_state[ 'audio_store' ] = False
+
+if 'audio_stream' not in st.session_state:
+	st.session_state[ 'audio_stream' ] = False
+
+if 'audio_tool_choice' not in st.session_state:
+	st.session_state[ 'audio_tool_choice' ] = ''
+
+if 'audio_reasoning' not in st.session_state:
+	st.session_state[ 'audio_reasoning' ] = ''
+
+if 'audio_response_format' not in st.session_state:
+	st.session_state[ 'audio_response_format' ] = ''
+
+if 'audio_input' not in st.session_state:
+	st.session_state[ 'audio_input' ] = ''
+
+if 'audio_mime_type' not in st.session_state:
+	st.session_state[ 'audio_mime_type' ] = ''
+
+if 'audio_stops' not in st.session_state:
+	st.session_state[ 'audio_stops' ] = [ ]
+
+if 'audio_includes' not in st.session_state:
+	st.session_state[ 'audio_includes' ] = [ ]
+
+if 'audio_tools' not in st.session_state:
+	st.session_state.audio_tools: List[ Dict[ str, Any ] ] = [ ]
+
+if 'audio_context' not in st.session_state:
+	st.session_state.audio_context: List[ Dict[ str, Any ] ] = [ ]
+
+if 'audio_modalities' not in st.session_state:
+	st.session_state[ 'audio_modalities' ] = [ ]
+
+if 'audio_messages' not in st.session_state:
+	st.session_state.audio_messages = [ ]
+
+# -------AUDIO-SECIFIC PARAMETERS--------------
+
+if 'audio_task' not in st.session_state:
+	st.session_state[ 'audio_task' ] = ''
+
+if 'audio_file' not in st.session_state:
+	st.session_state[ 'audio_file' ] = ''
+
+if 'audio_rate' not in st.session_state:
+	st.session_state[ 'audio_rate' ] = int( cfg.SAMPLE_RATES[ 0 ] ) if cfg.SAMPLE_RATES else 44100
+
+if 'audio_language' not in st.session_state:
+	st.session_state[ 'audio_language' ] = ''
+
+if 'audio_voice' not in st.session_state:
+	st.session_state[ 'audio_voice' ] = ''
+
+if 'audio_start_time' not in st.session_state:
+	st.session_state[ 'audio_start_time' ] = 0.0
+
+if 'audio_end_time' not in st.session_state:
+	st.session_state[ 'audio_end_time' ] = 0.0
+
+if 'audio_loop' not in st.session_state:
+	st.session_state[ 'audio_loop' ] = False
+
+if 'audio_autoplay' not in st.session_state:
+	st.session_state[ 'audio_autoplay' ] = False
+
+if 'audio_output' not in st.session_state:
+	st.session_state[ 'audio_output' ] = ''
+
+# ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
+
+if 'embeddings_dimensions' not in st.session_state:
+	st.session_state[ 'embeddings_dimensions' ] = 0
+
+if 'embeddings_chunk_size' not in st.session_state:
+	st.session_state[ 'embeddings_chunk_size' ] = 0
+
+if 'embeddings_overlap_amount' not in st.session_state:
+	st.session_state[ 'embeddings_overlap_amount' ] = 0
+
+if 'embeddings_input_text' not in st.session_state:
+	st.session_state[ 'embeddings_input_text' ] = ''
+
+if 'embeddings_encoding_format' not in st.session_state:
+	st.session_state[ 'embeddings_encoding_format' ] = ''
+
+if 'embeddings_method' not in st.session_state:
+	st.session_state[ 'embeddings_method' ] = ''
+
+# --------FILES-GENERATION PARAMETERS--------------------
+if 'files_max_tokens' not in st.session_state:
+	st.session_state[ 'files_max_tokens' ] = 0
+
+if 'files_temperature' not in st.session_state:
+	st.session_state[ 'files_temperature' ] = 0.0
+
+if 'files_top_percent' not in st.session_state:
+	st.session_state[ 'files_top_percent' ] = 0.0
+
+if 'files_frequency_penalty' not in st.session_state:
+	st.session_state[ 'files_frequency_penalty' ] = 0.0
+
+if 'files_presense_penalty' not in st.session_state:
+	st.session_state[ 'files_presense_penalty' ] = 0.0
+
+if 'files_background' not in st.session_state:
+	st.session_state[ 'files_background' ] = False
+
+if 'files_store' not in st.session_state:
+	st.session_state[ 'files_store' ] = False
+
+if 'files_stream' not in st.session_state:
+	st.session_state[ 'files_stream' ] = False
+
+if 'files_tool_choice' not in st.session_state:
+	st.session_state[ 'files_tool_choice' ] = ''
+
+if 'files_reasoning' not in st.session_state:
+	st.session_state[ 'files_reasoning' ] = ''
+
+if 'files_response_format' not in st.session_state:
+	st.session_state[ 'files_response_format' ] = ''
+
+if 'files_input' not in st.session_state:
+	st.session_state[ 'files_input' ] = ''
+
+if 'files_media_resolution' not in st.session_state:
+	st.session_state[ 'files_media_resolution' ] = ''
+
+if 'files_stops' not in st.session_state:
+	st.session_state[ 'files_stops' ] = [ ]
+
+if 'files_includes' not in st.session_state:
+	st.session_state[ 'files_includes' ] = [ ]
+
+if 'files_tools' not in st.session_state:
+	st.session_state.files_tools: List[ Dict[ str, Any ] ] = [ ]
+
+if 'files_context' not in st.session_state:
+	st.session_state.files_context: List[ Dict[ str, Any ] ] = [ ]
+
+# ------- FILES-SPECIFIC PARAMETERS --------------------------
+if 'files_purpose' not in st.session_state:
+	st.session_state[ 'files_purpose' ] = ''
+
+if 'files_type' not in st.session_state:
+	st.session_state[ 'files_type' ] = ''
+
+if 'files_id' not in st.session_state:
+	st.session_state[ 'files_id' ] = ''
+
+if 'files_url' not in st.session_state:
+	st.session_state[ 'files_url' ] = ''
+
+if 'files_table' not in st.session_state:
+	st.session_state[ 'files_table' ] = ''
+
+# -------- VECTORSTORES-GENERATION PARAMETERS --------------------
+if 'stores_temperature' not in st.session_state:
+	st.session_state[ 'stores_temperature' ] = 0.0
+
+if 'stores_top_percent' not in st.session_state:
+	st.session_state[ 'stores_top_percent' ] = 0.0
+
+if 'stores_max_tokens' not in st.session_state:
+	st.session_state[ 'stores_max_tokens' ] = 0
+
+if 'stores_frequency_penalty' not in st.session_state:
+	st.session_state[ 'stores_frequency_penalty' ] = 0.0
+
+if 'stores_presense_penalty' not in st.session_state:
+	st.session_state[ 'stores_presense_penalty' ] = 0.0
+
+if 'stores_max_calls' not in st.session_state:
+	st.session_state[ 'stores_max_calls' ] = 0
+
+if 'stores_tool_choice' not in st.session_state:
+	st.session_state[ 'stores_tool_choice' ] = ''
+
+if 'stores_response_format' not in st.session_state:
+	st.session_state[ 'stores_response_format' ] = ''
+
+if 'stores_reasoning' not in st.session_state:
+	st.session_state[ 'stores_reasoning' ] = ''
+
+if 'stores_resolution' not in st.session_state:
+	st.session_state[ 'stores_resolution' ] = ''
+
+if 'stores_media_resolution' not in st.session_state:
+	st.session_state[ 'stores_media_resolution' ] = ''
+
+if 'stores_parallel_tools' not in st.session_state:
+	st.session_state[ 'stores_parallel_tools' ] = False
+
+if 'stores_background' not in st.session_state:
+	st.session_state[ 'stores_background' ] = False
+
+if 'stores_store' not in st.session_state:
+	st.session_state[ 'stores_store' ] = False
+
+if 'stores_stream' not in st.session_state:
+	st.session_state[ 'stores_stream' ] = False
+
+if 'stores_input' not in st.session_state:
+	st.session_state[ 'stores_input' ] = [ ]
+
+if 'stores_tools' not in st.session_state:
+	st.session_state[ 'stores_tools' ] = [ ]
+
+if 'stores_messages' not in st.session_state:
+	st.session_state[ 'stores_messages' ] = [ ]
+
+if 'stores_stops' not in st.session_state:
+	st.session_state[ 'stores_stops' ] = [ ]
+
+if 'stores_include' not in st.session_state:
+	st.session_state[ 'stores_include' ] = [ ]
+
+# ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
+if 'stores_id' not in st.session_state:
+	st.session_state[ 'stores_id' ] = ''
+
+# ------ DOCQNA GENERATION PARAMETERS -----------------
+if 'docqna_max_tools' not in st.session_state:
+	st.session_state[ 'docqna_max_tools' ] = 0
+
+if 'docqna_max_tokens' not in st.session_state:
+	st.session_state[ 'docqna_max_tokens' ] = 0
+
+if 'docqna_max_calls' not in st.session_state:
+	st.session_state[ 'docqna_max_calls' ] = 0
+
+if 'docqna_temperature' not in st.session_state:
+	st.session_state[ 'docqna_temperature' ] = 0.0
+
+if 'docqna_top_percent' not in st.session_state:
+	st.session_state[ 'docqna_top_percent' ] = 0.0
+
+if 'docqna_frequency_penalty' not in st.session_state:
+	st.session_state[ 'docqna_frequency_penalty' ] = 0.0
+
+if 'docqna_presense_penalty' not in st.session_state:
+	st.session_state[ 'docqna_presense_penalty' ] = 0.0
+
+# --------DOCQNA PARAMETERS--------------------
+if 'docqna_number' not in st.session_state:
+	st.session_state[ 'docqna_number' ] = 0
+
+if 'docqna_top_k' not in st.session_state:
+	st.session_state[ 'docqna_top_k' ] = 0
+
+if 'docqna_max_searches' not in st.session_state:
+	st.session_state[ 'docqna_max_searches' ] = 0
+
+if 'docqna_parallel_tools' not in st.session_state:
+	st.session_state[ 'docqna_parallel_tools' ] = False
+
+if 'docqna_background' not in st.session_state:
+	st.session_state[ 'docqna_background' ] = False
+
+if 'docqna_store' not in st.session_state:
+	st.session_state[ 'docqna_store' ] = False
+
+if 'docqna_stream' not in st.session_state:
+	st.session_state[ 'docqna_stream' ] = False
+
+if 'docqna_response_format' not in st.session_state:
+	st.session_state[ 'docqna_response_format' ] = ''
+
+if 'docqna_tool_choice' not in st.session_state:
+	st.session_state[ 'docqna_tool_choice' ] = ''
+
+if 'docqna_resolution' not in st.session_state:
+	st.session_state[ 'docqna_resolution' ] = ''
+
+if 'docqna_media_resolution' not in st.session_state:
+	st.session_state[ 'docqna_media_resolution' ] = ''
+
+if 'docqna_reasoning' not in st.session_state:
+	st.session_state[ 'docqna_reasoning' ] = ''
+
+if 'docqna_input' not in st.session_state:
+	st.session_state[ 'docqna_input' ] = ''
+
+if 'docqna_stops' not in st.session_state:
+	st.session_state[ 'docqna_stops' ] = [ ]
+
+if 'docqna_modalities' not in st.session_state:
+	st.session_state[ 'docqna_modalities' ] = [ ]
+
+if 'docqna_include' not in st.session_state:
+	st.session_state[ 'docqna_include' ] = [ ]
+
+if 'docqna_domains' not in st.session_state:
+	st.session_state[ 'docqna_domains' ] = [ ]
+
+if 'docqna_tools' not in st.session_state:
+	st.session_state[ 'docqna_tools' ] = [ ]
+
+if 'docqna_context' not in st.session_state:
+	st.session_state[ 'docqna_context' ] = [ ]
+
+if 'docqna_content' not in st.session_state:
+	st.session_state[ 'docqna_content' ] = [ ]
+
+# ------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
+if 'docqna_files' not in st.session_state:
+	st.session_state[ 'docqna_files' ] = [ ]
+
+if 'docqna_uploaded' not in st.session_state:
+	st.session_state[ 'docqna_uploaded' ] = ''
+
+if 'docqna_messages' not in st.session_state:
+	st.session_state.docqna_messages = [ ]
+
+if 'docqna_active_docs' not in st.session_state:
+	st.session_state.docqna_active_docs = [ ]
+
+if 'docqna_source' not in st.session_state:
+	st.session_state.docqna_source = ''
+
+if 'docqna_multi_mode' not in st.session_state:
+	st.session_state.docqna_multi_mode = False
+
+# ------- TOKEN PARAMATERS  ---------------------------
+if 'last_answer' not in st.session_state:
+	st.session_state.last_answer = ''
+
+if 'last_sources' not in st.session_state:
+	st.session_state.last_sources = [ ]
+
+if 'last_analysis' not in st.session_state:
+	st.session_state.last_analysis = {
+			'tables': [ ],
+			'docqna_files': [ ],
+			'text': [ ],
+	}
+
+if 'last_call_usage' not in st.session_state:
+	st.session_state.last_call_usage = {
+			'prompt_tokens': 0,
+			'completion_tokens': 0,
+			'total_tokens': 0, }
+
+if 'token_usage' not in st.session_state:
+	st.session_state.token_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
+	                                 'total_tokens': 0, }
+
 # ==============================================================================
 # RESPONSE/CHAT UTILITIES
 # ==============================================================================
@@ -1880,727 +2609,6 @@ st.caption( cfg.APP_SUBTITLE )
 inject_response_css( )
 init_state( )
 
-# ======================================================================================
-# SESSION STATE PARAMETER DEFINITIONS
-# ======================================================================================
-if 'api_keys' not in st.session_state:
-	st.session_state.api_keys = { 'GPT': None, 'Grok': None, 'Gemini': None, }
-
-if 'openai_api_key' not in st.session_state:
-	st.session_state.openai_api_key = ''
-
-if 'gemini_api_key' not in st.session_state:
-	st.session_state.gemini_api_key = ''
-
-if 'groq_api_key' not in st.session_state:
-	st.session_state.groq_api_key = ''
-
-if 'google_api_key' not in st.session_state:
-	st.session_state.google_api_key = ''
-
-if 'xai_api_key' not in st.session_state:
-	st.session_state.xai_api_key = ''
-
-if st.session_state.openai_api_key == '':
-	default = cfg.OPENAI_API_KEY
-	if default:
-		st.session_state.openai_api_key = default
-		os.environ[ 'OPENAI_API_KEY' ] = default
-
-if st.session_state.gemini_api_key == '':
-	default = cfg.GEMINI_API_KEY
-	if default:
-		st.session_state.gemini_api_key = default
-		os.environ[ 'GEMINI_API_KEY' ] = default
-
-if st.session_state.groq_api_key == '':
-	default = cfg.GROQ_API_KEY
-	if default:
-		st.session_state.groq_api_key = default
-		os.environ[ 'GROQ_API_KEY' ] = default
-
-if st.session_state.google_api_key == '':
-	default = cfg.GOOGLE_API_KEY
-	if default:
-		st.session_state.google_api_key = default
-		os.environ[ 'GOOGLE_API_KEY' ] = default
-
-if st.session_state.xai_api_key == '':
-	default = cfg.XAI_API_KEY
-	if default:
-		st.session_state.xai_api_key = default
-		os.environ[ 'XAI_API_KEY' ] = default
-
-if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
-	st.session_state[ 'provider' ] = 'GPT'
-
-if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
-	st.session_state[ 'mode' ] = 'Chat'
-
-if 'files' not in st.session_state:
-	st.session_state.files: List[ str ] = [ ]
-	
-#----------MODEL PARAMETERS --------------------------------
-if 'chat_model' not in st.session_state:
-	st.session_state.chat_model = ''
-
-if 'text_model' not in st.session_state:
-	st.session_state[ 'text_model' ] = ''
-	
-if 'image_model' not in st.session_state:
-	st.session_state[ 'image_model' ] = ''
-	
-if 'audio_model' not in st.session_state:
-	st.session_state[ 'audio_model' ] = ''
-	
-if 'embedding_model' not in st.session_state:
-	st.session_state[ 'embedding_model' ] = ''
-
-if 'docqna_model' not in st.session_state:
-	st.session_state[ 'docqna_model' ] = ''
-
-if 'files_model' not in st.session_state:
-	st.session_state[ 'files_model' ] = ''
-
-if 'stores_model' not in st.session_state:
-	st.session_state[ 'stores_model' ] = ''
-
-if 'tts_model' not in st.session_state:
-	st.session_state[ 'tts_model' ] = ''
-
-if 'transcription_model' not in st.session_state:
-	st.session_state[ 'transcription_model' ] = ''
-
-if 'translation_model' not in st.session_state:
-	st.session_state[ 'translation_model' ] = ''
-
-# --------SYSTEM PARAMETERS----------------------
-if 'instructions' not in st.session_state:
-	st.session_state[ 'instructions' ] = ''
-	
-if 'chat_system_instructions' not in st.session_state:
-	st.session_state[ 'chat_system_instructions' ] = ''
-	
-if 'text_system_instructions' not in st.session_state:
-	st.session_state[ 'text_system_instructions' ] = ''
-
-if 'image_system_instructions' not in st.session_state:
-	st.session_state[ 'image_system_instructions' ] = ''
-
-if 'audio_system_instructions' not in st.session_state:
-	st.session_state[ 'audio_system_instructions' ] = ''
-
-if 'docqna_system_instructions' not in st.session_state:
-	st.session_state[ 'docqna_systems_instructions' ] = ''
-
-#--------CHAT-GENERATION PARAMETERS--------------------
-
-if 'max_tools' not in st.session_state:
-	st.session_state[ 'max_tools' ] = 0
-
-if 'max_tokens' not in st.session_state:
-	st.session_state[ 'max_tokens' ] = 0
-
-if 'temperature' not in st.session_state:
-	st.session_state[ 'temperature' ] = 0.0
-	
-if 'top_percent' not in st.session_state:
-	st.session_state[ 'top_percent' ] = 0.0
-
-if 'frequency_penalty' not in st.session_state:
-	st.session_state[ 'frequency_penalty' ] = 0.0
-	
-if 'presense_penalty' not in st.session_state:
-	st.session_state[ 'presense_penalty' ] = 0.0
-
-if 'background' not in st.session_state:
-	st.session_state[ 'background' ] = False
-
-if 'parallel_tools' not in st.session_state:
-	st.session_state[ 'parallel_tools' ] = False
-
-if 'store' not in st.session_state:
-	st.session_state[ 'store' ] = False
-
-if 'stream' not in st.session_state:
-	st.session_state[ 'stream' ] = False
-
-if 'execution_mode' not in st.session_state:
-	st.session_state[ 'execution_mode' ] = ''
-
-if 'response_format' not in st.session_state:
-	st.session_state[ 'response_format' ] = ''
-
-if 'tool_choice' not in st.session_state:
-	st.session_state[ 'tool_choice' ] = ''
-
-if 'reasoning' not in st.session_state:
-	st.session_state[ 'reasoning' ] = ''
-
-if 'stops' not in st.session_state:
-	st.session_state[ 'stops' ] = [ ]
-
-if 'include' not in st.session_state:
-	st.session_state[ 'include' ] = [ ]
-
-if 'input' not in st.session_state:
-	st.session_state[ 'input' ] = [ ]
-
-if 'tools' not in st.session_state:
-	st.session_state[ 'tools' ] = [ ]
-
-if 'messages' not in st.session_state:
-	st.session_state[ 'messages' ] = [ ]
-
-if 'last_sources' not in st.session_state:
-	st.session_state[ 'last_sources' ] = [ ]
-
-# --------TEXT-GENERATION PARAMETERS--------------------
-if 'text_number' not in st.session_state:
-	st.session_state[ 'text_number' ] = 0
-
-if 'text_max_calls' not in st.session_state:
-	st.session_state[ 'text_max_calls' ] = 0
-
-if 'text_top_k' not in st.session_state:
-	st.session_state[ 'text_top_k' ] = 0
-
-if 'text_max_searches' not in st.session_state:
-	st.session_state[ 'text_max_searches' ] = 0
-
-if 'text_max_tokens' not in st.session_state:
-	st.session_state[ 'text_max_tokens' ] = 0
-
-if 'text_temperature' not in st.session_state:
-	st.session_state[ 'text_temperature' ] = 0.0
-
-if 'text_top_percent' not in st.session_state:
-	st.session_state[ 'text_top_percent' ] = 0.0
-
-if 'text_frequency_penalty' not in st.session_state:
-	st.session_state[ 'text_frequency_penalty' ] = 0.0
-
-if 'text_presense_penalty' not in st.session_state:
-	st.session_state[ 'text_presense_penalty' ] = 0.0
-
-if 'text_parallel_tools' not in st.session_state:
-	st.session_state[ 'text_parallel_tools' ] = False
-
-if 'text_background' not in st.session_state:
-	st.session_state[ 'text_background' ] = False
-
-if 'text_store' not in st.session_state:
-	st.session_state[ 'text_store' ] = False
-
-if 'text_stream' not in st.session_state:
-	st.session_state[ 'text_stream' ] = False
-
-if 'text_response_format' not in st.session_state:
-	st.session_state[ 'text_response_format' ] = ''
-
-if 'text_tool_choice' not in st.session_state:
-	st.session_state[ 'text_tool_choice' ] = ''
-
-if 'text_resolution' not in st.session_state:
-	st.session_state[ 'text_resolution' ] = ''
-
-if 'text_media_resolution' not in st.session_state:
-	st.session_state[ 'text_media_resolution' ] = ''
-
-if 'text_reasoning' not in st.session_state:
-	st.session_state[ 'text_reasoning' ] = ''
-
-if 'text_input' not in st.session_state:
-	st.session_state[ 'text_input' ] = ''
-
-if 'text_stops' not in st.session_state:
-	st.session_state[ 'text_stops' ] = [ ]
-
-if 'text_modalities' not in st.session_state:
-	st.session_state[ 'text_modalities' ] = [ ]
-
-if 'text_include' not in st.session_state:
-	st.session_state[ 'text_include' ] = [ ]
-
-if 'text_domains' not in st.session_state:
-	st.session_state[ 'text_domains' ] = [ ]
-
-if 'text_tools' not in st.session_state:
-	st.session_state[ 'text_tools' ] = [ ]
-
-if 'text_context' not in st.session_state:
-	st.session_state[ 'text_context' ] = [ ]
-
-if 'text_content' not in st.session_state:
-	st.session_state[ 'text_content' ] = [ ]
-
-# --------IMAGE-GENERATION PARAMETERS--------------------
-if 'image_max_tokens' not in st.session_state:
-	st.session_state[ 'image_max_tokens' ] = 0
-	
-if 'image_max_calls' not in st.session_state:
-	st.session_state[ 'image_max_calls' ] = 0
-
-if 'image_max_searches' not in st.session_state:
-	st.session_state[ 'image_max_searches' ] = 0
-
-if 'image_top_k' not in st.session_state:
-	st.session_state[ 'image_top_k' ] = 0
-
-if 'image_temperature' not in st.session_state:
-	st.session_state[ 'image_temperature' ] = 0.0
-
-if 'image_top_percent' not in st.session_state:
-	st.session_state[ 'image_top_percent' ] = 0.0
-
-if 'image_frequency_penalty' not in st.session_state:
-	st.session_state[ 'image_frequency_penalty' ] = 0.0
-
-if 'image_presense_penalty' not in st.session_state:
-	st.session_state[ 'image_presense_penalty' ] = 0.0
-
-if 'image_number' not in st.session_state:
-	st.session_state[ 'image_number' ] = 0.0
-
-if 'image_parallel_tools' not in st.session_state:
-	st.session_state[ 'image_parallel_tools' ] = False
-
-if 'image_background' not in st.session_state:
-	st.session_state[ 'image_background' ] = False
-
-if 'image_store' not in st.session_state:
-	st.session_state[ 'image_store' ] = False
-
-if 'image_stream' not in st.session_state:
-	st.session_state[ 'image_stream' ] = False
-
-if 'image_tool_choice' not in st.session_state:
-	st.session_state[ 'image_tool_choice' ] = ''
-
-if 'image_media_resolution' not in st.session_state:
-	st.session_state[ 'image_media_resolution' ] = ''
-
-if 'image_reasoning' not in st.session_state:
-	st.session_state[ 'image_reasoning' ] = ''
-
-if 'image_resolution' not in st.session_state:
-	st.session_state[ 'image_resolution' ] = ''
-
-if 'image_aspect_ratio' not in st.session_state:
-	st.session_state[ 'image_aspect_ratio' ] = ''
-
-if 'image_mime_type' not in st.session_state:
-	st.session_state[ 'image_mime_type' ] = ''
-
-if 'image_response_format' not in st.session_state:
-	st.session_state[ 'image_response_format' ] = ''
-
-if 'image_input' not in st.session_state:
-	st.session_state[ 'image_input' ] = ''
-
-if 'image_include' not in st.session_state:
-	st.session_state[ 'image_include' ] = [ ]
-
-if 'image_tools' not in st.session_state:
-	st.session_state.image_tools: List[ Dict[ str, Any ] ] = [ ]
-	
-if 'image_modalities' not in st.session_state:
-	st.session_state[ 'image_modalities' ] = [ ]
-	
-if 'image_context' not in st.session_state:
-	st.session_state.image_context: List[ Dict[ str, Any ] ] = [ ]
-
-if 'image_domains' not in st.session_state:
-	st.session_state[ 'image_domains' ] = [ ]
-
-if 'image_content' not in st.session_state:
-	st.session_state[ 'image_content' ] = [ ]
-
-# ------- IMAGE-SPECIFIC PARAMETER---------------
-if 'image_mode' not in st.session_state:
-	st.session_state[ 'image_mode' ] = ''
-	
-if 'image_style' not in st.session_state:
-	st.session_state[ 'image_style' ] = ''
-
-if 'image_detail' not in st.session_state:
-	st.session_state[ 'image_detail' ] = ''
-
-if 'image_backcolor' not in st.session_state:
-	st.session_state[ 'image_backcolor' ] = ''
-
-if 'image_output' not in st.session_state:
-	st.session_state[ 'image_output' ] = ''
-
-if 'image_url' not in st.session_state:
-	st.session_state[ 'image_url' ] = ''
-	
-if 'image_size' not in st.session_state:
-	st.session_state[ 'image_size' ] = ''
-	
-if 'image_quality' not in st.session_state:
-	st.session_state[ 'image_quality' ] = ''
-
-# --------AUDIO-GENERATION PARAMETERS--------------------
-if 'audio_max_tokens' not in st.session_state:
-	st.session_state[ 'audio_max_tokens' ] = 0
-	
-if 'audio_temperature' not in st.session_state:
-	st.session_state[ 'audio_temperature' ] = 0.0
-
-if 'audio_top_percent' not in st.session_state:
-	st.session_state[ 'audio_top_percent' ] = 0.0
-
-if 'audio_frequency_penalty' not in st.session_state:
-	st.session_state[ 'audio_frequency_penalty' ] = 0.0
-
-if 'audio_presense_penalty' not in st.session_state:
-	st.session_state[ 'audio_presense_penalty' ] = 0.0
-
-if 'audio_background' not in st.session_state:
-	st.session_state[ 'audio_background' ] = False
-
-if 'audio_store' not in st.session_state:
-	st.session_state[ 'audio_store' ] = False
-
-if 'audio_stream' not in st.session_state:
-	st.session_state[ 'audio_stream' ] = False
-
-if 'audio_tool_choice' not in st.session_state:
-	st.session_state[ 'audio_tool_choice' ] = ''
-
-if 'audio_reasoning' not in st.session_state:
-	st.session_state[ 'audio_reasoning' ] = ''
-
-if 'audio_response_format' not in st.session_state:
-	st.session_state[ 'audio_response_format' ] = ''
-
-if 'audio_input' not in st.session_state:
-	st.session_state[ 'audio_input' ] = ''
-
-if 'audio_media_resolution' not in st.session_state:
-	st.session_state[ 'audio_media_resolution' ] = ''
-
-if 'audio_stops' not in st.session_state:
-	st.session_state[ 'audio_stops' ] = [ ]
-
-if 'audio_includes' not in st.session_state:
-	st.session_state[ 'audio_includes' ] = [ ]
-
-if 'audio_tools' not in st.session_state:
-	st.session_state.audio_tools: List[ Dict[ str, Any ] ] = [ ]
-
-if 'audio_context' not in st.session_state:
-	st.session_state.audio_context: List[ Dict[ str, Any ] ] = [ ]
-
-#-------AUDIO-SECIFIC PARAMETERS--------------
-if 'audio_task' not in st.session_state:
-	st.session_state[ 'audio_task' ] = ''
-
-if 'audio_file' not in st.session_state:
-	st.session_state[ 'audio_file' ] = ''
-
-if 'audio_rate' not in st.session_state:
-	st.session_state[ 'audio_rate' ] = [ ]
-
-if 'audio_language' not in st.session_state:
-	st.session_state[ 'audio_language' ] = ''
-
-if 'audio_voice' not in st.session_state:
-	st.session_state[ 'audio_voice' ] = ''
-
-if 'audio_start_time' not in st.session_state:
-	st.session_state[ 'audio_start_time' ] = 0.0
-
-if 'audio_end_time' not in st.session_state:
-	st.session_state[ 'audio_end_time' ] = 0.0
-
-if 'audio_loop' not in st.session_state:
-	st.session_state[ 'audio_loop' ] = False
-	
-if 'audio_autoplay' not in st.session_state:
-	st.session_state[ 'audio_autoplay' ] = False
-
-if 'audio_output' not in st.session_state:
-	st.session_state[ 'audio_output' ] = ''
-
-# ------- EMBEDDING-SPECIFIC PARAMETERS ----------------------
-if 'embeddings_dimensions' not in st.session_state:
-	st.session_state[ 'embeddings_dimensions' ] = 0
-
-if 'embeddings_chunk_size' not in st.session_state:
-	st.session_state[ 'embeddings_chunk_size' ] = 0
-
-if 'embeddings_overlap_amount' not in st.session_state:
-	st.session_state[ 'embeddings_overlap_amount' ] = 0
-
-if 'embeddings_input_text' not in st.session_state:
-	st.session_state[ 'embeddings_input_text' ] = ''
-
-if 'embeddings_encoding_format' not in st.session_state:
-	st.session_state[ 'embeddings_encoding_format' ] = ''
-
-if 'embeddings_method' not in st.session_state:
-	st.session_state[ 'embeddings_method' ] = ''
-
-# --------FILES-GENERATION PARAMETERS--------------------
-if 'files_max_tokens' not in st.session_state:
-	st.session_state[ 'files_max_tokens' ] = 0
-
-if 'files_temperature' not in st.session_state:
-	st.session_state[ 'files_temperature' ] = 0.0
-
-if 'files_top_percent' not in st.session_state:
-	st.session_state[ 'files_top_percent' ] = 0.0
-
-if 'files_frequency_penalty' not in st.session_state:
-	st.session_state[ 'files_frequency_penalty' ] = 0.0
-
-if 'files_presense_penalty' not in st.session_state:
-	st.session_state[ 'files_presense_penalty' ] = 0.0
-
-if 'files_background' not in st.session_state:
-	st.session_state[ 'files_background' ] = False
-
-if 'files_store' not in st.session_state:
-	st.session_state[ 'files_store' ] = False
-
-if 'files_stream' not in st.session_state:
-	st.session_state[ 'files_stream' ] = False
-
-if 'files_tool_choice' not in st.session_state:
-	st.session_state[ 'files_tool_choice' ] = ''
-
-if 'files_reasoning' not in st.session_state:
-	st.session_state[ 'files_reasoning' ] = ''
-
-if 'files_response_format' not in st.session_state:
-	st.session_state[ 'files_response_format' ] = ''
-
-if 'files_input' not in st.session_state:
-	st.session_state[ 'files_input' ] = ''
-
-if 'files_media_resolution' not in st.session_state:
-	st.session_state[ 'files_media_resolution' ] = ''
-
-if 'files_stops' not in st.session_state:
-	st.session_state[ 'files_stops' ] = [ ]
-
-if 'files_includes' not in st.session_state:
-	st.session_state[ 'files_includes' ] = [ ]
-
-if 'files_tools' not in st.session_state:
-	st.session_state.files_tools: List[ Dict[ str, Any ] ] = [ ]
-
-if 'files_context' not in st.session_state:
-	st.session_state.files_context: List[ Dict[ str, Any ] ] = [ ]
-
-# ------- FILES-SPECIFIC PARAMETERS --------------------------
-if 'files_purpose' not in st.session_state:
-	st.session_state[ 'files_purpose' ] = ''
-
-if 'files_type' not in st.session_state:
-	st.session_state[ 'files_type' ] = ''
-
-if 'files_id' not in st.session_state:
-	st.session_state[ 'files_id' ] = ''
-
-if 'files_url' not in st.session_state:
-	st.session_state[ 'files_url' ] = ''
-
-if 'files_table' not in st.session_state:
-	st.session_state[ 'files_table' ] = ''
-	
-# -------- VECTORSTORES-GENERATION PARAMETERS --------------------
-if 'stores_temperature' not in st.session_state:
-	st.session_state[ 'stores_temperature' ] = 0.0
-
-if 'stores_top_percent' not in st.session_state:
-	st.session_state[ 'stores_top_percent' ] = 0.0
-
-if 'stores_max_tokens' not in st.session_state:
-	st.session_state[ 'stores_max_tokens' ] = 0
-
-if 'stores_frequency_penalty' not in st.session_state:
-	st.session_state[ 'stores_frequency_penalty' ] = 0.0
-
-if 'stores_presense_penalty' not in st.session_state:
-	st.session_state[ 'stores_presense_penalty' ] = 0.0
-
-if 'stores_max_calls' not in st.session_state:
-	st.session_state[ 'stores_max_calls' ] = 0
-
-if 'stores_tool_choice' not in st.session_state:
-	st.session_state[ 'stores_tool_choice' ] = ''
-
-if 'stores_response_format' not in st.session_state:
-	st.session_state[ 'stores_response_format' ] = ''
-
-if 'stores_reasoning' not in st.session_state:
-	st.session_state[ 'stores_reasoning' ] = ''
-
-if 'stores_resolution' not in st.session_state:
-	st.session_state[ 'stores_resolution' ] = ''
-
-if 'stores_media_resolution' not in st.session_state:
-	st.session_state[ 'stores_media_resolution' ] = ''
-
-if 'stores_parallel_tools' not in st.session_state:
-	st.session_state[ 'stores_parallel_tools' ] = False
-
-if 'stores_background' not in st.session_state:
-	st.session_state[ 'stores_background' ] = False
-
-if 'stores_store' not in st.session_state:
-	st.session_state[ 'stores_store' ] = False
-
-if 'stores_stream' not in st.session_state:
-	st.session_state[ 'stores_stream' ] = False
-
-if 'stores_input' not in st.session_state:
-	st.session_state[ 'stores_input' ] = [ ]
-
-if 'stores_tools' not in st.session_state:
-	st.session_state[ 'stores_tools' ] = [ ]
-
-if 'stores_messages' not in st.session_state:
-	st.session_state[ 'stores_messages' ] = [ ]
-
-if 'stores_stops' not in st.session_state:
-	st.session_state[ 'stores_stops' ] = [ ]
-
-if 'stores_include' not in st.session_state:
-	st.session_state[ 'stores_include' ] = [ ]
-
-# ------- VECTORSTORES-SPECIFIC PARAMETERS -------------------
-if 'stores_id' not in st.session_state:
-	st.session_state[ 'stores_id' ] = ''
-
-# ------ DOCQNA GENERATION PARAMETERS -----------------
-if 'docqna_max_tools' not in st.session_state:
-	st.session_state[ 'docqna_max_tools' ] = 0
-
-if 'docqna_max_tokens' not in st.session_state:
-	st.session_state[ 'docqna_max_tokens' ] = 0
-
-if 'docqna_max_calls' not in st.session_state:
-	st.session_state[ 'docqna_max_calls' ] = 0
-
-if 'docqna_temperature' not in st.session_state:
-	st.session_state[ 'docqna_temperature' ] = 0.0
-
-if 'docqna_top_percent' not in st.session_state:
-	st.session_state[ 'docqna_top_percent' ] = 0.0
-
-if 'docqna_frequency_penalty' not in st.session_state:
-	st.session_state[ 'docqna_frequency_penalty' ] = 0.0
-
-if 'docqna_presense_penalty' not in st.session_state:
-	st.session_state[ 'docqna_presense_penalty' ] = 0.0
-
-# --------DOCQNA PARAMETERS--------------------
-if 'docqna_number' not in st.session_state:
-	st.session_state[ 'docqna_number' ] = 0
-
-if 'docqna_top_k' not in st.session_state:
-	st.session_state[ 'docqna_top_k' ] = 0
-
-if 'docqna_max_searches' not in st.session_state:
-	st.session_state[ 'docqna_max_searches' ] = 0
-
-if 'docqna_parallel_tools' not in st.session_state:
-	st.session_state[ 'docqna_parallel_tools' ] = False
-
-if 'docqna_background' not in st.session_state:
-	st.session_state[ 'docqna_background' ] = False
-
-if 'docqna_store' not in st.session_state:
-	st.session_state[ 'docqna_store' ] = False
-
-if 'docqna_stream' not in st.session_state:
-	st.session_state[ 'docqna_stream' ] = False
-
-if 'docqna_response_format' not in st.session_state:
-	st.session_state[ 'docqna_response_format' ] = ''
-
-if 'docqna_tool_choice' not in st.session_state:
-	st.session_state[ 'docqna_tool_choice' ] = ''
-
-if 'docqna_resolution' not in st.session_state:
-	st.session_state[ 'docqna_resolution' ] = ''
-
-if 'docqna_media_resolution' not in st.session_state:
-	st.session_state[ 'docqna_media_resolution' ] = ''
-
-if 'docqna_reasoning' not in st.session_state:
-	st.session_state[ 'docqna_reasoning' ] = ''
-
-if 'docqna_input' not in st.session_state:
-	st.session_state[ 'docqna_input' ] = ''
-
-if 'docqna_stops' not in st.session_state:
-	st.session_state[ 'docqna_stops' ] = [ ]
-
-if 'docqna_modalities' not in st.session_state:
-	st.session_state[ 'docqna_modalities' ] = [ ]
-
-if 'docqna_include' not in st.session_state:
-	st.session_state[ 'docqna_include' ] = [ ]
-
-if 'docqna_domains' not in st.session_state:
-	st.session_state[ 'docqna_domains' ] = [ ]
-
-if 'docqna_tools' not in st.session_state:
-	st.session_state[ 'docqna_tools' ] = [ ]
-
-if 'docqna_context' not in st.session_state:
-	st.session_state[ 'docqna_context' ] = [ ]
-
-if 'docqna_content' not in st.session_state:
-	st.session_state[ 'docqna_content' ] = [ ]
-
-#------- DOCQA-SPECIFIC PARAMATERS  ---------------------------
-if 'docqna_files' not in st.session_state:
-	st.session_state[ 'docqna_files' ] = [ ]
-	
-if 'docqna_uploaded' not in st.session_state:
-	st.session_state[ 'docqna_uploaded' ] = ''
-
-if 'docqna_messages' not in st.session_state:
-	st.session_state.docqna_messages = [ ]
-
-if 'docqna_active_docs' not in st.session_state:
-	st.session_state.docqna_active_docs = [ ]
-
-if 'docqna_source' not in st.session_state:
-	st.session_state.docqna_source = ''
-
-if 'docqna_multi_mode' not in st.session_state:
-	st.session_state.docqna_multi_mode = False
-
-# ------- TOKEN PARAMATERS  ---------------------------
-if 'last_answer' not in st.session_state:
-	st.session_state.last_answer = ''
-
-if 'last_sources' not in st.session_state:
-	st.session_state.last_sources = [ ]
-
-if 'last_analysis' not in st.session_state:
-	st.session_state.last_analysis = {
-			'tables': [ ],
-			'docqna_files': [ ],
-			'text': [ ],
-	}
-
-if 'last_call_usage' not in st.session_state:
-	st.session_state.last_call_usage = {
-			'prompt_tokens': 0,
-			'completion_tokens': 0,
-			'total_tokens': 0, }
-
-if 'token_usage' not in st.session_state:
-	st.session_state.token_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
-	                                 'total_tokens': 0, }
 
 # ==============================================================================
 # Sidebar
@@ -2661,10 +2669,36 @@ with st.sidebar:
 		if xai_key:
 			st.session_state.xai_api_key = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
-			
-	if st.button( 'Clear Chat' ):
-		reset_state( )
-		st.rerun( )
+
+	if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
+		st.session_state[ 'provider' ] = 'GPT'
+	
+	if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
+		st.session_state[ 'mode' ] = 'Text'
+	
+	if 'messages' not in st.session_state:
+		st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
+	
+	if 'last_call_usage' not in st.session_state:
+		st.session_state.last_call_usage = {
+				'prompt_tokens': 0,
+				'completion_tokens': 0,
+				'total_tokens': 0,
+		}
+	
+	if 'token_usage' not in st.session_state:
+		st.session_state.token_usage = {
+				'prompt_tokens': 0,
+				'completion_tokens': 0,
+				'total_tokens': 0,
+		}
+	
+	if 'files' not in st.session_state:
+		st.session_state.files: List[ str ] = [ ]
+		
+		if st.button( 'Clear Chat' ):
+			reset_state( )
+			st.rerun( )
 		
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	if provider == 'Gemini':
@@ -7466,6 +7500,7 @@ st.markdown(
 # ======================================================================================
 _mode_to_model_key = \
 {
+	'Chat': 'chat_model',
 	'Text': 'text_model',
 	'Images': 'image_model',
 	'TTS': 'tts_model',
