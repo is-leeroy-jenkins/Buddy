@@ -2738,6 +2738,7 @@ if mode == 'Chat':
 	chat_parallel = st.session_state.get( 'parallel_tools', False )
 	chat_messages = st.session_state.get( 'messages', [ ] )
 	chat_history = st.session_state.get( 'chat_history', [ ] )
+	st.session_state.setdefault( 'chat_previous_response_id', '' )
 	_modes = [ 'Standard', 'Guidance Only', 'Analysis Only' ]
 	_current_mode = st.session_state.get( 'execution_mode', 'Standard' )
 	
@@ -2759,6 +2760,7 @@ if mode == 'Chat':
 		)
 	
 	execution_mode = st.session_state.get( 'execution_mode', 'Standard' )
+	intent_prefix = build_intent_prefix( execution_mode )
 	
 	# ------------------------------------------------------------------
 	# Main Chat UI
@@ -2773,58 +2775,53 @@ if mode == 'Chat':
 			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
 				try:
 					chat = get_chat_module( )
+					effective_input = f'{intent_prefix}{user_input}' if intent_prefix else user_input
+					
 					with st.spinner( 'Running prompt...' ):
 						if provider_name == 'GPT':
 							response = chat.completion(
 								prompt_id=cfg.PROMPT_ID,
 								prompt_version=cfg.PROMPT_VERSION,
 								model=chat_model or None,
-								user_input=user_input,
+								user_input=effective_input,
 								temperature=chat_temperature,
 								format=chat_format if isinstance( chat_format, dict ) else None,
 								top_p=chat_top_p,
 								frequency=chat_freq,
 								presence=chat_presense,
 								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
-								store=True,
+								store=chat_store,
 								stream=chat_stream,
 								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
 								background=chat_background,
 								reasoning=chat_reasoning or None,
-								include=[
-										'web_search_call.action.sources',
-										'code_interpreter_call.outputs',
-								],
+								include=[ 'web_search_call.action.sources',
+								          'code_interpreter_call.outputs',
+										'file_search_call.results', ],
 								tools=[
 										{
-												'type': 'file_search',
-												'vector_store_ids': cfg.GPT_VECTORSTORES,
+											'type': 'file_search',
+											'vector_store_ids': cfg.GPT_VECTORSTORES,
 										},
 										{
-												'type': 'web_search',
-												'filters': {
-														'allowed_domains': cfg.GPT_DOMAINS,
-												},
-												'search_context_size': 'medium',
-												'user_location': {
-														'type': 'approximate'
-												},
+											'type': 'web_search',
+											'filters': { 'allowed_domains': cfg.GPT_DOMAINS, },
+											'search_context_size': 'medium',
+											'user_location': { 'type': 'approximate' },
 										},
 										{
-												'type': 'code_interpreter',
-												'container': {
-														'type': 'auto',
-														'file_ids': cfg.GPT_FILES,
-												},
+											'type': 'code_interpreter',
+											'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
 										},
 								],
 								tool_choice=chat_choice or None,
 								is_parallel=chat_parallel,
-								previous_id=getattr( chat, 'previous_id', None ),
+								previous_id=st.session_state.get( 'chat_previous_response_id', '' ) or None,
 							)
+							st.session_state.chat_previous_response_id = getattr( response, 'id', '' ) or ''
 						else:
 							output_text = chat.generate_text(
-								prompt=user_input,
+								prompt=effective_input,
 								model=chat_model,
 								temperature=chat_temperature,
 								format=chat_format if isinstance( chat_format, dict ) else None,
@@ -2843,26 +2840,80 @@ if mode == 'Chat':
 							response = None
 					
 					sources = [ ]
+					analysis = { 'tables': [ ], 'files': [ ], 'text': [ ] }
+					
 					if response is not None:
 						try:
 							for item in getattr( response, 'output', [ ] ):
-								if getattr( item, 'type', '' ) == 'web_search_call':
+								item_type = getattr( item, 'type', '' )
+								
+								if item_type == 'web_search_call':
 									action = getattr( item, 'action', None )
-									_found = getattr( action, 'sources', None )
-									if _found:
-										for src in _found:
+									raw_sources = getattr( action, 'sources', None )
+									if raw_sources:
+										for src in raw_sources:
 											sources.append(
 												{
+														'type': 'web',
 														'url': getattr( src, 'url', None ),
 														'title': getattr( src, 'title', None ),
-														'file_id': getattr( src, 'file_id', None ),
-														'file_name': getattr( src, 'filename', None ),
+														'file_id': None,
+														'file_name': None,
+														'snippet': getattr( src, 'snippet', None ),
 												}
 											)
+								
+								elif item_type == 'file_search_call':
+									results = getattr( item, 'results', None )
+									if results:
+										for result in results:
+											sources.append(
+												{
+														'type': 'file',
+														'url': None,
+														'title': getattr( result, 'file_name', None )
+														         or getattr( result, 'title', None ),
+														'file_id': getattr( result, 'file_id', None )
+														           or getattr( result, 'id', None ),
+														'file_name': getattr( result, 'file_name', None ),
+														'snippet': getattr( result, 'text', None ),
+												}
+											)
+								
+								elif item_type == 'code_interpreter_call':
+									outputs = getattr( item, 'outputs', None )
+									if outputs:
+										for out in outputs:
+											out_type = getattr( out, 'type', None )
+											if out_type == 'table':
+												analysis[ 'tables' ].append( normalize( out ) )
+											elif out_type == 'file':
+												analysis[ 'files' ].append( normalize( out ) )
+											elif out_type in ('output_text', 'text'):
+												text = getattr( out, 'text', None )
+												if isinstance( text, str ) and text.strip( ):
+													analysis[ 'text' ].append( text )
 						except Exception:
 							sources = [ ]
+							analysis = { 'tables': [ ], 'files': [ ], 'text': [ ] }
 					
 					st.session_state.last_sources = sources
+					st.session_state.last_analysis = analysis
+					
+					if response is not None:
+						output_text = extract_response_text( response )
+					else:
+						output_text = output_text if isinstance( output_text, str ) else ''
+					
+					if output_text.strip( ):
+						st.markdown( output_text )
+					else:
+						st.warning( 'No text response returned by the prompt.' )
+					
+					if analysis.get( 'text' ):
+						with st.expander( 'Analysis Output', expanded=False ):
+							for block in analysis.get( 'text', [ ] ):
+								st.markdown( block )
 					
 					if sources:
 						st.markdown( '#### Sources' )
@@ -2874,21 +2925,8 @@ if mode == 'Chat':
 								st.markdown( f'- [{title}]({url})' )
 							elif src.get( 'file_id' ):
 								st.markdown( f"- {title} _(File ID: `{src[ 'file_id' ]}`)_" )
-					
-					if response is not None:
-						output_text = ''
-						for item in getattr( response, 'output', [ ] ):
-							if getattr( item, 'type', '' ) == 'message':
-								for part in getattr( item, 'content', [ ] ):
-									if getattr( part, 'type', '' ) == 'output_text':
-										output_text += getattr( part, 'text', '' )
-					else:
-						output_text = output_text if isinstance( output_text, str ) else ''
-					
-					if output_text.strip( ):
-						st.markdown( output_text )
-					else:
-						st.warning( 'No text response returned by the prompt.' )
+							else:
+								st.markdown( f'- {title}' )
 					
 					st.session_state.chat_history.append(
 						{
@@ -2903,6 +2941,12 @@ if mode == 'Chat':
 								'content': output_text,
 						}
 					)
+					
+					if response is not None:
+						try:
+							_update_token_counters( response )
+						except Exception:
+							pass
 				except Exception as e:
 					st.error( 'An error occurred while running the prompt.' )
 					st.exception( e )
