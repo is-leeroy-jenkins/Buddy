@@ -60,6 +60,7 @@ DB_PATH = 'stores/sqlite/Data.db'
 AUDIO_TEST_FILE = r'stores/audio/conditions.mp3'
 ANALYST = '❓'
 BUDDY = '🧠'
+LLM_PATH = 'models/llm/buddy-3-270m-it-Q4_K_M.gguf'
 MODELS = [ 'gpt-5-nano-2025-08-07', 'gpt-4.1-nano-2025-04-14', 'gpt-4o-mini', ]
 GPT_AVATAR = r'resources/images/gpt_avatar.png'
 GROK_AVATAR = r'resources/images/grok_avatar.png'

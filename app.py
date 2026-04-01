@@ -66,6 +66,7 @@ import tempfile
 import re
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
+from llama_cpp import Llama
 from sentence_transformers import SentenceTransformer
 from gpt import (
 	Chat,
@@ -314,6 +315,9 @@ if 'text_media_resolution' not in st.session_state:
 if 'text_reasoning' not in st.session_state:
 	st.session_state[ 'text_reasoning' ] = ''
 
+if 'text_safety_profile' not in st.session_state:
+	st.session_state[ 'text_safety_profile' ] = ''
+
 if 'text_input' not in st.session_state:
 	st.session_state[ 'text_input' ] = ''
 
@@ -328,6 +332,9 @@ if 'text_include' not in st.session_state:
 
 if 'text_domains' not in st.session_state:
 	st.session_state[ 'text_domains' ] = [ ]
+
+if 'text_urls' not in st.session_state:
+	st.session_state[ 'text_urls' ] = [ ]
 
 if 'text_tools' not in st.session_state:
 	st.session_state[ 'text_tools' ] = [ ]
@@ -816,6 +823,63 @@ if 'token_usage' not in st.session_state:
 	                                 'total_tokens': 0, }
 
 # ==============================================================================
+# LLM UTILITIES
+# ==============================================================================
+@st.cache_resource
+def load_llm( ctx: int, threads: int ) -> Llama:
+	return Llama( model_path=str( cfg.LLM_PATH ), n_ctx=ctx, n_threads=threads, n_batch=512,
+		verbose=False )
+
+@st.cache_resource
+def load_embedder( ) -> SentenceTransformer:
+	return SentenceTransformer( 'all-MiniLM-L6-v2' )
+
+llm = load_llm( cfg.DEFAULT_CTX, cfg.CORES )
+embedder = load_embedder( )
+
+def resolve_gemini_api_key( ) -> Optional[ str ]:
+	"""
+	
+		Resolve Gemini API key using the following precedence:
+		1) Session override (user-entered)
+		2) config.py default
+		3) Environment variable (optional fallback)
+		
+	"""
+	session_key = st.session_state.get( "gemini_api_key" )
+	if session_key:
+		return session_key
+	
+	cfg_key = getattr( cfg, "GOOGLE_API_KEY", None )
+	if cfg_key:
+		return cfg_key
+	
+	return os.environ.get( "GOOGLE_API_KEY" )
+
+def _apply_gemini_runtime_config( ) -> None:
+	"""
+		
+		Ensure Gemini client initializes in API-key mode (not Vertex AI).
+	
+		This avoids: "Project/location and API key are mutually exclusive in the client initializer."
+		
+	"""
+	key = resolve_gemini_api_key( )
+	if key:
+		os.environ[ "GOOGLE_API_KEY" ] = key
+	
+	# Ensure project/location do not get passed when using API key mode.
+	# gemini.py reads these from the shared config module at runtime.
+	try:
+		setattr( cfg, "GOOGLE_CLOUD_PROJECT", None )
+	except Exception:
+		pass
+	try:
+		setattr( cfg, "GOOGLE_CLOUD_LOCATION", None )
+	except Exception:
+		pass
+
+# ==============================================================================
 # RESPONSE/CHAT UTILITIES
 # ==============================================================================
 def extract_response_text( response: object ) -> str:
@@ -888,7 +952,7 @@ def convert_xml( text: str ) -> str:
 			markdown_blocks.append( body )
 	return "\n\n".join( markdown_blocks )
 
-def markdown_converter( text: Any ) -> str:
+def convert_markdown( text: Any ) -> str:
 	"""
 		Purpose:
 		--------
@@ -1201,67 +1265,6 @@ def normalize( obj ):
 			return str( obj )
 	return str( obj )
 
-def extract_answer( response: Any ) -> str:
-	"""
-	
-		Purpose:
-		_________
-		Parses-out answer text from a structured response object.
-		
-		Parameters:
-		------------
-		response: Any
-			Structured API response expected to contain an `output` attribute.
-		
-		Returns:
-		---------
-		str
-			Concatenated assistant text or empty string.
-	
-	"""
-	texts: List[ str ] = [ ]
-	
-	if response is None:
-		return ''
-	
-	output = getattr( response, 'output', None )
-	if not isinstance( output, list ):
-		return ''
-	
-	for item in output:
-		if item is None:
-			continue
-		
-		item_type = getattr( item, 'type', None )
-		
-		# ---------------------------------------
-		# Direct text items
-		# ---------------------------------------
-		if item_type in TEXT_TYPES:
-			text = getattr( item, 'text', None )
-			if isinstance( text, str ) and text.strip( ):
-				texts.append( text )
-			continue
-		
-		# ---------------------------------------
-		# Nested content blocks
-		# ---------------------------------------
-		content = getattr( item, 'content', None )
-		if not isinstance( content, list ):
-			continue
-		
-		for block in content:
-			if block is None:
-				continue
-			
-			block_type = getattr( block, 'type', None )
-			if block_type in TEXT_TYPES:
-				text = getattr( block, 'text', None )
-				if isinstance( text, str ) and text.strip( ):
-					texts.append( text )
-	
-	return '\n'.join( texts ).strip( )
-
 def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 	"""
 	
@@ -1331,68 +1334,6 @@ def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 						'snippet': s.get( 'text' ), 'url': None, 'files_id': s.get( 'files_id' ), } )
 	
 	return sources
-
-def extract_analysis( response: Any ) -> Dict[ str, Any ]:
-	"""
-	
-		Purpose:
-		_________
-		Parses-out code interpreter artifacts from structured response object.
-		
-		Parameters:
-		------------
-		response: Any
-			Structured API response.
-		
-		Returns:
-		---------
-		Dict[ str, Any ]
-			Dictionary containing tables, files, and text artifacts.
-	
-	"""
-	artifacts: Dict[ str, Any ] = {
-			'tables': [ ],
-			'files': [ ],
-			'text': [ ] }
-	
-	if response is None:
-		return artifacts
-	
-	output = getattr( response, 'output', None )
-	if not isinstance( output, list ):
-		return artifacts
-	
-	for item in output:
-		if item is None:
-			continue
-		
-		if getattr( item, 'type', None ) != 'code_interpreter_call':
-			continue
-		
-		outputs = getattr( item, 'outputs', None )
-		if not isinstance( outputs, (list, tuple) ):
-			continue
-		
-		for out in outputs:
-			if out is None:
-				continue
-			
-			out_type = getattr( out, 'type', None )
-			
-			if out_type == 'table':
-				normalized = normalize( out )
-				artifacts[ 'tables' ].append( normalized )
-			
-			elif out_type == 'file':
-				normalized = normalize( out )
-				artifacts[ 'files' ].append( normalized )
-			
-			elif out_type in TEXT_TYPES:
-				text = getattr( out, 'text', None )
-				if isinstance( text, str ) and text.strip( ):
-					artifacts[ 'text' ].append( text )
-	
-	return artifacts
 
 def save_temp( upload ) ->  str | None:
 	"""
@@ -1475,7 +1416,7 @@ def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 	
 	return usage
 
-def _update_token_counters( resp: Any ) -> None:
+def update_token_counters( resp: Any ) -> None:
 	"""
 	
 		Purpose:
@@ -1656,25 +1597,132 @@ def delete_prompt( pid: int ) -> None:
 		conn.execute( "DELETE FROM Prompts WHERE PromptsId=?", (pid,) )
 
 def build_prompt( user_input: str ) -> str:
-	prompt = f"<|system|>\n{st.session_state.system_prompt}\n</s>\n"
+	"""
+		Purpose:
+		--------
+		Build a llama.cpp-compatible prompt using the application's system instructions, optional
+		retrieval context (semantic + basic RAG), and the current in-memory chat history.
+
+		Parameters:
+		-----------
+		user_input : str
+			The current user turn to append to the prompt.
+
+		Returns:
+		--------
+		str
+			A fully constructed prompt in chat template format.
+	"""
+	system_instructions = st.session_state.get( 'system_instructions', '' )
+	use_semantic = bool( st.session_state.get( 'use_semantic', False ) )
+	basic_docs = st.session_state.get( 'basic_docs', [ ] )
+	messages = st.session_state.get( 'messages', [ ] )
 	
-	if st.session_state.use_semantic:
-		with sqlite3.connect( cf.DB_PATH ) as conn:
+	top_k_value = int( st.session_state.get( 'top_k', 0 ) )
+	if top_k_value <= 0:
+		top_k_value = 4
+	
+	prompt = f"<|system|>\n{system_instructions}\n</s>\n"
+	
+	if use_semantic:
+		with sqlite3.connect( cfg.DB_PATH ) as conn:
 			rows = conn.execute( "SELECT chunk, vector FROM embeddings" ).fetchall( )
+		
 		if rows:
 			q = embedder.encode( [ user_input ] )[ 0 ]
 			scored = [ (c, cosine_sim( q, np.frombuffer( v ) )) for c, v in rows ]
-			for c, _ in sorted( scored, key=lambda x: x[ 1 ], reverse=True )[ :top_k ]:
+			for c, _ in sorted( scored, key=lambda x: x[ 1 ], reverse=True )[ :top_k_value ]:
 				prompt += f"<|system|>\n{c}\n</s>\n"
 	
-	for d in st.session_state.basic_docs[ :6 ]:
+	for d in basic_docs[ :6 ]:
 		prompt += f"<|system|>\n{d}\n</s>\n"
 	
-	for r, c in st.session_state.messages:
-		prompt += f"<|{r}|>\n{c}\n</s>\n"
+	if isinstance( messages, list ):
+		for msg in messages:
+			role = ''
+			content = ''
+			
+			if isinstance( msg, tuple ) or isinstance( msg, list ):
+				if len( msg ) == 2:
+					role = str( msg[ 0 ] or '' ).strip( )
+					content = str( msg[ 1 ] or '' )
+			elif isinstance( msg, dict ):
+				role = str( msg.get( 'role', '' ) or '' ).strip( )
+				content = str( msg.get( 'content', '' ) or '' )
+			
+			if role:
+				prompt += f"<|{role}|>\n{content}\n</s>\n"
 	
 	prompt += f"<|user|>\n{user_input}\n</s>\n<|assistant|>\n"
 	return prompt
+
+def run_llm_turn( user_input: str, temperature: float, top_p: float, repeat_penalty: float,
+		max_tokens: int, stream: bool, output: Any | None = None ) -> str:
+	"""
+	
+		Purpose:
+		--------
+		Run a single LLM turn using the application's shared prompt builder and either stream or
+		return the full response text.
+
+		Parameters:
+		-----------
+		user_input : str
+			The user turn (already constructed, including any document/RAG context if applicable).
+		temperature : float
+			Sampling temperature.
+		top_p : float
+			Nucleus sampling probability.
+		repeat_penalty : float
+			Repeat penalty.
+		max_tokens : int
+			Maximum tokens to generate.
+		stream : bool
+			When True, stream tokens to the provided Streamlit placeholder.
+		output : Any | None
+			A Streamlit placeholder (e.g., st.empty()) used for streaming output.
+
+		Returns:
+		--------
+		str
+			The assistant response text.
+			
+	"""
+	if user_input is None:
+		return ''
+	
+	prompt = build_prompt( user_input )
+	if not stream:
+		resp = llm(
+			prompt,
+			stream=False,
+			max_tokens=max_tokens,
+			temperature=temperature,
+			top_p=top_p,
+			repeat_penalty=repeat_penalty,
+			stop=[ '</s>' ]
+		)
+		text = (resp.get( 'choices', [ { 'text': '' } ] )[ 0 ].get( 'text', '' ) or '')
+		return text.strip( )
+	
+	buf = ''
+	if output is None:
+		output = st.empty( )
+	
+	for chunk in llm(
+			prompt,
+			stream=True,
+			max_tokens=max_tokens,
+			temperature=temperature,
+			top_p=top_p,
+			repeat_penalty=repeat_penalty,
+			stop=[ '</s>' ]
+	):
+		buf += chunk[ 'choices' ][ 0 ][ 'text' ]
+		output.markdown( buf + '▌' )
+	
+	output.markdown( buf )
+	return buf.strip( )
 
 DM_DB_PATH = os.path.join( 'stores', 'sqlite', 'Data.db' )
 os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
@@ -2607,6 +2655,8 @@ def summarize_active_document( ) -> str:
 # ==============================================================================
 # Page Setup
 # ==============================================================================
+
+initialize_database(
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
 st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
 	initial_sidebar_state='collapsed' )
@@ -2944,7 +2994,7 @@ if mode == 'Chat':
 					
 					if response is not None:
 						try:
-							_update_token_counters( response )
+							update_token_counters( response )
 						except Exception:
 							pass
 				except Exception as e:
@@ -2961,6 +3011,7 @@ elif mode == 'Text':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	text_number = st.session_state.get( 'text_number', 0 )
 	text_max_calls = st.session_state.get( 'text_max_calls', 0 )
+	text_max_urls = st.session_state.get( 'text_max_urls', 0 )
 	text_max_searches = st.session_state.get( 'text_max_searches', 0 )
 	text_max_tokens = st.session_state.get( 'text_max_tokens', 0 )
 	text_top_percent = st.session_state.get( 'text_top_percent', 0.0 )
@@ -2977,7 +3028,9 @@ elif mode == 'Text':
 	text_resolution = st.session_state.get( 'text_resolution', '' )
 	text_media_resolution = st.session_state.get( 'text_media_resolution', '' )
 	text_response_format = st.session_state.get( 'text_response_format', '' )
+	text_response_schema = st.session_state.get( 'text_response_schema', '' )
 	text_tool_choice = st.session_state.get( 'text_tool_choice', '' )
+	text_safety_profile = st.session_state.get( 'text_safety_profile', '' )
 	text_content = st.session_state.get( 'text_content', '' )
 	text_input = st.session_state.get( 'text_input', '' )
 	text_tools = st.session_state.get( 'text_tools', [ ] )
@@ -2985,6 +3038,7 @@ elif mode == 'Text':
 	text_context = st.session_state.get( 'text_context', [ ] )
 	text_include = st.session_state.get( 'text_include', [ ] )
 	text_domains = st.session_state.get( 'text_domains', [ ] )
+	text_urls = st.session_state.get( 'text_urls', [ ] )
 	text_stops = st.session_state.get( 'text_stops', [ ] )
 	text = provider_module.Chat( )
 	
@@ -3209,71 +3263,69 @@ elif mode == 'Text':
 		# Expander — Gemini Text LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				
-				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+			
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
 					# ---------- Model ------------
 					with llm_c1:
 						model_options = list( text.model_options )
-						set_text_model = st.selectbox( label='Select Model', options=model_options,
+						set_text_model = st.selectbox( label='Model', options=model_options,
 							key='text_model', placeholder='Options', index=None,
 							help='REQUIRED. Text Generation model used by the AI', )
 						
 						text_model = st.session_state[ 'text_model' ]
 					
-					# ---------- Include ------------
+					# ---------- Response Schema ------------
 					with llm_c2:
-						include_options = list( text.include_options )
-						set_text_include = st.multiselect( label='Include:', options=include_options,
-							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
+						set_text_response_schema = st.text_input( label='Response Schema',
+							key='text_response_schema',
+							value=st.session_state.get( 'text_response_schema', '' ),
+							help='Optional. JSON schema used when Response Format is application/json.',
+							width='stretch',
+							placeholder='{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"]}' )
 						
-						text_include = [ d.strip( ) for d in set_text_include
-						                 if d.strip( ) ]
-						
-						text_include = st.session_state[ 'text_include' ]
+						text_response_schema = st.session_state[ 'text_response_schema' ]
 					
-					# ---------- Allowed Domains ------------
+					# ---------- Max URLs ------------
 					with llm_c3:
-						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
-							value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
-							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						set_text_max_urls = st.slider( label='Max URLs', min_value=0, max_value=25,
+							key='text_max_urls', step=1,
+							help='Optional. Maximum number of URLs from the URL list to include.',
+							width='stretch' )
 						
-						text_domains = [ d.strip( ) for d in set_text_domains.split( ',' )
-						                 if d.strip( ) ]
-						
-						st.session_state[ 'text_domains' ] = text_domains
+						text_max_urls = st.session_state[ 'text_max_urls' ]
 					
-					# ---------- Reasoning/Thinking Level ------------
+					# ---------- Thinking Level ------------
 					with llm_c4:
 						reasoning_options = list( text.reasoning_options )
-						set_text_reasoning = st.selectbox( label='Thinking Level:',
+						set_text_reasoning = st.selectbox( label='Thinking Level',
 							options=reasoning_options, key='text_reasoning',
 							help=cfg.REASONING, index=None, placeholder='Options' )
 						
 						text_reasoning = st.session_state[ 'text_reasoning' ]
 					
-					# ---------- Media Resolution ------------
+					# ---------- Tools ------------
 					with llm_c5:
-						media_options = list( text.media_options)
-						set_media_resolution = st.selectbox( label='Media Resolution',
-							options=media_options, key='text_media_resolution',
-							help=cfg.REASONING, index=None, placeholder='Options' )
+						text.model = st.session_state.get( 'text_model' ) or text.model
+						tool_options = list( text.get_supported_tool_options( text.model ) )
+						set_text_tools = st.multiselect( label='Tools', options=tool_options,
+							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
 						
-						media_resolution = st.session_state[ 'text_media_resolution' ]
+						text_tools = [ d.strip( ) for d in set_text_tools if d.strip( ) ]
 					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
-						for key in [ 'text_model', 'text_include', 'text_domains',
-						             'text_reasoning', 'text_media_resolution' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
+						st.session_state[ 'text_model' ] = ''
+						st.session_state[ 'text_max_urls' ] = 0
+						st.session_state[ 'text_reasoning' ] = ''
+						st.session_state[ 'text_response_schema' ] = ''
+						st.session_state[ 'text_tools' ] = [ ]
 						st.rerun( )
 				
-				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Inference Settings', icon='🎚️', expanded=False, width='stretch' ):
 					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
@@ -3295,15 +3347,15 @@ elif mode == 'Text':
 					
 					# ---------- Presense ------------
 					with prm_c3:
-						set_text_presense = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
-							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presense_penalty' )
+						set_text_presence = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'text_presence_penalty', 0.0 ) ),
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presence_penalty' )
 						
-						text_presense = st.session_state[ 'text_presense_penalty' ]
+						text_presence = st.session_state[ 'text_presence_penalty' ]
 					
 					# ---------- Temperature ------------
 					with prm_c4:
-						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+						set_text_temperature = st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
 							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
 							help=cfg.TEMPERATURE, key='text_temperature' )
 						
@@ -3311,7 +3363,7 @@ elif mode == 'Text':
 					
 					# ---------- Top-K ------------
 					with prm_c5:
-						set_text_topk= st.slider( label='Top K', min_value=0, max_value=20,
+						set_text_topk = st.slider( label='Top K', min_value=0, max_value=20,
 							value=int( st.session_state.get( 'text_top_k', 0 ) ), step=1,
 							help=cfg.TOP_K,
 							key='text_top_k' )
@@ -3320,14 +3372,14 @@ elif mode == 'Text':
 					
 					# ---------- Reset Settings ------------
 					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						for key in [ 'text_top_percent', 'text_frequency_penalty',
-						             'text_presense_penalty', 'text_temperature', 'text_top_k', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
+						st.session_state[ 'text_top_percent' ] = 0.0
+						st.session_state[ 'text_frequency_penalty' ] = 0.0
+						st.session_state[ 'text_presence_penalty' ] = 0.0
+						st.session_state[ 'text_temperature' ] = 0.0
+						st.session_state[ 'text_top_k' ] = 0
 						st.rerun( )
 				
-				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
@@ -3340,115 +3392,123 @@ elif mode == 'Text':
 						
 						text_number = st.session_state[ 'text_number' ]
 					
-					# ---------- Max Calls ------------
+					# ---------- Calling Mode ------------
 					with tool_c2:
-						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
-							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
-							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
-						
-						text_max_calls = st.session_state[ 'text_max_calls' ]
-					
-					# ---------- Choice/Calling Mode ------------
-					with tool_c3:
 						choice_options = list( text.choice_options )
 						set_text_choice = st.selectbox( label='Calling Mode', options=choice_options,
 							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
 						
 						text_tool_choice = st.session_state[ 'text_tool_choice' ]
 					
-					# ---------- Tools ------------
+					# ---------- Resolution ------------
+					with tool_c3:
+						media_options = list( text.media_options )
+						set_text_media_resolution = st.selectbox( label='Resolution',
+							options=media_options, key='text_media_resolution',
+							help='Optional. Requested media resolution for supported outputs.',
+							index=None, placeholder='Options' )
+						
+						text_media_resolution = st.session_state[ 'text_media_resolution' ]
+					
+					# ---------- URLs ------------
 					with tool_c4:
-						tool_options = list( text.tool_options )
-						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
-							key='text_tools', help=cfg.TOOLS, placeholder='Options'  )
+						set_text_urls = st.text_input( label='URLs', key='text_urls_input',
+							value=';'.join( st.session_state.get( 'text_urls', [ ] ) ),
+							help='Optional. Enter URLs separated by semicolons for grounding.',
+							width='stretch',
+							placeholder='https://example.com/page-1;https://example.com/page-2' )
 						
-						text_tools = [ d.strip( ) for d in set_text_tools
-						               if d.strip( ) ]
+						normalized_text_urls = [ line.strip( ) for line in set_text_urls.split( ';' )
+								if line.strip( ) ]
 						
-						text_tools = st.session_state[ 'text_tools' ]
+						st.session_state[ 'text_urls' ] = normalized_text_urls
+						text_urls = st.session_state[ 'text_urls' ]
 					
 					# ---------- Modalities ------------
 					with tool_c5:
 						modality_options = list( text.modality_options )
-						set_text_modalities = st.multiselect( label='Response Modalities', options=modality_options,
-							key='text_modalities', help='Optional. Modality of the response',
-							placeholder='Options' )
+						set_text_modalities = st.multiselect( label='Response Modalities',
+							options=modality_options, key='text_modalities',
+							help='Optional. Modality of the response', placeholder='Options' )
 						
-						text_modalities = [ d.strip( ) for d in set_text_modalities
-						               if d.strip( ) ]
-						
+						text_modalities = [ d.strip( ) for d in set_text_modalities if d.strip( ) ]
 						text_modalities = st.session_state[ 'text_modalities' ]
 					
 					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						for key in [ 'text_parallel_tools', 'text_tool_choice', 'text_number',
-						             'text_tools', 'text_max_calls', 'text_modalities' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
+					if st.button( label='Reset', key='reset_text_tools', width='stretch' ):
+						st.session_state[ 'text_number' ] = 0
+						st.session_state[ 'text_tool_choice' ] = ''
+						st.session_state[ 'text_media_resolution' ] = ''
+						st.session_state[ 'text_urls' ] = [ ]
+						st.session_state[ 'text_urls_input' ] = ''
+						st.session_state[ 'text_modalities' ] = [ ]
 						st.rerun( )
 				
-				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
-					# ---------- Stream ------------
-					with resp_c1:
-						set_text_stream = st.toggle( label='Stream', key='text_stream',
-							help=cfg.STREAM )
-						
-						text_stream = st.session_state[ 'text_stream' ]
-					
-					# ---------- Store ------------
-					with resp_c2:
-						set_text_store = st.toggle( label='Store', key='text_store', help=cfg.STORE )
-						
-						text_store = st.session_state[ 'text_store' ]
-					
-					# ---------- Background ------------
-					with resp_c3:
-						set_text_background = st.toggle( label='Background', key='text_background',
-							help=cfg.BACKGROUND_MODE )
-						
-						text_background = st.session_state[ 'text_background' ]
-					
-					# ---------- Stops ------------
-					with resp_c4:
-						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
-							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
-						
-						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
-						               if d.strip( ) ]
-					
 					# ---------- Max Tokens ------------
-					with resp_c5:
+					with resp_c1:
 						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
-							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
-							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
+							value=int( st.session_state.get( 'text_max_tokens', 0 ) ),
+							step=500, help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
-					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
-						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
-						             'text_max_tokens' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						# If using separated UI key for stops
-						if 'text_stops_input' in st.session_state:
-							del st.session_state[ 'text_stops_input' ]
+					# ---------- Stops ------------
+					with resp_c2:
+						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops_input',
+							value=','.join( st.session_state.get( 'text_stops', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stop Strings' )
 						
+						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' ) if d.strip( ) ]
+						st.session_state[ 'text_stops' ] = text_stops
+					
+					# ---------- Safety ------------
+					with resp_c3:
+						safety_options = list( text.safety_options )
+						set_text_safety_profile = st.selectbox( label='Safety', options=safety_options,
+							key='text_safety_profile', help='Optional. Gemini safety profile for the request.',
+							index=None, placeholder='Options' )
+						
+						text_safety_profile = st.session_state[ 'text_safety_profile' ]
+					
+					# ---------- Stream ------------
+					with resp_c4:
+						set_text_stream = st.toggle( label='Stream', key='text_stream', help=cfg.STREAM )
+						
+						text_stream = st.session_state[ 'text_stream' ]
+					
+					# ---------- Response Format ------------
+					with resp_c5:
+						format_options = list( text.format_options )
+						set_text_response_format = st.selectbox( label='Response Format',
+							options=format_options, key='text_response_format',
+							help='Optional. Desired Gemini response MIME type.',
+							index=None, placeholder='Options' )
+						
+						text_response_format = st.session_state[ 'text_response_format' ]
+					
+					# ---------- Reset Settings ------------
+					if st.button( label='Reset', key='reset_text_response', width='stretch' ):
+						st.session_state[ 'text_max_tokens' ] = 0
+						st.session_state[ 'text_stops' ] = [ ]
+						st.session_state[ 'text_stops_input' ] = ''
+						st.session_state[ 'text_safety_profile' ] = ''
+						st.session_state[ 'text_stream' ] = False
+						st.session_state[ 'text_response_format' ] = ''
 						st.rerun( )
 		
 		# ------------------------------------------------------------------
 		# Expander — GPT Text LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				
-				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='medium' )
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+			
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5, llm_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
 					
 					# ---------- Model ------------
 					with llm_c1:
@@ -3459,10 +3519,77 @@ elif mode == 'Text':
 						
 						text_model = st.session_state[ 'text_model' ]
 					
-					# ---------- Include ------------
+					# ---------- Reasoning ------------
 					with llm_c2:
+						reasoning_options = list( text.reasoning_options )
+						set_text_reasoning = st.selectbox( label='Reasoning',
+							options=reasoning_options, key='text_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						text_reasoning = st.session_state[ 'text_reasoning' ]
+					
+					# ---------- Top-P ------------
+					with llm_c3:
+						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							step=0.01, help=cfg.TOP_P, key='text_top_percent' )
+						
+						text_top_percent = st.session_state[ 'text_top_percent' ]
+					
+					# ---------- Temperature ------------
+					with llm_c4:
+						set_text_temperature = st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
+							step=0.01,
+							help=cfg.TEMPERATURE, key='text_temperature' )
+						
+						text_temperature = st.session_state[ 'text_temperature' ]
+					
+					# ---------- Presense ------------
+					with llm_c5:
+						set_text_presence = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presence_penalty' )
+						
+						text_presence = st.session_state[ 'text_presence_penalty' ]
+					
+					# ---------- Frequency ------------
+					with llm_c6:
+						set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='text_frequency_penalty' )
+						
+						text_fequency = st.session_state[ 'text_frequency_penalty' ]
+					
+					# ---------- Reset Model ------------
+					if st.button( label='Reset', key='reset_text_model', width='stretch' ):
+						for key in [ 'text_model', 'text_temperature', 'text_presence_penalty',
+						             'text_reasoning', 'text_top_percent', 'text_frequency_penalty' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5, tool_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Max Calls ------------
+					with tool_c1:
+						set_text_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
+						
+						text_max_calls = st.session_state[ 'text_max_calls' ]
+					
+					# ---------- Choice ------------
+					with tool_c2:
+						choice_options = list( text.choice_options )
+						set_text_choice = st.selectbox( label='Choice', options=choice_options,
+							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						text_tool_choice = st.session_state[ 'text_tool_choice' ]
+					
+					# ---------- Include ------------
+					with tool_c3:
 						include_options = list( text.include_options )
-						set_text_include = st.multiselect( label='Include:', options=include_options,
+						set_text_include = st.multiselect( label='Include', options=include_options,
 							key='text_include', help=cfg.INCLUDE, placeholder='Options' )
 						
 						text_include = [ d.strip( ) for d in set_text_include
@@ -3470,8 +3597,8 @@ elif mode == 'Text':
 						
 						text_include = st.session_state[ 'text_include' ]
 					
-					# ---------- Allowed Domains ------------
-					with llm_c3:
+					# ---------- Domains ------------
+					with tool_c4:
 						set_text_domains = st.text_input( label='Allowed Domains', key='text_domains_input',
 							value=','.join( st.session_state.get( 'text_domains', [ ] ) ),
 							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
@@ -3481,110 +3608,10 @@ elif mode == 'Text':
 						
 						st.session_state[ 'text_domains' ] = text_domains
 					
-					# ---------- Reasoning ------------
-					with llm_c4:
-						reasoning_options = list( text.reasoning_options )
-						set_text_reasoning = st.selectbox( label='Reasoning Effort:',
-							options=reasoning_options, key='text_reasoning',
-							help=cfg.REASONING, index=None, placeholder='Options' )
-						
-						text_reasoning = st.session_state[ 'text_reasoning' ]
-					
-					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_model_reset', width='stretch' ):
-						for key in [ 'text_model', 'text_include', 'text_domains',
-						             'text_reasoning' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-					
-					# ---------- Top-P ------------
-					with prm_c1:
-						set_text_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'text_top_percent', 0.0 ) ),
-							step=0.01, help=cfg.TOP_P, key='text_top_percent' )
-						
-						text_top_percent = st.session_state[ 'text_top_percent' ]
-					
-					# ---------- Frequency ------------
-					with prm_c2:
-						set_text_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'text_frequency_penalty', 0.0 ) ),
-							step=0.01, help=cfg.FREQUENCY_PENALTY, key='text_frequency_penalty' )
-						
-						text_fequency = st.session_state[ 'text_frequency_penalty' ]
-					
-					# ---------- Presense ------------
-					with prm_c3:
-						set_text_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'text_presense_penalty', 0.0 ) ),
-							step=0.01, help=cfg.PRESENCE_PENALTY, key='text_presense_penalty' )
-						
-						text_presense = st.session_state[ 'text_presense_penalty' ]
-					
-					# ---------- Temperature ------------
-					with prm_c4:
-						set_text_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'text_temperature', 0.0 ) ), step=0.01,
-							help=cfg.TEMPERATURE, key='text_temperature' )
-						
-						text_temperature = st.session_state[ 'text_temperature' ]
-					
-					# ---------- Number ------------
-					with prm_c5:
-						set_text_number = st.slider( label='Number', min_value=0, max_value=10,
-							value=int( st.session_state.get( 'text_number', 0 ) ), step=1,
-							help='Optional. Upper limit on the responses returned by the model',
-							key='text_number' )
-						
-						text_number = st.session_state[ 'text_number' ]
-					
-					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_inference_reset', width='stretch' ):
-						for key in [ 'text_top_percent', 'text_frequency_penalty',
-						             'text_presense_penalty', 'text_temperature', 'text_number', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
-					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
-						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
-					
-					# ---------- Allow Parallel ------------
-					with tool_c1:
-						set_text_parallel = st.toggle( label='Asychronous Calls',
-							key='text_parallel_tools',
-							help=cfg.PARALLEL_TOOL_CALLS )
-						
-						text_parallel_tools = st.session_state[ 'text_parallel_tools' ]
-					
-					# ---------- Max Calls ------------
-					with tool_c2:
-						set_text_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=5,
-							value=int( st.session_state.get( 'text_max_calls', 0 ) ), step=1,
-							help=cfg.MAX_TOOL_CALLS, key='text_max_calls' )
-						
-						text_max_calls = st.session_state[ 'text_max_calls' ]
-					
-					# ---------- Choice ------------
-					with tool_c3:
-						choice_options = list( text.choice_options )
-						set_text_choice = st.selectbox( label='Tool Choice:', options=choice_options,
-							key='text_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
-						
-						text_tool_choice = st.session_state[ 'text_tool_choice' ]
-					
 					# ---------- Tools ------------
-					with tool_c4:
+					with tool_c5:
 						tool_options = list( text.tool_options )
-						set_text_tools = st.multiselect( label='Available Tools', options=tool_options,
+						set_text_tools = st.multiselect( label='Tools', options=tool_options,
 							key='text_tools', help=cfg.TOOLS, placeholder='Options' )
 						
 						text_tools = [ d.strip( ) for d in set_text_tools
@@ -3592,65 +3619,94 @@ elif mode == 'Text':
 						
 						text_tools = st.session_state[ 'text_tools' ]
 					
-					# ---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_tools_reset', width='stretch' ):
-						for key in [ 'text_parallel_tools', 'text_tool_choice',
-						             'text_tools', 'text_max_calls' ]:
+					# ---------- Parallel ------------
+					with tool_c6:
+						set_text_parallel = st.toggle( label='Allow Parallel', key='text_parallel_calls',
+							help=cfg.PARALLEL_TOOL_CALLS )
+						
+						text_parallel_calls = st.session_state[ 'text_parallel_calls' ]
+					
+					# ---------- Reset Tools ------------
+					if st.button( label='Reset', key='reset_text_tools', width='stretch' ):
+						for key in [ 'text_max_calls', 'text_tool_choice', 'text_include',
+						             'text_tools', 'text_domains', 'text_parallel_calls' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
 						st.rerun( )
 				
-				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
-					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6, resp_c7 = st.columns(
+						[ 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14 ], border=True, gap='xxsmall' )
 					
-					# ---------- Stream ------------
+					# ---------- Input Mode ------------
 					with resp_c1:
-						set_text_stream = st.toggle( label='Stream', key='text_stream',
-							help=cfg.STREAM )
+						input_mode_options = [ '', 'conversation', 'single_turn' ]
+						set_text_input = st.selectbox( label='Input Mode', options=input_mode_options,
+							key='text_input', help=(
+								'Optional. Controls whether prior chat messages are '
+								'sent back to the Responses API as context.'),
+							placeholder='Options' )
 						
-						text_stream = st.session_state[ 'text_stream' ]
-					
-					# ---------- Store ------------
-					with resp_c2:
-						set_text_store = st.toggle( label='Store', key='text_store',
-							help=cfg.STORE )
-						
-						text_store = st.session_state[ 'text_store' ]
-					
-					# ---------- Background ------------
-					with resp_c3:
-						set_text_background = st.toggle( label='Background', key='text_background',
-							help=cfg.BACKGROUND_MODE )
-						
-						text_background = st.session_state[ 'text_background' ]
-					
-					# ---------- Stops ------------
-					with resp_c4:
-						set_text_stops = st.text_input( label='Stop Sequences', key='text_stops',
-							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
-						
-						text_stops = [ d.strip( ) for d in set_text_stops.split( ',' )
-						               if d.strip( ) ]
+						text_input = st.session_state.get( 'text_input', '' )
 					
 					# ---------- Max Tokens ------------
-					with resp_c5:
-						set_text_tokens = st.slider( label='Max Output Tokens', min_value=0, max_value=100000,
+					with resp_c2:
+						set_text_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
 							value=int( st.session_state.get( 'text_max_tokens', 0 ) ), step=500,
 							help=cfg.MAX_OUTPUT_TOKENS, key='text_max_tokens' )
 						
 						text_tokens = st.session_state[ 'text_max_tokens' ]
 					
-					#---------- Reset Settings ------------
-					if st.button( label='Reset', key='text_response_reset', width='stretch' ):
-						for key in [ 'text_stream', 'text_store', 'text_background', 'text_stops',
-						             'text_max_tokens' ]:
+					# ---------- Response Format ------------
+					with resp_c3:
+						format_options = [ '', 'text' ]
+						set_text_response_format = st.selectbox( label='Response Format',
+							options=format_options, key='text_response_format',
+							help=('Optional. Responses API text.format setting. '
+							      'Use "text" for plain text responses.'),
+							placeholder='Options' )
+						
+						text_response_format = st.session_state.get( 'text_response_format', '' )
+					
+					# ---------- Previous Response ID ------------
+					with resp_c4:
+						set_text_previous_id = st.text_input( label='Previous Response ID',
+							key='text_previous_response_id',
+							value=st.session_state.get( 'text_previous_response_id', '' ),
+							help=('Optional. Responses API conversation-state identifier. '
+							      'Leave blank to start a new chain.'),
+							width='stretch', placeholder='Enter Previous Response ID' )
+						
+						text_previous_response_id = st.session_state.get( 'text_previous_response_id', '' )
+					
+					# ---------- Store ------------
+					with resp_c5:
+						set_text_store = st.toggle( label='Store', key='text_store', help=cfg.STORE )
+						
+						text_store = st.session_state[ 'text_store' ]
+					
+					# ---------- Stream ------------
+					with resp_c6:
+						set_text_stream = st.toggle( label='Stream', key='text_stream',
+							help=cfg.STREAM )
+						
+						text_stream = st.session_state[ 'text_stream' ]
+					
+					# ---------- Background ------------
+					with resp_c7:
+						set_text_background = st.toggle( label='Background', key='text_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						text_background = st.session_state[ 'text_background' ]
+					
+					# ---------- Reset Response ------------
+					if st.button( label='Reset', key='reset_text_response', width='stretch' ):
+						for key in [ 'text_stream', 'text_store', 'text_max_tokens',
+						             'text_background', 'text_response_format',
+						             'text_input', 'text_previous_response_id' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
-						# If using separated UI key for stops
-						if 'text_stops_input' in st.session_state:
-							del st.session_state[ 'text_stops_input' ]
 						
 						st.rerun( )
 		
@@ -3659,10 +3715,11 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
 				prompt_names = [ '' ]
-
+			
 			with in_left:
 				st.text_area( label='Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions' )
@@ -3682,61 +3739,275 @@ elif mode == 'Text':
 				st.session_state[ 'text_system_instructions' ] = ''
 				st.session_state[ 'instructions' ] = ''
 			
-			st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
+			def _on_convert_system_instructions( ) -> None:
+				text = st.session_state.get( 'text_system_instructions', '' )
+				if not isinstance( text, str ) or not text.strip( ):
+					return
+				
+				src = text.strip( )
+				
+				# XML-delimited prompt blocks -> Markdown headings
+				if cfg.XML_BLOCK_PATTERN.search( src ):
+					converted = convert_xml( src )
+				
+				# Markdown headings <-> simple <hN> tags handled by existing helper
+				else:
+					converted = convert_markdown( src )
+				
+				st.session_state[ 'text_system_instructions' ] = converted
+			
+			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+			with btn_c1:
+				st.button( label='Clear Instructions', width='stretch',
+					on_click=_on_clear )
+			
+			with btn_c2:
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=_on_convert_system_instructions )
+		
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
 		# ----------- MESSAGES ---------------------------------
-		if st.session_state[ 'text_input' ] is not None:
-			for msg in st.session_state.text_input:
-				with st.chat_message( msg[ 'role' ], avatar='' ):
-					st.markdown( msg[ 'content' ] )
+		if st.session_state.get( 'text_messages' ) is not None:
+			for msg in st.session_state.text_messages:
+				self_avatar = cfg.BUDDY if msg.get( 'role' ) == 'assistant' else ''
+				with st.chat_message( msg.get( 'role', 'assistant' ), avatar=self_avatar ):
+					st.markdown( msg.get( 'content', '' ) )
 		
 		if provider_name == 'GPT':
 			prompt = st.chat_input( 'Ask ChatGPT…' )
-		elif provider_name == 'Grok':
-			prompt = st.chat_input( 'Ask Grok…' )
-		elif provider_name == 'Gemini':
-			prompt = st.chat_input( 'Ask Gemini…' )
-		else:
-			prompt = None
-		
-		if prompt is not None:
-			st.session_state.text_messages.append( { 'role': 'user', 'content': prompt } )
-			with st.chat_message( 'assistant', avatar="" ):
-				gen_kwargs = { }
-				
+			if prompt is not None and str( prompt ).strip( ):
+				prompt = str( prompt ).strip( )
+			st.session_state.text_messages.append(
+				{
+						'role': 'user',
+						'content': prompt,
+				} )
+			
+			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
 				with st.spinner( 'Thinking…' ):
-					gen_kwargs[ 'model' ] = st.session_state[ 'text_model' ]
-					gen_kwargs[ 'top_percent' ] = st.session_state[ 'text_top_percent' ]
-					gen_kwargs[ 'background' ] = st.session_state[ 'text_background' ]
-					gen_kwargs[ 'max_tokens' ] = st.session_state[ 'text_max_tokens' ]
-					gen_kwargs[ 'frequency' ] = st.session_state[ 'text_frequency_penalty' ]
-					gen_kwargs[ 'presence' ] = st.session_state[ 'text_presense_penalty' ]
-					
-					if st.session_state[ 'text_stops' ]:
-						gen_kwargs[ 'stops' ] = st.session_state[ 'text_stops' ]
-					
-					response = None
+					response_text = None
+					response_obj = None
 					
 					try:
-						mdl = str( gen_kwargs[ 'text_model' ] )
-						if mdl.startswith( 'gpt-5' ):
-							response = chat.generate_text( prompt=prompt, model=gen_kwargs[ 'text_model' ] )
-						else:
-							response = chat.generate_text( )
+						text_tools = [ ]
+						for name in st.session_state.get( 'text_tools', [ ] ):
+							if not isinstance( name, str ) or not name.strip( ):
+								continue
+							
+							text_tools.append( { 'type': name.strip( ) } )
+						
+						text_context = [ ]
+						if st.session_state.get( 'text_input' ) != 'single_turn':
+							for item in st.session_state.get( 'text_messages', [ ] )[ :-1 ]:
+								if not isinstance( item, dict ):
+									continue
+								
+								role = str( item.get( 'role', '' ) ).strip( )
+								content = item.get( 'content', '' )
+								if role not in [ 'user', 'assistant', 'system', 'developer' ]:
+									continue
+								
+								if not isinstance( content, str ) or not content.strip( ):
+									continue
+								
+								text_context.append(
+									{
+											'role': role,
+											'content': content.strip( ),
+									} )
+						
+						st.session_state[ 'text_context' ] = text_context
+						
+						text_format = None
+						if st.session_state.get( 'text_response_format' ) == 'text':
+							text_format = \
+								{
+										'format': { 'type': 'text' }
+								}
+						
+						text_previous_id = st.session_state.get( 'text_previous_response_id' )
+						if not isinstance( text_previous_id, str ) or not text_previous_id.strip( ):
+							text_previous_id = None
+						
+						if st.session_state.get( 'text_input' ) == 'single_turn':
+							text_previous_id = None
+						
+						response_text = text.generate_text( prompt=prompt,
+							model=st.session_state.get( 'text_model' ),
+							temperature=st.session_state.get( 'text_temperature' ),
+							format=text_format,
+							top_p=st.session_state.get( 'text_top_percent' ),
+							frequency=st.session_state.get( 'text_frequency_penalty' ),
+							presence=st.session_state.get( 'text_presence_penalty' ),
+							max_tools=st.session_state.get( 'text_max_calls' ),
+							max_tokens=st.session_state.get( 'text_max_tokens' ),
+							store=st.session_state.get( 'text_store' ),
+							stream=st.session_state.get( 'text_stream' ),
+							instruct=st.session_state.get( 'text_system_instructions' ),
+							background=st.session_state.get( 'text_background' ),
+							reasoning=st.session_state.get( 'text_reasoning' ),
+							include=st.session_state.get( 'text_include', [ ] ),
+							tools=text_tools,
+							allowed_domains=st.session_state.get( 'text_domains', [ ] ),
+							previous_id=text_previous_id,
+							tool_choice=st.session_state.get( 'text_tool_choice' ),
+							is_parallel=st.session_state.get( 'text_parallel_calls' ),
+							context=text_context )
+						response_obj = getattr( text, 'response', None )
+						st.session_state[ 'text_previous_response_id' ] = (
+								getattr( text, 'previous_id', None ) or '')
+					
 					except Exception as exc:
 						err = Error( exc )
 						st.error( f'Generation Failed: {err.info}' )
-						response = None
+						response_text = None
+						response_obj = getattr( text, 'response', None )
 					
-					if response is not None and str( response ).strip( ):
-						st.markdown( response )
-						st.session_state.text_messages.append( { 'role': 'assistant', 'content': response } )
+					if response_text is not None and str( response_text ).strip( ):
+						st.markdown( response_text )
+						st.session_state.text_messages.append(
+							{
+									'role': 'assistant',
+									'content': str( response_text ).strip( ),
+							} )
+						
+						st.session_state[ 'text_context' ] = [ ]
+						for item in st.session_state.get( 'text_messages', [ ] ):
+							if not isinstance( item, dict ):
+								continue
+							
+							role = str( item.get( 'role', '' ) ).strip( )
+							content = item.get( 'content', '' )
+							if role not in [ 'user', 'assistant', 'system', 'developer' ]:
+								continue
+							
+							if not isinstance( content, str ) or not content.strip( ):
+								continue
+							
+							st.session_state[ 'text_context' ].append(
+								{
+										'role': role,
+										'content': content.strip( ),
+								} )
+						
+						st.session_state.last_answer = str( response_text ).strip( )
+						st.session_state.last_sources = extract_sources( response_obj )
 					else:
 						st.error( 'Generation Failed!.' )
+					
+					try:
+						update_token_counters( response_obj )
+					except Exception:
+						pass
+		
+			# --------  Reset Button
+			if st.button( 'Clear Messages' ):
+				st.session_state.text_messages = [ ]
+				st.session_state[ 'text_previous_response_id' ] = ''
+				st.session_state.last_answer = ''
+				st.session_state.last_sources = [ ]
+				st.rerun( )
+			
+		elif provider_name == 'Grok':
+			prompt = st.chat_input( 'Ask Grok…' )
+			
+		elif provider_name == 'Gemini':
+			prompt = st.chat_input( 'Ask Gemini…' )
+			if prompt is not None and str( prompt ).strip( ):
+				prompt = str( prompt ).strip( )
+				_apply_gemini_runtime_config( )
+				
+				st.session_state.text_messages.append(
+					{
+							'role': 'user',
+							'content': prompt,
+					} )
+				
+				with st.chat_message( 'assistant', avatar=cfg.JENI ):
+					with st.spinner( 'Thinking…' ):
+						response = None
+						stream_buffer: List[ str ] = [ ]
+						stream_placeholder = st.empty( )
+						
+						def _on_stream_chunk( chunk: str ) -> None:
+							if chunk is None:
+								return
+							
+							stream_buffer.append( str( chunk ) )
+							stream_placeholder.markdown( ''.join( stream_buffer ) + '▌' )
+						
 						try:
-							_update_token_counters( getattr( text, 'response', None ) or response )
-						except Exception:
-							pass
+							structured_context = st.session_state.get( 'text_gemini_history', [ ] )
+							if structured_context is None or len( structured_context ) == 0:
+								structured_context = st.session_state.get( 'text_messages', [ ] )[ :-1 ]
+							
+							response = text.generate_text( prompt=prompt,
+								model=st.session_state.get( 'text_model' ),
+								number=st.session_state.get( 'text_number' ),
+								temperature=st.session_state.get( 'text_temperature' ),
+								top_p=st.session_state.get( 'text_top_percent' ),
+								top_k=st.session_state.get( 'text_top_k' ),
+								frequency=st.session_state.get( 'text_frequency_penalty' ),
+								presence=st.session_state.get( 'text_presence_penalty' ),
+								max_tokens=st.session_state.get( 'text_max_tokens' ),
+								stops=st.session_state.get( 'text_stops', [ ] ),
+								instruct=st.session_state.get( 'text_system_instructions' ),
+								response_format=st.session_state.get( 'text_response_format' ),
+								tools=st.session_state.get( 'text_tools', [ ] ),
+								tool_choice=st.session_state.get( 'text_tool_choice' ),
+								reasoning=st.session_state.get( 'text_reasoning' ),
+								modalities=st.session_state.get( 'text_modalities', [ ] ),
+								media_resolution=st.session_state.get( 'text_media_resolution' ),
+								context=structured_context,
+								content=st.session_state.get( 'text_content' ),
+								urls=st.session_state.get( 'text_urls', [ ] ),
+								max_urls=st.session_state.get( 'text_max_urls' ),
+								response_schema=st.session_state.get( 'text_response_schema' ),
+								safety_profile=st.session_state.get( 'text_safety_profile' ),
+								stream=st.session_state.get( 'text_stream', False ),
+								stream_handler=_on_stream_chunk if st.session_state.get(
+									'text_stream', False ) else None )
+						except Exception as exc:
+							err = Error( exc )
+							st.error( f'Generation Failed: {err.info}' )
+							response = None
+						
+						if response is not None and str( response ).strip( ):
+							if st.session_state.get( 'text_stream', False ):
+								stream_placeholder.markdown( str( response ).strip( ) )
+							else:
+								st.markdown( response )
+							
+							st.session_state.text_messages.append(
+								{
+										'role': 'assistant',
+										'content': str( response ).strip( ),
+								} )
+							
+							if st.session_state.get( 'text_stream', False ):
+								st.session_state[ 'text_gemini_history' ] = [ ]
+							else:
+								structured_history = text.get_structured_history( )
+								if structured_history is not None and len( structured_history ) > 0:
+									st.session_state[ 'text_gemini_history' ] = structured_history
+							
+							st.session_state.last_answer = str( response ).strip( )
+						else:
+							st.error( 'Generation Failed!.' )
+		
+			# --------  Reset Button
+			if st.button( 'Clear Messages' ):
+				st.session_state.text_messages = [ ]
+				st.session_state.text_gemini_history = [ ]
+				st.session_state.last_answer = ''
+				st.session_state.last_sources = [ ]
+				st.rerun( )
+			
+		else:
+			prompt = None
+		
+		
 			
 # ======================================================================================
 # IMAGES MODE
@@ -3812,6 +4083,7 @@ elif mode == "Images":
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
 			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+				
 				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
@@ -4762,7 +5034,7 @@ elif mode == "Images":
 						st.image( img_url )
 						
 						try:
-							_update_token_counters( getattr( image, 'response', None ) )
+							update_token_counters( getattr( image, 'response', None ) )
 						except Exception:
 							pass
 					
@@ -4832,7 +5104,7 @@ elif mode == "Images":
 									st.write( analysis_result )
 								
 								try:
-									_update_token_counters(
+									update_token_counters(
 										getattr( image, 'response', None )
 										or analysis_result
 									)
@@ -4905,7 +5177,7 @@ elif mode == "Images":
 									st.write( analysis_result )
 								
 								try:
-									_update_token_counters(
+									update_token_counters(
 										getattr( image, 'response', None )
 										or analysis_result
 									)
@@ -5384,10 +5656,10 @@ elif mode == 'Audio':
 					with st.spinner( 'Transcribing…' ):
 						try:
 							text = transcriber.transcribe( tmp_path, model=audio_model,
-								language=language, )
+								language=audio_language, )
 							st.text_area( 'Transcript', value=text, height=300 )
 							try:
-								_update_token_counters( getattr( transcriber, 'response', None ) )
+								update_token_counters( getattr( transcriber, 'response', None ) )
 							except Exception:
 								pass
 						except Exception as exc:
@@ -5397,11 +5669,11 @@ elif mode == 'Audio':
 					with st.spinner( 'Translating…' ):
 						try:
 							text = translator.translate( tmp_path, model=audio_model,
-								language=language, )
+								language=audio_language, )
 							st.text_area( 'Translation', value=text, height=300 )
 							
 							try:
-								_update_token_counters( getattr( translator, 'response', None ) )
+								update_token_counters( getattr( translator, 'response', None ) )
 							except Exception:
 								pass
 						
@@ -5413,10 +5685,10 @@ elif mode == 'Audio':
 				if text and st.button( 'Generate Audio' ):
 					with st.spinner( 'Synthesizing speech…' ):
 						try:
-							audio_bytes = tts.create_speech( text, model=audio_model, voice=voice )
+							audio_bytes = tts.create_speech( text, model=audio_model, voice=audio_voice )
 							st.audio( audio_bytes )
 							try:
-								_update_token_counters( getattr( tts, 'response', None ) )
+								update_token_counters( getattr( tts, 'response', None ) )
 							except Exception:
 								pass
 						
@@ -5640,7 +5912,7 @@ elif mode == 'Embeddings':
 						# Token Counters
 						# ----------------------------------------------------------
 						try:
-							_update_token_counters( getattr( embedding, 'response', None ) )
+							update_token_counters( getattr( embedding, 'response', None ) )
 						except Exception:
 							pass
 					
