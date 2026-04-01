@@ -345,6 +345,9 @@ if 'text_context' not in st.session_state:
 if 'text_content' not in st.session_state:
 	st.session_state[ 'text_content' ] = [ ]
 
+if 'text_gemini_history' not in st.session_state:
+	st.session_state[ 'text_gemini_history' ] = [ ]
+	
 # --------IMAGE-GENERATION PARAMETERS--------------------
 
 if 'image_max_tokens' not in st.session_state:
@@ -450,6 +453,12 @@ if 'image_size' not in st.session_state:
 if 'image_quality' not in st.session_state:
 	st.session_state[ 'image_quality' ] = ''
 
+if 'image_grounded' not in st.session_state:
+	st.session_state[ 'image_grounded' ] = False
+
+if 'image_image_search' not in st.session_state:
+	st.session_state[ 'image_image_search' ] = False
+	
 # --------AUDIO-GENERATION PARAMETERS--------------------
 
 if 'audio_max_tokens' not in st.session_state:
@@ -4006,8 +4015,6 @@ elif mode == 'Text':
 			
 		else:
 			prompt = None
-		
-		
 			
 # ======================================================================================
 # IMAGES MODE
@@ -4364,275 +4371,500 @@ elif mode == "Images":
 		# Expander — Gemini Image LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+			def _clear_image_messages( ) -> None:
+				"""
 				
-				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-						border=True, gap='xxsmall' )
+					Purpose:
+					-----------
+					Clears only Image-mode conversation state.
 					
-					# ---------  Mode  --------
+					Returns:
+					--------
+					None
+					
+				"""
+				try:
+					st.session_state[ 'image_input' ] = [ ]
+				except Exception:
+					pass
+			
+			def _sync_image_tools( ) -> None:
+				"""
+				
+					Purpose:
+					-----------
+					Synchronizes derived Image-mode tools into session state.
+					
+					Returns:
+					--------
+					None
+					
+				"""
+				try:
+					tools = [ ]
+					if st.session_state.get( 'image_grounded', False ):
+						tools.append( 'google_search' )
+					
+					if st.session_state.get( 'image_image_search', False ):
+						tools.append( 'image_search' )
+					
+					st.session_state[ 'image_tools' ] = tools
+				except Exception:
+					pass
+			
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+				
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+					
 					with llm_c1:
 						_modes = [ 'Generation', 'Analysis', 'Editing' ]
-						set_image_mode = st.selectbox( label='Image Mode', options=_modes,
-							key='image_mode', help='Available Image API modes', index=None,
-							placeholder='Options' )
-						
-						image_mode = st.session_state[ 'image_mode' ]
+						st.selectbox(
+							label='Image Mode',
+							options=_modes,
+							key='image_mode',
+							help='Available Gemini image workflows.',
+							index=None,
+							placeholder='Options'
+						)
+						image_mode = st.session_state.get( 'image_mode', '' )
 					
-					# ---------  Model --------
 					with llm_c2:
-						if st.session_state[ 'image_mode' ] == 'Generation':
-							generation = list( cfg.GEMINI_GENERATION )
-							set_image_model = st.selectbox( label='Select Model', options=generation,
-								help='REQUIRED. Images Generation model used by the AI', key='image_model',
-								placeholder='Options', index=None )
-							
-							image_model = st.session_state[ 'image_model' ]
+						if image_mode == 'Generation':
+							models = list( cfg.GEMINI_GENERATION )
+						elif image_mode == 'Analysis':
+							models = list( cfg.GEMINI_ANALYSIS )
+						elif image_mode == 'Editing':
+							models = list( cfg.GEMINI_EDITING )
+						else:
+							models = list( image.model_options )
 						
-						elif st.session_state[ 'image_mode' ] == 'Analysis':
-							analysis = list( cfg.GEMINI_ANALYSIS )
-							set_image_model = st.selectbox( label='Select Model', options=analysis,
-								help='REQUIRED. Images Generation model used by the AI', key='image_model',
-								placeholder='Options', index=None )
-							
-							image_model = st.session_state[ 'image_model' ]
-						
-						elif st.session_state[ 'image_mode' ] == 'Editing':
-							editing = list( cfg.GEMINI_EDITING )
-							set_image_model = st.selectbox( label='Select Model', options=editing,
-								help='REQUIRED. Images Generationmodel used by the AI', key='image_model',
-								placeholder='Options', index=None, )
-							
-							image_model = st.session_state[ 'image_model' ]
-						elif st.session_state[ 'image_mode' ] is None:
-							all = list( image.model_options )
-							set_image_model = st.selectbox( label='Select Model', options=all,
-								help='REQUIRED. Images Generation model used by the AI', key='image_model',
-								placeholder='Options', index=None )
-							
-							image_model = st.session_state[ 'image_model' ]
+						st.selectbox(
+							label='Select Model',
+							options=models,
+							help='REQUIRED. Gemini model used by the selected image workflow.',
+							key='image_model',
+							placeholder='Options',
+							index=None
+						)
+						image_model = st.session_state.get( 'image_model', '' )
 					
-					# ---------  Domains --------
 					with llm_c3:
-						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains',
-							placeholder='Enter Domains',
-							help=cfg.ALLOWED_DOMAINS, width='stretch' )
+						st.slider(
+							label='Top-P',
+							key='image_top_percent',
+							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
+							min_value=0.0,
+							max_value=1.0,
+							step=0.01,
+							help=cfg.TOP_P
+						)
+						image_top_percent = st.session_state.get( 'image_top_percent', 0.0 )
+					
+					with llm_c4:
+						st.slider(
+							label='Temperature',
+							key='image_temperature',
+							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
+							min_value=0.0,
+							max_value=1.0,
+							step=0.01,
+							help=cfg.TEMPERATURE
+						)
+						image_temperature = st.session_state.get( 'image_temperature', 0.0 )
+					
+					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
+						for key in [ 'image_mode', 'image_model', 'image_top_percent',
+						             'image_temperature' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+					
+					with resp_c1:
+						st.slider(
+							label='Max Output Tokens',
+							min_value=0,
+							max_value=100000,
+							value=int( st.session_state.get( 'image_max_tokens', 0 ) ),
+							step=1000,
+							help=cfg.MAX_OUTPUT_TOKENS,
+							key='image_max_tokens'
+						)
+						image_max_tokens = st.session_state.get( 'image_max_tokens', 0 )
+					
+					with resp_c2:
+						st.slider(
+							label='Candidates',
+							min_value=1,
+							max_value=8,
+							value=int( st.session_state.get( 'image_number', 1 ) ),
+							step=1,
+							help='Optional. Upper bound on generated image candidates.',
+							key='image_number'
+						)
+						image_number = st.session_state.get( 'image_number', 1 )
+					
+					with resp_c3:
+						if image_mode == 'Analysis':
+							modality_options = [ 'TEXT' ]
+							if st.session_state.get( 'image_modality', '' ) != 'TEXT':
+								st.session_state[ 'image_modality' ] = 'TEXT'
+						else:
+							modality_options = [ 'IMAGE', 'TEXT_AND_IMAGE' ]
+						
+						st.selectbox(
+							label='Response Mode',
+							options=modality_options,
+							key='image_modality',
+							help='Gemini response modalities used by the Image wrapper.',
+							index=None,
+							placeholder='Select Modality'
+						)
+						image_modality = st.session_state.get( 'image_modality', '' )
+					
+					with resp_c4:
+						mime_enabled = image_mode in [ 'Generation', 'Editing' ]
+						if mime_enabled:
+							st.selectbox(
+								label='Output MIME Type',
+								options=image.mime_options,
+								key='image_mime_type',
+								help='Optional. Output image MIME type when the model returns an image.',
+								index=None,
+								placeholder='Options'
+							)
+						else:
+							st.text_input(
+								label='Output MIME Type',
+								value='Not used for Analysis',
+								disabled=True
+							)
+							st.session_state[ 'image_mime_type' ] = ''
+						
+						image_mime_type = st.session_state.get( 'image_mime_type', '' )
+					
+					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
+						for key in [ 'image_max_tokens', 'image_number', 'image_modality',
+						             'image_mime_type' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						st.rerun( )
+				
+				with st.expander( label='Visual Settings', icon='👁️', expanded=False, width='stretch' ):
+					img_c1, img_c2, img_c3, img_c4 = st.columns(
+						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+					
+					supports_image_size = image._supports_image_size( image_model )
+					supports_grounding = image._supports_search_grounding( image_model )
+					supports_image_search = image._supports_image_search( image_model )
+					visual_enabled = image_mode in [ 'Generation', 'Editing' ]
+					
+					if not supports_grounding and st.session_state.get( 'image_grounded', False ):
+						st.session_state[ 'image_grounded' ] = False
+					
+					if (not supports_image_search or
+					    not st.session_state.get( 'image_grounded', False )) and \
+							st.session_state.get( 'image_image_search', False ):
+						st.session_state[ 'image_image_search' ] = False
+					
+					with img_c1:
+						if visual_enabled:
+							st.selectbox(
+								label='Aspect Ratio',
+								options=list( image.aspect_options ),
+								help='Optional. Output aspect ratio for Gemini image generation/editing.',
+								key='image_aspect_ratio',
+								placeholder='Options',
+								index=None
+							)
+						else:
+							st.text_input(
+								label='Aspect Ratio',
+								value='Not used for Analysis',
+								disabled=True
+							)
+							st.session_state[ 'image_aspect_ratio' ] = ''
+						
+						image_aspect_ratio = st.session_state.get( 'image_aspect_ratio', '' )
+					
+					with img_c2:
+						if visual_enabled and supports_image_size:
+							st.selectbox(
+								label='Image Size',
+								options=list( image.size_options ),
+								help='Optional. Supported by Gemini 3 image-preview models.',
+								key='image_size',
+								placeholder='Options',
+								index=None
+							)
+						else:
+							message = 'Not supported by selected model'
+							if not visual_enabled:
+								message = 'Not used for Analysis'
+							
+							st.text_input(
+								label='Image Size',
+								value=message,
+								disabled=True
+							)
+							st.session_state[ 'image_size' ] = ''
+						
+						image_size = st.session_state.get( 'image_size', '' )
+					
+					with img_c3:
+						st.checkbox(
+							label='Ground with Google Search',
+							key='image_grounded',
+							help='Enables Gemini Search grounding when supported by the selected model.',
+							disabled=not supports_grounding
+						)
+						
+						if not supports_grounding:
+							st.caption( 'Not supported by selected model.' )
+						
+						image_grounded = st.session_state.get( 'image_grounded', False )
+					
+					with img_c4:
+						st.checkbox(
+							label='Include Google Image Search',
+							key='image_image_search',
+							help=('Available only for gemini-3.1-flash-image-preview when grounding '
+							      'is enabled.'),
+							disabled=(not supports_image_search or
+							          not st.session_state.get( 'image_grounded', False ))
+						)
+						
+						image_image_search = st.session_state.get( 'image_image_search', False )
+					
+					_sync_image_tools( )
+					
+					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
+						for key in [ 'image_size', 'image_aspect_ratio', 'image_grounded',
+						             'image_image_search', 'image_tools' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						st.rerun( )
+				
+		# ------------------------------------------------------------------
+		# Expander — GPT Image LLM Configuration
+		# ------------------------------------------------------------------
+		elif provider_name == 'GPT':
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+			
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5, llm_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Model ------------
+					with llm_c1:
+						model_options = list( image.model_options )
+						set_image_model = st.selectbox( label='Select Model', options=model_options,
+							key='image_model', placeholder='Options', index=None,
+							help='REQUIRED. Image Generation model used by the AI', )
+						
+						image_model = st.session_state[ 'image_model' ]
+					
+					# ---------- Reasoning ------------
+					with llm_c2:
+						reasoning_options = list( image.reasoning_options )
+						set_image_reasoning = st.selectbox( label='Reasoning',
+							options=reasoning_options, key='image_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						image_reasoning = st.session_state[ 'image_reasoning' ]
+					
+					# ---------- Top-P ------------
+					with llm_c3:
+						set_image_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							step=0.01, help=cfg.TOP_P, key='image_top_percent' )
+						
+						image_top_percent = st.session_state[ 'image_top_percent' ]
+					
+					# ---------- Temperature ------------
+					with llm_c4:
+						set_image_temperature = st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
+							step=0.01,
+							help=cfg.TEMPERATURE, key='image_temperature' )
+						
+						image_temperature = st.session_state[ 'image_temperature' ]
+					
+					# ---------- Presense ------------
+					with llm_c5:
+						set_image_presence = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='image_presence_penalty' )
+						
+						image_presence = st.session_state[ 'image_presence_penalty' ]
+					
+					# ---------- Frequency ------------
+					with llm_c6:
+						set_image_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='image_frequency_penalty' )
+						
+						image_fequency = st.session_state[ 'image_frequency_penalty' ]
+					
+					# ---------- Reset Model ------------
+					if st.button( label='Reset', key='reset_image_model', width='stretch' ):
+						for key in [ 'image_model', 'image_temperature', 'image_presence_penalty',
+						             'image_reasoning', 'image_top_percent',
+						             'image_frequency_penalty' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5, tool_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Max Calls ------------
+					with tool_c1:
+						set_image_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'image_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='image_max_calls' )
+						
+						image_max_calls = st.session_state[ 'image_max_calls' ]
+					
+					# ---------- Choice ------------
+					with tool_c2:
+						choice_options = list( image.choice_options )
+						set_image_choice = st.selectbox( label='Choice', options=choice_options,
+							key='image_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						image_tool_choice = st.session_state[ 'image_tool_choice' ]
+					
+					# ---------- Include ------------
+					with tool_c3:
+						include_options = list( image.include_options )
+						set_image_include = st.multiselect( label='Include', options=include_options,
+							key='image_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						image_include = [ d.strip( ) for d in set_image_include
+						                  if d.strip( ) ]
+						
+						image_include = st.session_state[ 'image_include' ]
+					
+					# ---------- Domains ------------
+					with tool_c4:
+						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains_input',
+							value=','.join( st.session_state.get( 'image_domains', [ ] ) ),
+							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
 						
 						image_domains = [ d.strip( ) for d in set_image_domains.split( ',' )
 						                  if d.strip( ) ]
 						
-						image_domains = st.session_state[ 'image_domains' ]
+						st.session_state[ 'image_domains' ] = image_domains
 					
-					# ------------ Stops -------------
-					with llm_c4:
-						set_image_stops = st.text_input( label='Stop Sequences', key='image_stops',
-							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stops' )
+					# ---------- Tools ------------
+					with tool_c5:
+						tool_options = list( image.tool_options )
+						set_image_tools = st.multiselect( label='Tools', options=tool_options,
+							key='image_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						image_tools = [ d.strip( ) for d in set_image_tools
+						                if d.strip( ) ]
+						
+						image_tools = st.session_state[ 'image_tools' ]
+					
+					# ---------- Background ------------
+					with tool_c6:
+						set_image_background = st.toggle( label='Background', key='image_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						image_background = st.session_state[ 'image_background' ]
+					
+					# ---------- Reset Tools ------------
+					if st.button( label='Reset', key='reset_image_tools', width='stretch' ):
+						for key in [ 'image_max_calls', 'image_tool_choice', 'image_include',
+						             'image_tools', 'image_domains', 'image_background' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Number ------------
+					with resp_c1:
+						set_image_number = st.slider( label='Number', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'image_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='image_number' )
+						
+						image_number = st.session_state[ 'image_number' ]
+					
+					# ---------- Stream ------------
+					with resp_c2:
+						set_image_stream = st.toggle( label='Stream', key='image_stream',
+							help=cfg.STREAM )
+						
+						image_stream = st.session_state[ 'image_stream' ]
+					
+					# ---------- Store ------------
+					with resp_c3:
+						set_image_store = st.toggle( label='Store', key='image_store', help=cfg.STORE )
+						
+						image_store = st.session_state[ 'image_store' ]
+					
+					# ---------- Max Tokens ------------
+					with resp_c4:
+						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'image_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
+						
+						image_tokens = st.session_state[ 'image_max_tokens' ]
+					
+					# ---------- Modalities------------
+					with resp_c5:
+						modality_options = list( image.modality_options )
+						set_image_modalities = st.multiselect( label='Response Modalities', options=modality_options,
+							key='image_modalities', help='Optional. Modality of the response',
+							placeholder='Options' )
+						
+						image_modalities = [ d.strip( ) for d in set_image_modalities
+						                     if d.strip( ) ]
+						
+						image_modalities = st.session_state[ 'image_modalities' ]
+					
+					# ---------- Stops ------------
+					with resp_c6:
+						set_image_stops = st.text_input( label='Stop Sequences', key='image_stops_input',
+							value=','.join( st.session_state.get( 'image_stops', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stop Strings' )
 						
 						image_stops = [ d.strip( ) for d in set_image_stops.split( ',' )
 						                if d.strip( ) ]
 						
-					# ---------  Reasoning/Thinking Level --------
-					with llm_c5:
-						reasonings = list( image.reasoning_options )
-						set_image_reasoning = st.selectbox( label='Thinking Level:', placeholder='Options',
-							options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
-						
-						image_reasoning = st.session_state[ 'image_reasoning' ]
+						st.session_state[ 'image_stops' ] = image_stops
 					
-					# ---------  Reset Settings --------
-					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Image Model Settings session keys
-						# ----------------------------------------------------------
-						for key in [ 'image_mode', 'image_model', 'image_stops',
-						             'image_domains',  'image_reasoning', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-								
-						
-						st.rerun( )
-				
-				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					inf_c1, inf_c2, inf_c3, inf_c4, inf_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-					
-					# ---------  Top-P --------
-					with inf_c1:
-						set_image_top_p = st.slider( label='Top-P', key='image_top_percent',
-							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
-							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TOP_P )
-						
-						image_top_percent = st.session_state[ 'image_top_percent' ]
-					
-					# ---------  Frequency --------
-					with inf_c2:
-						set_image_freq = st.slider( label='Frequency Penalty',
-							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'image_frequency_penalty', 0.0 ) ),
-							step=0.01, help=cfg.FREQUENCY_PENALTY )
-						
-						image_fequency = st.session_state[ 'image_frequency_penalty' ]
-					
-					# ---------  Presense --------
-					with inf_c3:
-						set_image_presense = st.slider( label='Presence Penalty',
-							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'image_presence_penalty', 0.0 ) ),
-							step=0.01, help=cfg.PRESENCE_PENALTY )
-						
-						image_presense = st.session_state[ 'image_presense_penalty' ]
-					
-					# ---------  Temperature --------
-					with inf_c4:
-						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
-							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
-							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
-						
-						image_temperature = st.session_state[ 'image_temperature' ]
-					
-					# ---------- Top-K ------------
-					with inf_c5:
-						set_image_topK = st.slider( label='Top-K',
-							key='image_top_k', min_value=0, max_value=20,
-							value=int( st.session_state.get( 'image_top_k', 0 ) ),
-							step=1, help=cfg.TOP_K )
-						
-						image_top_k = st.session_state[ 'image_top_k' ]
-						
-					# --------- Reset Settings --------
-					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						for key in [ 'image_top_percent', 'image_frequency_penalty', 'image_top_k',
-						             'image_presense_penalty', 'image_temperature', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-								
-						if 'image_stops_input' in st.session_state:
-							del st.session_state[ 'image_stops_input' ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
-					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-					
-					# ---------  Allow Parallel --------
-					with tool_c1:
-						set_image_parallel = st.toggle( label='Allow Parallel', key='image_parallel_tools',
-							help=cfg.PARALLEL_TOOL_CALLS )
-						
-						image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
-					
-					# ---------  Max Tools --------
-					with tool_c2:
-						set_image_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=6,
-							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
-							step=1, help=cfg.MAX_TOOL_CALLS, key='image_max_tools' )
-						
-						image_max_tools = st.session_state[ 'image_max_tools' ]
-					
-					# ---------  Choice/Call Mode --------
-					with tool_c3:
-						choice_options = list( image.choice_options )
-						set_image_choice = st.multiselect( label='Calling Mode',
-							options=choice_options, key='image_tool_choice',
-							help=cfg.INCLUDE, placeholder='Options' )
-						
-						image_include = st.session_state[ 'image_tool_choice' ]
-					
-					# ---------  Tool Options --------
-					with tool_c4:
-						tool_options = list( image.tool_options )
-						set_image_tools = st.multiselect( label='Available Tools', options=tool_options,
-							key='image_tools', help=cfg.TOOLS, placeholder='Options' )
-						
-						image_tools = st.session_state[ 'image_tools' ]
-					
-					# ---------- Media Resolution ------------
-					with tool_c5:
-						resolution_options = list( image.media_options )
-						set_media_options = st.selectbox( label='Media Resolution',
-							options=resolution_options, key='image_media_resolution',
-							help=cfg.REASONING, index=None, placeholder='Options' )
-						
-						media_resolution = st.session_state[ 'image_media_resolution' ]
-					
-					# --------- Reset Settings --------
-					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
-						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
-						             'image_tools', 'image_include' ]:
+					# ---------- Reset Reponse ------------
+					if st.button( label='Reset', key='reset_image_response', width='stretch' ):
+						for key in [ 'image_stream', 'image_store', 'image_number', 'image_stops',
+						             'image_tools', 'image_max_tokens', 'image_modalities' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
 						st.rerun( )
 				
-				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
-					res_one, res_two, res_three, res_four, res_five = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-					
-					# ---------  Stream --------
-					with res_one:
-						set_image_stream = st.toggle( label='Stream', key='image_stream', help=cfg.STREAM )
-						
-						image_stream = st.session_state[ 'image_stream' ]
-					
-					# ---------  Store --------
-					with res_two:
-						set_image_store = st.toggle( label='Store', key='image_store', help=cfg.STORE )
-						
-						text_store = st.session_state[ 'image_store' ]
-					
-					# ---------  Modalities --------
-					with res_three:
-						modality_options = list( image.modality_options )
-						set_image_modalities = st.multiselect( label='Response Modalities',
-							options=modality_options, key='image_modalities',
-							help='Optional. Modality of the response',
-							placeholder='Options' )
-						
-						image_modalities = [ d.strip( ) for d in set_image_modalities
-						                    if d.strip( ) ]
-						
-						image_modalities = st.session_state[ 'image_modalities' ]
-					
-					# ---------  Response Format --------
-					with res_four:
-						formats = list( image.format_options )
-						set_image_reponse = st.selectbox( label='Response Format:',
-							options=formats, key='image_response_format',
-							help=cfg.IMAGE_RESPONSE, placeholder='Options', index=None )
-						
-						image_respose_format = st.session_state[ 'image_response_format' ]
-					
-					# ---------  Max Tokens --------
-					with res_five:
-						set_image_tokens = st.slider( label='Max Output Tokens', min_value=0, max_value=100000,
-							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
-						
-						image_tokens = st.session_state[ 'image_max_tokens' ]
-					
-					# ------- Reset Settings -----------
-					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						for key in [ 'image_stream', 'image_store', 'image_modalities',
-						             'image_response_format', 'image_max_tokens', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Visual Settings', icon='👁️', expanded=False, width='stretch' ):
 					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
 						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 					
-					# ------------ Image Resolution -------
+					# ------------ Compression -------
 					with img_c1:
-						resolution_options = list( image.resolution_options )
-						set_image_resolution = st.selectbox( label='Image Resolution',
-							options=resolution_options, help='Optional. Image detail', key='image_resolution',
-							placeholder='Options', index=None )
+						set_image_compression = st.slider( label='Image Compression', key='image_compression',
+							value=float( st.session_state.get( 'image_compression' ) ),
+							min_value=0.0, max_value=1.0, step=0.01, help=cfg.IMAGE_COMPRESSION )
 						
-						image_resolution = st.session_state[ 'image_resolution' ]
+						image_compression = st.session_state[ 'image_compression' ]
 					
-					# ------------ MIME Type --------
+					# ------------ MIME --------
 					with img_c2:
 						mime_options = list( image.mime_options )
 						set_image_mime = st.selectbox( label='MIME Type', options=mime_options,
@@ -4641,338 +4873,37 @@ elif mode == "Images":
 						
 						image_mime_type = st.session_state[ 'image_mime_type' ]
 					
-					# ------------ Image Aspect Ratio -------
+					# ---------  Backcolor --------
 					with img_c3:
-						ratios = list( image.aspect_options )
-						set_image_aspect = st.selectbox( label='Aspect Ratio',
-							options=ratios, help=cfg.IMAGE_BACKGROUND,
-							key='image_aspect_ratio', placeholder='Options', index=None )
+						backcolor_options = list( image.backcolor_options )
+						set_image_backcolor = st.selectbox( label='Back Color', options=backcolor_options,
+							help='Optional. Image Background Color', key='image_backcolor',
+							placeholder='Options', index=None, )
 						
-						image_aspect_ratio = st.session_state[ 'image_aspect_ratio' ]
+						image_backcolor = st.session_state[ 'image_backcolor' ]
 					
-					# ---------  Number/Candidates --------
+					# --------- Size --------
 					with img_c4:
-						set_image_number = st.slider( label='Candidates Count', min_value=0, max_value=100,
-							value=int( st.session_state.get( 'image_number', 0 ) ),
-							step=1, help='Optional. A response candidate generated from the model',
-							key='image_number' )
-						
-						image_number = st.session_state[ 'image_number' ]
-					
-					# ---------  Image Size --------
-					with img_c5:
 						size_options = list( image.size_options )
 						set_image_size = st.selectbox( label='Image Size',
 							options=size_options, help='Optional. Image sizes',
 							key='image_size', placeholder='Options', index=None )
 						
 						image_size = st.session_state[ 'image_size' ]
-						
-					# -------- Reset Settings ------------------
-					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
-						for key in [ 'image_resolution', 'image_mime_type', 'image_size',
-						             'image_number', 'image_aspect_ratio' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-			
-		# ------------------------------------------------------------------
-		# Expander — GPT Image LLM Configuration
-		# ------------------------------------------------------------------
-		elif provider_name == 'GPT':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				
-				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
-					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
-						border=True, gap='xxsmall' )
 					
-					# ---------  Mode --------
-					with llm_c1:
-						_modes = [ 'Generation', 'Analysis', 'Editing' ]
-						set_image_mode = st.selectbox( label='Image Mode:', options=_modes,
-							key='image_mode', help='Available Image API modes', index=None,
-							placeholder='Options' )
-						
-						image_mode = st.session_state[ 'image_mode' ]
-					
-					# ---------  Model --------
-					with llm_c2:
-						if st.session_state[ 'image_mode' ] == 'Generation':
-							generation = list( cfg.GPT_GENERATION )
-							set_image_model = st.selectbox( label='Select Model', options=generation,
-								help='REQUIRED. Images Generation model used by the AI', key='image_model',
-								placeholder='Options', index=None )
-							
-							image_model = st.session_state[ 'image_model' ]
-						
-						elif st.session_state[ 'image_mode' ] == 'Analysis':
-							analysis = list( cfg.GPT_ANALYSIS )
-							set_image_model = st.selectbox( label='Select Model', options=analysis,
-								help='REQUIRED. Images Generation model used by the AI', key='image_model',
-								placeholder='Options', index=None )
-							
-							image_model = st.session_state[ 'image_model' ]
-						
-						elif st.session_state[ 'image_mode' ] == 'Editing':
-							editing = list( cfg.GPT_EDITING )
-							set_image_model = st.selectbox( label='Select Model', options=editing,
-								help='REQUIRED. Images Generationmodel used by the AI', key='image_model',
-								placeholder='Options', index=None, )
-							
-							image_model = st.session_state[ 'image_model' ]
-						else:
-							all = list( cfg.GPT_GENERATION )
-							set_image_model = st.selectbox( label='Select Model', options=all,
-								help='REQUIRED. Images Generation model used by the AI', key='image_model',
-								placeholder='Options', index=None )
-							
-							image_model = st.session_state[ 'image_model' ]
-					
-					# ---------  Include --------
-					with llm_c3:
-						includes = list( image.include_options )
-						set_image_include = st.multiselect( label='Include:',
-							options=includes, key='image_include',
-							help=cfg.INCLUDE, placeholder='Options' )
-						
-						image_include = st.session_state[ 'image_include' ]
-					
-					# ---------  Domains --------
-					with llm_c4:
-						set_image_domains = st.text_input( label='Allowed Domains', key='image_domains',
-							placeholder='Enter Domains',
-							help=cfg.ALLOWED_DOMAINS, width='stretch' )
-						
-						image_domains = [ d.strip( ) for d in set_image_domains.split( ',' )
-						                  if d.strip( ) ]
-						
-						image_domains = st.session_state[ 'image_domains' ]
-					
-					# ---------  Reasoning --------
-					with llm_c5:
-						reasonings = list( image.reasoning_options )
-						set_image_reasoning = st.selectbox( label='Reasoning Effort', placeholder='Options',
-							options=reasonings, key='image_reasoning', help=cfg.REASONING, index=None )
-						
-						image_reasoning = st.session_state[ 'image_reasoning' ]
-					
-					# --------- Reset Model Settings --------
-					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
-						for key in [ 'image_mode', 'image_model', 'image_include',
-						             'image_domains', 'image_stops', 'image_reasoning', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-							
-							if 'image_domains_input' in st.session_state:
-								del st.session_state[ 'image_domains_input' ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
-					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
-						border=True, gap='xxsmall' )
-					
-					# ---------  Top-P --------
-					with prm_c1:
-						set_image_top_p = st.slider( label='Top-P', key='image_top_percent',
-							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
-							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TOP_P )
-						
-						image_top_percent = st.session_state[ 'image_top_percent' ]
-					
-					# ---------  Frequency --------
-					with prm_c2:
-						set_image_freq = st.slider( label='Frequency Penalty',
-							key='image_frequency_penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'image_frequency_penalty', 0.0 ) ),
-							step=0.01, help=cfg.FREQUENCY_PENALTY )
-						
-						image_fequency = st.session_state[ 'image_frequency_penalty' ]
-					
-					# ---------  Presense --------
-					with prm_c3:
-						set_image_presense = st.slider( label='Presence Penalty',
-							key='image_presense_penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'image_presence_penalty', 0.0 ) ),
-							step=0.01, help=cfg.PRESENCE_PENALTY )
-						
-						image_presense = st.session_state[ 'image_presense_penalty' ]
-					
-					# ---------  Temperature --------
-					with prm_c4:
-						set_image_temperature = st.slider( label='Temperature', key='image_temperature',
-							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
-							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
-						
-						image_temperature = st.session_state[ 'image_temperature' ]
-					
-					# ---------  Number --------
-					with prm_c5:
-						set_image_number = st.slider( label='Number', min_value=0, max_value=100,
-							value=int( st.session_state.get( 'image_number', 0 ) ),
-							step=1, help='Optional. Upper limit on the responses returned by the model',
-							key='image_number' )
-						
-						image_number = st.session_state[ 'image_number' ]
-					
-					# --------- Reset Settings --------
-					if st.button( label='Reset', key='image_inference_reset', width='stretch' ):
-						for key in [ 'image_top_percent', 'image_frequency_penalty',
-						             'image_presense_penalty', 'image_temperature', 'image_number' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
-					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='medium' )
-					
-					# ---------  Allow Parallel --------
-					with tool_c1:
-						set_image_parallel = st.toggle( label='Asynchronous Calls', key='image_parallel_tools',
-							help=cfg.PARALLEL_TOOL_CALLS )
-						
-						image_parallel_tools = st.session_state[ 'image_parallel_tools' ]
-					
-					# ---------  Max Tools --------
-					with tool_c2:
-						set_image_calls = st.slider( label='Max Tool Calls', min_value=0, max_value=6,
-							value=int( st.session_state.get( 'image_max_tools', 0 ) ),
-							step=1, help=cfg.MAX_TOOL_CALLS, key='image_max_tools' )
-						
-						image_max_tools = st.session_state[ 'image_max_tools' ]
-					
-					# ---------  Tool Choice --------
-					with tool_c3:
-						choices = list( image.choice_options )
-						set_image_choice = st.selectbox( label='Tool Choice:', options=choices,
-							key='image_choice', help=cfg.CHOICE, placeholder='Options', index=None )
-						
-						image_tool_choice = st.session_state[ 'image_choice' ]
-					
-					# ---------  Tool Options --------
-					with tool_c4:
-						tool_options = list( image.tool_options )
-						set_image_tools = st.multiselect( label='Available Tools', options=tool_options,
-							key='image_tools', help=cfg.TOOLS, placeholder='Options' )
-						
-						image_tools = st.session_state[ 'image_tools' ]
-					
-					# --------- Reset Settings --------
-					if st.button( label='Reset', key='image_tools_reset', width='stretch' ):
-						for key in [ 'image_parallel_tools', 'image_max_tools', 'image_tool_choice',
-						             'image_tools', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
-					res_one, res_two, res_three, res_four, res_five = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-					
-					# ---------  Stream --------
-					with res_one:
-						set_image_stream = st.toggle( label='Stream', key='image_stream', help=cfg.STREAM )
-						
-						image_stream = st.session_state[ 'image_stream' ]
-					
-					# ---------  Store --------
-					with res_two:
-						set_image_store = st.toggle( label='Store', key='image_store', help=cfg.STORE )
-						
-						text_store = st.session_state[ 'image_store' ]
-					
-					# ---------  Background --------
-					with res_three:
-						set_image_background = st.toggle( label='Background', key='image_background',
-							help=cfg.BACKGROUND_MODE )
-						
-						image_background = st.session_state[ 'image_background' ]
-					
-					# ---------  Response Format --------
-					with res_four:
-						formats = list( image.format_options )
-						set_image_reponse = st.selectbox( label='Response Format:',
-							options=formats, key='image_response_format',
-							help=cfg.IMAGE_RESPONSE, placeholder='Options', index=None )
-						
-						image_respose_format = st.session_state[ 'image_response_format' ]
-					
-					# ---------  Max Tokens --------
-					with res_five:
-						set_image_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
-							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
-						
-						image_tokens = st.session_state[ 'image_max_tokens' ]
-					
-					# ------- Reset Settings -----------
-					if st.button( label='Reset', key='image_response_reset', width='stretch' ):
-						for key in [ 'image_stream', 'image_store', 'image_background',
-						             'image_response_format', 'image_max_tokens', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						# If canonical separation used
-						if 'image_stops_input' in st.session_state:
-							del st.session_state[ 'image_stops_input' ]
-						
-						st.rerun( )
-				
-				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
-					img_c1, img_c2, img_c3, img_c4, img_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-					
-					# ------------ Image Detail
-					with img_c1:
-						details = list( image.detail_options )
-						set_image_detail = st.selectbox( label='Image Detail', options=details,
-							help='Optional. Image detail', key='image_detail',
-							placeholder='Options', index=None )
-						
-						image_detail = st.session_state[ 'image_detail' ]
-					
-					# ------------ Image Style
-					with img_c2:
-						sizes = list( image.size_options )
-						set_image_size = st.selectbox( label='Image Size', options=sizes,
-							help='Optional. Image size', key='image_size',
-							placeholder='Options', index=None, )
-						
-						image_size = st.session_state[ 'image_size' ]
-					
-					# ------------ Image Quality
-					with img_c3:
-						qualities = list( image.quality_options )
+					# --------- Quality --------
+					with img_c5:
+						quality_options = list( image.quality_options )
 						set_image_quality = st.selectbox( label='Image Quality',
-							options=qualities, help='Optional. Image Quality',
+							options=quality_options, help='Optional. Image Quality',
 							key='image_quality', placeholder='Options', index=None )
 						
 						image_quality = st.session_state[ 'image_quality' ]
 					
-					# ------------ Image Backcolor
-					with img_c4:
-						colors = list( image.backcolor_options )
-						set_image_backcolor = st.selectbox( label='Image Backcolor',
-							options=colors, help=cfg.IMAGE_BACKGROUND,
-							key='image_backcolor', placeholder='Options', index=None )
-						
-						image_backcolor = st.session_state[ 'image_backcolor' ]
-					
-					# ------------ Image Output Format
-					with img_c5:
-						outputs = list( image.output_options )
-						set_image_output = st.selectbox( label='MIME Format', options=outputs,
-							help=cfg.IMAGE_RESPONSE, key='image_output',
-							placeholder='Options', index=None )
-						
-						image_output = st.session_state[ 'image_output' ]
-					
-					# ------------ Reset Settings -------------
-					if st.button( label='Reset', key='image_settings_reset', width='stretch' ):
-						for key in [ 'image_detail', 'image_backcolor', 'image_style', 'image_quality',
-						             'image_size', 'image_output' ]:
+					# -------- Reset Settings ------------------
+					if st.button( label='Reset', key='image_visual_reset', width='stretch' ):
+						for key in [ 'image_mime_type', 'image_size',
+						             'image_backcolor', 'image_quality', 'image_compression' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
