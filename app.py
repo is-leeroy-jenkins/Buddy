@@ -5879,72 +5879,233 @@ elif mode == 'Audio':
 			
 			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
 		
-		left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ],
-			border=True,  gap='medium' )
-		
-		# -----------UPLOAD AUDIO----------------------
-		with left_audio:
-			uploaded = st.file_uploader( 'Upload File', type=[ 'wav', 'mp3', 'm4a', 'flac' ], )
-			if uploaded:
-				tmp_path = save_temp( uploaded )
-				if audio_task == 'Transcribe' and transcriber:
-					with st.spinner( 'Transcribing…' ):
-						try:
-							text = transcriber.transcribe( tmp_path, model=audio_model,
-								language=audio_language, )
-							st.text_area( 'Transcript', value=text, height=300 )
-							try:
-								update_token_counters( getattr( transcriber, 'response', None ) )
-							except Exception:
-								pass
-						except Exception as exc:
-							st.error( f'Transcription failed: {exc}' )
+		# ------------------------------------------------------------------
+		# Message
+		# ------------------------------------------------------------------
+		if provider_name == 'GPT':
+			left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ],
+				border=True, gap='medium' )
+			
+			# -----------UPLOAD AUDIO----------------------
+			with left_audio:
+				uploaded = st.file_uploader( 'Upload File',
+					type=[ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm' ] )
 				
-				elif audio_task == 'Translate' and translator:
-					with st.spinner( 'Translating…' ):
-						try:
-							text = translator.translate( tmp_path, model=audio_model,
-								language=audio_language, )
-							st.text_area( 'Translation', value=text, height=300 )
-							
+				if uploaded:
+					tmp_path = save_temp( uploaded )
+					
+					if audio_task == 'Transcribe' and transcriber:
+						with st.spinner( 'Transcribing…' ):
 							try:
-								update_token_counters( getattr( translator, 'response', None ) )
-							except Exception:
-								pass
-						
-						except Exception as exc:
-							st.error( f'Translation failed: {exc}' )
-			
-			elif audio_task == 'Text-to-Speech' and tts:
-				text = st.text_area( 'Enter Text to Synthesize' )
-				if text and st.button( 'Generate Audio' ):
-					with st.spinner( 'Synthesizing speech…' ):
-						try:
-							audio_bytes = tts.create_speech( text, model=audio_model, voice=audio_voice )
-							st.audio( audio_bytes )
+								audio_language = st.session_state.get( 'audio_language' ) or None
+								audio_model = st.session_state.get( 'audio_model' ) or 'gpt-4o-transcribe'
+								audio_prompt = st.session_state.get( 'audio_system_instructions' ) or None
+								audio_format = st.session_state.get( 'audio_response_format' ) or None
+								audio_temperature = st.session_state.get( 'audio_temperature', 0.0 )
+								text = transcriber.transcribe( tmp_path, model=audio_model,
+									language=audio_language, prompt=audio_prompt,
+									format=audio_format, temperature=audio_temperature )
+								st.text_area( 'Transcript', value=text or '', height=300 )
+								try:
+									update_token_counters( getattr( transcriber, 'response', None ) )
+								except Exception:
+									pass
+							except Exception as exc:
+								st.error( f'Transcription failed: {exc}' )
+					
+					elif audio_task == 'Translate' and translator:
+						with st.spinner( 'Translating…' ):
 							try:
-								update_token_counters( getattr( tts, 'response', None ) )
-							except Exception:
-								pass
-						
-						except Exception as exc:
-							st.error( f'Text-to-speech failed: {exc}' )
-							
-		#-----------RECORD AUDIO----------------------
-		with center_audio:
-			recording = st.audio_input( label='Record Audio', sample_rate=audio_rate)
+								audio_model = st.session_state.get( 'audio_model' ) or 'whisper-1'
+								audio_prompt = st.session_state.get( 'audio_system_instructions' ) or None
+								audio_format = st.session_state.get( 'audio_response_format' ) or None
+								audio_temperature = st.session_state.get( 'audio_temperature', 0.0 )
+								text = translator.translate( tmp_path, model=audio_model, prompt=audio_prompt,
+									format=audio_format, temperature=audio_temperature,
+									language=st.session_state.get( 'audio_language' ) or None )
+								st.text_area( 'Translation', value=text or '', height=300 )
+								try:
+									update_token_counters( getattr( translator, 'response', None ) )
+								except Exception:
+									pass
+							except Exception as exc:
+								st.error( f'Translation failed: {exc}' )
+					
+					elif audio_task == 'Text-to-Speech' and tts:
+						st.info( 'Use the text box below to generate speech.' )
+				
+				if audio_task == 'Text-to-Speech' and tts:
+					text = st.text_area( 'Enter Text to Synthesize', key='audio_input' )
+					if text and st.button( 'Generate Audio', key='audio_generate_tts' ):
+						with st.spinner( 'Synthesizing speech…' ):
+							try:
+								audio_voice = st.session_state.get( 'audio_voice' ) or 'alloy'
+								audio_model = st.session_state.get( 'audio_model' ) or 'gpt-4o-mini-tts'
+								audio_format = st.session_state.get( 'audio_response_format' ) or \
+								               st.session_state.get( 'audio_mime_type' ) or 'mp3'
+								audio_instruction = st.session_state.get( 'audio_system_instructions' ) or None
+								audio_bytes = tts.create_speech( text, model=audio_model, voice=audio_voice,
+									format=audio_format, speed=1.0, instruct=audio_instruction )
+								if audio_bytes:
+									st.audio( audio_bytes, format=f'audio/{audio_format}' )
+								else:
+									st.warning( 'No audio output was returned.' )
+								try:
+									update_token_counters( getattr( tts, 'response', None ) )
+								except Exception:
+									pass
+							except Exception as exc:
+								st.error( f'Text-to-speech failed: {exc}' )
 			
-		# -----------PLAY AUDIO----------------------
-		with right_audio:
-			data = cfg.AUDIO_TEST_FILE
-			st.caption( 'Local Audio File')
-			if data is not None:
-				audio_recording = st.audio( data, sample_rate=audio_rate,
-					start_time=audio_start, end_time=audio_end, format='wav', width='stretch',
-					loop=audio_loop, autoplay=audio_autoplay )
-			else:
-				audio_recording = st.audio( data,  start_time=audio_start, end_time=audio_end,
-					format='wav', width='stretch', loop=audio_loop, autoplay=audio_autoplay )
+			# -----------RECORD AUDIO----------------------
+			with center_audio:
+				recording = st.audio_input( label='Record Audio', sample_rate=audio_rate )
+				if recording is not None:
+					st.audio( recording, format='audio/wav' )
+			
+			# -----------PLAY AUDIO----------------------
+			with right_audio:
+				data = cfg.AUDIO_TEST_FILE
+				st.caption( 'Local Audio File' )
+				if data is not None:
+					st.audio( data, start_time=audio_start, end_time=audio_end,
+						format='audio/wav', width='stretch', loop=audio_loop,
+						autoplay=audio_autoplay )
+				else:
+					st.info( 'No local audio file is configured.' )
+			
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+			
+			if st.session_state.get( 'audio_messages' ):
+				for msg in st.session_state.audio_messages:
+					with st.chat_message( msg[ 'role' ], avatar='' ):
+						st.markdown( msg[ 'content' ] )
+			
+			prompt = st.chat_input( 'Enter audio generation prompt …', key='audio_messages_input' )
+			if prompt is not None and isinstance( prompt, str ) and prompt.strip( ):
+				st.session_state.audio_messages.append( { 'role': 'user', 'content': prompt } )
+				st.rerun( )
+			
+			if st.button( 'Clear Messages', key='audio_clear_messages' ):
+				st.session_state[ 'audio_messages' ] = [ ]
+				st.rerun( )
+				
+		elif provider_name == 'Gemini':
+			left_audio, center_audio, right_audio = st.columns( [ 0.33, 0.33, 0.33 ],
+				border=True, gap='medium' )
+			
+			# -----------UPLOAD AUDIO----------------------
+			with left_audio:
+				if audio_task in ('Transcribe', 'Translate'):
+					uploaded = st.file_uploader( 'Input File', type=[ 'wav', 'mp3', 'm4a', 'flac' ] )
+					if uploaded is not None:
+						if st.button( f'Run {audio_task}', key='audio_uploaded_run', width='stretch' ):
+							tmp_path = save_temp( uploaded )
+							with st.spinner( f'{audio_task}ing…' ):
+								result = _run_audio_task( tmp_path )
+								if result is not None:
+									st.session_state[ 'audio_output' ] = result
+									st.session_state[ 'audio_output_bytes' ] = None
+									st.text_area( audio_task, value=result, height=300 )
+									try:
+										update_counters(
+											getattr( transcriber, 'response', None ) if audio_task == 'Transcribe'
+											else getattr( translator, 'response', None ) )
+									except Exception:
+										pass
+				
+				elif audio_task == 'Text-to-Speech':
+					tts_text = st.text_area( 'Enter Text to Synthesize',
+						key='audio_tts_prompt', height=300 )
+					
+					if st.button( 'Generate Audio', key='audio_generate_speech', width='stretch' ):
+						with st.spinner( 'Synthesizing speech…' ):
+							try:
+								audio_bytes = tts.create_speech(
+									tts_text,
+									model=audio_model,
+									format=audio_format,
+									voice=audio_voice,
+									temperature=audio_temperature,
+									top_p=audio_top_percent,
+									frequency=audio_freq,
+									presense=audio_presence,
+									max_tokens=st.session_state.get( 'audio_max_tokens' ),
+									instruct=audio_system_instructions )
+								
+								if audio_bytes is not None:
+									st.session_state[ 'audio_output_bytes' ] = audio_bytes
+									st.session_state[ 'audio_output' ] = ''
+									st.audio( audio_bytes, format='audio/wav', loop=audio_loop,
+										autoplay=audio_autoplay )
+									try:
+										update_counters( getattr( tts, 'response', None ) )
+									except Exception:
+										pass
+							except Exception as exc:
+								st.error( f'Text-to-speech failed: {exc}' )
+			
+			# -----------RECORD AUDIO----------------------
+			with center_audio:
+				if isinstance( audio_rate, int ) and audio_rate > 0:
+					recording = st.audio_input( label='Record Audio', sample_rate=audio_rate )
+				else:
+					recording = st.audio_input( label='Record Audio' )
+				
+				if recording is not None:
+					record_path = save_temp( recording )
+					st.session_state[ 'audio_file' ] = record_path
+					st.audio( recording.getvalue( ), format='audio/wav',
+						start_time=audio_start, end_time=audio_end,
+						loop=audio_loop, autoplay=False )
+					
+					if audio_task in ('Transcribe', 'Translate'):
+						if st.button( f'Run Recorded {audio_task}', key='audio_recorded_run',
+								width='stretch' ):
+							with st.spinner( f'{audio_task}ing recording…' ):
+								result = _run_audio_task( record_path )
+								if result is not None:
+									st.session_state[ 'audio_output' ] = result
+									st.session_state[ 'audio_output_bytes' ] = None
+									st.text_area( f'Recorded {audio_task}', value=result, height=220 )
+									try:
+										update_counters(
+											getattr( transcriber, 'response', None ) if audio_task == 'Transcribe'
+											else getattr( translator, 'response', None ) )
+									except Exception:
+										pass
+			
+			# -----------PLAY AUDIO----------------------
+			with right_audio:
+				st.caption( 'Audio Output' )
+				
+				if st.session_state.get( 'audio_output_bytes' ) is not None:
+					st.audio( st.session_state[ 'audio_output_bytes' ],
+						format='audio/wav', start_time=audio_start, end_time=audio_end,
+						loop=audio_loop, autoplay=audio_autoplay )
+				elif isinstance( st.session_state.get( 'audio_output' ), str ) and \
+						st.session_state[ 'audio_output' ].strip( ):
+					label = 'Transcript' if audio_task == 'Transcribe' else 'Translation'
+					if audio_task in ('Transcribe', 'Translate'):
+						st.text_area( label, value=st.session_state[ 'audio_output' ], height=300 )
+				else:
+					data = cfg.AUDIO_TEST_FILE
+					if data is not None:
+						if isinstance( audio_rate, int ) and audio_rate > 0:
+							st.audio( data, sample_rate=audio_rate, start_time=audio_start,
+								end_time=audio_end, format='wav', width='stretch',
+								loop=audio_loop, autoplay=audio_autoplay )
+						else:
+							st.audio( data, start_time=audio_start, end_time=audio_end,
+								format='wav', width='stretch', loop=audio_loop,
+								autoplay=audio_autoplay )
+			
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+			
+			if audio_task == 'Text-to-Speech':
+				st.info( 'Text-to-speech uses the text box above and returns generated audio output.' )
+			elif audio_task in ('Transcribe', 'Translate'):
+				st.info( 'Use either an uploaded file or a recording to run the selected audio task.' )
 	
 # ======================================================================================
 # EMBEDDINGS MODE
