@@ -4420,14 +4420,9 @@ elif mode == "Images":
 					
 					with llm_c1:
 						_modes = [ 'Generation', 'Analysis', 'Editing' ]
-						st.selectbox(
-							label='Image Mode',
-							options=_modes,
-							key='image_mode',
+						st.selectbox( label='Image Mode', options=_modes, key='image_mode',
 							help='Available Gemini image workflows.',
-							index=None,
-							placeholder='Options'
-						)
+							index=None, placeholder='Options' )
 						image_mode = st.session_state.get( 'image_mode', '' )
 					
 					with llm_c2:
@@ -4440,38 +4435,21 @@ elif mode == "Images":
 						else:
 							models = list( image.model_options )
 						
-						st.selectbox(
-							label='Select Model',
-							options=models,
+						st.selectbox( label='Select Model', options=models,
 							help='REQUIRED. Gemini model used by the selected image workflow.',
-							key='image_model',
-							placeholder='Options',
-							index=None
-						)
+							key='image_model', placeholder='Options', index=None )
 						image_model = st.session_state.get( 'image_model', '' )
 					
 					with llm_c3:
-						st.slider(
-							label='Top-P',
-							key='image_top_percent',
+						st.slider( label='Top-P', key='image_top_percent',
 							value=float( st.session_state.get( 'image_top_percent', 0.0 ) ),
-							min_value=0.0,
-							max_value=1.0,
-							step=0.01,
-							help=cfg.TOP_P
-						)
+							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TOP_P )
 						image_top_percent = st.session_state.get( 'image_top_percent', 0.0 )
 					
 					with llm_c4:
-						st.slider(
-							label='Temperature',
-							key='image_temperature',
+						st.slider( label='Temperature', key='image_temperature',
 							value=float( st.session_state.get( 'image_temperature', 0.0 ) ),
-							min_value=0.0,
-							max_value=1.0,
-							step=0.01,
-							help=cfg.TEMPERATURE
-						)
+							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
 						image_temperature = st.session_state.get( 'image_temperature', 0.0 )
 					
 					if st.button( label='Reset', key='image_model_reset', width='stretch' ):
@@ -4486,27 +4464,16 @@ elif mode == "Images":
 						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 					
 					with resp_c1:
-						st.slider(
-							label='Max Output Tokens',
-							min_value=0,
-							max_value=100000,
+						st.slider( label='Max Output Tokens', min_value=0, max_value=100000,
 							value=int( st.session_state.get( 'image_max_tokens', 0 ) ),
-							step=1000,
-							help=cfg.MAX_OUTPUT_TOKENS,
-							key='image_max_tokens'
-						)
+							step=1000, help=cfg.MAX_OUTPUT_TOKENS, key='image_max_tokens' )
 						image_max_tokens = st.session_state.get( 'image_max_tokens', 0 )
 					
 					with resp_c2:
-						st.slider(
-							label='Candidates',
-							min_value=1,
-							max_value=8,
+						st.slider( label='Candidates', min_value=1, max_value=8,
 							value=int( st.session_state.get( 'image_number', 1 ) ),
-							step=1,
-							help='Optional. Upper bound on generated image candidates.',
-							key='image_number'
-						)
+							step=1, help='Optional. Upper bound on generated image candidates.',
+							key='image_number' )
 						image_number = st.session_state.get( 'image_number', 1 )
 					
 					with resp_c3:
@@ -4517,33 +4484,22 @@ elif mode == "Images":
 						else:
 							modality_options = [ 'IMAGE', 'TEXT_AND_IMAGE' ]
 						
-						st.selectbox(
-							label='Response Mode',
-							options=modality_options,
+						st.selectbox( label='Response Mode', options=modality_options,
 							key='image_modality',
-							help='Gemini response modalities used by the Image wrapper.',
-							index=None,
-							placeholder='Select Modality'
-						)
+							help='Gemini response modalities used by the Image wrapper.', index=None,
+							placeholder='Select Modality' )
 						image_modality = st.session_state.get( 'image_modality', '' )
 					
 					with resp_c4:
 						mime_enabled = image_mode in [ 'Generation', 'Editing' ]
 						if mime_enabled:
-							st.selectbox(
-								label='Output MIME Type',
-								options=image.mime_options,
+							st.selectbox( label='Output MIME Type', options=image.mime_options,
 								key='image_mime_type',
 								help='Optional. Output image MIME type when the model returns an image.',
-								index=None,
-								placeholder='Options'
-							)
+								index=None, placeholder='Options' )
 						else:
-							st.text_input(
-								label='Output MIME Type',
-								value='Not used for Analysis',
-								disabled=True
-							)
+							st.text_input( label='Output MIME Type', value='Not used for Analysis',
+								disabled=True )
 							st.session_state[ 'image_mime_type' ] = ''
 						
 						image_mime_type = st.session_state.get( 'image_mime_type', '' )
@@ -4574,55 +4530,35 @@ elif mode == "Images":
 					
 					with img_c1:
 						if visual_enabled:
-							st.selectbox(
-								label='Aspect Ratio',
-								options=list( image.aspect_options ),
+							st.selectbox( label='Aspect Ratio', options=list( image.aspect_options ),
 								help='Optional. Output aspect ratio for Gemini image generation/editing.',
-								key='image_aspect_ratio',
-								placeholder='Options',
-								index=None
-							)
+								key='image_aspect_ratio', placeholder='Options', index=None )
 						else:
-							st.text_input(
-								label='Aspect Ratio',
-								value='Not used for Analysis',
-								disabled=True
-							)
+							st.text_input( label='Aspect Ratio', value='Not used for Analysis',
+								disabled=True )
 							st.session_state[ 'image_aspect_ratio' ] = ''
 						
 						image_aspect_ratio = st.session_state.get( 'image_aspect_ratio', '' )
 					
 					with img_c2:
 						if visual_enabled and supports_image_size:
-							st.selectbox(
-								label='Image Size',
-								options=list( image.size_options ),
+							st.selectbox( label='Image Size', options=list( image.size_options ),
 								help='Optional. Supported by Gemini 3 image-preview models.',
-								key='image_size',
-								placeholder='Options',
-								index=None
-							)
+								key='image_size', placeholder='Options', index=None )
 						else:
 							message = 'Not supported by selected model'
 							if not visual_enabled:
 								message = 'Not used for Analysis'
 							
-							st.text_input(
-								label='Image Size',
-								value=message,
-								disabled=True
-							)
+							st.text_input( label='Image Size', value=message, disabled=True )
 							st.session_state[ 'image_size' ] = ''
 						
 						image_size = st.session_state.get( 'image_size', '' )
 					
 					with img_c3:
-						st.checkbox(
-							label='Ground with Google Search',
-							key='image_grounded',
+						st.checkbox( label='Ground with Google Search', key='image_grounded',
 							help='Enables Gemini Search grounding when supported by the selected model.',
-							disabled=not supports_grounding
-						)
+							disabled=not supports_grounding )
 						
 						if not supports_grounding:
 							st.caption( 'Not supported by selected model.' )
@@ -4630,14 +4566,11 @@ elif mode == "Images":
 						image_grounded = st.session_state.get( 'image_grounded', False )
 					
 					with img_c4:
-						st.checkbox(
-							label='Include Google Image Search',
-							key='image_image_search',
+						st.checkbox( label='Include Google Image Search', key='image_image_search',
 							help=('Available only for gemini-3.1-flash-image-preview when grounding '
 							      'is enabled.'),
 							disabled=(not supports_image_search or
-							          not st.session_state.get( 'image_grounded', False ))
-						)
+							          not st.session_state.get( 'image_grounded', False )) )
 						
 						image_image_search = st.session_state.get( 'image_image_search', False )
 					
