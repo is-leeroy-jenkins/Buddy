@@ -2656,7 +2656,7 @@ def summarize_active_document( ) -> str:
 # Page Setup
 # ==============================================================================
 
-initialize_database(
+initialize_database( )
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
 st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
 	initial_sidebar_state='collapsed' )
