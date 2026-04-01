@@ -4089,9 +4089,9 @@ elif mode == "Images":
 		# Expander — Grok Image LLM Configuration
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 				
-				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
+				with st.expander( label='LLM Settings', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
 					# ---------  Mode --------
@@ -4875,181 +4875,371 @@ elif mode == "Images":
 		# ------------------------------------------------------------------
 		# Tab Section
 		# ------------------------------------------------------------------
-		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
-		with tab_gen:
-			prompt = st.chat_input( 'Prompt' )
-			if st.button( 'Generate Image' ):
-				with st.spinner( 'Generating…' ):
-					try:
-						kwargs: Dict[ str, Any ] = {
-								'prompt': prompt,
-								'model': image_model,
-						}
-						
-						# Provider-safe optional args
-						if size_arg is not None:
-							kwargs[ 'size' ] = st.session_state[ 'image_size' ]
-						if quality is not None:
-							kwargs[ 'quality' ] = st.session_state[ 'image_quality' ]
-						if fmt is not None:
-							kwargs[ 'fmt' ] = st.session_state[ 'image_response_format' ]
-						
-						img_url = image.generate( **kwargs )
-						st.image( img_url )
-						
+		if provider_name == 'Gemini':
+			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
+			with tab_gen:
+				if st.session_state.get( 'image_input' ) is not None:
+					for msg in st.session_state.get( 'image_input', [ ] ):
+						with st.chat_message( msg[ 'role' ], avatar='' ):
+							st.markdown( msg[ 'content' ] )
+				
+				prompt = st.chat_input( 'Enter image generation prompt...' )
+				gen_c1, gen_c2, gen_c3 = st.columns( [ 0.2, 0.2, 0.8 ] )
+				
+				with gen_c1:
+					if st.button( 'Generate Image' ):
+						with st.spinner( 'Generating…' ):
+							try:
+								if not prompt or not str( prompt ).strip( ):
+									st.warning( 'Enter a prompt before generating an image.' )
+								elif not image_model:
+									st.warning( 'Select a model before generating an image.' )
+								else:
+									_append_image_message( 'user', prompt )
+									
+									result = image.generate(
+										prompt=prompt,
+										model=image_model,
+										aspect=image_aspect_ratio,
+										number=image_number,
+										temperature=image_temperature,
+										top_p=image_top_percent,
+										max_tokens=image_max_tokens,
+										resolution=image_size,
+										instruct=st.session_state.get( 'image_system_instructions', '' ),
+										output_mime_type=image_mime_type,
+										response_modalities=image_modality,
+										grounded=image_grounded,
+										image_search=image_image_search
+									)
+									
+									if result is not None:
+										st.image( result, use_column_width=True )
+										_append_image_message( 'assistant',
+											'Generated image returned successfully.' )
+									else:
+										st.warning( 'No image was returned by the model.' )
+									
+									try:
+										update_counters( getattr( image, 'response', None ) )
+									except Exception:
+										pass
+							except Exception as exc:
+								st.error( f'Image generation failed: {exc}' )
+				
+				with gen_c2:
+					if st.button( 'Clear Messages', key='clear_image_generation' ):
+						_clear_image_messages( )
+						st.rerun( )
+			
+			with tab_analyze:
+				uploaded_img = st.file_uploader( 'Upload an image for analysis',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ], accept_multiple_files=False,
+					key='images_analyze_uploader' )
+				
+				tmp_path = None
+				if uploaded_img:
+					tmp_path = save_temp( uploaded_img )
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True )
+				
+				if st.session_state.get( 'image_input' ) is not None:
+					for msg in st.session_state.get( 'image_input', [ ] ):
+						with st.chat_message( msg[ 'role' ], avatar='' ):
+							st.markdown( msg[ 'content' ] )
+				
+				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				
+				prompt = st.chat_input( 'Enter image analysis prompt …' )
+				ana_c1, ana_c2 = st.columns( [ 0.2, 0.8 ] )
+				
+				with ana_c1:
+					if st.button( 'Analyze Image' ):
+						with st.spinner( 'Analyzing image…' ):
+							try:
+								if not tmp_path:
+									st.warning( 'Upload an image before analyzing.' )
+								elif not prompt or not str( prompt ).strip( ):
+									st.warning( 'Enter an analysis prompt before analyzing the image.' )
+								elif not image_model:
+									st.warning( 'Select a model before analyzing an image.' )
+								else:
+									_append_image_message( 'user', prompt )
+									
+									analysis_result = image.analyze( prompt=prompt,
+										path=tmp_path,
+										model=image_model,
+										number=image_number,
+										temperature=image_temperature,
+										top_p=image_top_percent,
+										max_tokens=image_max_tokens,
+										instruct=st.session_state.get( 'image_system_instructions', '' ),
+										response_modalities=image_modality,
+										grounded=image_grounded,
+										image_search=image_image_search
+									)
+									
+									if analysis_result is None:
+										st.warning( 'No analysis output returned by the model.' )
+									else:
+										st.markdown( '**Analysis result:**' )
+										st.write( analysis_result )
+										_append_image_message( 'assistant', str( analysis_result ) )
+									
+									try:
+										update_counters( getattr( image, 'response', None ) )
+									except Exception:
+										pass
+							except Exception as exc:
+								st.error( f'Analysis Failed: {exc}' )
+				
+				with ana_c2:
+					if st.button( 'Clear Messages', key='clear_image_analysis' ):
+						_clear_image_messages( )
+						st.rerun( )
+			
+			with tab_edit:
+				uploaded_img = st.file_uploader( 'Upload Image for Edit',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ], accept_multiple_files=False,
+					key='images_edit_uploader' )
+				
+				tmp_path = None
+				if uploaded_img:
+					tmp_path = save_temp( uploaded_img )
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True )
+				
+				if st.session_state.get( 'image_input' ) is not None:
+					for msg in st.session_state.get( 'image_input', [ ] ):
+						with st.chat_message( msg[ 'role' ], avatar='' ):
+							st.markdown( msg[ 'content' ] )
+				
+				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				
+				prompt = st.chat_input( 'Enter image editing prompt …' )
+				edit_c1, edit_c2 = st.columns( [ 0.2, 0.8 ] )
+				
+				with edit_c1:
+					if st.button( 'Edit Image' ):
+						with st.spinner( 'Editing image…' ):
+							try:
+								if not tmp_path:
+									st.warning( 'Upload an image before editing.' )
+								elif not prompt or not str( prompt ).strip( ):
+									st.warning( 'Enter an editing prompt before editing the image.' )
+								elif not image_model:
+									st.warning( 'Select a model before editing an image.' )
+								else:
+									_append_image_message( 'user', prompt )
+									edit_result = image.edit( prompt=prompt,
+										path=tmp_path,
+										model=image_model,
+										aspect=image_aspect_ratio,
+										number=image_number,
+										temperature=image_temperature,
+										top_p=image_top_percent,
+										max_tokens=image_max_tokens,
+										resolution=image_size,
+										instruct=st.session_state.get( 'image_system_instructions', '' ),
+										output_mime_type=image_mime_type,
+										response_modalities=image_modality,
+										grounded=image_grounded,
+										image_search=image_image_search
+									)
+									
+									if edit_result is not None:
+										st.image( edit_result, use_column_width=True )
+										_append_image_message( 'assistant',
+											'Edited image returned successfully.' )
+									else:
+										st.warning( 'No edited image was returned by the model.' )
+									
+									try:
+										update_counters( getattr( image, 'response', None ) )
+									except Exception:
+										pass
+							except Exception as exc:
+								st.error( f'Image editing failed: {exc}' )
+				
+				with edit_c2:
+					if st.button( 'Clear Messages', key='clear_image_editing' ):
+						_clear_image_messages( )
+						st.rerun( )
+		
+		else:
+			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
+			with tab_gen:
+				prompt = st.chat_input( 'Prompt' )
+				if st.button( 'Generate Image' ):
+					with st.spinner( 'Generating…' ):
 						try:
-							update_token_counters( getattr( image, 'response', None ) )
-						except Exception:
-							pass
+							kwargs: Dict[ str, Any ] = {
+									'prompt': prompt,
+									'model': image_model,
+							}
+							
+							# Provider-safe optional args
+							if size_arg is not None:
+								kwargs[ 'size' ] = st.session_state[ 'image_size' ]
+							if quality is not None:
+								kwargs[ 'quality' ] = st.session_state[ 'image_quality' ]
+							if fmt is not None:
+								kwargs[ 'fmt' ] = st.session_state[ 'image_response_format' ]
+							
+							img_url = image.generate( **kwargs )
+							st.image( img_url )
+							
+							try:
+								update_token_counters( getattr( image, 'response', None ) )
+							except Exception:
+								pass
+						
+						except Exception as exc:
+							st.error( f'Image generation failed: {exc}' )
+			
+			with tab_analyze:
+				uploaded_img = st.file_uploader(
+					'Upload an image for analysis',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+					accept_multiple_files=False,
+					key='images_analyze_uploader', )
+				
+				if uploaded_img:
+					tmp_path = save_temp( uploaded_img )
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 					
-					except Exception as exc:
-						st.error( f'Image generation failed: {exc}' )
-		
-		with tab_analyze:
-			uploaded_img = st.file_uploader(
-				'Upload an image for analysis',
-				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-				accept_multiple_files=False,
-				key='images_analyze_uploader', )
-			
-			if uploaded_img:
-				tmp_path = save_temp( uploaded_img )
-				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-				
-				# Discover available analysis methods on Image object
-				available_methods = [ ]
-				for candidate in ( 'analyze', 'describe_image', 'describe', 'classify',
-							'detect_objects', 'caption', 'image_analysis', ):
-					if hasattr( image, candidate ):
-						available_methods.append( candidate )
-				
-				if available_methods:
-					chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-				else:
-					chosen_method = None
-					st.info( 'No dedicated image analysis method found on Image object; '
-						'attempting generic handlers.' )
-				
-				chosen_model = st.selectbox( 'Model (analysis)', [ image_model, None ], index=0, )
-				
-				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
-				if st.button( 'Analyze Image' ):
-					with st.spinner( 'Analyzing image…' ):
-						analysis_result = None
-						try:
-							if chosen_method:
-								func = getattr( image, chosen_method, None )
-								if func:
-									try:
-										analysis_result = func( tmp_path )
-									except TypeError:
-										analysis_result = func(
-											tmp_path, model=chosen_model_arg
-										)
-							else:
-								for fallback in ( 'analyze', 'describe_image', 'describe', 'caption' ):
-									if hasattr( image, fallback ):
-										func = getattr( image, fallback )
+					# Discover available analysis methods on Image object
+					available_methods = [ ]
+					for candidate in ( 'analyze', 'describe_image', 'describe', 'classify',
+								'detect_objects', 'caption', 'image_analysis', ):
+						if hasattr( image, candidate ):
+							available_methods.append( candidate )
+					
+					if available_methods:
+						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+					else:
+						chosen_method = None
+						st.info( 'No dedicated image analysis method found on Image object; '
+							'attempting generic handlers.' )
+					
+					chosen_model = st.selectbox( 'Model (analysis)', [ image_model, None ], index=0, )
+					
+					chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+					if st.button( 'Analyze Image' ):
+						with st.spinner( 'Analyzing image…' ):
+							analysis_result = None
+							try:
+								if chosen_method:
+									func = getattr( image, chosen_method, None )
+									if func:
 										try:
 											analysis_result = func( tmp_path )
-											break
-										except Exception:
-											continue
-							
-							if analysis_result is None:
-								st.warning(
-									'No analysis output returned by the available methods.'
-								)
-							else:
-								if isinstance( analysis_result, (dict, list) ):
-									st.json( analysis_result )
+										except TypeError:
+											analysis_result = func(
+												tmp_path, model=chosen_model_arg
+											)
 								else:
-									st.markdown( '**Analysis result:**' )
-									st.write( analysis_result )
+									for fallback in ( 'analyze', 'describe_image', 'describe', 'caption' ):
+										if hasattr( image, fallback ):
+											func = getattr( image, fallback )
+											try:
+												analysis_result = func( tmp_path )
+												break
+											except Exception:
+												continue
 								
-								try:
-									update_token_counters(
-										getattr( image, 'response', None )
-										or analysis_result
+								if analysis_result is None:
+									st.warning(
+										'No analysis output returned by the available methods.'
 									)
-								except Exception:
-									pass
-						
-						except Exception as exc:
-							st.error( f'Analysis Failed: {exc}' )
-		
-		with tab_edit:
-			uploaded_img = st.file_uploader( 'Upload Image for Edit',
-				type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-				accept_multiple_files=False,
-				key='images_edit_uploader',
-			)
-			
-			if uploaded_img:
-				tmp_path = save_temp( uploaded_img )
-				
-				st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-				
-				available_methods = [ ]
-				for candidate in ( 'edit', 'describe_image', 'describe', 'classify',
-							'detect_objects', 'caption', 'image_edit', ):
-					if hasattr( image, candidate ):
-						available_methods.append( candidate )
-				
-				if available_methods:
-					chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-				else:
-					chosen_method = None
-					st.info( 'No dedicated image editing method found on Image object;'
-					         'attempting generic handlers.')
-				
-				chosen_model = st.selectbox( 'Model (edit)', [ image_model,  None ], index=0, )
-				
-				chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
-				
-				if st.button( 'Edit Image' ):
-					with st.spinner( 'Editing image…' ):
-						analysis_result = None
-						try:
-							if chosen_method:
-								func = getattr( image, chosen_method, None )
-								if func:
+								else:
+									if isinstance( analysis_result, (dict, list) ):
+										st.json( analysis_result )
+									else:
+										st.markdown( '**Analysis result:**' )
+										st.write( analysis_result )
+									
 									try:
-										analysis_result = func( tmp_path )
-									except TypeError:
-										analysis_result = func(
-											tmp_path, model=chosen_model_arg
+										update_token_counters(
+											getattr( image, 'response', None )
+											or analysis_result
 										)
-							else:
-								for fallback in ( 'analyze', 'describe_image',
-											'describe', 'caption', ):
-									if hasattr( image, fallback ):
-										func = getattr( image, fallback )
+									except Exception:
+										pass
+							
+							except Exception as exc:
+								st.error( f'Analysis Failed: {exc}' )
+			
+			with tab_edit:
+				uploaded_img = st.file_uploader( 'Upload Image for Edit',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+					accept_multiple_files=False,
+					key='images_edit_uploader',
+				)
+				
+				if uploaded_img:
+					tmp_path = save_temp( uploaded_img )
+					
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
+					
+					available_methods = [ ]
+					for candidate in ( 'edit', 'describe_image', 'describe', 'classify',
+								'detect_objects', 'caption', 'image_edit', ):
+						if hasattr( image, candidate ):
+							available_methods.append( candidate )
+					
+					if available_methods:
+						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+					else:
+						chosen_method = None
+						st.info( 'No dedicated image editing method found on Image object;'
+						         'attempting generic handlers.')
+					
+					chosen_model = st.selectbox( 'Model (edit)', [ image_model,  None ], index=0, )
+					
+					chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+					
+					if st.button( 'Edit Image' ):
+						with st.spinner( 'Editing image…' ):
+							analysis_result = None
+							try:
+								if chosen_method:
+									func = getattr( image, chosen_method, None )
+									if func:
 										try:
 											analysis_result = func( tmp_path )
-											break
-										except Exception:
-											continue
-							
-							if analysis_result is None:
-								st.warning( 'No editing output returned by the available methods.' )
-							else:
-								if isinstance( analysis_result, (dict, list) ):
-									st.json( analysis_result )
+										except TypeError:
+											analysis_result = func(
+												tmp_path, model=chosen_model_arg
+											)
 								else:
-									st.markdown( '**Analysis result:**' )
-									st.write( analysis_result )
+									for fallback in ( 'analyze', 'describe_image',
+												'describe', 'caption', ):
+										if hasattr( image, fallback ):
+											func = getattr( image, fallback )
+											try:
+												analysis_result = func( tmp_path )
+												break
+											except Exception:
+												continue
 								
-								try:
-									update_token_counters(
-										getattr( image, 'response', None )
-										or analysis_result
-									)
-								except Exception:
-									pass
-						
-						except Exception as exc:
-							st.error( f"Analysis Failed: {exc}" )
+								if analysis_result is None:
+									st.warning( 'No editing output returned by the available methods.' )
+								else:
+									if isinstance( analysis_result, (dict, list) ):
+										st.json( analysis_result )
+									else:
+										st.markdown( '**Analysis result:**' )
+										st.write( analysis_result )
+									
+									try:
+										update_token_counters(
+											getattr( image, 'response', None )
+											or analysis_result
+										)
+									except Exception:
+										pass
+							
+							except Exception as exc:
+								st.error( f"Analysis Failed: {exc}" )
 
 # ======================================================================================
 # AUDIO MODE
