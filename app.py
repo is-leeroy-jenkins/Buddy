@@ -5064,6 +5064,185 @@ elif mode == "Images":
 						_clear_image_messages( )
 						st.rerun( )
 		
+		if provider_name == 'Grok':
+			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
+			with tab_gen:
+				prompt = st.chat_input( 'Prompt' )
+				if st.button( 'Generate Image' ):
+					with st.spinner( 'Generating…' ):
+						try:
+							kwargs: Dict[ str, Any ] = {
+									'prompt': prompt,
+									'model': image_model,
+							}
+							
+							# Provider-safe optional args
+							if size_arg is not None:
+								kwargs[ 'size' ] = st.session_state[ 'image_size' ]
+							if quality is not None:
+								kwargs[ 'quality' ] = st.session_state[ 'image_quality' ]
+							if fmt is not None:
+								kwargs[ 'fmt' ] = st.session_state[ 'image_response_format' ]
+							
+							img_url = image.generate( **kwargs )
+							st.image( img_url )
+							
+							try:
+								update_token_counters( getattr( image, 'response', None ) )
+							except Exception:
+								pass
+						
+						except Exception as exc:
+							st.error( f'Image generation failed: {exc}' )
+			
+			with tab_analyze:
+				uploaded_img = st.file_uploader(
+					'Upload an image for analysis',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+					accept_multiple_files=False,
+					key='images_analyze_uploader', )
+				
+				if uploaded_img:
+					tmp_path = save_temp( uploaded_img )
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
+					
+					# Discover available analysis methods on Image object
+					available_methods = [ ]
+					for candidate in ('analyze', 'describe_image', 'describe', 'classify',
+					                  'detect_objects', 'caption', 'image_analysis',):
+						if hasattr( image, candidate ):
+							available_methods.append( candidate )
+					
+					if available_methods:
+						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+					else:
+						chosen_method = None
+						st.info( 'No dedicated image analysis method found on Image object; '
+						         'attempting generic handlers.' )
+					
+					chosen_model = st.selectbox( 'Model (analysis)', [ image_model,
+					                                                   None ], index=0, )
+					
+					chosen_model_arg = (image_model if chosen_model is None else chosen_model)
+					if st.button( 'Analyze Image' ):
+						with st.spinner( 'Analyzing image…' ):
+							analysis_result = None
+							try:
+								if chosen_method:
+									func = getattr( image, chosen_method, None )
+									if func:
+										try:
+											analysis_result = func( tmp_path )
+										except TypeError:
+											analysis_result = func(
+												tmp_path, model=chosen_model_arg
+											)
+								else:
+									for fallback in ('analyze', 'describe_image', 'describe',
+									                 'caption'):
+										if hasattr( image, fallback ):
+											func = getattr( image, fallback )
+											try:
+												analysis_result = func( tmp_path )
+												break
+											except Exception:
+												continue
+								
+								if analysis_result is None:
+									st.warning(
+										'No analysis output returned by the available methods.'
+									)
+								else:
+									if isinstance( analysis_result, (dict, list) ):
+										st.json( analysis_result )
+									else:
+										st.markdown( '**Analysis result:**' )
+										st.write( analysis_result )
+									
+									try:
+										update_token_counters(
+											getattr( image, 'response', None )
+											or analysis_result
+										)
+									except Exception:
+										pass
+							
+							except Exception as exc:
+								st.error( f'Analysis Failed: {exc}' )
+			
+			with tab_edit:
+				uploaded_img = st.file_uploader( 'Upload Image for Edit',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+					accept_multiple_files=False,
+					key='images_edit_uploader',
+				)
+				
+				if uploaded_img:
+					tmp_path = save_temp( uploaded_img )
+					
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
+					
+					available_methods = [ ]
+					for candidate in ('edit', 'describe_image', 'describe', 'classify',
+					                  'detect_objects', 'caption', 'image_edit',):
+						if hasattr( image, candidate ):
+							available_methods.append( candidate )
+					
+					if available_methods:
+						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
+					else:
+						chosen_method = None
+						st.info( 'No dedicated image editing method found on Image object;'
+						         'attempting generic handlers.' )
+					
+					chosen_model = st.selectbox( 'Model (edit)', [ image_model, None ], index=0, )
+					
+					chosen_model_arg = (image_model if chosen_model is None else chosen_model)
+					
+					if st.button( 'Edit Image' ):
+						with st.spinner( 'Editing image…' ):
+							analysis_result = None
+							try:
+								if chosen_method:
+									func = getattr( image, chosen_method, None )
+									if func:
+										try:
+											analysis_result = func( tmp_path )
+										except TypeError:
+											analysis_result = func(
+												tmp_path, model=chosen_model_arg
+											)
+								else:
+									for fallback in ('analyze', 'describe_image',
+									                 'describe', 'caption',):
+										if hasattr( image, fallback ):
+											func = getattr( image, fallback )
+											try:
+												analysis_result = func( tmp_path )
+												break
+											except Exception:
+												continue
+								
+								if analysis_result is None:
+									st.warning( 'No editing output returned by the available methods.' )
+								else:
+									if isinstance( analysis_result, (dict, list) ):
+										st.json( analysis_result )
+									else:
+										st.markdown( '**Analysis result:**' )
+										st.write( analysis_result )
+									
+									try:
+										update_token_counters(
+											getattr( image, 'response', None )
+											or analysis_result
+										)
+									except Exception:
+										pass
+							
+							except Exception as exc:
+								st.error( f"Analysis Failed: {exc}" )
+		
 		else:
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
@@ -5304,13 +5483,12 @@ elif mode == 'Audio':
 		# Expander — Gemini LLM Configuration
 		# ------------------------------------------------------------------
 		if provider_name == 'Gemini':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 			
-				with st.expander( 'Model Options', expanded=False, width='stretch' ):
+				with st.expander( 'LLM Settings', icon='🧊', expanded=False, width='stretch' ):
 					aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
 						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
 					
-					# --------- Task ---------------
 					with aud_c1:
 						if not available_tasks:
 							st.info( 'Audio is not supported by the selected provider.' )
@@ -5321,7 +5499,6 @@ elif mode == 'Audio':
 							
 							audio_task = st.session_state[ 'audio_task' ]
 					
-					# ---------  Mode ---------------
 					with aud_c2:
 						if audio_task == 'Transcribe':
 							model_options = list( transcriber.model_options )
@@ -5329,14 +5506,17 @@ elif mode == 'Audio':
 							model_options = list( translator.model_options )
 						elif audio_task == 'Text-to-Speech':
 							model_options = list( tts.model_options )
+						else:
+							model_options = [ 'gemini-3-flash-preview',
+							                  'gemini-2.0-flash',
+							                  'gemini-2.5-flash-preview-tts' ]
 						
 						if model_options:
 							audio_model = st.selectbox( label='Model', options=model_options,
 								key='audio_model', placeholder='Options', index=None )
 							
 							audio_model = st.session_state[ 'audio_model' ]
-						
-					# --------- Language -------------
+					
 					with aud_c3:
 						if audio_task in ('Transcribe', 'Translate'):
 							obj = transcriber if audio_task == 'Transcribe' else translator
@@ -5352,17 +5532,13 @@ elif mode == 'Audio':
 									key='audio_voice', placeholder='Options', index=None )
 								
 								audio_voice = st.session_state[ 'audio_voice' ]
-							
-							# ---------------- Sample Rate ----------------
 					
-					#---------- Sample Rate ----------
 					with aud_c4:
 						audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
 							key='audio_rate', placeholder='Options', index=None )
 						
 						audio_rate = st.session_state[ 'audio_rate' ]
 					
-					# -------- Response Format --------
 					with aud_c5:
 						format_options = [ ]
 						if audio_task == 'Transcribe':
@@ -5378,123 +5554,106 @@ elif mode == 'Audio':
 							
 							audio_format = st.session_state[ 'audio_format' ]
 					
-					# ----------- Reset Settings -------
 					if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Audio Model Settings session keys
-						# ----------------------------------------------------------
 						for key in [ 'audio_task', 'audio_model', 'audio_language',
 						             'audio_voice', 'audio_rate', 'audio_format' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
 						st.rerun( )
-	
-				with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-					prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+				
+				with st.expander( 'Inference Settings', icon='🎚️', expanded=False, width='stretch' ):
+					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
-					# ---------  Top-P --------
-					with prm_one:
-						set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
-							step=0.01, help=cfg.TOP_P )
+					with prm_c1:
+						st.slider( label='Top-P', key='audio_top_percent',
+							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TOP_P )
 						
 						audio_top_percent = st.session_state[ 'audio_top_percent' ]
 					
-					# ---------  Frequency --------
-					with prm_two:
-						set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
+					with prm_c2:
+						st.slider( label='Frequency Penalty',
+							key='audio_frequency_penalty',
+							min_value=-2.0, max_value=2.0,
 							step=0.01, help=cfg.FREQUENCY_PENALTY )
 						
-						audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
+						audio_freq = st.session_state[ 'audio_frequency_penalty' ]
 					
-					# ---------  Presense --------
-					with prm_three:
-						set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
+					with prm_c3:
+						st.slider( label='Presence Penalty',
+							key='audio_presence_penalty',
+							min_value=-2.0, max_value=2.0,
 							step=0.01, help=cfg.PRESENCE_PENALTY )
 						
-						audio_presense = st.session_state[ 'audio_presense_penalty' ]
+						audio_presence = st.session_state[ 'audio_presence_penalty' ]
 					
-					# ---------  Temperature --------
-					with prm_four:
-						set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
-							help=cfg.TEMPERATURE )
+					with prm_c4:
+						st.slider( label='Temperature',
+							key='audio_temperature',
+							min_value=0.0, max_value=1.0, step=0.01, help=cfg.TEMPERATURE )
 						
 						audio_temperature = st.session_state[ 'audio_temperature' ]
 					
-					# --------- Reset Settings --------
 					if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
-						for key in [ 'audio_top_percent', 'audio_temperature', 'audio_presense_penalty',
-						             'audio_frequency_penalty', ]:
+						for key in [ 'audio_top_percent', 'audio_temperature',
+						             'audio_presence_penalty', 'audio_frequency_penalty' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
 						st.rerun( )
 				
-				with st.expander( 'Response Options', expanded=False, width='stretch' ):
+				with st.expander( 'Response Settings', icon='↔️', expanded=False, width='stretch' ):
 					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True )
 					
-					# ---------  Loop --------
 					with resp_c1:
-						set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
-						
+						st.toggle( label='Loop Audio', value=False, key='audio_loop' )
 						audio_loop = st.session_state[ 'audio_loop' ]
 					
-					# --------- Autoplay --------
 					with resp_c2:
-						set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
-						
+						st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
 						audio_autoplay = st.session_state[ 'audio_autoplay' ]
 					
-					# ---------  Start Time --------
 					with resp_c3:
-						set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
+						st.slider( label='Start Time:', min_value=0.00, max_value=300.00,
 							value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
 							key='audio_start_time' )
 						
 						audio_start_time = st.session_state[ 'audio_start_time' ]
 					
-					# ---------  End Time --------
 					with resp_c4:
-						set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
+						st.slider( label='End Time:', min_value=0.00, max_value=300.00,
 							value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
 							key='audio_end_time' )
 						
 						audio_end_time = st.session_state[ 'audio_end_time' ]
 					
-					# --------- Max Tokens --------
 					with resp_c5:
-						set_max_tokens = st.slider( label='Max Output Tokens', min_value=1, max_value=100000,
+						st.slider( label='Max Output Tokens', min_value=1, max_value=100000,
 							value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
 							help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
 						
 						audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
 					
-					# ---------  Reset Setting --------
 					if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
-						for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time', 'audio_end_time',
-						             'audio_rate', 'audio_max_tokens' ]:
+						for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time',
+						             'audio_end_time', 'audio_rate', 'audio_max_tokens' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
 						st.rerun( )
-		
+			
 		# ------------------------------------------------------------------
 		# Expander — GPT LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
-				
-				with st.expander( 'Model Options', expanded=False, width='stretch' ):
-					aud_c1, aud_c2, aud_c3, aud_c4, aud_c5 = st.columns(
-						[ 0.2, 0.2, 0.2, 0.2, 0.2 ], gap='xxsmall', border=True )
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+			
+				with st.expander( 'LLM Options', icon='🧊', expanded=False, width='stretch' ):
+					aud_c1, aud_c2, aud_c3, aud_c4, aud_c5, aud_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
 					
-					# --------- Task ---------------
 					with aud_c1:
 						if not available_tasks:
 							st.info( 'Audio is not supported by the selected provider.' )
@@ -5502,10 +5661,8 @@ elif mode == 'Audio':
 						else:
 							audio_task = st.selectbox( label='Mode', options=available_tasks,
 								key='audio_task', placeholder='Options', index=None )
-							
 							audio_task = st.session_state[ 'audio_task' ]
 					
-					# ---------  Mode ---------------
 					with aud_c2:
 						if audio_task == 'Transcribe':
 							model_options = list( transcriber.model_options )
@@ -5513,156 +5670,180 @@ elif mode == 'Audio':
 							model_options = list( translator.model_options )
 						elif audio_task == 'Text-to-Speech':
 							model_options = list( tts.model_options )
+						else:
+							model_options = [ 'gpt-4o-mini-tts',
+							                  'tts-1',
+							                  'tts-1-hd',
+							                  'gpt-4o-transcribe',
+							                  'gpt-4o-mini-transcribe',
+							                  'gpt-4o-mini-transcribe-2025-12-15',
+							                  'whisper-1',
+							                  'gpt-4o-transcribe-diarize' ]
 						
 						if model_options:
 							audio_model = st.selectbox( label='Model', options=model_options,
 								key='audio_model', placeholder='Options', index=None )
-							
 							audio_model = st.session_state[ 'audio_model' ]
 					
-					# --------- Language -------------
 					with aud_c3:
+						reasoning_options = [ 'low', 'medium', 'high', 'minimal', 'xhigh' ]
+						st.selectbox( label='Reasoning', options=reasoning_options, key='audio_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						audio_reasoning = st.session_state[ 'audio_reasoning' ]
+					
+					with aud_c4:
+						audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
+							key='audio_rate', placeholder='Options', index=0 )
+						audio_rate = int( st.session_state[ 'audio_rate' ] )
+					
+					with aud_c5:
+						mime_options = [ ]
+						if audio_task == 'Transcribe':
+							mime_options = list( transcriber.mime_options )
+						elif audio_task == 'Translate':
+							mime_options = list( translator.mime_options )
+						elif audio_task == 'Text-to-Speech':
+							mime_options = list( tts.mime_options )
+						
+						if mime_options:
+							audio_mime_type = st.selectbox( label='MIME type', options=mime_options,
+								key='audio_mime_type', placeholder='Options', index=None )
+							audio_mime_type = st.session_state[ 'audio_mime_type' ]
+					
+					with aud_c6:
+						st.toggle( label='Background', key='audio_background', help=cfg.BACKGROUND_MODE )
+						audio_background = st.session_state[ 'audio_background' ]
+					
+					# -------- Reset Settings ------------------
+					if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
+						for key in [ 'audio_task', 'audio_model', 'audio_language',
+						             'audio_background', 'audio_reasoning',
+						             'audio_rate', 'audio_mime_type' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( 'Inference Options', icon='🎚️', expanded=False, width='stretch' ):
+					prm_c1, prm_c2, prm_c3, prm_c4, prm_c5, prm_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					with prm_c1:
+						st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
+							step=0.01, help=cfg.TOP_P, key='audio_top_percent' )
+						audio_top_percent = st.session_state[ 'audio_top_percent' ]
+					
+					with prm_c2:
+						st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='audio_frequency_penalty' )
+						audio_freq = st.session_state[ 'audio_frequency_penalty' ]
+					
+					with prm_c3:
+						st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
+							value=float( st.session_state.get( 'audio_presence_penalty', 0.0 ) ),
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='audio_presence_penalty' )
+						audio_presence = st.session_state[ 'audio_presence_penalty' ]
+					
+					with prm_c4:
+						st.slider( label='Temperature', min_value=0.0, max_value=1.0,
+							value=float( st.session_state.get( 'audio_temperature', 0.0 ) ),
+							step=0.01, help=cfg.TEMPERATURE, key='audio_temperature' )
+						audio_temperature = st.session_state[ 'audio_temperature' ]
+					
+					with prm_c5:
+						modality_options = [ 'auto', 'text', 'image', 'audio' ]
+						audio_modalities = st.multiselect( label='Response Modalities',
+							options=modality_options, key='audio_modalities',
+							help='Optional. Modality of the response', placeholder='Options' )
+					
+					with prm_c6:
+						if audio_task == 'Transcribe':
+							selected_model = st.session_state.get( 'audio_model' ) or 'gpt-4o-transcribe'
+							format_options = transcriber.response_format_options.get(
+								selected_model, [ 'json', 'text' ] )
+						elif audio_task == 'Translate':
+							format_options = list( translator.response_format_options )
+						elif audio_task == 'Text-to-Speech':
+							format_options = list( tts.mime_options )
+						else:
+							format_options = [ 'json', 'text' ]
+						
+						audio_response_format = st.selectbox( label='Response Format',
+							options=format_options, key='audio_response_format',
+							help='Optional. Format of the response', placeholder='Options',
+							index=None )
+						audio_response_format = st.session_state[ 'audio_response_format' ]
+					
+					# -------- Reset Settings ------------------
+					if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
+						for key in [ 'audio_top_percent', 'audio_temperature',
+						             'audio_presence_penalty', 'audio_modalities',
+						             'audio_frequency_penalty', 'audio_response_format' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( 'Sound Options', icon='👂', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					with resp_c1:
 						if audio_task in ('Transcribe', 'Translate'):
 							obj = transcriber if audio_task == 'Transcribe' else translator
 							if obj and hasattr( obj, 'language_options' ):
-								audio_language = st.selectbox( label='Language Options', options=obj.language_options,
-									key='audio_language', placeholder='Options', index=None )
+								audio_language = st.selectbox( label='Language',
+									options=obj.language_options, key='audio_language',
+									placeholder='Options', index=None,
+									format_func=lambda code: obj.language_labels.get( code, code ) )
 								
 								audio_language = st.session_state[ 'audio_language' ]
-						
-						if audio_task == 'Text-to-Speech' and tts:
-							if hasattr( tts, 'voice_options' ):
-								audio_voice = st.selectbox( label='Voice', options=tts.voice_options,
-									key='audio_voice', placeholder='Options', index=None )
-								
-								audio_voice = st.session_state[ 'audio_voice' ]
-				
-					# ---------- Sample Rate ----------
-					with aud_c4:
-						audio_rate = st.selectbox( label='Sample Rate', options=cfg.SAMPLE_RATES,
-							key='audio_rate', placeholder='Options', index=None )
-						
-						audio_rate = st.session_state[ 'audio_rate' ]
-					
-					# -------- Response Format --------
-					with aud_c5:
-						format_options = [ ]
-						if audio_task == 'Transcribe':
-							format_options = list( transcriber.format_options )
-						elif audio_task == 'Translate':
-							format_options = list( translator.format_options )
-						elif audio_task == 'Text-to-Speech':
-							format_options = list( tts.format_options )
-						
-						if format_options:
-							audio_format = st.selectbox( label='Response Format', options=format_options,
-								key='audio_format', placeholder='Options', index=None )
+						else:
+							audio_language = st.selectbox( label='Language', options=[ '' ],
+								key='audio_language',
+								placeholder='Select Transcription or Translation Task',
+								index=None, )
 							
-							audio_format = st.session_state[ 'audio_format' ]
+							audio_language = st.session_state[ 'audio_language' ]
 					
-					# ----------- Reset Settings -------
-					if st.button( 'Reset', key='audio_model_reset', width='stretch' ):
-						# ----------------------------------------------------------
-						# Remove Audio Model Settings session keys
-						# ----------------------------------------------------------
-						for key in [ 'audio_task', 'audio_model', 'audio_language',
-						             'audio_voice', 'audio_rate', 'audio_format' ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( 'Inference Options', expanded=False, width='stretch' ):
-					prm_one, prm_two, prm_three, prm_four = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-						border=True, gap='medium' )
+					with resp_c2:
+						if audio_task == 'Text-to-Speech' and tts:
+							audio_voice = st.selectbox( label='Voice', options=tts.voice_options,
+								key='audio_voice', placeholder='Options', index=None )
+							audio_voice = st.session_state[ 'audio_voice' ]
+						else:
+							audio_voice = st.selectbox( label='Voice',
+								options=[ 'Select Text-to-Speech Task' ], key='audio_voice',
+								placeholder='Options', index=None )
+							audio_voice = st.session_state[ 'audio_voice' ]
 					
-					# ---------  Top-P --------
-					with prm_one:
-						set_audio_top = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'audio_top_percent', 0.0 ) ),
-							step=0.01, help=cfg.TOP_P )
-						
-						audio_top_percent = st.session_state[ 'audio_top_percent' ]
-					
-					# ---------  Frequency --------
-					with prm_two:
-						set_audio_frequency = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'audio_frequency_penalty', 0.0 ) ),
-							step=0.01, help=cfg.FREQUENCY_PENALTY )
-						
-						audio_frequency = st.session_state[ 'audio_frequency_penalty' ]
-					
-					# ---------  Presense --------
-					with prm_three:
-						set_audio_presense = st.slider( label='Presence Penalty', min_value=-2.0, max_value=2.0,
-							value=float( st.session_state.get( 'audio_presense_penalty', 0.0 ) ),
-							step=0.01, help=cfg.PRESENCE_PENALTY )
-						
-						audio_presense = st.session_state[ 'audio_presense_penalty' ]
-					
-					# ---------  Temperature --------
-					with prm_four:
-						set_audio_temperature = st.slider( label='Temperature', min_value=0.0, max_value=1.0,
-							value=float( st.session_state.get( 'audio_temperature', 0.0 ) ), step=0.01,
-							help=cfg.TEMPERATURE )
-						
-						audio_temperature = st.session_state[ 'audio_temperature' ]
-					
-					# --------- Reset Settings --------
-					if st.button( 'Reset', key='audio_inference_reset', width='stretch' ):
-						for key in [ 'audio_top_percent', 'audio_temperature',
-						             'audio_presense_penalty',
-						             'audio_frequency_penalty', ]:
-							if key in st.session_state:
-								del st.session_state[ key ]
-						
-						st.rerun( )
-				
-				with st.expander( 'Response Options', expanded=False, width='stretch' ):
-					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
-						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], gap='xxsmall', border=True, )
-					
-					# ---------  Loop --------
-					with resp_c1:
-						set_audio_loop = st.toggle( label='Loop Audio', value=False, key='audio_loop' )
-						
+					with resp_c3:
+						st.toggle( label='Loop Audio', value=False, key='audio_loop' )
 						audio_loop = st.session_state[ 'audio_loop' ]
 					
-					# --------- Autoplay --------
-					with resp_c2:
-						set_audio_autoplay = st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
-						
+					with resp_c4:
+						st.toggle( label='Auto Play', value=False, key='audio_autoplay' )
 						audio_autoplay = st.session_state[ 'audio_autoplay' ]
 					
-					# ---------  Start Time --------
-					with resp_c3:
-						set_start_time = st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
-							value=float( st.session_state.get( 'audio_start_time' ) ), step=0.01,
-							key='audio_start_time' )
-						
-						audio_start_time = st.session_state[ 'audio_start_time' ]
-					
-					# ---------  End Time --------
-					with resp_c4:
-						set_end_time = st.slider( label='End Time:', min_value=0.00, max_value=5.00,
-							value=float( st.session_state.get( 'audio_end_time' ) ), step=0.01,
-							key='audio_end_time' )
-						
-						audio_end_time = st.session_state[ 'audio_end_time' ]
-					
-					# --------- Max Tokens --------
 					with resp_c5:
-						set_max_tokens = st.slider( label='Max Tokens', min_value=1, max_value=100000,
-							value=int( st.session_state.get( 'audio_max_tokens', 0 ) ), step=1000,
-							help=cfg.MAX_OUTPUT_TOKENS, key='audio_max_tokens' )
-						
-						audio_max_tokens = st.session_state[ 'audio_max_tokens' ]
+						st.slider( label='Start Time:', min_value=0.00, max_value=5.00,
+							value=float( st.session_state.get( 'audio_start_time', 0.0 ) ),
+							step=0.01, key='audio_start_time' )
+						audio_start = st.session_state[ 'audio_start_time' ]
 					
-					# ---------  Reset Setting --------
-					if st.button( 'Reset', key='audio_repsonse_reset', width='stretch' ):
-						for key in [ 'audio_autoplay', 'audio_loop', 'audio_start_time',
-						             'audio_end_time',
-						             'audio_rate', 'audio_max_tokens' ]:
+					with resp_c6:
+						st.slider( label='End Time:', min_value=0.00, max_value=5.00,
+							value=float( st.session_state.get( 'audio_end_time', 0.0 ) ),
+							step=0.01, key='audio_end_time' )
+						audio_end = st.session_state[ 'audio_end_time' ]
+					
+					# -------- Reset Settings ------------------
+					if st.button( 'Reset', key='audio_sound_reset', width='stretch' ):
+						for key in [ 'audio_language', 'audio_voice', 'audio_loop',
+						             'audio_autoplay', 'audio_start_time',
+						             'audio_end_time' ]:
 							if key in st.session_state:
 								del st.session_state[ key ]
 						
