@@ -1,6 +1,6 @@
 '''
   ******************************************************************************************
-      Assembly:                Boo
+      Assembly:                Jeni
       Filename:                gemini.py
       Author:                  Terry D. Eppler
       Created:                 05-31-2022
@@ -11,7 +11,7 @@
   <copyright file="gemini.py" company="Terry D. Eppler">
 
 	     gemini.py
-	     Copyright ©  2022  Terry Eppler
+	     Copyright ©  2024  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
      of this software and associated documentation files (the “Software”),
@@ -2043,13 +2043,10 @@ class TTS( Gemini ):
 			self.top_p = top_p
 			self.response_modalities = [ 'AUDIO' ]
 			self.voice_config = VoiceConfig(
-				prebuilt_voice_config=types.PrebuiltVoiceConfig(
-					voice_name=self.voice ) )
+				prebuilt_voice_config=types.PrebuiltVoiceConfig( voice_name=self.voice ) )
 			self.speech_config = SpeechConfig( voice_config=self.voice_config )
-			self.config_kwargs = {
-					'response_modalities': self.response_modalities,
-					'speech_config': self.speech_config
-			}
+			self.config_kwargs = { 'response_modalities': self.response_modalities,
+					'speech_config': self.speech_config }
 			
 			if self.temperature is not None:
 				self.config_kwargs[ 'temperature' ] = self.temperature
@@ -2891,8 +2888,7 @@ class Files( Gemini ):
 	
 	def survey( self, prompt: str, filepaths: List[ str ], model: str = 'gemini-2.0-flash',
 			temperature: float = None, top_p: float = None, frequency: float = None,
-			presence: float = None, max_tokens: int = None, stops: List[
-				str ] = None ) -> str | None:
+			presence: float = None, max_tokens: int = None, stops: List[str ] = None ) -> str | None:
 		"""
 			
 			Purpose:
