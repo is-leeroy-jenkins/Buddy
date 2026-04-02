@@ -670,6 +670,9 @@ if 'files_url' not in st.session_state:
 if 'files_table' not in st.session_state:
 	st.session_state[ 'files_table' ] = ''
 
+if 'files_messages' not in st.session_state:
+	st.session_state[ 'files_messages' ] = [ ]
+
 # -------- VECTORSTORES-GENERATION PARAMETERS --------------------
 
 if 'stores_temperature' not in st.session_state:
@@ -3121,9 +3124,9 @@ elif mode == 'Text':
 		# Expander — Grok Text LLM Configuration
 		# ------------------------------------------------------------------
 		if provider_name == 'Grok':
-			with st.expander( label='LLM Configuration', icon='🧠', expanded=False, width='stretch' ):
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 				
-				with st.expander( label='Model Settings', expanded=False, width='stretch' ):
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
 						llm_c1, llm_c2, llm_c3, llm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 							border=True, gap='medium' )
 						
@@ -3174,7 +3177,7 @@ elif mode == 'Text':
 							
 							st.rerun( )
 						
-				with st.expander( label='Inference Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Inference Settings', icon='🎚️', expanded=False, width='stretch' ):
 					prm_c1, prm_c2, prm_c3, prm_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
@@ -3221,7 +3224,7 @@ elif mode == 'Text':
 						
 						st.rerun( )
 						
-				with st.expander( label='Tool Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
 					tool_c1, tool_c2, tool_c3, tool_c4 = st.columns(
 						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 					
@@ -3269,7 +3272,7 @@ elif mode == 'Text':
 						
 						st.rerun( )
 				
-				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 						resp_c1, resp_c2, resp_c3, resp_c4 = st.columns(
 							[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='medium' )
 						
@@ -4130,7 +4133,7 @@ elif mode == "Images":
 		if provider_name == 'Grok':
 			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 				
-				with st.expander( label='LLM Settings', expanded=False, width='stretch' ):
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
 					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 						border=True, gap='xxsmall' )
 					# ---------  Mode --------
@@ -4313,7 +4316,7 @@ elif mode == "Images":
 						
 						st.rerun( )
 	
-				with st.expander( label='Response Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 					res_one, res_two, res_three, res_four  = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 						border=True, gap='medium' )
 					
@@ -4357,7 +4360,7 @@ elif mode == "Images":
 						
 						st.rerun( )
 	
-				with st.expander( label='Visual Settings', expanded=False, width='stretch' ):
+				with st.expander( label='Visual Settings', icon='👁️', expanded=False, width='stretch' ):
 					img_c1, img_c2, img_c3, img_c4 = st.columns(
 						[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 					
@@ -4937,7 +4940,7 @@ elif mode == "Images":
 		if provider_name == 'Gemini':
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
-				prompt = st.chat_input( 'Enter image generation prompt...', key='image_generate_message' )
+				prompt = st.chat_input( 'Enter image generation prompt...', key='gemini_image_generate' )
 				gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
 				with gen_c1:
 					if st.button( 'Generate Image' ):
@@ -5075,10 +5078,10 @@ elif mode == "Images":
 						reset_state( )
 						st.rerun( )
 		
-		if provider_name == 'Grok':
+		elif provider_name == 'Grok':
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
-				prompt = st.chat_input( 'Enter image generation prompt...', key='image_generate_message' )
+				prompt = st.chat_input( 'Enter image generation prompt...', key='grok_image_generate' )
 				gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
 				with gen_c1:
 					if st.button( 'Generate Image' ):
@@ -5115,8 +5118,7 @@ elif mode == "Images":
 						st.rerun( )
 			
 			with tab_analyze:
-				uploaded_img = st.file_uploader(
-					'Upload an image for analysis',
+				uploaded_img = st.file_uploader( 'Upload an image for analysis',
 					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 					accept_multiple_files=False,
 					key='images_analyze_uploader', )
@@ -5219,7 +5221,7 @@ elif mode == "Images":
 		else:
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
-				prompt = st.chat_input( 'Enter image generation prompt...', key='image_generate_message' )
+				prompt = st.chat_input( 'Enter image generation prompt...', key='gpt_image_generate' )
 				gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
 				with gen_c1:
 					if st.button( 'Generate Image' ):
@@ -5255,8 +5257,7 @@ elif mode == "Images":
 						st.rerun( )
 			
 			with tab_analyze:
-				uploaded_img = st.file_uploader(
-					'Upload an image for analysis',
+				uploaded_img = st.file_uploader( 'Upload an image for analysis',
 					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 					accept_multiple_files=False,
 					key='images_analyze_uploader', )
@@ -7375,8 +7376,10 @@ elif mode == 'Files':
 	st.subheader( '📁 Files API', help=cfg.FILES_API )
 	st.divider( )
 	provider_module = get_provider_module( )
+	provider_name = st.session_state.get( 'provider', 'GPT' )
 	files = provider_module.Files( )
 	provider_module = get_provider_module( )
+	files_messages = st.session_state.get( 'files_messages' )
 	files_purpose = st.session_state.get( 'files_purpose' )
 	files_type = st.session_state.get( 'files_type' )
 	files_id = st.session_state.get( 'files_id' )
@@ -7390,56 +7393,308 @@ elif mode == 'Files':
 	# Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-	with center:
-		list_method = None
-		if hasattr( files, 'list' ):
-			list_method = getattr( files, 'list' )
-		
-		uploaded_file = st.file_uploader( 'Upload file (server-side via Files API)',
-			type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ], )
-		if uploaded_file:
-			tmp_path = save_temp( uploaded_file )
-			upload_fn = None
-			for name in ('upload_file', 'upload', 'files_upload'):
-				if hasattr( files, name ):
-					upload_fn = getattr( files, name )
-					break
-			if not upload_fn:
-				st.warning( 'No upload function found on chat object.' )
-			else:
-				with st.spinner( 'Uploading to Files API...' ):
-					try:
-						fid = upload_fn( tmp_path )
-						st.success( f'Uploaded; file id: {fid}' )
-					except Exception as exc:
-						st.error( f"Upload failed: {exc}" )
-	
-		if st.button( 'List Files' ):
-			try:
-				files_resp = list_method( )
-				rows = [ ]
-				files_list = ( files_resp.data if hasattr( files_resp, 'data' ) else files_resp
-						if isinstance( files_resp, list ) else [ ] )
+	if provider_name == 'Gemini':
+		with center:
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 				
-				for f in files_list:
-					rows.append( { 'id': str( getattr( f, 'id', "" ) ),
-							'filename': str( getattr( f, 'filename', "" ) ),
-							'files_purpose': str( getattr( f, 'files_purpose', "" ) ), } )
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5, llm_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Model ------------
+					with llm_c1:
+						model_options = list( files.model_options )
+						set_files_model = st.selectbox( label='Select Model', options=model_options,
+							key='files_model', placeholder='Options', index=None,
+							help='REQUIRED. Large Language Model used by the AI', )
+						
+						files_model = st.session_state[ 'files_model' ]
+					
+					# ---------- Reasoning ------------
+					with llm_c2:
+						reasoning_options = list( files.reasoning_options )
+						set_files_reasoning = st.selectbox( label='Reasoning',
+							options=reasoning_options, key='files_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						files_reasoning = st.session_state[ 'files_reasoning' ]
+					
+					# ---------- Top-P ------------
+					with llm_c3:
+						set_files_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							step=0.01, help=cfg.TOP_P, key='files_top_percent' )
+						
+						files_top_percent = st.session_state[ 'files_top_percent' ]
+					
+					# ---------- Temperature ------------
+					with llm_c4:
+						set_files_temperature = st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
+							step=0.01,
+							help=cfg.TEMPERATURE, key='files_temperature' )
+						
+						files_temperature = st.session_state[ 'files_temperature' ]
+					
+					# ---------- Presense ------------
+					with llm_c5:
+						set_files_presence = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='files_presence_penalty' )
+						
+						files_presence = st.session_state[ 'files_presence_penalty' ]
+					
+					# ---------- Frequency ------------
+					with llm_c6:
+						set_files_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='files_frequency_penalty' )
+						
+						files_fequency = st.session_state[ 'files_frequency_penalty' ]
+					
+					# ---------- Reset Model ------------
+					if st.button( label='Reset', key='reset_files_model', width='stretch' ):
+						for key in [ 'files_model', 'files_temperature', 'files_presence_penalty',
+						             'files_reasoning', 'files_top_percent',
+						             'files_frequency_penalty' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
 				
-				st.session_state.files_table = rows
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5, tool_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Max Calls ------------
+					with tool_c1:
+						set_files_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'files_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='files_max_calls' )
+						
+						files_max_calls = st.session_state[ 'files_max_calls' ]
+					
+					# ---------- Choice ------------
+					with tool_c2:
+						choice_options = list( files.choice_options )
+						set_files_choice = st.selectbox( label='Choice', options=choice_options,
+							key='files_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						files_tool_choice = st.session_state[ 'files_tool_choice' ]
+					
+					# ---------- Include ------------
+					with tool_c3:
+						include_options = list( files.include_options )
+						set_files_include = st.multiselect( label='Include', options=include_options,
+							key='files_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						files_include = [ d.strip( ) for d in set_files_include
+						                  if d.strip( ) ]
+						
+						files_include = st.session_state[ 'files_include' ]
+					
+					# ---------- Domains ------------
+					with tool_c4:
+						set_files_domains = st.text_input( label='Allowed Domains', key='files_domains_input',
+							value=','.join( st.session_state.get( 'files_domains', [ ] ) ),
+							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						
+						files_domains = [ d.strip( ) for d in set_files_domains.split( ',' )
+						                  if d.strip( ) ]
+						
+						st.session_state[ 'files_domains' ] = files_domains
+					
+					# ---------- Tools ------------
+					with tool_c5:
+						tool_options = list( files.tool_options )
+						set_files_tools = st.multiselect( label='Tools', options=tool_options,
+							key='files_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						files_tools = [ d.strip( ) for d in set_files_tools
+						                if d.strip( ) ]
+						
+						files_tools = st.session_state[ 'files_tools' ]
+					
+					# ---------- Background ------------
+					with tool_c6:
+						set_files_background = st.toggle( label='Background', key='files_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						files_background = st.session_state[ 'files_background' ]
+					
+					# ---------- Reset Tools ------------
+					if st.button( label='Reset', key='reset_files_tools', width='stretch' ):
+						for key in [ 'files_max_calls', 'files_tool_choice', 'files_include',
+						             'files_tools', 'files_domains', 'files_background' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Number ------------
+					with resp_c1:
+						set_files_number = st.slider( label='Number', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'files_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='files_number' )
+						
+						files_number = st.session_state[ 'files_number' ]
+					
+					# ---------- Stream ------------
+					with resp_c2:
+						set_files_stream = st.toggle( label='Stream', key='files_stream',
+							help=cfg.STREAM )
+						
+						files_stream = st.session_state[ 'files_stream' ]
+					
+					# ---------- Store ------------
+					with resp_c3:
+						set_files_store = st.toggle( label='Store', key='files_store', help=cfg.STORE )
+						
+						files_store = st.session_state[ 'files_store' ]
+					
+					# ---------- Max Tokens ------------
+					with resp_c4:
+						set_files_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'files_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='files_max_tokens' )
+						
+						files_tokens = st.session_state[ 'files_max_tokens' ]
+					
+					# ---------- Modalities------------
+					with resp_c5:
+						modality_options = list( files.modality_options )
+						set_files_modalities = st.multiselect( label='Response Modalities', options=modality_options,
+							key='files_modalities', help='Optional. Modality of the response',
+							placeholder='Options' )
+						
+						files_modalities = [ d.strip( ) for d in set_files_modalities
+						                     if d.strip( ) ]
+						
+						files_modalities = st.session_state[ 'files_modalities' ]
+					
+					# ---------- Stops ------------
+					with resp_c6:
+						set_files_stops = st.text_input( label='Stop Sequences', key='files_stops_input',
+							value=','.join( st.session_state.get( 'files_stops', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stop Strings' )
+						
+						files_stops = [ d.strip( ) for d in set_files_stops.split( ',' )
+						                if d.strip( ) ]
+						
+						st.session_state[ 'files_stops' ] = files_stops
+					
+					# ---------- Reset Reponse ------------
+					if st.button( label='Reset', key='reset_files_response', width='stretch' ):
+						for key in [ 'files_stream', 'files_store', 'files_number', 'files_stops',
+						             'files_tools', 'files_max_tokens', 'files_modalities' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
 			
-			except Exception as exc:
-				st.session_state.files_table = None
-				st.error( f'List files failed: {exc}' )
-		
-			if 'files_list' in locals( ) and files_list:
+			with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
+				in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+				
+				prompt_names = fetch_prompt_names( cfg.DB_PATH )
+				if not prompt_names:
+					prompt_names = [ '' ]
+				
+				with in_left:
+					st.text_area( label='Enter Text', height=50, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS, key='files_system_instructions' )
+				
+				def _on_template_change( ) -> None:
+					name = st.session_state.get( 'instructions' )
+					if name and name != 'No Templates Found':
+						text = fetch_prompt_text( cfg.DB_PATH, name )
+						if text is not None:
+							st.session_state[ 'files_system_instructions' ] = text
+				
+				with in_right:
+					st.selectbox( label='Use Template', options=prompt_names, index=None,
+						key='instructions', on_change=_on_template_change )
+				
+				def _on_clear( ) -> None:
+					st.session_state[ 'files_system_instructions' ] = ''
+					st.session_state[ 'instructions' ] = ''
+				
+				def _on_convert_system_instructions( ) -> None:
+					text = st.session_state.get( 'files_system_instructions', '' )
+					if not isinstance( text, str ) or not text.strip( ):
+						return
+					
+					src = text.strip( )
+					
+					# XML-delimited prompt blocks -> Markdown headings
+					if cfg.XML_BLOCK_PATTERN.search( src ):
+						converted = convert_xml( src )
+					
+					# Markdown headings <-> simple <hN> tags handled by existing helper
+					else:
+						converted = convert_markdown( src )
+					
+					st.session_state[ 'files_system_instructions' ] = converted
+				
+				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+				with btn_c1:
+					st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
+				
+				with btn_c2:
+					st.button( label='XML <-> Markdown', width='stretch',
+						on_click=_on_convert_system_instructions )
+			
+			list_method = None
+			if hasattr( files, 'list' ):
+				list_method = getattr( files, 'list' )
+			
+			uploaded_file = st.file_uploader( 'Upload file (server-side via Files API)',
+				type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ], )
+			
+			if uploaded_file:
+				tmp_path = save_temp( uploaded_file )
+				upload_fn = None
+				for name in ('upload_file', 'upload', 'files_upload'):
+					if hasattr( files, name ):
+						upload_fn = getattr( files, name )
+						break
+				
+				if not upload_fn:
+					st.warning( 'No upload function found on chat object.' )
+				else:
+					with st.spinner( 'Uploading to Files API...' ):
+						try:
+							fid = upload_fn( tmp_path )
+							st.success( f'Uploaded; file id: {fid}' )
+						except Exception as exc:
+							st.error( f"Upload failed: {exc}" )
+			
+			if st.button( 'List Files' ):
+				try:
+					files_resp = list_method( )
+					rows = [ ]
+					files_list = (files_resp.data if hasattr( files_resp, 'data' ) else files_resp
+					if isinstance( files_resp, list ) else [ ])
+					
+					for f in files_list:
+						rows.append( { 'id': str( getattr( f, 'id', "" ) ),
+						               'filename': str( getattr( f, 'filename', "" ) ),
+						               'files_purpose': str( getattr( f, 'files_purpose', "" ) ), } )
+					
+					st.session_state.files_table = rows
+				
+				except Exception as exc:
+					st.session_state.files_table = None
+					st.error( f'List files failed: {exc}' )
+				
+				if 'files_list' in locals( ) and files_list:
 					file_ids = [ r.get( 'filename' ) if isinstance( r, dict )
 					             else getattr( r, 'id', None ) for r in files_list ]
 					sel = st.selectbox( label='Select File to Delete', options=file_ids,
 						index=None, placeholder='Options' )
 					if st.button( 'Delete File' ):
 						del_fn = None
-						for name in ( 'delete_file', 'delete', 'files_delete' ):
+						for name in ('delete_file', 'delete', 'files_delete'):
 							if hasattr( files, name ):
 								del_fn = getattr( files, name )
 								break
@@ -7452,6 +7707,686 @@ elif mode == 'Files':
 									st.success( f'Delete result: {res}' )
 								except Exception as exc:
 									st.error( f'Delete failed: {exc}' )
+			
+			st.divider( )
+			
+			# ---------------------------------------------------
+			#                   MESSAGES
+			# ---------------------------------------------------
+			for msg in st.session_state.files_messages:
+				with st.chat_message( msg[ 'role' ] ):
+					st.markdown( msg[ 'content' ] )
+			
+			if prompt := st.chat_input( 'Ask a question about the files' ):
+				st.session_state.files_messages.append( { 'role': 'user', 'content': prompt } )
+				response = route_document_query( prompt )
+				st.session_state.files_messages.append( { 'role': 'assistant',
+				                                          'content': response } )
+				st.rerun( )
+			
+			# --------  Reset Button
+			if st.button( 'Clear Messages' ):
+				reset_state( )
+				st.rerun( )
+				
+	elif provider_name == 'Grok':
+		with center:
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+				
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5, llm_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Model ------------
+					with llm_c1:
+						model_options = list( files.model_options )
+						set_files_model = st.selectbox( label='Select Model', options=model_options,
+							key='files_model', placeholder='Options', index=None,
+							help='REQUIRED. Large Language Model used by the AI', )
+						
+						files_model = st.session_state[ 'files_model' ]
+					
+					# ---------- Reasoning ------------
+					with llm_c2:
+						reasoning_options = list( files.reasoning_options )
+						set_files_reasoning = st.selectbox( label='Reasoning',
+							options=reasoning_options, key='files_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						files_reasoning = st.session_state[ 'files_reasoning' ]
+					
+					# ---------- Top-P ------------
+					with llm_c3:
+						set_files_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							step=0.01, help=cfg.TOP_P, key='files_top_percent' )
+						
+						files_top_percent = st.session_state[ 'files_top_percent' ]
+					
+					# ---------- Temperature ------------
+					with llm_c4:
+						set_files_temperature = st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
+							step=0.01,
+							help=cfg.TEMPERATURE, key='files_temperature' )
+						
+						files_temperature = st.session_state[ 'files_temperature' ]
+					
+					# ---------- Presense ------------
+					with llm_c5:
+						set_files_presence = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='files_presence_penalty' )
+						
+						files_presence = st.session_state[ 'files_presence_penalty' ]
+					
+					# ---------- Frequency ------------
+					with llm_c6:
+						set_files_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='files_frequency_penalty' )
+						
+						files_fequency = st.session_state[ 'files_frequency_penalty' ]
+					
+					# ---------- Reset Model ------------
+					if st.button( label='Reset', key='reset_files_model', width='stretch' ):
+						for key in [ 'files_model', 'files_temperature', 'files_presence_penalty',
+						             'files_reasoning', 'files_top_percent',
+						             'files_frequency_penalty' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5, tool_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Max Calls ------------
+					with tool_c1:
+						set_files_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'files_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='files_max_calls' )
+						
+						files_max_calls = st.session_state[ 'files_max_calls' ]
+					
+					# ---------- Choice ------------
+					with tool_c2:
+						choice_options = list( files.choice_options )
+						set_files_choice = st.selectbox( label='Choice', options=choice_options,
+							key='files_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						files_tool_choice = st.session_state[ 'files_tool_choice' ]
+					
+					# ---------- Include ------------
+					with tool_c3:
+						include_options = list( files.include_options )
+						set_files_include = st.multiselect( label='Include', options=include_options,
+							key='files_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						files_include = [ d.strip( ) for d in set_files_include
+						                  if d.strip( ) ]
+						
+						files_include = st.session_state[ 'files_include' ]
+					
+					# ---------- Domains ------------
+					with tool_c4:
+						set_files_domains = st.text_input( label='Allowed Domains', key='files_domains_input',
+							value=','.join( st.session_state.get( 'files_domains', [ ] ) ),
+							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						
+						files_domains = [ d.strip( ) for d in set_files_domains.split( ',' )
+						                  if d.strip( ) ]
+						
+						st.session_state[ 'files_domains' ] = files_domains
+					
+					# ---------- Tools ------------
+					with tool_c5:
+						tool_options = list( files.tool_options )
+						set_files_tools = st.multiselect( label='Tools', options=tool_options,
+							key='files_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						files_tools = [ d.strip( ) for d in set_files_tools
+						                if d.strip( ) ]
+						
+						files_tools = st.session_state[ 'files_tools' ]
+					
+					# ---------- Background ------------
+					with tool_c6:
+						set_files_background = st.toggle( label='Background', key='files_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						files_background = st.session_state[ 'files_background' ]
+					
+					# ---------- Reset Tools ------------
+					if st.button( label='Reset', key='reset_files_tools', width='stretch' ):
+						for key in [ 'files_max_calls', 'files_tool_choice', 'files_include',
+						             'files_tools', 'files_domains', 'files_background' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					
+					# ---------- Number ------------
+					with resp_c1:
+						set_files_number = st.slider( label='Number', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'files_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='files_number' )
+						
+						files_number = st.session_state[ 'files_number' ]
+					
+					# ---------- Stream ------------
+					with resp_c2:
+						set_files_stream = st.toggle( label='Stream', key='files_stream',
+							help=cfg.STREAM )
+						
+						files_stream = st.session_state[ 'files_stream' ]
+					
+					# ---------- Store ------------
+					with resp_c3:
+						set_files_store = st.toggle( label='Store', key='files_store', help=cfg.STORE )
+						
+						files_store = st.session_state[ 'files_store' ]
+					
+					# ---------- Max Tokens ------------
+					with resp_c4:
+						set_files_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'files_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='files_max_tokens' )
+						
+						files_tokens = st.session_state[ 'files_max_tokens' ]
+					
+					# ---------- Stops ------------
+					with resp_c5:
+						set_files_stops = st.text_input( label='Stop Sequences', key='files_stops_input',
+							value=','.join( st.session_state.get( 'files_stops', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stop Strings' )
+						
+						files_stops = [ d.strip( ) for d in set_files_stops.split( ',' )
+						                if d.strip( ) ]
+						
+						st.session_state[ 'files_stops' ] = files_stops
+					
+					# ---------- Reset Reponse ------------
+					if st.button( label='Reset', key='reset_files_response', width='stretch' ):
+						for key in [ 'files_stream', 'files_store', 'files_number', 'files_stops',
+						             'files_tools', 'files_max_tokens'  ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+			
+			with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
+				in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+				
+				prompt_names = fetch_prompt_names( cfg.DB_PATH )
+				if not prompt_names:
+					prompt_names = [ '' ]
+				
+				with in_left:
+					st.text_area( label='Enter Text', height=50, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS, key='files_system_instructions' )
+				
+				def _on_template_change( ) -> None:
+					name = st.session_state.get( 'instructions' )
+					if name and name != 'No Templates Found':
+						text = fetch_prompt_text( cfg.DB_PATH, name )
+						if text is not None:
+							st.session_state[ 'files_system_instructions' ] = text
+				
+				with in_right:
+					st.selectbox( label='Use Template', options=prompt_names, index=None,
+						key='instructions', on_change=_on_template_change )
+				
+				def _on_clear( ) -> None:
+					st.session_state[ 'files_system_instructions' ] = ''
+					st.session_state[ 'instructions' ] = ''
+				
+				def _on_convert_system_instructions( ) -> None:
+					text = st.session_state.get( 'files_system_instructions', '' )
+					if not isinstance( text, str ) or not text.strip( ):
+						return
+					
+					src = text.strip( )
+					
+					# XML-delimited prompt blocks -> Markdown headings
+					if cfg.XML_BLOCK_PATTERN.search( src ):
+						converted = convert_xml( src )
+					
+					# Markdown headings <-> simple <hN> tags handled by existing helper
+					else:
+						converted = convert_markdown( src )
+					
+					st.session_state[ 'files_system_instructions' ] = converted
+				
+				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+				with btn_c1:
+					st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
+				
+				with btn_c2:
+					st.button( label='XML <-> Markdown', width='stretch',
+						on_click=_on_convert_system_instructions )
+			
+			list_method = None
+			if hasattr( files, 'list' ):
+				list_method = getattr( files, 'list' )
+			
+			uploaded_file = st.file_uploader( 'Upload file (server-side via Files API)',
+				type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ], )
+			
+			if uploaded_file:
+				tmp_path = save_temp( uploaded_file )
+				upload_fn = None
+				for name in ('upload_file', 'upload', 'files_upload'):
+					if hasattr( files, name ):
+						upload_fn = getattr( files, name )
+						break
+				
+				if not upload_fn:
+					st.warning( 'No upload function found on chat object.' )
+				else:
+					with st.spinner( 'Uploading to Files API...' ):
+						try:
+							fid = upload_fn( tmp_path )
+							st.success( f'Uploaded; file id: {fid}' )
+						except Exception as exc:
+							st.error( f"Upload failed: {exc}" )
+			
+			if st.button( 'List Files' ):
+				try:
+					files_resp = list_method( )
+					rows = [ ]
+					files_list = (files_resp.data if hasattr( files_resp, 'data' ) else files_resp
+					if isinstance( files_resp, list ) else [ ])
+					
+					for f in files_list:
+						rows.append( { 'id': str( getattr( f, 'id', "" ) ),
+						               'filename': str( getattr( f, 'filename', "" ) ),
+						               'files_purpose': str( getattr( f, 'files_purpose', "" ) ), } )
+					
+					st.session_state.files_table = rows
+				
+				except Exception as exc:
+					st.session_state.files_table = None
+					st.error( f'List files failed: {exc}' )
+				
+				if 'files_list' in locals( ) and files_list:
+					file_ids = [ r.get( 'filename' ) if isinstance( r, dict )
+					             else getattr( r, 'id', None ) for r in files_list ]
+					sel = st.selectbox( label='Select File to Delete', options=file_ids,
+						index=None, placeholder='Options' )
+					if st.button( 'Delete File' ):
+						del_fn = None
+						for name in ('delete_file', 'delete', 'files_delete'):
+							if hasattr( files, name ):
+								del_fn = getattr( files, name )
+								break
+						if not del_fn:
+							st.warning( 'No delete function found on chat object.' )
+						else:
+							with st.spinner( 'Deleting file...' ):
+								try:
+									res = del_fn( sel )
+									st.success( f'Delete result: {res}' )
+								except Exception as exc:
+									st.error( f'Delete failed: {exc}' )
+			
+			st.divider( )
+			
+			# ---------------------------------------------------
+			#                   MESSAGES
+			# ---------------------------------------------------
+			for msg in st.session_state.files_messages:
+				with st.chat_message( msg[ 'role' ] ):
+					st.markdown( msg[ 'content' ] )
+			
+			if prompt := st.chat_input( 'Ask a question about the files' ):
+				st.session_state.files_messages.append( { 'role': 'user', 'content': prompt } )
+				response = route_document_query( prompt )
+				st.session_state.files_messages.append( { 'role': 'assistant', 'content': response } )
+				st.rerun( )
+			
+			# --------  Reset Button
+			if st.button( 'Clear Messages' ):
+				reset_state( )
+				st.rerun( )
+	
+	elif provider_name == 'GPT':
+		with center:
+			with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
+				
+				with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
+					llm_c1, llm_c2, llm_c3, llm_c4, llm_c5, llm_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Model ------------
+					with llm_c1:
+						model_options = list( files.model_options )
+						set_files_model = st.selectbox( label='Select Model', options=model_options,
+							key='files_model', placeholder='Options', index=None,
+							help='REQUIRED. Large Language Model used by the AI', )
+						
+						files_model = st.session_state[ 'files_model' ]
+					
+					# ---------- Reasoning ------------
+					with llm_c2:
+						reasoning_options = list( files.reasoning_options )
+						set_files_reasoning = st.selectbox( label='Reasoning',
+							options=reasoning_options, key='files_reasoning',
+							help=cfg.REASONING, index=None, placeholder='Options' )
+						
+						files_reasoning = st.session_state[ 'files_reasoning' ]
+					
+					# ---------- Top-P ------------
+					with llm_c3:
+						set_files_top_p = st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+							step=0.01, help=cfg.TOP_P, key='files_top_percent' )
+						
+						files_top_percent = st.session_state[ 'files_top_percent' ]
+					
+					# ---------- Temperature ------------
+					with llm_c4:
+						set_files_temperature = st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
+							step=0.01,
+							help=cfg.TEMPERATURE, key='files_temperature' )
+						
+						files_temperature = st.session_state[ 'files_temperature' ]
+					
+					# ---------- Presense ------------
+					with llm_c5:
+						set_files_presence = st.slider( label='Presense Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.PRESENCE_PENALTY, key='files_presence_penalty' )
+						
+						files_presence = st.session_state[ 'files_presence_penalty' ]
+					
+					# ---------- Frequency ------------
+					with llm_c6:
+						set_files_freq = st.slider( label='Frequency Penalty', min_value=-2.0, max_value=2.0,
+							step=0.01, help=cfg.FREQUENCY_PENALTY, key='files_frequency_penalty' )
+						
+						files_fequency = st.session_state[ 'files_frequency_penalty' ]
+					
+					# ---------- Reset Model ------------
+					if st.button( label='Reset', key='reset_files_model', width='stretch' ):
+						for key in [ 'files_model', 'files_temperature', 'files_presence_penalty',
+						             'files_reasoning', 'files_top_percent',
+						             'files_frequency_penalty' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
+					tool_c1, tool_c2, tool_c3, tool_c4, tool_c5, tool_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Max Calls ------------
+					with tool_c1:
+						set_files_calls = st.slider( label='Max Calls', min_value=0, max_value=10,
+							value=int( st.session_state.get( 'files_max_calls', 0 ) ), step=1,
+							help=cfg.MAX_TOOL_CALLS, key='files_max_calls' )
+						
+						files_max_calls = st.session_state[ 'files_max_calls' ]
+					
+					# ---------- Choice ------------
+					with tool_c2:
+						choice_options = list( files.choice_options )
+						set_files_choice = st.selectbox( label='Choice', options=choice_options,
+							key='files_tool_choice', help=cfg.CHOICE, index=None, placeholder='Options' )
+						
+						files_tool_choice = st.session_state[ 'files_tool_choice' ]
+					
+					# ---------- Include ------------
+					with tool_c3:
+						include_options = list( files.include_options )
+						set_files_include = st.multiselect( label='Include', options=include_options,
+							key='files_include', help=cfg.INCLUDE, placeholder='Options' )
+						
+						files_include = [ d.strip( ) for d in set_files_include
+						                  if d.strip( ) ]
+						
+						files_include = st.session_state[ 'files_include' ]
+					
+					# ---------- Domains ------------
+					with tool_c4:
+						set_files_domains = st.text_input( label='Allowed Domains', key='files_domains_input',
+							value=','.join( st.session_state.get( 'files_domains', [ ] ) ),
+							help=cfg.ALLOWED_DOMAINS, width='stretch', placeholder='Enter Domains' )
+						
+						files_domains = [ d.strip( ) for d in set_files_domains.split( ',' )
+						                  if d.strip( ) ]
+						
+						st.session_state[ 'files_domains' ] = files_domains
+					
+					# ---------- Tools ------------
+					with tool_c5:
+						tool_options = list( files.tool_options )
+						set_files_tools = st.multiselect( label='Tools', options=tool_options,
+							key='files_tools', help=cfg.TOOLS, placeholder='Options' )
+						
+						files_tools = [ d.strip( ) for d in set_files_tools
+						                if d.strip( ) ]
+						
+						files_tools = st.session_state[ 'files_tools' ]
+					
+					# ---------- Background ------------
+					with tool_c6:
+						set_files_background = st.toggle( label='Background', key='files_background',
+							help=cfg.BACKGROUND_MODE )
+						
+						files_background = st.session_state[ 'files_background' ]
+					
+					# ---------- Reset Tools ------------
+					if st.button( label='Reset', key='reset_files_tools', width='stretch' ):
+						for key in [ 'files_max_calls', 'files_tool_choice', 'files_include',
+						             'files_tools', 'files_domains', 'files_background' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+				
+				with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
+					resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
+						[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+					
+					# ---------- Number ------------
+					with resp_c1:
+						set_files_number = st.slider( label='Number', min_value=0, max_value=50,
+							value=int( st.session_state.get( 'files_number', 0 ) ), step=1,
+							help='Optional. Upper limit on the responses returned by the model',
+							key='files_number' )
+						
+						files_number = st.session_state[ 'files_number' ]
+					
+					# ---------- Stream ------------
+					with resp_c2:
+						set_files_stream = st.toggle( label='Stream', key='files_stream',
+							help=cfg.STREAM )
+						
+						files_stream = st.session_state[ 'files_stream' ]
+					
+					# ---------- Store ------------
+					with resp_c3:
+						set_files_store = st.toggle( label='Store', key='files_store', help=cfg.STORE )
+						
+						files_store = st.session_state[ 'files_store' ]
+					
+					# ---------- Max Tokens ------------
+					with resp_c4:
+						set_files_tokens = st.slider( label='Max Tokens', min_value=0, max_value=100000,
+							value=int( st.session_state.get( 'files_max_tokens', 0 ) ), step=500,
+							help=cfg.MAX_OUTPUT_TOKENS, key='files_max_tokens' )
+						
+						files_tokens = st.session_state[ 'files_max_tokens' ]
+					
+					# ---------- Modalities------------
+					with resp_c5:
+						modality_options = list( files.modality_options )
+						set_files_modalities = st.multiselect( label='Response Modalities', options=modality_options,
+							key='files_modalities', help='Optional. Modality of the response',
+							placeholder='Options' )
+						
+						files_modalities = [ d.strip( ) for d in set_files_modalities
+						                     if d.strip( ) ]
+						
+						files_modalities = st.session_state[ 'files_modalities' ]
+					
+					# ---------- Stops ------------
+					with resp_c6:
+						set_files_stops = st.text_input( label='Stop Sequences', key='files_stops_input',
+							value=','.join( st.session_state.get( 'files_stops', [ ] ) ),
+							help=cfg.STOP_SEQUENCE, width='stretch', placeholder='Enter Stop Strings' )
+						
+						files_stops = [ d.strip( ) for d in set_files_stops.split( ',' )
+						                if d.strip( ) ]
+						
+						st.session_state[ 'files_stops' ] = files_stops
+					
+					# ---------- Reset Reponse ------------
+					if st.button( label='Reset', key='reset_files_response', width='stretch' ):
+						for key in [ 'files_stream', 'files_store', 'files_number', 'files_stops',
+						             'files_tools', 'files_max_tokens', 'files_modalities' ]:
+							if key in st.session_state:
+								del st.session_state[ key ]
+						
+						st.rerun( )
+			
+			with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
+				in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+				
+				prompt_names = fetch_prompt_names( cfg.DB_PATH )
+				if not prompt_names:
+					prompt_names = [ '' ]
+				
+				with in_left:
+					st.text_area( label='Enter Text', height=50, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS, key='files_system_instructions' )
+				
+				def _on_template_change( ) -> None:
+					name = st.session_state.get( 'instructions' )
+					if name and name != 'No Templates Found':
+						text = fetch_prompt_text( cfg.DB_PATH, name )
+						if text is not None:
+							st.session_state[ 'files_system_instructions' ] = text
+				
+				with in_right:
+					st.selectbox( label='Use Template', options=prompt_names, index=None,
+						key='instructions', on_change=_on_template_change )
+				
+				def _on_clear( ) -> None:
+					st.session_state[ 'files_system_instructions' ] = ''
+					st.session_state[ 'instructions' ] = ''
+				
+				def _on_convert_system_instructions( ) -> None:
+					text = st.session_state.get( 'files_system_instructions', '' )
+					if not isinstance( text, str ) or not text.strip( ):
+						return
+					
+					src = text.strip( )
+					
+					# XML-delimited prompt blocks -> Markdown headings
+					if cfg.XML_BLOCK_PATTERN.search( src ):
+						converted = convert_xml( src )
+					
+					# Markdown headings <-> simple <hN> tags handled by existing helper
+					else:
+						converted = convert_markdown( src )
+					
+					st.session_state[ 'files_system_instructions' ] = converted
+				
+				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+				with btn_c1:
+					st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
+				
+				with btn_c2:
+					st.button( label='XML <-> Markdown', width='stretch',
+						on_click=_on_convert_system_instructions )
+			
+			list_method = None
+			if hasattr( files, 'list' ):
+				list_method = getattr( files, 'list' )
+			
+			uploaded_file = st.file_uploader( 'Upload file (server-side via Files API)',
+				type=[ 'pdf', 'txt', 'md', 'docx', 'png', 'jpg', 'jpeg', ], )
+			
+			if uploaded_file:
+				tmp_path = save_temp( uploaded_file )
+				upload_fn = None
+				for name in ('upload_file', 'upload', 'files_upload'):
+					if hasattr( files, name ):
+						upload_fn = getattr( files, name )
+						break
+				
+				if not upload_fn:
+					st.warning( 'No upload function found on chat object.' )
+				else:
+					with st.spinner( 'Uploading to Files API...' ):
+						try:
+							fid = upload_fn( tmp_path )
+							st.success( f'Uploaded; file id: {fid}' )
+						except Exception as exc:
+							st.error( f"Upload failed: {exc}" )
+			
+			if st.button( 'List Files' ):
+				try:
+					files_resp = list_method( )
+					rows = [ ]
+					files_list = (files_resp.data if hasattr( files_resp, 'data' ) else files_resp
+					if isinstance( files_resp, list ) else [ ])
+					
+					for f in files_list:
+						rows.append( { 'id': str( getattr( f, 'id', "" ) ),
+						               'filename': str( getattr( f, 'filename', "" ) ),
+						               'files_purpose': str( getattr( f, 'files_purpose', "" ) ), } )
+					
+					st.session_state.files_table = rows
+				
+				except Exception as exc:
+					st.session_state.files_table = None
+					st.error( f'List files failed: {exc}' )
+				
+				if 'files_list' in locals( ) and files_list:
+					file_ids = [ r.get( 'filename' ) if isinstance( r, dict )
+					             else getattr( r, 'id', None ) for r in files_list ]
+					sel = st.selectbox( label='Select File to Delete', options=file_ids,
+						index=None, placeholder='Options' )
+					if st.button( 'Delete File' ):
+						del_fn = None
+						for name in ('delete_file', 'delete', 'files_delete'):
+							if hasattr( files, name ):
+								del_fn = getattr( files, name )
+								break
+						if not del_fn:
+							st.warning( 'No delete function found on chat object.' )
+						else:
+							with st.spinner( 'Deleting file...' ):
+								try:
+									res = del_fn( sel )
+									st.success( f'Delete result: {res}' )
+								except Exception as exc:
+									st.error( f'Delete failed: {exc}' )
+			
+			st.divider( )
+			
+			# ---------------------------------------------------
+			#                   MESSAGES
+			# ---------------------------------------------------
+			for msg in st.session_state.files_messages:
+				with st.chat_message( msg[ 'role' ] ):
+					st.markdown( msg[ 'content' ] )
+			
+			if prompt := st.chat_input( 'Ask a question about the files' ):
+				st.session_state.files_messages.append( { 'role': 'user', 'content': prompt } )
+				response = route_document_query( prompt )
+				st.session_state.files_messages.append( { 'role': 'assistant',
+				                                          'content': response } )
+				st.rerun( )
+			
+			# --------  Reset Button
+			if st.button( 'Clear Messages' ):
+				reset_state( )
+				st.rerun( )
 
 # ======================================================================================
 # PROMPT ENGINEERING MODE
