@@ -83,6 +83,10 @@ GOOGLE_GENAI_USE_VERTEXAI = os.getenv( 'GOOGLE_GENAI_USE_VERTEXAI' )
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv( 'GOOGLE_APPLICATION_CREDENTIALS')
 GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
+GOOGLEMAPS_API_KEY = os.getenv( 'GOOGLEMAPS_API_KEY' )
+GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
+GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
+GOOGLE_CSE_ID = os.getenv( 'GOOGLE_CSE_ID' )
 
 #----------------- GPT CONFIG -------------------
 GPT_LOGO = r'resources/buddy_logo.ico'

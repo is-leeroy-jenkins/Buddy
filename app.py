@@ -2746,6 +2746,18 @@ with st.sidebar:
 			value=st.session_state.xai_api_key or '',
 			help='Overrides XAI_API_KEY from config.py for this session only.' )
 		
+		googlemaps_key = st.text_input( 'Google Maps API Key', type='password',
+			value=st.session_state.googlemaps_api_key or '',
+			help='Overrides GOOGLEMAPS_API_KEY from config.py for this session only.' )
+		
+		geocoding_key = st.text_input( 'Geocoding API Key', type='password',
+			value=st.session_state.geocoding_api_key or '',
+			help='Overrides GEOCODING_API_KEY from config.py for this session only.' )
+		
+		google_cse_id = st.text_input( 'Google Custom Search ID', type='password',
+			value=st.session_state.google_cse_id or '',
+			help='Overrides GOOGLE_CSE_ID from config.py for this session only.' )
+		
 		if openai_key:
 			st.session_state.openai_api_key = openai_key
 			os.environ[ 'OPENAI_API_KEY' ] = openai_key
@@ -2765,7 +2777,19 @@ with st.sidebar:
 		if xai_key:
 			st.session_state.xai_api_key = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
-
+		
+		if googlemaps_key:
+			st.session_state.googlemaps_api_key = googlemaps_key
+			os.environ[ 'GOOGLEMAPS_API_KEY' ] = googlemaps_key
+		
+		if geocoding_key:
+			st.session_state.geocoding_api_key = geocoding_key
+			os.environ[ 'GEOCODING_API_KEY' ] = geocoding_key
+		
+		if google_cse_id:
+			st.session_state.google_cse_id = google_cse_id
+			os.environ[ 'GOOGLE_CSE_ID' ] = google_cse_id
+	
 	if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 		st.session_state[ 'provider' ] = 'GPT'
 	
