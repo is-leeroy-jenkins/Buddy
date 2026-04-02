@@ -5224,7 +5224,7 @@ elif mode == "Images":
 					tmp_path = save_temp( uploaded_img )
 					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 				
-				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				st.divider( )
 				
 				# ---------------------------------------------------
 				#                   MESSAGES
@@ -5274,7 +5274,7 @@ elif mode == "Images":
 					tmp_path = save_temp( uploaded_img )
 					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 				
-				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				st.divider( )
 				
 				# ---------------------------------------------------
 				#                   MESSAGES
@@ -5313,7 +5313,6 @@ elif mode == "Images":
 					if st.button( 'Clear Messages', key='clear_edit_message' ):
 						reset_state( )
 						st.rerun( )
-
 
 # ======================================================================================
 # AUDIO MODE
@@ -8215,11 +8214,12 @@ _mode_to_model_key = \
 	'Chat': 'chat_model',
 	'Text': 'text_model',
 	'Images': 'image_model',
+	'Audio': 'audio_model',
 	'TTS': 'tts_model',
 	'Translation': 'translation_model',
 	'Transcription': 'transcription_model',
-	'Embedding': 'embedding_model',
-	'DocQnA': 'docqna_model',
+	'Embeddings': 'embedding_model',
+	'Document Q&A': 'docqna_model',
 	'Files': 'files_model',
 	'Stores': 'stores_model'
 }
