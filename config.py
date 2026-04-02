@@ -142,6 +142,7 @@ GPT_REASONING_MODELS = [ 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4o', 'gpt-4.1
 
 # ---------------- GROK CONFIG ------------------
 GROK_LOGO = r'resources/grok_logo.png'
+
 GROK_MODES = [ 'Text',
                'Images',
                'Document Q&A',
@@ -160,6 +161,7 @@ GROK_COLLECTIONS = [ { 'DOD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4f
 
 # ---------------- GEMINI CONFIG ------------------
 GEMINI_LOGO = r'resources/gemini_logo.png'
+
 GEMINI_MODES = [ 'Text',
                  'Images',
                  'Files',
@@ -203,8 +205,6 @@ LOGO_MAP = {
 		'GPT': GPT_LOGO,
 		'Gemini': GEMINI_LOGO,
 		'Grok': GROK_LOGO }
-
-
 
 #-------- DEFINITIONS -------------------
 TEMPERATURE = r'''Optional. A number between 0 and 2. Higher values like 0.8 will make the output
