@@ -103,6 +103,16 @@ if 'google_api_key' not in st.session_state:
 if 'xai_api_key' not in st.session_state:
 	st.session_state.xai_api_key = ''
 
+if 'google_cse_id' not in st.session_state:
+	st.session_state[ 'google_cse_id' ] = ''
+
+if 'googlemaps_api_key' not in st.session_state:
+	st.session_state[ 'googlemaps_api_key' ] = ''
+
+if 'geocoding_api_key' not in st.session_state:
+	st.session_state[ 'geocoding_api_key' ] = ''
+	
+	
 if st.session_state.openai_api_key == '':
 	default = cfg.OPENAI_API_KEY
 	if default:
@@ -132,7 +142,25 @@ if st.session_state.xai_api_key == '':
 	if default:
 		st.session_state.xai_api_key = default
 		os.environ[ 'XAI_API_KEY' ] = default
+		
+if st.session_state.google_cse_id == '':
+	default = cfg.GOOGLE_CSE_ID
+	if default:
+		st.session_state.google_cse_id = default
+		os.environ[ 'GOOGLE_CSE_ID' ] = default
 
+if st.session_state.googlemaps_api_key == '':
+	default = cfg.GOOGLEMAPS_API_KEY
+	if default:
+		st.session_state.googlemaps_api_key = default
+		os.environ[ 'GOOGLEMAPS_API_KEY' ] = default
+
+if st.session_state.geocoding_api_key == '':
+	default = cfg.GEOCODING_API_KEY
+	if default:
+		st.session_state.geocoding_api_key = default
+		os.environ[ 'GEOCODING_API_KEY' ] = default
+		
 if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 	st.session_state[ 'provider' ] = 'GPT'
 
@@ -2748,18 +2776,12 @@ with st.sidebar:
 		st.session_state.messages: List[ Dict[ str, Any ] ] = [ ]
 	
 	if 'last_call_usage' not in st.session_state:
-		st.session_state.last_call_usage = {
-				'prompt_tokens': 0,
-				'completion_tokens': 0,
-				'total_tokens': 0,
-		}
+		st.session_state.last_call_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
+				'total_tokens': 0, }
 	
 	if 'token_usage' not in st.session_state:
-		st.session_state.token_usage = {
-				'prompt_tokens': 0,
-				'completion_tokens': 0,
-				'total_tokens': 0,
-		}
+		st.session_state.token_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
+				'total_tokens': 0, }
 	
 	if 'files' not in st.session_state:
 		st.session_state.files: List[ str ] = [ ]
@@ -2769,6 +2791,7 @@ with st.sidebar:
 			st.rerun( )
 		
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	
 	if provider == 'Gemini':
 		mode = st.sidebar.radio( 'Select Mode', cfg.GEMINI_MODES, index=0 )
 	elif provider == 'Grok':
@@ -2814,12 +2837,8 @@ if mode == 'Chat':
 	with st.sidebar:
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		st.text( '⚙️  Chat Settings' )
-		st.radio(
-			'Execution Mode',
-			options=_modes,
-			index=_modes.index( _current_mode ),
-			key='execution_mode',
-		)
+		st.radio( 'Execution Mode', options=_modes, index=_modes.index( _current_mode ),
+			key='execution_mode', )
 	
 	execution_mode = st.session_state.get( 'execution_mode', 'Standard' )
 	intent_prefix = build_intent_prefix( execution_mode )
