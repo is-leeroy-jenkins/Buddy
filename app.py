@@ -8221,7 +8221,7 @@ _mode_to_model_key = \
 	'Embeddings': 'embedding_model',
 	'Document Q&A': 'docqna_model',
 	'Files': 'files_model',
-	'Stores': 'stores_model'
+	'Vector Stores': 'stores_model'
 }
 
 provider_val = st.session_state.get( 'provider', '—' )
