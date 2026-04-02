@@ -5185,8 +5185,7 @@ elif mode == "Images":
 								if not isinstance( prompt, str ) or not prompt.strip( ):
 									st.warning( 'Enter a prompt before generating an image.' )
 								else:
-									image_result = image.generate(
-										prompt=prompt,
+									image_result = image.generate( prompt=prompt,
 										number=(st.session_state.get( 'image_number', 0 ) or 1),
 										model=image_model,
 										size=st.session_state.get( 'image_size' ) or '1024x1024',
@@ -6020,7 +6019,7 @@ elif mode == 'Embeddings':
 	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', )
+	embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', 0 )
 	embeddings_chunk_size = st.session_state.get( 'embeddings_chunk_size', 0  )
 	embeddings_overlap_amount = st.session_state.get( 'embeddings_overlap_amount', 0  )
 	embedding_model = st.session_state.get( 'embedding_model', '' )
@@ -6037,8 +6036,8 @@ elif mode == 'Embeddings':
 		# Expander — Gemini LLM Configuration
 		# ------------------------------------------------------------------
 		if provider_name == 'Gemini':
-			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
-				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20,  0.20 ],
+			with st.expander( label='LLM Settings', icon='⚙️', expanded=False, width='stretch' ):
+				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
 					border=True, gap='xxsmall' )
 				
 				# ---------  Model --------
@@ -6062,7 +6061,7 @@ elif mode == 'Embeddings':
 				
 				# ---------  Dimensions --------
 				with emb_c3:
-					set_embedding_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
+					set_embeddings_dimensions = st.slider( label='Dimensions', min_value=0, max_value=2048,
 						value=int( st.session_state.get( 'embeddings_dimensions' ) ),
 						step=1, key='embeddings_dimensions',
 						help='Optional (large models only): An integer between 1 and 2048',
@@ -6101,7 +6100,7 @@ elif mode == 'Embeddings':
 		# Expander — GPT LLM Configuration
 		# ------------------------------------------------------------------
 		elif provider_name == 'GPT':
-			with st.expander( label='Configuration', icon='⚙️', expanded=False, width='stretch' ):
+			with st.expander( label='LLM Settings', icon='⚙️', expanded=False, width='stretch' ):
 				emb_c1, emb_c2, emb_c3, emb_c4, emb_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -6176,15 +6175,16 @@ elif mode == 'Embeddings':
 						# Normalize + Chunk
 						# ----------------------------------------------------------
 						chunk_size = st.session_state.get( 'embeddings_chunk_size' )
+						dimensions = st.session_state.get( 'embeddings_dimensions' )
 						normalized_text = normalize_text( embeddings_input )
 						chunks = chunk_text( normalized_text, max_tokens=chunk_size )
 						
 						# ----------------------------------------------------------
 						# Create Embeddings
 						# ----------------------------------------------------------
-						if embedding_dimensions is not None:
+						if dimensions is not None:
 							vectors = embedding.create( text=chunks, model=embedding_model,
-								dimensions=embedding_dimensions )
+								dimensions=dimensions )
 						else:
 							vectors = embedding.create( text=chunks, model=embedding_model )
 						
@@ -6221,12 +6221,12 @@ elif mode == 'Embeddings':
 						st.error( f'Embedding failed: {exc}' )
 		
 		with btn_right:
-			if st.button( 'Reset', width='stretch', key='input_text_reset' ):
+			if st.button( label='Reset', width='stretch', key='input_text_reset' ):
 				# ----------------------------------------------------------
 				# Clear Embedding State
 				# ----------------------------------------------------------
 				for key in [ 'embeddings', 'embeddings_chunks', 'embeddings_df',
-						'embeddings_input_text' ]:
+						'embeddings_input_text', 'embeddings_dimensions' ]:
 					if key in st.session_state:
 						del st.session_state[ key ]
 				
