@@ -345,6 +345,9 @@ if 'text_context' not in st.session_state:
 if 'text_content' not in st.session_state:
 	st.session_state[ 'text_content' ] = [ ]
 
+if 'text_messages' not in st.session_state:
+	st.session_state[ 'text_messages' ] = [ ]
+	
 if 'text_gemini_history' not in st.session_state:
 	st.session_state[ 'text_gemini_history' ] = [ ]
 	
