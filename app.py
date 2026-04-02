@@ -3790,28 +3790,103 @@ elif mode == 'Text':
 			prompt = st.chat_input( 'Ask ChatGPT…' )
 			if prompt is not None and str( prompt ).strip( ):
 				prompt = str( prompt ).strip( )
-			st.session_state.text_messages.append(
-				{
-						'role': 'user',
-						'content': prompt,
-				} )
-			
-			with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
-				with st.spinner( 'Thinking…' ):
-					response_text = None
-					response_obj = None
-					
-					try:
-						text_tools = [ ]
-						for name in st.session_state.get( 'text_tools', [ ] ):
-							if not isinstance( name, str ) or not name.strip( ):
-								continue
-							
-							text_tools.append( { 'type': name.strip( ) } )
+				
+				st.session_state.text_messages.append(
+					{
+							'role': 'user',
+							'content': prompt,
+					} )
+				
+				with st.chat_message( 'assistant', avatar=cfg.BUDDY ):
+					with st.spinner( 'Thinking…' ):
+						response_text = None
+						response_obj = None
 						
-						text_context = [ ]
-						if st.session_state.get( 'text_input' ) != 'single_turn':
-							for item in st.session_state.get( 'text_messages', [ ] )[ :-1 ]:
+						try:
+							text_tools = [ ]
+							for name in st.session_state.get( 'text_tools', [ ] ):
+								if not isinstance( name, str ) or not name.strip( ):
+									continue
+								
+								text_tools.append( { 'type': name.strip( ) } )
+							
+							text_context = [ ]
+							if st.session_state.get( 'text_input' ) != 'single_turn':
+								for item in st.session_state.get( 'text_messages', [ ] )[ :-1 ]:
+									if not isinstance( item, dict ):
+										continue
+									
+									role = str( item.get( 'role', '' ) ).strip( )
+									content = item.get( 'content', '' )
+									if role not in [ 'user', 'assistant', 'system', 'developer' ]:
+										continue
+									
+									if not isinstance( content, str ) or not content.strip( ):
+										continue
+									
+									text_context.append(
+										{
+												'role': role,
+												'content': content.strip( ),
+										} )
+							
+							st.session_state[ 'text_context' ] = text_context
+							
+							text_format = None
+							if st.session_state.get( 'text_response_format' ) == 'text':
+								text_format = { 'format': { 'type': 'text' } }
+							
+							text_previous_id = st.session_state.get( 'text_previous_response_id' )
+							if not isinstance( text_previous_id, str ) or not text_previous_id.strip( ):
+								text_previous_id = None
+							
+							if st.session_state.get( 'text_input' ) == 'single_turn':
+								text_previous_id = None
+							
+							response_text = text.generate_text(
+								prompt=prompt,
+								model=st.session_state.get( 'text_model' ),
+								temperature=st.session_state.get( 'text_temperature' ),
+								format=text_format,
+								top_p=st.session_state.get( 'text_top_percent' ),
+								frequency=st.session_state.get( 'text_frequency_penalty' ),
+								presence=st.session_state.get( 'text_presense_penalty' ),
+								max_tools=st.session_state.get( 'text_max_calls' ),
+								max_tokens=st.session_state.get( 'text_max_tokens' ),
+								store=st.session_state.get( 'text_store' ),
+								stream=st.session_state.get( 'text_stream' ),
+								instruct=st.session_state.get( 'text_system_instructions' ),
+								background=st.session_state.get( 'text_background' ),
+								reasoning=st.session_state.get( 'text_reasoning' ),
+								include=st.session_state.get( 'text_include', [ ] ),
+								tools=text_tools,
+								allowed_domains=st.session_state.get( 'text_domains', [ ] ),
+								previous_id=text_previous_id,
+								tool_choice=st.session_state.get( 'text_tool_choice' ),
+								is_parallel=st.session_state.get( 'text_parallel_tools' ),
+								context=text_context
+							)
+							response_obj = getattr( text, 'response', None )
+							st.session_state[ 'text_previous_response_id' ] = (
+									getattr( text, 'previous_id', None ) or ''
+							)
+						
+						except Exception as exc:
+							err = Error( exc )
+							st.error( f'Generation Failed: {err.info}' )
+							response_text = None
+							response_obj = getattr( text, 'response', None )
+						
+						if response_text is not None and str( response_text ).strip( ):
+							st.markdown( response_text )
+							st.session_state.text_messages.append(
+								{
+										'role': 'assistant',
+										'content': str( response_text ).strip( ),
+								} )
+							
+							st.session_state[ 'text_context' ] = [ ]
+							for item in st.session_state.get( 'text_messages', [ ] ):
 								if not isinstance( item, dict ):
 									continue
 								
@@ -3823,104 +3898,22 @@ elif mode == 'Text':
 								if not isinstance( content, str ) or not content.strip( ):
 									continue
 								
-								text_context.append(
+								st.session_state[ 'text_context' ].append(
 									{
 											'role': role,
 											'content': content.strip( ),
 									} )
-						
-						st.session_state[ 'text_context' ] = text_context
-						
-						text_format = None
-						if st.session_state.get( 'text_response_format' ) == 'text':
-							text_format = \
-								{
-										'format': { 'type': 'text' }
-								}
-						
-						text_previous_id = st.session_state.get( 'text_previous_response_id' )
-						if not isinstance( text_previous_id, str ) or not text_previous_id.strip( ):
-							text_previous_id = None
-						
-						if st.session_state.get( 'text_input' ) == 'single_turn':
-							text_previous_id = None
-						
-						response_text = text.generate_text( prompt=prompt,
-							model=st.session_state.get( 'text_model' ),
-							temperature=st.session_state.get( 'text_temperature' ),
-							format=text_format,
-							top_p=st.session_state.get( 'text_top_percent' ),
-							frequency=st.session_state.get( 'text_frequency_penalty' ),
-							presence=st.session_state.get( 'text_presence_penalty' ),
-							max_tools=st.session_state.get( 'text_max_calls' ),
-							max_tokens=st.session_state.get( 'text_max_tokens' ),
-							store=st.session_state.get( 'text_store' ),
-							stream=st.session_state.get( 'text_stream' ),
-							instruct=st.session_state.get( 'text_system_instructions' ),
-							background=st.session_state.get( 'text_background' ),
-							reasoning=st.session_state.get( 'text_reasoning' ),
-							include=st.session_state.get( 'text_include', [ ] ),
-							tools=text_tools,
-							allowed_domains=st.session_state.get( 'text_domains', [ ] ),
-							previous_id=text_previous_id,
-							tool_choice=st.session_state.get( 'text_tool_choice' ),
-							is_parallel=st.session_state.get( 'text_parallel_calls' ),
-							context=text_context )
-						response_obj = getattr( text, 'response', None )
-						st.session_state[ 'text_previous_response_id' ] = (
-								getattr( text, 'previous_id', None ) or '')
-					
-					except Exception as exc:
-						err = Error( exc )
-						st.error( f'Generation Failed: {err.info}' )
-						response_text = None
-						response_obj = getattr( text, 'response', None )
-					
-					if response_text is not None and str( response_text ).strip( ):
-						st.markdown( response_text )
-						st.session_state.text_messages.append(
-							{
-									'role': 'assistant',
-									'content': str( response_text ).strip( ),
-							} )
-						
-						st.session_state[ 'text_context' ] = [ ]
-						for item in st.session_state.get( 'text_messages', [ ] ):
-							if not isinstance( item, dict ):
-								continue
 							
-							role = str( item.get( 'role', '' ) ).strip( )
-							content = item.get( 'content', '' )
-							if role not in [ 'user', 'assistant', 'system', 'developer' ]:
-								continue
-							
-							if not isinstance( content, str ) or not content.strip( ):
-								continue
-							
-							st.session_state[ 'text_context' ].append(
-								{
-										'role': role,
-										'content': content.strip( ),
-								} )
+							st.session_state.last_answer = str( response_text ).strip( )
+							st.session_state.last_sources = extract_sources( response_obj )
+						else:
+							st.error( 'Generation Failed!.' )
 						
-						st.session_state.last_answer = str( response_text ).strip( )
-						st.session_state.last_sources = extract_sources( response_obj )
-					else:
-						st.error( 'Generation Failed!.' )
-					
-					try:
-						update_token_counters( response_obj )
-					except Exception:
-						pass
-		
-			# --------  Reset Button
-			if st.button( 'Clear Messages' ):
-				st.session_state.text_messages = [ ]
-				st.session_state[ 'text_previous_response_id' ] = ''
-				st.session_state.last_answer = ''
-				st.session_state.last_sources = [ ]
-				st.rerun( )
-			
+						try:
+							update_token_counters( response_obj )
+						except Exception:
+							pass
+						
 		elif provider_name == 'Grok':
 			prompt = st.chat_input( 'Ask Grok…' )
 			
@@ -4850,30 +4843,50 @@ elif mode == "Images":
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
-				prompt_names = [ 'No Templates Found' ]
+				prompt_names = [ '' ]
 			
 			with in_left:
-				st.text_area( 'Enter Text', height=50, width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions' )
+				st.text_area( label='Enter Text', height=50, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
 			
 			def _on_template_change( ) -> None:
 				name = st.session_state.get( 'instructions' )
 				if name and name != 'No Templates Found':
 					text = fetch_prompt_text( cfg.DB_PATH, name )
 					if text is not None:
-						st.session_state[ 'image_system_instructions' ] = text
+						st.session_state[ 'audio_system_instructions' ] = text
 			
 			with in_right:
-				st.selectbox( 'Select Template', prompt_names,
-					key='instructions', on_change=_on_template_change, index=None )
+				st.selectbox( label='Use Template', options=prompt_names, index=None,
+					key='instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
-				st.session_state[ 'image_system_instructions' ] = ''
+				st.session_state[ 'audio_system_instructions' ] = ''
 				st.session_state[ 'instructions' ] = ''
 			
-			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
+			def _on_convert_system_instructions( ) -> None:
+				text = st.session_state.get( 'audio_system_instructions', '' )
+				if not isinstance( text, str ) or not text.strip( ):
+					return
+				
+				src = text.strip( )
+				if cfg.XML_BLOCK_PATTERN.search( src ):
+					converted = convert_xml( src )
+				else:
+					converted = convert_markdown( src )
+				
+				st.session_state[ 'audio_system_instructions' ] = converted
+			
+			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+			with btn_c1:
+				st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
+			
+			with btn_c2:
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=_on_convert_system_instructions )
 		
 		# ------------------------------------------------------------------
 		# Tab Section
@@ -4881,50 +4894,32 @@ elif mode == "Images":
 		if provider_name == 'Gemini':
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
-				if st.session_state.get( 'image_input' ) is not None:
-					for msg in st.session_state.get( 'image_input', [ ] ):
-						with st.chat_message( msg[ 'role' ], avatar='' ):
-							st.markdown( msg[ 'content' ] )
-				
-				prompt = st.chat_input( 'Enter image generation prompt...' )
-				gen_c1, gen_c2, gen_c3 = st.columns( [ 0.2, 0.2, 0.8 ] )
-				
+				prompt = st.chat_input( 'Enter image generation prompt...', key='image_generate_message' )
+				gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
 				with gen_c1:
 					if st.button( 'Generate Image' ):
 						with st.spinner( 'Generating…' ):
 							try:
-								if not prompt or not str( prompt ).strip( ):
+								if not isinstance( prompt, str ) or not prompt.strip( ):
 									st.warning( 'Enter a prompt before generating an image.' )
-								elif not image_model:
-									st.warning( 'Select a model before generating an image.' )
 								else:
-									_append_image_message( 'user', prompt )
-									
-									result = image.generate(
+									image_result = image.generate(
 										prompt=prompt,
+										number=(st.session_state.get( 'image_number', 0 ) or 1),
 										model=image_model,
-										aspect=image_aspect_ratio,
-										number=image_number,
-										temperature=image_temperature,
-										top_p=image_top_percent,
-										max_tokens=image_max_tokens,
-										resolution=image_size,
-										instruct=st.session_state.get( 'image_system_instructions', '' ),
-										output_mime_type=image_mime_type,
-										response_modalities=image_modality,
-										grounded=image_grounded,
-										image_search=image_image_search
-									)
+										size=st.session_state.get( 'image_size' ) or '1024x1024',
+										quality=st.session_state.get( 'image_quality' ) or 'auto',
+										fmt=st.session_state.get( 'image_output' ) or '.jpeg',
+										compression=st.session_state.get( 'image_compression' ),
+										background=st.session_state.get( 'image_backcolor' ) or None )
 									
-									if result is not None:
-										st.image( result, use_column_width=True )
-										_append_image_message( 'assistant',
-											'Generated image returned successfully.' )
+									if image_result is None:
+										st.warning( 'No image output was returned.' )
 									else:
-										st.warning( 'No image was returned by the model.' )
+										st.image( image_result )
 									
 									try:
-										update_counters( getattr( image, 'response', None ) )
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
 							except Exception as exc:
@@ -4932,171 +4927,149 @@ elif mode == "Images":
 				
 				with gen_c2:
 					if st.button( 'Clear Messages', key='clear_image_generation' ):
-						_clear_image_messages( )
+						reset_state( )
 						st.rerun( )
 			
 			with tab_analyze:
-				uploaded_img = st.file_uploader( 'Upload an image for analysis',
-					type=[ 'png', 'jpg', 'jpeg', 'webp' ], accept_multiple_files=False,
-					key='images_analyze_uploader' )
+				uploaded_img = st.file_uploader(
+					'Upload an image for analysis',
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
+					accept_multiple_files=False,
+					key='images_analyze_uploader', )
 				
 				tmp_path = None
 				if uploaded_img:
 					tmp_path = save_temp( uploaded_img )
-					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True )
-				
-				if st.session_state.get( 'image_input' ) is not None:
-					for msg in st.session_state.get( 'image_input', [ ] ):
-						with st.chat_message( msg[ 'role' ], avatar='' ):
-							st.markdown( msg[ 'content' ] )
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 				
 				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 				
-				prompt = st.chat_input( 'Enter image analysis prompt …' )
-				ana_c1, ana_c2 = st.columns( [ 0.2, 0.8 ] )
-				
+				# ---------------------------------------------------
+				#                   MESSAGES
+				# ---------------------------------------------------
+				prompt = st.chat_input( 'Enter image analysis prompt...', key='image_analysis_message' )
+				ana_c1, ana_c2 = st.columns( [ 0.5, 0.5 ] )
 				with ana_c1:
 					if st.button( 'Analyze Image' ):
 						with st.spinner( 'Analyzing image…' ):
 							try:
 								if not tmp_path:
-									st.warning( 'Upload an image before analyzing.' )
-								elif not prompt or not str( prompt ).strip( ):
-									st.warning( 'Enter an analysis prompt before analyzing the image.' )
-								elif not image_model:
-									st.warning( 'Select a model before analyzing an image.' )
+									st.warning( 'Upload an image before running analysis.' )
+								elif not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before analyzing an image.' )
 								else:
-									_append_image_message( 'user', prompt )
-									
-									analysis_result = image.analyze( prompt=prompt,
+									analysis_result = image.analyze(
+										text=prompt,
 										path=tmp_path,
-										model=image_model,
-										number=image_number,
-										temperature=image_temperature,
-										top_p=image_top_percent,
-										max_tokens=image_max_tokens,
 										instruct=st.session_state.get( 'image_system_instructions', '' ),
-										response_modalities=image_modality,
-										grounded=image_grounded,
-										image_search=image_image_search
-									)
+										model=image_model or 'gpt-4o-mini' )
 									
 									if analysis_result is None:
-										st.warning( 'No analysis output returned by the model.' )
+										st.warning( 'No analysis output was returned.' )
 									else:
 										st.markdown( '**Analysis result:**' )
 										st.write( analysis_result )
-										_append_image_message( 'assistant', str( analysis_result ) )
 									
 									try:
-										update_counters( getattr( image, 'response', None ) )
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
 							except Exception as exc:
 								st.error( f'Analysis Failed: {exc}' )
 				
 				with ana_c2:
-					if st.button( 'Clear Messages', key='clear_image_analysis' ):
-						_clear_image_messages( )
+					if st.button( 'Clear Messages', key='clear_analysis_message' ):
+						reset_state( )
 						st.rerun( )
 			
 			with tab_edit:
 				uploaded_img = st.file_uploader( 'Upload Image for Edit',
 					type=[ 'png', 'jpg', 'jpeg', 'webp' ], accept_multiple_files=False,
-					key='images_edit_uploader' )
+					key='images_edit_uploader', )
 				
 				tmp_path = None
 				if uploaded_img:
 					tmp_path = save_temp( uploaded_img )
-					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True )
-				
-				if st.session_state.get( 'image_input' ) is not None:
-					for msg in st.session_state.get( 'image_input', [ ] ):
-						with st.chat_message( msg[ 'role' ], avatar='' ):
-							st.markdown( msg[ 'content' ] )
+					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
 				
 				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 				
-				prompt = st.chat_input( 'Enter image editing prompt …' )
-				edit_c1, edit_c2 = st.columns( [ 0.2, 0.8 ] )
-				
+				# ---------------------------------------------------
+				#                   MESSAGES
+				# ---------------------------------------------------
+				prompt = st.chat_input( 'Enter image editing prompt...', key='image_edit_messgae' )
+				edit_c1, edit_c2 = st.columns( [ 0.5, 0.5 ] )
 				with edit_c1:
-					if st.button( 'Edit Image' ):
+					if st.button( 'Edit Image', key='edit_image' ):
 						with st.spinner( 'Editing image…' ):
 							try:
 								if not tmp_path:
 									st.warning( 'Upload an image before editing.' )
-								elif not prompt or not str( prompt ).strip( ):
-									st.warning( 'Enter an editing prompt before editing the image.' )
-								elif not image_model:
-									st.warning( 'Select a model before editing an image.' )
+								elif not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before editing an image.' )
 								else:
-									_append_image_message( 'user', prompt )
-									edit_result = image.edit( prompt=prompt,
-										path=tmp_path,
+									edit_result = image.edit( prompt=prompt, path=tmp_path,
 										model=image_model,
-										aspect=image_aspect_ratio,
-										number=image_number,
-										temperature=image_temperature,
-										top_p=image_top_percent,
-										max_tokens=image_max_tokens,
-										resolution=image_size,
-										instruct=st.session_state.get( 'image_system_instructions', '' ),
-										output_mime_type=image_mime_type,
-										response_modalities=image_modality,
-										grounded=image_grounded,
-										image_search=image_image_search
-									)
+										size=st.session_state.get( 'image_size' ) or '1024x1024',
+										quality=st.session_state.get( 'image_quality' ) or 'auto',
+										fmt=st.session_state.get( 'image_output' ) or '.jpeg',
+										compression=st.session_state.get( 'image_compression' ) )
 									
-									if edit_result is not None:
-										st.image( edit_result, use_column_width=True )
-										_append_image_message( 'assistant',
-											'Edited image returned successfully.' )
+									if edit_result is None:
+										st.warning( 'No edited image output was returned.' )
 									else:
-										st.warning( 'No edited image was returned by the model.' )
+										st.image( edit_result )
 									
 									try:
-										update_counters( getattr( image, 'response', None ) )
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
 							except Exception as exc:
-								st.error( f'Image editing failed: {exc}' )
+								st.error( f'Edit Failed: {exc}' )
 				
 				with edit_c2:
-					if st.button( 'Clear Messages', key='clear_image_editing' ):
-						_clear_image_messages( )
+					if st.button( 'Clear Messages', key='clear_edit_message' ):
+						reset_state( )
 						st.rerun( )
 		
 		if provider_name == 'Grok':
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
-				prompt = st.chat_input( 'Prompt' )
-				if st.button( 'Generate Image' ):
-					with st.spinner( 'Generating…' ):
-						try:
-							kwargs: Dict[ str, Any ] = {
-									'prompt': prompt,
-									'model': image_model,
-							}
-							
-							# Provider-safe optional args
-							if size_arg is not None:
-								kwargs[ 'size' ] = st.session_state[ 'image_size' ]
-							if quality is not None:
-								kwargs[ 'quality' ] = st.session_state[ 'image_quality' ]
-							if fmt is not None:
-								kwargs[ 'fmt' ] = st.session_state[ 'image_response_format' ]
-							
-							img_url = image.generate( **kwargs )
-							st.image( img_url )
-							
+				prompt = st.chat_input( 'Enter image generation prompt...', key='image_generate_message' )
+				gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
+				with gen_c1:
+					if st.button( 'Generate Image' ):
+						with st.spinner( 'Generating…' ):
 							try:
-								update_token_counters( getattr( image, 'response', None ) )
-							except Exception:
-								pass
-						
-						except Exception as exc:
-							st.error( f'Image generation failed: {exc}' )
+								if not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before generating an image.' )
+								else:
+									image_result = image.generate(
+										prompt=prompt,
+										number=(st.session_state.get( 'image_number', 0 ) or 1),
+										model=image_model,
+										size=st.session_state.get( 'image_size' ) or '1024x1024',
+										quality=st.session_state.get( 'image_quality' ) or 'auto',
+										fmt=st.session_state.get( 'image_output' ) or '.jpeg',
+										compression=st.session_state.get( 'image_compression' ),
+										background=st.session_state.get( 'image_backcolor' ) or None )
+									
+									if image_result is None:
+										st.warning( 'No image output was returned.' )
+									else:
+										st.image( image_result )
+									
+									try:
+										update_token_counters( getattr( image, 'response', None ) )
+									except Exception:
+										pass
+							except Exception as exc:
+								st.error( f'Image generation failed: {exc}' )
+				
+				with gen_c2:
+					if st.button( 'Clear Messages', key='clear_image_generation' ):
+						reset_state( )
+						st.rerun( )
 			
 			with tab_analyze:
 				uploaded_img = st.file_uploader(
@@ -5105,177 +5078,139 @@ elif mode == "Images":
 					accept_multiple_files=False,
 					key='images_analyze_uploader', )
 				
+				tmp_path = None
 				if uploaded_img:
 					tmp_path = save_temp( uploaded_img )
 					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-					
-					# Discover available analysis methods on Image object
-					available_methods = [ ]
-					for candidate in ('analyze', 'describe_image', 'describe', 'classify',
-					                  'detect_objects', 'caption', 'image_analysis',):
-						if hasattr( image, candidate ):
-							available_methods.append( candidate )
-					
-					if available_methods:
-						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-					else:
-						chosen_method = None
-						st.info( 'No dedicated image analysis method found on Image object; '
-						         'attempting generic handlers.' )
-					
-					chosen_model = st.selectbox( 'Model (analysis)', [ image_model,
-					                                                   None ], index=0, )
-					
-					chosen_model_arg = (image_model if chosen_model is None else chosen_model)
+				
+				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				
+				# ---------------------------------------------------
+				#                   MESSAGES
+				# ---------------------------------------------------
+				prompt = st.chat_input( 'Enter image analysis prompt...', key='image_analysis_message' )
+				ana_c1, ana_c2 = st.columns( [ 0.5, 0.5 ] )
+				with ana_c1:
 					if st.button( 'Analyze Image' ):
 						with st.spinner( 'Analyzing image…' ):
-							analysis_result = None
 							try:
-								if chosen_method:
-									func = getattr( image, chosen_method, None )
-									if func:
-										try:
-											analysis_result = func( tmp_path )
-										except TypeError:
-											analysis_result = func(
-												tmp_path, model=chosen_model_arg
-											)
+								if not tmp_path:
+									st.warning( 'Upload an image before running analysis.' )
+								elif not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before analyzing an image.' )
 								else:
-									for fallback in ('analyze', 'describe_image', 'describe',
-									                 'caption'):
-										if hasattr( image, fallback ):
-											func = getattr( image, fallback )
-											try:
-												analysis_result = func( tmp_path )
-												break
-											except Exception:
-												continue
-								
-								if analysis_result is None:
-									st.warning(
-										'No analysis output returned by the available methods.'
-									)
-								else:
-									if isinstance( analysis_result, (dict, list) ):
-										st.json( analysis_result )
+									analysis_result = image.analyze(
+										text=prompt,
+										path=tmp_path,
+										instruct=st.session_state.get( 'image_system_instructions', '' ),
+										model=image_model or 'gpt-4o-mini' )
+									
+									if analysis_result is None:
+										st.warning( 'No analysis output was returned.' )
 									else:
 										st.markdown( '**Analysis result:**' )
 										st.write( analysis_result )
 									
 									try:
-										update_token_counters(
-											getattr( image, 'response', None )
-											or analysis_result
-										)
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
-							
 							except Exception as exc:
 								st.error( f'Analysis Failed: {exc}' )
+				
+				with ana_c2:
+					if st.button( 'Clear Messages', key='clear_analysis_message' ):
+						reset_state( )
+						st.rerun( )
 			
 			with tab_edit:
 				uploaded_img = st.file_uploader( 'Upload Image for Edit',
-					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-					accept_multiple_files=False,
-					key='images_edit_uploader',
-				)
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ], accept_multiple_files=False,
+					key='images_edit_uploader', )
 				
+				tmp_path = None
 				if uploaded_img:
 					tmp_path = save_temp( uploaded_img )
-					
 					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-					
-					available_methods = [ ]
-					for candidate in ('edit', 'describe_image', 'describe', 'classify',
-					                  'detect_objects', 'caption', 'image_edit',):
-						if hasattr( image, candidate ):
-							available_methods.append( candidate )
-					
-					if available_methods:
-						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-					else:
-						chosen_method = None
-						st.info( 'No dedicated image editing method found on Image object;'
-						         'attempting generic handlers.' )
-					
-					chosen_model = st.selectbox( 'Model (edit)', [ image_model, None ], index=0, )
-					
-					chosen_model_arg = (image_model if chosen_model is None else chosen_model)
-					
-					if st.button( 'Edit Image' ):
+				
+				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				
+				# ---------------------------------------------------
+				#                   MESSAGES
+				# ---------------------------------------------------
+				prompt = st.chat_input( 'Enter image editing prompt...', key='image_edit_messgae' )
+				edit_c1, edit_c2 = st.columns( [ 0.5, 0.5 ] )
+				with edit_c1:
+					if st.button( 'Edit Image', key='edit_image' ):
 						with st.spinner( 'Editing image…' ):
-							analysis_result = None
 							try:
-								if chosen_method:
-									func = getattr( image, chosen_method, None )
-									if func:
-										try:
-											analysis_result = func( tmp_path )
-										except TypeError:
-											analysis_result = func(
-												tmp_path, model=chosen_model_arg
-											)
+								if not tmp_path:
+									st.warning( 'Upload an image before editing.' )
+								elif not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before editing an image.' )
 								else:
-									for fallback in ('analyze', 'describe_image',
-									                 'describe', 'caption',):
-										if hasattr( image, fallback ):
-											func = getattr( image, fallback )
-											try:
-												analysis_result = func( tmp_path )
-												break
-											except Exception:
-												continue
-								
-								if analysis_result is None:
-									st.warning( 'No editing output returned by the available methods.' )
-								else:
-									if isinstance( analysis_result, (dict, list) ):
-										st.json( analysis_result )
+									edit_result = image.edit( prompt=prompt, path=tmp_path,
+										model=image_model,
+										size=st.session_state.get( 'image_size' ) or '1024x1024',
+										quality=st.session_state.get( 'image_quality' ) or 'auto',
+										fmt=st.session_state.get( 'image_output' ) or '.jpeg',
+										compression=st.session_state.get( 'image_compression' ) )
+									
+									if edit_result is None:
+										st.warning( 'No edited image output was returned.' )
 									else:
-										st.markdown( '**Analysis result:**' )
-										st.write( analysis_result )
+										st.image( edit_result )
 									
 									try:
-										update_token_counters(
-											getattr( image, 'response', None )
-											or analysis_result
-										)
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
-							
 							except Exception as exc:
-								st.error( f"Analysis Failed: {exc}" )
+								st.error( f'Edit Failed: {exc}' )
+				
+				with edit_c2:
+					if st.button( 'Clear Messages', key='clear_edit_message' ):
+						reset_state( )
+						st.rerun( )
 		
 		else:
 			tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
 			with tab_gen:
-				prompt = st.chat_input( 'Prompt' )
-				if st.button( 'Generate Image' ):
-					with st.spinner( 'Generating…' ):
-						try:
-							kwargs: Dict[ str, Any ] = {
-									'prompt': prompt,
-									'model': image_model,
-							}
-							
-							# Provider-safe optional args
-							if size_arg is not None:
-								kwargs[ 'size' ] = st.session_state[ 'image_size' ]
-							if quality is not None:
-								kwargs[ 'quality' ] = st.session_state[ 'image_quality' ]
-							if fmt is not None:
-								kwargs[ 'fmt' ] = st.session_state[ 'image_response_format' ]
-							
-							img_url = image.generate( **kwargs )
-							st.image( img_url )
-							
+				prompt = st.chat_input( 'Enter image generation prompt...', key='image_generate_message' )
+				gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
+				with gen_c1:
+					if st.button( 'Generate Image' ):
+						with st.spinner( 'Generating…' ):
 							try:
-								update_token_counters( getattr( image, 'response', None ) )
-							except Exception:
-								pass
-						
-						except Exception as exc:
-							st.error( f'Image generation failed: {exc}' )
+								if not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before generating an image.' )
+								else:
+									image_result = image.generate(
+										prompt=prompt,
+										number=(st.session_state.get( 'image_number', 0 ) or 1),
+										model=image_model,
+										size=st.session_state.get( 'image_size' ) or '1024x1024',
+										quality=st.session_state.get( 'image_quality' ) or 'auto',
+										fmt=st.session_state.get( 'image_output' ) or '.jpeg',
+										compression=st.session_state.get( 'image_compression' ),
+										background=st.session_state.get( 'image_backcolor' ) or None )
+									
+									if image_result is None:
+										st.warning( 'No image output was returned.' )
+									else:
+										st.image( image_result )
+									
+									try:
+										update_token_counters( getattr( image, 'response', None ) )
+									except Exception:
+										pass
+							except Exception as exc:
+								st.error( f'Image generation failed: {exc}' )
+				
+				with gen_c2:
+					if st.button( 'Clear Messages', key='clear_image_generation' ):
+						reset_state( )
+						st.rerun( )
 			
 			with tab_analyze:
 				uploaded_img = st.file_uploader(
@@ -5283,145 +5218,102 @@ elif mode == "Images":
 					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
 					accept_multiple_files=False,
 					key='images_analyze_uploader', )
-				
+			
+				tmp_path = None
 				if uploaded_img:
 					tmp_path = save_temp( uploaded_img )
 					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-					
-					# Discover available analysis methods on Image object
-					available_methods = [ ]
-					for candidate in ( 'analyze', 'describe_image', 'describe', 'classify',
-								'detect_objects', 'caption', 'image_analysis', ):
-						if hasattr( image, candidate ):
-							available_methods.append( candidate )
-					
-					if available_methods:
-						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-					else:
-						chosen_method = None
-						st.info( 'No dedicated image analysis method found on Image object; '
-							'attempting generic handlers.' )
-					
-					chosen_model = st.selectbox( 'Model (analysis)', [ image_model, None ], index=0, )
-					
-					chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
+				
+				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				
+				# ---------------------------------------------------
+				#                   MESSAGES
+				# ---------------------------------------------------
+				prompt = st.chat_input( 'Enter image analysis prompt...', key='image_analysis_message' )
+				ana_c1, ana_c2 = st.columns( [ 0.5, 0.5 ] )
+				with ana_c1:
 					if st.button( 'Analyze Image' ):
 						with st.spinner( 'Analyzing image…' ):
-							analysis_result = None
 							try:
-								if chosen_method:
-									func = getattr( image, chosen_method, None )
-									if func:
-										try:
-											analysis_result = func( tmp_path )
-										except TypeError:
-											analysis_result = func(
-												tmp_path, model=chosen_model_arg
-											)
+								if not tmp_path:
+									st.warning( 'Upload an image before running analysis.' )
+								elif not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before analyzing an image.' )
 								else:
-									for fallback in ( 'analyze', 'describe_image', 'describe', 'caption' ):
-										if hasattr( image, fallback ):
-											func = getattr( image, fallback )
-											try:
-												analysis_result = func( tmp_path )
-												break
-											except Exception:
-												continue
-								
-								if analysis_result is None:
-									st.warning(
-										'No analysis output returned by the available methods.'
-									)
-								else:
-									if isinstance( analysis_result, (dict, list) ):
-										st.json( analysis_result )
+									analysis_result = image.analyze(
+										text=prompt,
+										path=tmp_path,
+										instruct=st.session_state.get( 'image_system_instructions', '' ),
+										model=image_model or 'gpt-4o-mini' )
+									
+									if analysis_result is None:
+										st.warning( 'No analysis output was returned.' )
 									else:
 										st.markdown( '**Analysis result:**' )
 										st.write( analysis_result )
 									
 									try:
-										update_token_counters(
-											getattr( image, 'response', None )
-											or analysis_result
-										)
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
-							
 							except Exception as exc:
 								st.error( f'Analysis Failed: {exc}' )
-			
+				
+				with ana_c2:
+					if st.button( 'Clear Messages', key='clear_analysis_message' ):
+						reset_state( )
+						st.rerun( )
+		
 			with tab_edit:
 				uploaded_img = st.file_uploader( 'Upload Image for Edit',
-					type=[ 'png', 'jpg', 'jpeg', 'webp' ],
-					accept_multiple_files=False,
-					key='images_edit_uploader',
-				)
+					type=[ 'png', 'jpg', 'jpeg', 'webp' ], accept_multiple_files=False,
+					key='images_edit_uploader', )
 				
+				tmp_path = None
 				if uploaded_img:
 					tmp_path = save_temp( uploaded_img )
-					
 					st.image( uploaded_img, caption='Uploaded image preview', use_column_width=True, )
-					
-					available_methods = [ ]
-					for candidate in ( 'edit', 'describe_image', 'describe', 'classify',
-								'detect_objects', 'caption', 'image_edit', ):
-						if hasattr( image, candidate ):
-							available_methods.append( candidate )
-					
-					if available_methods:
-						chosen_method = st.selectbox( 'Method', available_methods, index=0, )
-					else:
-						chosen_method = None
-						st.info( 'No dedicated image editing method found on Image object;'
-						         'attempting generic handlers.')
-					
-					chosen_model = st.selectbox( 'Model (edit)', [ image_model,  None ], index=0, )
-					
-					chosen_model_arg = ( image_model if chosen_model is None else chosen_model )
-					
-					if st.button( 'Edit Image' ):
+				
+				st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+				
+				# ---------------------------------------------------
+				#                   MESSAGES
+				# ---------------------------------------------------
+				prompt = st.chat_input( 'Enter image editing prompt...', key='image_edit_messgae' )
+				edit_c1, edit_c2 = st.columns( [ 0.5, 0.5 ] )
+				with edit_c1:
+					if st.button( 'Edit Image', key='edit_image' ):
 						with st.spinner( 'Editing image…' ):
-							analysis_result = None
 							try:
-								if chosen_method:
-									func = getattr( image, chosen_method, None )
-									if func:
-										try:
-											analysis_result = func( tmp_path )
-										except TypeError:
-											analysis_result = func(
-												tmp_path, model=chosen_model_arg
-											)
+								if not tmp_path:
+									st.warning( 'Upload an image before editing.' )
+								elif not isinstance( prompt, str ) or not prompt.strip( ):
+									st.warning( 'Enter a prompt before editing an image.' )
 								else:
-									for fallback in ( 'analyze', 'describe_image',
-												'describe', 'caption', ):
-										if hasattr( image, fallback ):
-											func = getattr( image, fallback )
-											try:
-												analysis_result = func( tmp_path )
-												break
-											except Exception:
-												continue
-								
-								if analysis_result is None:
-									st.warning( 'No editing output returned by the available methods.' )
-								else:
-									if isinstance( analysis_result, (dict, list) ):
-										st.json( analysis_result )
+									edit_result = image.edit( prompt=prompt, path=tmp_path,
+										model=image_model,
+										size=st.session_state.get( 'image_size' ) or '1024x1024',
+										quality=st.session_state.get( 'image_quality' ) or 'auto',
+										fmt=st.session_state.get( 'image_output' ) or '.jpeg',
+										compression=st.session_state.get( 'image_compression' ) )
+									
+									if edit_result is None:
+										st.warning( 'No edited image output was returned.' )
 									else:
-										st.markdown( '**Analysis result:**' )
-										st.write( analysis_result )
+										st.image( edit_result )
 									
 									try:
-										update_token_counters(
-											getattr( image, 'response', None )
-											or analysis_result
-										)
+										update_token_counters( getattr( image, 'response', None ) )
 									except Exception:
 										pass
-							
 							except Exception as exc:
-								st.error( f"Analysis Failed: {exc}" )
+								st.error( f'Edit Failed: {exc}' )
+				
+				with edit_c2:
+					if st.button( 'Clear Messages', key='clear_edit_message' ):
+						reset_state( )
+						st.rerun( )
+
 
 # ======================================================================================
 # AUDIO MODE
@@ -5857,12 +5749,13 @@ elif mode == 'Audio':
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			in_left, in_right = st.columns( [ 0.8, 0.2 ] )
+			
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
-				prompt_names = [ 'No Templates Found' ]
+				prompt_names = [ '' ]
 			
 			with in_left:
-				st.text_area( 'Enter Text', height=50, width='stretch',
+				st.text_area( label='Enter Text', height=50, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions' )
 			
 			def _on_template_change( ) -> None:
@@ -5873,14 +5766,33 @@ elif mode == 'Audio':
 						st.session_state[ 'audio_system_instructions' ] = text
 			
 			with in_right:
-				st.selectbox( 'Select Template', prompt_names,
-					key='instructions', on_change=_on_template_change, index=None )
+				st.selectbox( label='Use Template', options=prompt_names, index=None,
+					key='instructions', on_change=_on_template_change )
 			
 			def _on_clear( ) -> None:
 				st.session_state[ 'audio_system_instructions' ] = ''
 				st.session_state[ 'instructions' ] = ''
 			
-			st.button( 'Clear Instructions', width='stretch', on_click=_on_clear )
+			def _on_convert_system_instructions( ) -> None:
+				text = st.session_state.get( 'audio_system_instructions', '' )
+				if not isinstance( text, str ) or not text.strip( ):
+					return
+				
+				src = text.strip( )
+				if cfg.XML_BLOCK_PATTERN.search( src ):
+					converted = convert_xml( src )
+				else:
+					converted = convert_markdown( src )
+				
+				st.session_state[ 'audio_system_instructions' ] = converted
+			
+			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+			with btn_c1:
+				st.button( label='Clear Instructions', width='stretch', on_click=_on_clear )
+			
+			with btn_c2:
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=_on_convert_system_instructions )
 		
 		# ------------------------------------------------------------------
 		# Message
@@ -5999,116 +5911,107 @@ elif mode == 'Audio':
 			
 			# -----------UPLOAD AUDIO----------------------
 			with left_audio:
-				if audio_task in ('Transcribe', 'Translate'):
-					uploaded = st.file_uploader( 'Input File', type=[ 'wav', 'mp3', 'm4a', 'flac' ] )
-					if uploaded is not None:
-						if st.button( f'Run {audio_task}', key='audio_uploaded_run', width='stretch' ):
-							tmp_path = save_temp( uploaded )
-							with st.spinner( f'{audio_task}ing…' ):
-								result = _run_audio_task( tmp_path )
-								if result is not None:
-									st.session_state[ 'audio_output' ] = result
-									st.session_state[ 'audio_output_bytes' ] = None
-									st.text_area( audio_task, value=result, height=300 )
-									try:
-										update_counters(
-											getattr( transcriber, 'response', None ) if audio_task == 'Transcribe'
-											else getattr( translator, 'response', None ) )
-									except Exception:
-										pass
+				uploaded = st.file_uploader( 'Upload File',
+					type=[ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm' ] )
 				
-				elif audio_task == 'Text-to-Speech':
-					tts_text = st.text_area( 'Enter Text to Synthesize',
-						key='audio_tts_prompt', height=300 )
+				if uploaded:
+					tmp_path = save_temp( uploaded )
 					
-					if st.button( 'Generate Audio', key='audio_generate_speech', width='stretch' ):
+					if audio_task == 'Transcribe' and transcriber:
+						with st.spinner( 'Transcribing…' ):
+							try:
+								audio_language = st.session_state.get( 'audio_language' ) or None
+								audio_model = st.session_state.get( 'audio_model' ) or 'gpt-4o-transcribe'
+								audio_prompt = st.session_state.get( 'audio_system_instructions' ) or None
+								audio_format = st.session_state.get( 'audio_response_format' ) or None
+								audio_temperature = st.session_state.get( 'audio_temperature', 0.0 )
+								text = transcriber.transcribe( tmp_path, model=audio_model,
+									language=audio_language, prompt=audio_prompt,
+									format=audio_format, temperature=audio_temperature )
+								st.text_area( 'Transcript', value=text or '', height=300 )
+								try:
+									update_token_counters( getattr( transcriber, 'response', None ) )
+								except Exception:
+									pass
+							except Exception as exc:
+								st.error( f'Transcription failed: {exc}' )
+					
+					elif audio_task == 'Translate' and translator:
+						with st.spinner( 'Translating…' ):
+							try:
+								audio_model = st.session_state.get( 'audio_model' ) or 'whisper-1'
+								audio_prompt = st.session_state.get( 'audio_system_instructions' ) or None
+								audio_format = st.session_state.get( 'audio_response_format' ) or None
+								audio_temperature = st.session_state.get( 'audio_temperature', 0.0 )
+								text = translator.translate( tmp_path, model=audio_model, prompt=audio_prompt,
+									format=audio_format, temperature=audio_temperature,
+									language=st.session_state.get( 'audio_language' ) or None )
+								st.text_area( 'Translation', value=text or '', height=300 )
+								try:
+									update_token_counters( getattr( translator, 'response', None ) )
+								except Exception:
+									pass
+							except Exception as exc:
+								st.error( f'Translation failed: {exc}' )
+					
+					elif audio_task == 'Text-to-Speech' and tts:
+						st.info( 'Use the text box below to generate speech.' )
+				
+				if audio_task == 'Text-to-Speech' and tts:
+					text = st.text_area( 'Enter Text to Synthesize', key='audio_input' )
+					if text and st.button( 'Generate Audio', key='audio_generate_tts' ):
 						with st.spinner( 'Synthesizing speech…' ):
 							try:
-								audio_bytes = tts.create_speech(
-									tts_text,
-									model=audio_model,
-									format=audio_format,
-									voice=audio_voice,
-									temperature=audio_temperature,
-									top_p=audio_top_percent,
-									frequency=audio_freq,
-									presense=audio_presence,
-									max_tokens=st.session_state.get( 'audio_max_tokens' ),
-									instruct=audio_system_instructions )
-								
-								if audio_bytes is not None:
-									st.session_state[ 'audio_output_bytes' ] = audio_bytes
-									st.session_state[ 'audio_output' ] = ''
-									st.audio( audio_bytes, format='audio/wav', loop=audio_loop,
-										autoplay=audio_autoplay )
-									try:
-										update_counters( getattr( tts, 'response', None ) )
-									except Exception:
-										pass
+								audio_voice = st.session_state.get( 'audio_voice' ) or 'alloy'
+								audio_model = st.session_state.get( 'audio_model' ) or 'gpt-4o-mini-tts'
+								audio_format = st.session_state.get( 'audio_response_format' ) or \
+								               st.session_state.get( 'audio_mime_type' ) or 'mp3'
+								audio_instruction = st.session_state.get( 'audio_system_instructions' ) or None
+								audio_bytes = tts.create_speech( text, model=audio_model, voice=audio_voice,
+									format=audio_format, speed=1.0, instruct=audio_instruction )
+								if audio_bytes:
+									st.audio( audio_bytes, format=f'audio/{audio_format}' )
+								else:
+									st.warning( 'No audio output was returned.' )
+								try:
+									update_token_counters( getattr( tts, 'response', None ) )
+								except Exception:
+									pass
 							except Exception as exc:
 								st.error( f'Text-to-speech failed: {exc}' )
 			
 			# -----------RECORD AUDIO----------------------
 			with center_audio:
-				if isinstance( audio_rate, int ) and audio_rate > 0:
-					recording = st.audio_input( label='Record Audio', sample_rate=audio_rate )
-				else:
-					recording = st.audio_input( label='Record Audio' )
-				
+				recording = st.audio_input( label='Record Audio', sample_rate=audio_rate )
 				if recording is not None:
-					record_path = save_temp( recording )
-					st.session_state[ 'audio_file' ] = record_path
-					st.audio( recording.getvalue( ), format='audio/wav',
-						start_time=audio_start, end_time=audio_end,
-						loop=audio_loop, autoplay=False )
-					
-					if audio_task in ('Transcribe', 'Translate'):
-						if st.button( f'Run Recorded {audio_task}', key='audio_recorded_run',
-								width='stretch' ):
-							with st.spinner( f'{audio_task}ing recording…' ):
-								result = _run_audio_task( record_path )
-								if result is not None:
-									st.session_state[ 'audio_output' ] = result
-									st.session_state[ 'audio_output_bytes' ] = None
-									st.text_area( f'Recorded {audio_task}', value=result, height=220 )
-									try:
-										update_counters(
-											getattr( transcriber, 'response', None ) if audio_task == 'Transcribe'
-											else getattr( translator, 'response', None ) )
-									except Exception:
-										pass
+					st.audio( recording, format='audio/wav' )
 			
 			# -----------PLAY AUDIO----------------------
 			with right_audio:
-				st.caption( 'Audio Output' )
-				
-				if st.session_state.get( 'audio_output_bytes' ) is not None:
-					st.audio( st.session_state[ 'audio_output_bytes' ],
-						format='audio/wav', start_time=audio_start, end_time=audio_end,
-						loop=audio_loop, autoplay=audio_autoplay )
-				elif isinstance( st.session_state.get( 'audio_output' ), str ) and \
-						st.session_state[ 'audio_output' ].strip( ):
-					label = 'Transcript' if audio_task == 'Transcribe' else 'Translation'
-					if audio_task in ('Transcribe', 'Translate'):
-						st.text_area( label, value=st.session_state[ 'audio_output' ], height=300 )
+				data = cfg.AUDIO_TEST_FILE
+				st.caption( 'Local Audio File' )
+				if data is not None:
+					st.audio( data, start_time=audio_start, end_time=audio_end,
+						format='audio/wav', width='stretch', loop=audio_loop,
+						autoplay=audio_autoplay )
 				else:
-					data = cfg.AUDIO_TEST_FILE
-					if data is not None:
-						if isinstance( audio_rate, int ) and audio_rate > 0:
-							st.audio( data, sample_rate=audio_rate, start_time=audio_start,
-								end_time=audio_end, format='wav', width='stretch',
-								loop=audio_loop, autoplay=audio_autoplay )
-						else:
-							st.audio( data, start_time=audio_start, end_time=audio_end,
-								format='wav', width='stretch', loop=audio_loop,
-								autoplay=audio_autoplay )
+					st.info( 'No local audio file is configured.' )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
-			if audio_task == 'Text-to-Speech':
-				st.info( 'Text-to-speech uses the text box above and returns generated audio output.' )
-			elif audio_task in ('Transcribe', 'Translate'):
-				st.info( 'Use either an uploaded file or a recording to run the selected audio task.' )
+			if st.session_state.get( 'audio_messages' ):
+				for msg in st.session_state.audio_messages:
+					with st.chat_message( msg[ 'role' ], avatar='' ):
+						st.markdown( msg[ 'content' ] )
+			
+			prompt = st.chat_input( 'Enter audio generation prompt …', key='audio_messages_input' )
+			if prompt is not None and isinstance( prompt, str ) and prompt.strip( ):
+				st.session_state.audio_messages.append( { 'role': 'user', 'content': prompt } )
+				st.rerun( )
+			
+			if st.button( 'Clear Messages', key='audio_clear_messages' ):
+				st.session_state[ 'audio_messages' ] = [ ]
+				st.rerun( )
 	
 # ======================================================================================
 # EMBEDDINGS MODE
@@ -8333,7 +8236,7 @@ if mode == 'Text':
 	temperature = st.session_state.get( 'text_temperature' )
 	top_p = st.session_state.get( 'text_top_percent' )
 	freq = st.session_state.get( 'text_frequency_penalty' )
-	presence = st.session_state.get( 'text_presense_penalty' )
+	presence = st.session_state.get( 'text_presence_penalty' )
 	number = st.session_state.get( 'text_number' )
 	stream = st.session_state.get( 'text_stream' )
 	parallel_tools = st.session_state.get( 'text_parallel_tools' )

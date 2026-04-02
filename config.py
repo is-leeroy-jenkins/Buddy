@@ -412,3 +412,7 @@ standard is the only option for dall-e-2.
 IMAGE_DETAIL = r'''The detail parameter tells the model what level of detail to use when processing
 		and understanding the image (low, high, or auto to let the model decide). If you skip the
 		parameter, the model will use auto.'''
+
+IMAGE_COMPRESSION = r'''The detail parameter tells the model what level of detail to use when processing
+		and understanding the image (low, high, or auto to let the model decide). If you skip the
+		parameter, the model will use auto.'''
