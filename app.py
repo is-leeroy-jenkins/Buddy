@@ -66,7 +66,6 @@ import tempfile
 import re
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
-from llama_cpp import Llama
 from sentence_transformers import SentenceTransformer
 from gpt import (
 	Chat,
@@ -2783,7 +2782,6 @@ def summarize_active_document( ) -> str:
 		summary_prompt = f"{doc_instructions}\n\n{summary_prompt}"
 	
 	return route_document_query( summary_prompt.strip( ) )
-
 
 # ==============================================================================
 # Page Setup
