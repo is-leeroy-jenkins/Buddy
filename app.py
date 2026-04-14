@@ -873,12 +873,25 @@ def load_llm( ctx: int, threads: int ) -> Llama:
 	return Llama( model_path=str( cfg.LLM_PATH ), n_ctx=ctx, n_threads=threads, n_batch=512,
 		verbose=False )
 
-@st.cache_resource
-def load_embedder( ) -> SentenceTransformer:
-	return SentenceTransformer( 'all-MiniLM-L6-v2' )
+def is_local_llm_enabled( ) -> bool:
+	return bool( getattr( cfg, 'ENABLE_LOCAL_LLM', False ) )
 
-llm = load_llm( cfg.DEFAULT_CTX, cfg.CORES )
-embedder = load_embedder( )
+@st.cache_resource
+def load_llm( ctx: int, threads: int ):
+	from llama_cpp import Llama
+	
+	return Llama(
+		model_path=str( cfg.LLM_PATH ),
+		n_ctx=ctx,
+		n_threads=threads,
+		n_batch=512,
+		verbose=False
+	)
+
+def get_llm( ):
+	if not is_local_llm_enabled( ):
+		return None
+	return load_llm( cfg.DEFAULT_CTX, cfg.CORES )
 
 def resolve_gemini_api_key( ) -> Optional[ str ]:
 	"""
@@ -1734,9 +1747,14 @@ def run_llm_turn( user_input: str, temperature: float, top_p: float, repeat_pena
 	if user_input is None:
 		return ''
 	
+	local_llm = get_llm( )
+
+	if local_llm is None:
+		return ''
+	
 	prompt = build_prompt( user_input )
 	if not stream:
-		resp = llm(
+		resp = local_llm(
 			prompt,
 			stream=False,
 			max_tokens=max_tokens,
