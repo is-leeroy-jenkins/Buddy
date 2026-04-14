@@ -12,6 +12,7 @@ with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets
 on vectorized financial management and policy datasets hosted on Huggingface:
 
 
+
 ## Core Capabilities
 
 
@@ -53,6 +54,8 @@ application is structured to support:
 * Prompt versioning via OpenAI Prompt IDs
 
 ### Fine-Tuned Models on Hugging Face
+
+[![HuggingFace](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-sm.svg)](https://huggingface.co/leeroy-jankins/buddy)
 
 In addition to base GPT-5.2 capabilities, Budget Buddy is designed to leverage **fine-tuned large
 language models hosted on Hugging Face**, trained on:
