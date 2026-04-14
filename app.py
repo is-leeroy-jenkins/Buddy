@@ -962,7 +962,6 @@ def load_embedder( ) -> SentenceTransformer:
 	"""
 	return SentenceTransformer( 'all-MiniLM-L6-v2' )
 
-embedder = load_embedder( )
 def resolve_gemini_api_key( ) -> Optional[ str ]:
 	"""
 	
@@ -2788,6 +2787,7 @@ def summarize_active_document( ) -> str:
 # ==============================================================================
 
 initialize_database( )
+embedder = load_embedder( )
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
 st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
 	initial_sidebar_state='collapsed' )
@@ -9162,7 +9162,7 @@ elif mode == 'Data Management':
 					new_col = st.text_input( 'New Column Name' )
 					
 					if st.button( 'Rename Column' ):
-						dm_rename_column( table, old_col, new_col )
+						remame_column( table, old_col, new_col )
 						st.success( 'Column renamed.' )
 						st.rerun( )
 				
@@ -9170,7 +9170,7 @@ elif mode == 'Data Management':
 					new_name = st.text_input( 'New Table Name' )
 					
 					if st.button( 'Rename Table' ):
-						dm_rename_table( table, new_name )
+						rename_table( table, new_name )
 						st.success( 'Table renamed.' )
 						st.rerun( )
 				
