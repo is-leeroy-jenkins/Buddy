@@ -2464,6 +2464,202 @@ def drop_column( table: str, column: str ):
 		
 		conn.commit( )
 
+def rename_table( old_name: str, new_name: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Rename an existing SQLite table. Attempts native ALTER TABLE rename first; if it fails,
+		falls back to a schema-safe rebuild using the original CREATE TABLE statement and
+		preserves indexes.
+
+		Parameters:
+		-----------
+		old_name : str
+			Existing table name.
+
+		new_name : str
+			New table name.
+
+		Returns:
+		--------
+		None
+	"""
+	if not old_name or not new_name:
+		return
+	
+	with create_connection( ) as conn:
+		try:
+			conn.execute( f'ALTER TABLE "{old_name}" RENAME TO "{new_name}";' )
+			conn.commit( )
+			return
+		except Exception:
+			pass
+		
+		row = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='table' AND name =?
+			""",
+			(old_name,)
+		).fetchone( )
+		
+		if not row or not row[ 0 ]:
+			raise ValueError( "Table definition not found." )
+		
+		create_sql = row[ 0 ]
+		
+		indexes = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+			""",
+			(old_name,)
+		).fetchall( )
+		
+		open_paren = create_sql.find( "(" )
+		if open_paren == -1:
+			raise ValueError( "Malformed CREATE TABLE statement." )
+		
+		temp_name = f"{new_name}__rebuild_temp"
+		
+		conn.execute( "BEGIN" )
+		conn.execute( f'CREATE TABLE "{temp_name}" {create_sql[ open_paren: ]}' )
+		
+		cols = [ r[ 1 ] for r in conn.execute( f'PRAGMA table_info("{old_name}");' ).fetchall( ) ]
+		col_list = ", ".join( [ f'"{c}"' for c in cols ] )
+		
+		conn.execute(
+			f'INSERT INTO "{temp_name}" ({col_list}) SELECT {col_list} FROM "{old_name}";'
+		)
+		
+		conn.execute( f'DROP TABLE "{old_name}";' )
+		conn.execute( f'ALTER TABLE "{temp_name}" RENAME TO "{new_name}";' )
+		
+		for idx in indexes:
+			idx_sql = idx[ 0 ]
+			if idx_sql:
+				idx_sql = idx_sql.replace( f'ON "{old_name}"', f'ON "{new_name}"' )
+				conn.execute( idx_sql )
+		
+		conn.commit( )
+
+def rename_column( table_name: str, old_name: str, new_name: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Rename a column within an existing SQLite table. Attempts native ALTER TABLE rename
+		first; if it fails, falls back to a schema-safe rebuild preserving column order, data,
+		and indexes.
+
+		Parameters:
+		-----------
+		table_name : str
+			Table containing the column.
+
+		old_name : str
+			Existing column name.
+
+		new_name : str
+			New column name.
+
+		Returns:
+		--------
+		None
+	"""
+	if not table_name or not old_name or not new_name:
+		return
+	
+	with create_connection( ) as conn:
+		try:
+			conn.execute(
+				f'ALTER TABLE "{table_name}" RENAME COLUMN "{old_name}" TO "{new_name}";'
+			)
+			conn.commit( )
+			return
+		except Exception:
+			pass
+		
+		row = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='table' AND name =?
+			""",
+			(table_name,)
+		).fetchone( )
+		
+		if not row or not row[ 0 ]:
+			raise ValueError( "Table definition not found." )
+		
+		create_sql = row[ 0 ]
+		
+		indexes = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+			""",
+			(table_name,)
+		).fetchall( )
+		
+		schema = conn.execute( f'PRAGMA table_info("{table_name}");' ).fetchall( )
+		cols = [ r[ 1 ] for r in schema ]
+		if old_name not in cols:
+			raise ValueError( "Column not found." )
+		
+		mapped_cols = [ (new_name if c == old_name else c) for c in cols ]
+		
+		temp_table = f"{table_name}__rebuild_temp"
+		
+		col_defs: List[ str ] = [ ]
+		pk_cols = [ r for r in schema if int( r[ 5 ] or 0 ) > 0 ]
+		single_pk = len( pk_cols ) == 1
+		
+		for row in schema:
+			col_name = row[ 1 ]
+			col_type = row[ 2 ] or ''
+			not_null = int( row[ 3 ] or 0 )
+			default_value = row[ 4 ]
+			pk = int( row[ 5 ] or 0 )
+			
+			out_name = new_name if col_name == old_name else col_name
+			col_def = f'"{out_name}" {col_type}'.strip( )
+			
+			if not_null:
+				col_def += ' NOT NULL'
+			
+			if default_value is not None:
+				col_def += f' DEFAULT {default_value}'
+			
+			if single_pk and pk == 1:
+				col_def += ' PRIMARY KEY'
+			
+			col_defs.append( col_def )
+		
+		new_create_sql = f'CREATE TABLE "{temp_table}" ({", ".join( col_defs )});'
+		
+		old_select = ", ".join( [ f'"{c}"' for c in cols ] )
+		new_insert = ", ".join( [ f'"{c}"' for c in mapped_cols ] )
+		
+		conn.execute( "BEGIN" )
+		conn.execute( new_create_sql )
+		conn.execute(
+			f'INSERT INTO "{temp_table}" ({new_insert}) SELECT {old_select} FROM "{table_name}";'
+		)
+		
+		conn.execute( f'DROP TABLE "{table_name}";' )
+		conn.execute( f'ALTER TABLE "{temp_table}" RENAME TO "{table_name}";' )
+		
+		for idx in indexes:
+			idx_sql = idx[ 0 ]
+			if idx_sql:
+				idx_sql = idx_sql.replace( f'"{old_name}"', f'"{new_name}"' )
+				conn.execute( idx_sql )
+		
+		conn.commit( )
+		
 # ======================================================================================
 #  PROVIDER UTILITIES
 # ======================================================================================
@@ -2802,7 +2998,6 @@ init_state( )
 # ==============================================================================
 with st.sidebar:
 	provider = st.session_state.get( 'provider'  )
-
 	style_subheaders( )
 	st.subheader( '' )
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
