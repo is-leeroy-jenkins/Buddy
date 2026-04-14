@@ -50,4 +50,4 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-/models/llm/buddy-3-270m-it-Q4_K_M.gguf
+*buddy-3-270m-it-Q4_K_M.gguf
