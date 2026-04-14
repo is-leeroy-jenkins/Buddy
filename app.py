@@ -868,16 +868,49 @@ if 'token_usage' not in st.session_state:
 # ==============================================================================
 # LLM UTILITIES
 # ==============================================================================
-@st.cache_resource
-def load_llm( ctx: int, threads: int ) -> Llama:
-	return Llama( model_path=str( cfg.LLM_PATH ), n_ctx=ctx, n_threads=threads, n_batch=512,
-		verbose=False )
-
-def is_local_llm_enabled( ) -> bool:
-	return bool( getattr( cfg, 'ENABLE_LOCAL_LLM', False ) )
+def local_llm_enabled( ) -> bool:
+	"""
+	
+		Purpose:
+		--------
+		Determine whether the optional local llama.cpp fallback is enabled.
+	
+		Parameters:
+		-----------
+		None
+	
+		Returns:
+		--------
+		bool
+			True when local LLM use is enabled in configuration.
+			
+	"""
+	try:
+		return bool( getattr( cfg, 'ENABLE_LOCAL_LLM', False ) )
+	except Exception:
+		return False
 
 @st.cache_resource
 def load_llm( ctx: int, threads: int ):
+	"""
+	
+		Purpose:
+		--------
+		Lazily load the optional local llama.cpp model.
+	
+		Parameters:
+		-----------
+		ctx : int
+			Context window size.
+		threads : int
+			Number of CPU threads used by llama.cpp.
+	
+		Returns:
+		--------
+		Any
+			Instantiated llama.cpp model object.
+			
+	"""
 	from llama_cpp import Llama
 	
 	return Llama(
@@ -889,10 +922,48 @@ def load_llm( ctx: int, threads: int ):
 	)
 
 def get_llm( ):
-	if not is_local_llm_enabled( ):
+	"""
+	
+		Purpose:
+		--------
+		Return the optional local llama.cpp model only when enabled.
+	
+		Parameters:
+		-----------
+		None
+	
+		Returns:
+		--------
+		Any | None
+			Loaded llama.cpp model instance or None when disabled.
+			
+	"""
+	if not local_llm_enabled( ):
 		return None
+	
 	return load_llm( cfg.DEFAULT_CTX, cfg.CORES )
 
+@st.cache_resource
+def load_embedder( ) -> SentenceTransformer:
+	"""
+	
+		Purpose:
+		--------
+		Load the sentence-transformers embedder used by the local prompt builder.
+	
+		Parameters:
+		-----------
+		None
+	
+		Returns:
+		--------
+		SentenceTransformer
+			Loaded embedding model.
+			
+	"""
+	return SentenceTransformer( 'all-MiniLM-L6-v2' )
+
+embedder = load_embedder( )
 def resolve_gemini_api_key( ) -> Optional[ str ]:
 	"""
 	
@@ -1718,13 +1789,13 @@ def run_llm_turn( user_input: str, temperature: float, top_p: float, repeat_pena
 	
 		Purpose:
 		--------
-		Run a single LLM turn using the application's shared prompt builder and either stream or
+		Run a single local LLM turn using the shared prompt builder and either stream or
 		return the full response text.
-
+	
 		Parameters:
 		-----------
 		user_input : str
-			The user turn (already constructed, including any document/RAG context if applicable).
+			The user turn to send to the local fallback model.
 		temperature : float
 			Sampling temperature.
 		top_p : float
@@ -1736,8 +1807,8 @@ def run_llm_turn( user_input: str, temperature: float, top_p: float, repeat_pena
 		stream : bool
 			When True, stream tokens to the provided Streamlit placeholder.
 		output : Any | None
-			A Streamlit placeholder (e.g., st.empty()) used for streaming output.
-
+			A Streamlit placeholder used for streaming output.
+	
 		Returns:
 		--------
 		str
@@ -1747,14 +1818,14 @@ def run_llm_turn( user_input: str, temperature: float, top_p: float, repeat_pena
 	if user_input is None:
 		return ''
 	
-	local_llm = get_llm( )
-
-	if local_llm is None:
+	llm = get_llm( )
+	if llm is None:
 		return ''
 	
 	prompt = build_prompt( user_input )
+	
 	if not stream:
-		resp = local_llm(
+		resp = llm(
 			prompt,
 			stream=False,
 			max_tokens=max_tokens,
@@ -1763,6 +1834,7 @@ def run_llm_turn( user_input: str, temperature: float, top_p: float, repeat_pena
 			repeat_penalty=repeat_penalty,
 			stop=[ '</s>' ]
 		)
+		
 		text = (resp.get( 'choices', [ { 'text': '' } ] )[ 0 ].get( 'text', '' ) or '')
 		return text.strip( )
 	

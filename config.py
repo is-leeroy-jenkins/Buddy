@@ -72,6 +72,7 @@ PROMPT_VERSION = '16'
 LOCAL_AUDIO_PATH = r'stores/audio/conditions.mp3'
 DEFAULT_CTX = 4096
 CORES = multiprocessing.cpu_count( )
+ENABLE_LOCAL_LLM = False
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
