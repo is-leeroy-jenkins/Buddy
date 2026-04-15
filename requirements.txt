@@ -9,7 +9,6 @@ pymupdf
 httpx>=0.28.1
 reportlab>=4.0.8
 
-llama-cpp-python
 sentence-transformers==2.7.0
 transformers==4.41.2
 huggingface_hub==0.23.5
@@ -32,6 +31,3 @@ filelock==3.15.4
 fsspec==2024.6.1
 packaging>=25,<26
 pyyaml==6.0.1
-streamlit
-streamlit-extras
-streamlit-pdf
