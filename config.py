@@ -61,7 +61,6 @@ DB_PATH = 'stores/sqlite/Data.db'
 AUDIO_TEST_FILE = r'stores/audio/conditions.mp3'
 ANALYST = '❓'
 BUDDY = '🧠'
-LLM_PATH = 'llm/models/buddy-3-270m-it-Q4_K_M.gguf'
 MODELS = [ 'gpt-5-nano-2025-08-07', 'gpt-4.1-nano-2025-04-14', 'gpt-4o-mini', ]
 GPT_AVATAR = r'resources/images/gpt_avatar.png'
 GROK_AVATAR = r'resources/images/grok_avatar.png'
@@ -72,7 +71,6 @@ PROMPT_VERSION = '16'
 LOCAL_AUDIO_PATH = r'stores/audio/conditions.mp3'
 DEFAULT_CTX = 4096
 CORES = multiprocessing.cpu_count( )
-ENABLE_LOCAL_LLM = False
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
