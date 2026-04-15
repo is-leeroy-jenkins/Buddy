@@ -14,6 +14,7 @@ transformers==4.41.2
 huggingface_hub==0.23.5
 safetensors==0.4.3
 tiktoken
+plotly-express
 
 xai-sdk
 pillow>=10.0.0
