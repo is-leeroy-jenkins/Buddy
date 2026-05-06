@@ -50,9 +50,9 @@ import multiprocessing
 BASE_DIR = os.path.dirname( os.path.abspath( __file__ ) )
 FAVICON = r'resources/favicon.ico'
 CRS = r'https://www.congress.gov/crs-appropriations-status-table'
-BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:20px 0 30px 0;'></div>"
 APP_TITLE = 'Buddy'
-APP_SUBTITLE = 'Budget Execution AI'
+APP_SUBTITLE = 'A mulit-modal, Budget Execution AI'
 OPEN_TAG = re.compile( r'<([A-Za-z0-9_\-:.]+)>' )
 CLOSE_TAG = re.compile( r'</([A-Za-z0-9_\-:.]+)>' )
 MARKDOWN_HEADING_PATTERN = re.compile( r'^##\s+(?P<title>.+?)\s*$' )
@@ -71,6 +71,8 @@ PROMPT_VERSION = '16'
 LOCAL_AUDIO_PATH = r'stores/audio/conditions.mp3'
 DEFAULT_CTX = 4096
 CORES = multiprocessing.cpu_count( )
+XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
+XAI_BASE_URL = 'https://api.x.ai/v1'
 
 # -------------- API KEYS ---------------------
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
