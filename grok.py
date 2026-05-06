@@ -5808,8 +5808,8 @@ class Files( Grok ):
 		
 		"""
 		super( ).__init__( )
-		self.api_key = os.getenv( 'XAI_API_KEY' ) or cfg.XAI_API_KEY
-		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1' )
+		self.api_key = cfg.XAI_API_KEY
+		self.base_url = cfg.XAI_BASE_URL
 		self.client = None
 		self.model = None
 		self.instructions = None
