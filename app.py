@@ -13385,8 +13385,7 @@ elif mode == 'Vector Stores':
 	
 	st.subheader(
 		'🧠 Vector Stores',
-		help=getattr(
-			cfg,
+		help=getattr( cfg,
 			'VECTORSTORES_API',
 			'Manage provider retrieval stores, xAI collections, Gemini File Search Stores, '
 			'and Gemini Cloud Buckets through Buddy’s Vector Stores alias.'
