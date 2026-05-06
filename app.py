@@ -8536,18 +8536,15 @@ def run_remote_docqna_query( query: str ) -> str:
 		if source == 'OpenAI Vector Store ID' and len( vector_store_ids ) == 0:
 			return 'Enter an OpenAI vector store ID before asking a vector-store question.'
 		
-		result = chat.generate_text(
-			prompt=query,
+		result = chat.generate_text( prompt=query,
 			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
 			presence=st.session_state.get( 'docqna_presence_penalty' ),
 			max_tokens=st.session_state.get( 'docqna_max_tokens' ),
-			store=st.session_state.get( 'docqna_store' ),
-			stream=False,
-			instruct=st.session_state.get( 'docqna_system_instructions' ),
-			tools=tools,
+			store=st.session_state.get( 'docqna_store' ), stream=False,
+			instruct=st.session_state.get( 'docqna_system_instructions' ), tools=tools,
 			include=[ 'file_search_call.results' ] if len( tools ) > 0 else [ ],
 			vector_store_ids=vector_store_ids )
 		
@@ -11332,8 +11329,14 @@ elif mode == 'Text':
 							st.session_state.get( 'text_stops_input', '' ), delimiter=',' )
 						
 						if provider_name == 'GPT':
-							vector_store_ids = parse_text_vector_store_ids(
+							manual_vector_store_ids = parse_text_vector_store_ids(
 								st.session_state.get( 'text_vector_store_ids', '' ) )
+
+							selected_vector_store_ids = get_active_vector_store_ids( 'GPT' )
+							
+							vector_store_ids = merge_unique_strings(
+								primary=manual_vector_store_ids,
+								secondary=selected_vector_store_ids )
 							
 							text_tools = build_text_tools(
 								selected_tools=st.session_state.get( 'text_tools', [ ] ),
@@ -11417,9 +11420,15 @@ elif mode == 'Text':
 							st.session_state[ 'text_urls' ] = split_text_values(
 								st.session_state.get( 'text_urls_input', '' ), delimiter=';' )
 							
-							st.session_state[ 'text_file_search_store_names' ] = split_text_values(
+							manual_file_search_store_names = split_text_values(
 								st.session_state.get( 'text_file_search_store_names_input', '' ),
 								delimiter=',' )
+
+							selected_file_search_store_names = get_active_gemini_file_search_store_names( 'Gemini' )
+							
+							st.session_state[ 'text_file_search_store_names' ] = merge_unique_strings(
+								primary=manual_file_search_store_names,
+								secondary=selected_file_search_store_names )
 							
 							response_text = text.generate_text( prompt=prompt,
 								model=st.session_state.get( 'text_model' ),
