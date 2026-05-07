@@ -3789,18 +3789,18 @@ def set_storage_result( result: Any, operation: str,
 	return normalized
 
 def sync_storage_selection( selected_option: Optional[ str ], provider_name: Optional[ str ] = None,
-		backend: Optional[ str ] = None ) -> str:
+		backend: Optional[ str ]=None ) -> str:
 	"""
 	
 		Purpose:
 		--------
 		Synchronize a selected storage option into the correct provider-specific session
-		keys.
+		keys without modifying the widget-owned storage_selected_option key.
 		
 		Parameters:
 		-----------
 		selected_option: Optional[str]
-			Selected resource label.
+			Selected resource label from the storage selector widget.
 		
 		provider_name: Optional[str]
 			Optional explicit provider name.
@@ -3820,7 +3820,6 @@ def sync_storage_selection( selected_option: Optional[ str ], provider_name: Opt
 		return ''
 	
 	provider = get_provider_name( provider_name )
-	st.session_state[ 'storage_selected_option' ] = selected_option or ''
 	
 	if provider == 'Gemini':
 		selected_backend = backend if backend is not None else get_gemini_vector_backend( )
@@ -7751,8 +7750,11 @@ def get_docqna_source_options( ) -> List[ str ]:
 	if provider_name == 'GPT':
 		options.extend( [ 'OpenAI File ID', 'OpenAI Vector Store ID' ] )
 	
-	if provider_name == 'Gemini':
+	elif provider_name == 'Gemini':
 		options.extend( [ 'Gemini File Search Store' ] )
+	
+	elif provider_name == 'Grok':
+		options.extend( [ 'xAI Collection' ] )
 	
 	return options
 
@@ -8497,8 +8499,8 @@ def run_remote_docqna_query( query: str ) -> str:
 	
 		Purpose:
 		--------
-		Run a provider-native remote Document Q&A query using OpenAI vector stores or
-		Gemini file-search-store resource names.
+		Run a provider-native remote Document Q&A query using the selected Vector Stores
+		resource from Buddy's Vector Stores mode, with manual source fields as fallback.
 		
 		Parameters:
 		-----------
@@ -8516,13 +8518,20 @@ def run_remote_docqna_query( query: str ) -> str:
 	source = st.session_state.get( 'docqna_source', 'Local Upload' )
 	
 	if provider_name == 'GPT':
-		vector_store_ids: List[ str ] = [ ]
+		selected_vector_store_ids = get_active_vector_store_ids( 'GPT' )
+		manual_vector_store_ids = [ ]
 		
 		if source == 'OpenAI Vector Store ID':
-			value = st.session_state.get( 'docqna_vector_store_id', '' )
-			vector_store_ids = split_text_values( value, delimiter=',' )
+			manual_vector_store_ids = split_text_values(
+				st.session_state.get( 'docqna_vector_store_id', '' ),
+				delimiter=',' )
+		
+		vector_store_ids = merge_unique_strings(
+			primary=manual_vector_store_ids,
+			secondary=selected_vector_store_ids )
 		
 		tools: List[ Dict[ str, Any ] ] = [ ]
+		
 		if len( vector_store_ids ) > 0:
 			tools.append(
 				{
@@ -8534,17 +8543,20 @@ def run_remote_docqna_query( query: str ) -> str:
 			return 'Enter an OpenAI file ID before asking a file-based question.'
 		
 		if source == 'OpenAI Vector Store ID' and len( vector_store_ids ) == 0:
-			return 'Enter an OpenAI vector store ID before asking a vector-store question.'
+			return 'Enter or select an OpenAI vector store ID before asking a vector-store question.'
 		
-		result = chat.generate_text( prompt=query,
+		result = chat.generate_text(
+			prompt=query,
 			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
 			presence=st.session_state.get( 'docqna_presence_penalty' ),
 			max_tokens=st.session_state.get( 'docqna_max_tokens' ),
-			store=st.session_state.get( 'docqna_store' ), stream=False,
-			instruct=st.session_state.get( 'docqna_system_instructions' ), tools=tools,
+			store=st.session_state.get( 'docqna_store' ),
+			stream=False,
+			instruct=st.session_state.get( 'docqna_system_instructions' ),
+			tools=tools,
 			include=[ 'file_search_call.results' ] if len( tools ) > 0 else [ ],
 			vector_store_ids=vector_store_ids )
 		
@@ -8556,14 +8568,31 @@ def run_remote_docqna_query( query: str ) -> str:
 	
 	if provider_name == 'Gemini':
 		apply_gemini_runtime_config( )
-		store_names = split_text_values(
-			st.session_state.get( 'docqna_file_search_store_names_input', '' ),
-			delimiter=',' )
+		
+		manual_store_names = [ ]
+		
+		if source == 'Gemini File Search Store':
+			manual_store_names = split_text_values(
+				st.session_state.get( 'docqna_file_search_store_names_input', '' ),
+				delimiter=',' )
+		
+		selected_store_names = get_active_gemini_file_search_store_names( 'Gemini' )
+		
+		store_names = merge_unique_strings(
+			primary=manual_store_names,
+			secondary=selected_store_names )
 		
 		st.session_state[ 'docqna_file_search_store_names' ] = store_names
 		
+		if get_gemini_vector_backend( ) == 'Cloud Buckets' and len( store_names ) == 0:
+			return (
+					'The selected Gemini backend is Cloud Buckets. Cloud Buckets are storage '
+					'objects, not Gemini File Search Store resources. Select a Gemini File '
+					'Search Store backend or use Local Upload after downloading/loading the object.'
+			)
+		
 		if source == 'Gemini File Search Store' and len( store_names ) == 0:
-			return 'Enter at least one Gemini File Search Store resource name before asking.'
+			return 'Enter or select at least one Gemini File Search Store resource name before asking.'
 		
 		result = chat.generate_text(
 			prompt=query,
@@ -8575,6 +8604,25 @@ def run_remote_docqna_query( query: str ) -> str:
 			instruct=st.session_state.get( 'docqna_system_instructions' ),
 			file_search_store_names=store_names,
 			stream=False )
+		
+		return str( result or '' ).strip( )
+	
+	if provider_name == 'Grok':
+		collection_ids = get_active_grok_collection_ids( 'Grok' )
+		
+		if len( collection_ids ) == 0:
+			return 'Select an xAI Collection in Vector Stores mode before using Grok remote Document Q&A.'
+		
+		vectorstores = get_vectorstores_module( 'Grok' )
+		result = vectorstores.search(
+			prompt=query,
+			store_id=collection_ids[ 0 ] )
+		
+		if isinstance( result, str ) and result.strip( ):
+			return result.strip( )
+		
+		if isinstance( result, dict ):
+			return json.dumps( result, indent=2, default=str )
 		
 		return str( result or '' ).strip( )
 	
@@ -11381,12 +11429,10 @@ elif mode == 'Text':
 								max_tools=st.session_state.get( 'text_max_calls' ),
 								presence=st.session_state.get( 'text_presence_penalty' ),
 								max_tokens=st.session_state.get( 'text_max_tokens' ),
-								store=st.session_state.get( 'text_store' ),
-								stream=False,
+								store=st.session_state.get( 'text_store' ), stream=False,
 								instruct=st.session_state.get( 'text_system_instructions' ),
 								background=False,
-								reasoning=st.session_state.get( 'text_reasoning' ),
-								include=text_include,
+								reasoning=st.session_state.get( 'text_reasoning' ), include=text_include,
 								tools=text_tools,
 								allowed_domains=st.session_state.get( 'text_domains', [ ] ),
 								previous_id=text_previous_id,
@@ -11471,6 +11517,22 @@ elif mode == 'Text':
 									st.session_state[ 'text_gemini_history' ] = structured_history
 						
 						elif provider_name == 'Grok':
+							grok_collection_ids = get_active_grok_collection_ids( 'Grok' )
+							
+							if len( grok_collection_ids ) > 0 and provider_supports( 'VectorStores', 'Grok' ):
+								try:
+									grok_vectorstores = get_vectorstores_module( 'Grok' )
+									search_result = grok_vectorstores.search(
+										prompt=prompt,
+										store_id=grok_collection_ids[ 0 ] )
+									
+									if isinstance( search_result, str ) and search_result.strip( ):
+										prompt = ( 'Use xAI Collection search result as retrieval context.\n\n'
+												f'{search_result.strip( )}\n\n'
+												f'User Question:\n{prompt}' )
+								except Exception as exc:
+									st.warning( f'Grok collection search was skipped: {exc}' )
+							
 							if hasattr( text, 'user' ):
 								text.user = prompt
 							
@@ -12859,11 +12921,9 @@ elif mode == 'Document Q&A':
 						help='Allow multiple local document uploads.' )
 				
 				with source_c3:
-					st.slider( label='Top-K',
-						min_value=1,
+					st.slider( label='Top-K', min_value=1,
 						max_value=20,
-						value=int( st.session_state.get( 'docqna_top_k', 6 ) or 6 ),
-						step=1,
+						value=int( st.session_state.get( 'docqna_top_k', 6 ) or 6 ), step=1,
 						key='docqna_top_k',
 						help='Number of retrieved chunks to use for local Q&A.' )
 				
@@ -12874,27 +12934,26 @@ elif mode == 'Document Q&A':
 						on_click=reset_docqna_controls )
 				
 				source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
-				
 				if source_value == 'OpenAI File ID':
-					st.text_input( label='OpenAI File ID',
-						key='docqna_file_id',
-						width='stretch',
+					st.text_input( label='OpenAI File ID', key='docqna_file_id', width='stretch',
 						placeholder='file-...',
 						help='OpenAI file identifier. Use Vector Store ID for retrieval-backed Q&A.' )
 				
 				elif source_value == 'OpenAI Vector Store ID':
-					st.text_input( label='OpenAI Vector Store ID(s)',
-						key='docqna_vector_store_id',
-						width='stretch',
-						placeholder='vs_...',
+					st.text_input( label='OpenAI Vector Store ID(s)', key='docqna_vector_store_id',
+						width='stretch', placeholder='vs_...',
 						help='Comma-delimited OpenAI vector store IDs.' )
 				
 				elif source_value == 'Gemini File Search Store':
 					st.text_input( label='Gemini File Search Store Resource Name(s)',
-						key='docqna_file_search_store_names_input',
-						width='stretch',
+						key='docqna_file_search_store_names_input', width='stretch',
 						placeholder='fileSearchStores/...',
 						help='Comma-delimited Gemini File Search Store resource names.' )
+				
+				elif source_value == 'xAI Collection':
+					st.info(
+						'Grok Document Q&A uses the xAI Collection selected in Vector Stores mode. '
+						'Select or enter a collection ID there before asking questions.' )
 			
 			# ------------------------------------------------------------------
 			# Model Controls
@@ -13616,7 +13675,6 @@ elif mode == 'Files':
 # ======================================================================================
 elif mode == 'Vector Stores':
 	ensure_vectorstores_mode_state( )
-	
 	provider_name = get_provider_name( )
 	backend_name = get_vectorstores_backend_name( provider_name )
 	backend_summary = get_storage_backend_summary( provider_name )
