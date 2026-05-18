@@ -2676,8 +2676,7 @@ def create_provider_capability( capability_name: str, provider_name: Optional[ s
 			Initialized provider wrapper instance.
 		
 	"""
-	capability = get_provider_capability(
-		capability_name=capability_name,
+	capability = get_provider_capability( capability_name=capability_name,
 		provider_name=provider_name )
 	
 	return capability( )
@@ -10727,37 +10726,37 @@ with st.sidebar:
 			value=st.session_state.google_cse_id or '',
 			help='Overrides GOOGLE_CSE_ID from config.py for this session only.' )
 		
-		if openai_key:
-			st.session_state.openai_api_key = openai_key
-			os.environ[ 'OPENAI_API_KEY' ] = openai_key
+		if not openai_key:
+			st.session_state.openai_api_key = cfg.OPENAI_API_KEY
+			os.environ[ 'OPENAI_API_KEY' ] = cfg.OPENAI_API_KEY
 		
-		if gemini_key:
-			st.session_state.gemini_api_key = gemini_key
-			os.environ[ 'GEMINI_API_KEY' ] = gemini_key
+		if not gemini_key:
+			st.session_state.gemini_api_key = cfg.GEMINI_API_KEY
+			os.environ[ 'GEMINI_API_KEY' ] = cfg.GEMINI_API_KEY
 		
-		if groq_key:
-			st.session_state.groq_api_key = groq_key
-			os.environ[ 'GROQ_API_KEY' ] = groq_key
+		if not groq_key:
+			st.session_state.groq_api_key = cfg.GROQ_API_KEY
+			os.environ[ 'GROQ_API_KEY' ] = cfg.GROQ_API_KEY
 		
-		if google_key:
-			st.session_state.google_api_key = google_key
-			os.environ[ 'GOOGLE_API_KEY' ] = google_key
+		if not google_key:
+			st.session_state.google_api_key = cfg.GOOGLE_API_KEY
+			os.environ[ 'GOOGLE_API_KEY' ] = cfg.GOOGLE_API_KEY
 		
 		if xai_key:
-			st.session_state.xai_api_key = xai_key
-			os.environ[ 'XAI_API_KEY' ] = xai_key
+			st.session_state.xai_api_key = cfg.XAI_API_KEY
+			os.environ[ 'XAI_API_KEY' ] = cfg.XAI_API_KEY
 		
-		if googlemaps_key:
-			st.session_state.googlemaps_api_key = googlemaps_key
-			os.environ[ 'GOOGLEMAPS_API_KEY' ] = googlemaps_key
+		if not googlemaps_key:
+			st.session_state.googlemaps_api_key = cfg.GOOGLEMAPS_API_KEY
+			os.environ[ 'GOOGLEMAPS_API_KEY' ] = cfg.GOOGLEMAPS_API_KEY
 		
-		if geocoding_key:
-			st.session_state.geocoding_api_key = geocoding_key
-			os.environ[ 'GEOCODING_API_KEY' ] = geocoding_key
+		if not geocoding_key:
+			st.session_state.geocoding_api_key = cfg.GEOCODING_API_KEY
+			os.environ[ 'GEOCODING_API_KEY' ] = cfg.GEOCODING_API_KEY
 		
-		if google_cse_id:
-			st.session_state.google_cse_id = google_cse_id
-			os.environ[ 'GOOGLE_CSE_ID' ] = google_cse_id
+		if not google_cse_id:
+			st.session_state.google_cse_id = cfg.GOOGLE_CSE_ID
+			os.environ[ 'GOOGLE_CSE_ID' ] = cfg.GOOGLE_CSE_ID
 	
 	if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 		st.session_state[ 'provider' ] = 'GPT'
