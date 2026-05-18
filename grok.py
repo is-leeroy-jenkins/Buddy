@@ -1413,7 +1413,7 @@ class Chat( Grok ):
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			self.client = OpenAI( api_key=self.api_key, base_url=self.base_url )
+			self.client = OpenAI( api_key=cfg.XAI_API_KEY, base_url=self.base_url )
 			self.number = number
 			self.top_k = top_k
 			self.modalities = modalities if modalities is not None else [ ]
@@ -3133,7 +3133,7 @@ class Transcription( Grok ):
 		try:
 			throw_if( 'api_key', self.api_key )
 			throw_if( 'file_path', self.file_path )
-			self.client = Client( api_key=self.api_key )
+			self.client = Client( api_key=cfg.XAI_API_KEY )
 			with open( self.file_path, 'rb' ) as self.audio_file:
 				self.chat = self.client.chat.create( file=self.audio_file, **self.request )
 				self.response = self.chat.sample( )
@@ -3761,7 +3761,7 @@ class Translation( Grok ):
 		try:
 			throw_if( 'api_key', self.api_key )
 			throw_if( 'file_path', self.file_path )
-			self.client = Client( api_key=self.api_key )
+			self.client = Client( api_key=cfg.XAI_API_KEY )
 			with open( self.file_path, 'rb' ) as self.audio_file:
 				self.chat = self.client.chat.create( file=self.audio_file, **self.request )
 				self.response = self.chat.sample( )
@@ -4438,7 +4438,7 @@ class Images( Grok ):
 		try:
 			throw_if( 'api_key', self.api_key )
 			throw_if( 'base_url', self.base_url )
-			self.client = OpenAI( api_key=self.api_key, base_url=self.base_url )
+			self.client = OpenAI( api_key=cfg.XAI_API_KEY, base_url=self.base_url )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -5998,7 +5998,7 @@ class Files( Grok ):
 		try:
 			throw_if( 'api_key', self.api_key )
 			throw_if( 'base_url', self.base_url )
-			self.client = OpenAI( api_key=self.api_key, base_url=self.base_url )
+			self.client = OpenAI( api_key=cfg.XAI_API_KEY, base_url=self.base_url )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -7410,7 +7410,7 @@ class VectorStores( Grok ):
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
 		self.base_url = cfg.XAI_BASE_URL
-		self.client = Client( api_key=self.api_key )
+		self.client = Client( api_key=cfg.XAI_API_KEY )
 		self.model = None
 		self.prompt = None
 		self.response_format = None
