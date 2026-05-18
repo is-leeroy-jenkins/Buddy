@@ -10723,40 +10723,9 @@ with st.sidebar:
 			help='Overrides GEOCODING_API_KEY from config.py for this session only.' )
 		
 		google_cse_id = st.text_input( 'Google Custom Search ID', type='password',
-			value=st.session_state.google_cse_id or '',
+			value=cfg.GOOGLE_CSE_ID or '',
 			help='Overrides GOOGLE_CSE_ID from config.py for this session only.' )
 		
-		if not openai_key:
-			st.session_state.openai_api_key = cfg.OPENAI_API_KEY
-			os.environ[ 'OPENAI_API_KEY' ] = cfg.OPENAI_API_KEY
-		
-		if not gemini_key:
-			st.session_state.gemini_api_key = cfg.GEMINI_API_KEY
-			os.environ[ 'GEMINI_API_KEY' ] = cfg.GEMINI_API_KEY
-		
-		if not groq_key:
-			st.session_state.groq_api_key = cfg.GROQ_API_KEY
-			os.environ[ 'GROQ_API_KEY' ] = cfg.GROQ_API_KEY
-		
-		if not google_key:
-			st.session_state.google_api_key = cfg.GOOGLE_API_KEY
-			os.environ[ 'GOOGLE_API_KEY' ] = cfg.GOOGLE_API_KEY
-		
-		if xai_key:
-			st.session_state.xai_api_key = cfg.XAI_API_KEY
-			os.environ[ 'XAI_API_KEY' ] = cfg.XAI_API_KEY
-		
-		if not googlemaps_key:
-			st.session_state.googlemaps_api_key = cfg.GOOGLEMAPS_API_KEY
-			os.environ[ 'GOOGLEMAPS_API_KEY' ] = cfg.GOOGLEMAPS_API_KEY
-		
-		if not geocoding_key:
-			st.session_state.geocoding_api_key = cfg.GEOCODING_API_KEY
-			os.environ[ 'GEOCODING_API_KEY' ] = cfg.GEOCODING_API_KEY
-		
-		if not google_cse_id:
-			st.session_state.google_cse_id = cfg.GOOGLE_CSE_ID
-			os.environ[ 'GOOGLE_CSE_ID' ] = cfg.GOOGLE_CSE_ID
 	
 	if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 		st.session_state[ 'provider' ] = 'GPT'
