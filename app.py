@@ -11031,15 +11031,14 @@ if mode == 'Chat':
 elif mode == 'Text':
 	ensure_text_mode_state( )
 	
-	st.subheader( '💬 Text Generation', help=cfg.TEXT_GENERATION )
-	st.divider( )
-	
 	provider_name = get_provider_name( )
 	text = get_chat_module( )
 	text_avatar = get_text_avatar( provider_name )
 	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
+		st.subheader( '💬 Text Generation', help=cfg.TEXT_GENERATION )
+		st.divider( )
 		if st.session_state.get( 'clear_instructions' ):
 			st.session_state[ 'text_system_instructions' ] = ''
 			st.session_state[ 'instructions_last_loaded' ] = ''
@@ -11593,9 +11592,6 @@ elif mode == 'Text':
 elif mode == 'Images':
 	ensure_image_mode_state( )
 	
-	st.subheader( '📷 Images API', help=cfg.IMAGES_API )
-	st.divider( )
-	
 	provider_name = get_provider_name( )
 	image = get_images_module( )
 	
@@ -11606,6 +11602,8 @@ elif mode == 'Images':
 	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
+		st.subheader( '📷 Images API', help=cfg.IMAGES_API )
+		st.divider( )
 		with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# LLM Settings

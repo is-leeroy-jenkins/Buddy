@@ -2374,7 +2374,7 @@ class Embeddings( Gemini ):
 			self.encoding_format = encoding_format
 			self.embedding_config = self.build_embedding_config( model=self.model,
 				dimensions=self.imensions, task_type=self.task_type, title=self.title )
-			self.client = genai.Client( api_key=self.api_key )
+			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
 			self.response = self.client.models.embed_content( model=self.model,
 				contents=self.input_text, config=self.embedding_config )
 			
