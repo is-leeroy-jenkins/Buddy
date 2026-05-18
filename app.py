@@ -10696,31 +10696,31 @@ with st.sidebar:
 	#-----API KEY Expander------------------------------
 	with st.expander( label='Keys:', icon='🔑', expanded=False ):
 		openai_key = st.text_input( 'OpenAI API Key', type='password',
-			value=st.session_state.openai_api_key or '',
+			value=cfg.OPENAI_API_KEY or '',
 			help='Overrides OPENAI_API_KEY from config.py for this session only.' )
 		
 		gemini_key = st.text_input( 'Gemini API Key', type='password',
-			value=st.session_state.gemini_api_key or '',
+			value=cfg.GEMINI_API_KEY or '',
 			help='Overrides GEMINI_API_KEY from config.py for this session only.' )
 		
 		groq_key = st.text_input( 'Groq API Key', type='password',
-			value=st.session_state.groq_api_key or '',
+			value=cfg.GROQ_API_KEY or '',
 			help='Overrides GROQ_API_KEY from config.py for this session only.' )
 		
-		google_key = st.text_input('Google API Key', type='password',
-			value=st.session_state.google_api_key or '',
+		google_key = st.text_input( 'Google API Key', type='password',
+			value=cfg.GOOGLE_API_KEY or '',
 			help='Overrides GOOGLE_API_KEY from config.py for this session only.' )
 		
 		xai_key = st.text_input( 'xAi API Key', type='password',
-			value=st.session_state.xai_api_key or '',
+			value=cfg.XAI_API_KEY or '',
 			help='Overrides XAI_API_KEY from config.py for this session only.' )
 		
 		googlemaps_key = st.text_input( 'Google Maps API Key', type='password',
-			value=st.session_state.googlemaps_api_key or '',
+			value=cfg.GOOGLEMAPS_API_KEY or '',
 			help='Overrides GOOGLEMAPS_API_KEY from config.py for this session only.' )
 		
 		geocoding_key = st.text_input( 'Geocoding API Key', type='password',
-			value=st.session_state.geocoding_api_key or '',
+			value=cfg.GEOCODING_API_KEY or '',
 			help='Overrides GEOCODING_API_KEY from config.py for this session only.' )
 		
 		google_cse_id = st.text_input( 'Google Custom Search ID', type='password',
