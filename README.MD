@@ -39,7 +39,7 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 
 - Customize the knowledge-base, use computer vision, and text embeddings
 
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-functionality.gif)
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
 
 
 ## Model Integration
