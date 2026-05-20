@@ -12,6 +12,8 @@ with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets
 on vectorized financial management and policy datasets hosted on Huggingface:
 
 
+## 🎥 Demo 
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
 ## Core Capabilities
 
@@ -28,8 +30,10 @@ on vectorized financial management and policy datasets hosted on Huggingface:
   | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
 
 
-## Demo 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
+
+## 🕸️ Streamlit (Web)
+
+- A Python framework to build dynamic, interactive web applications.
 
 -  Execute chat queries against federal financial management documentation
 
