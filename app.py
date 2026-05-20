@@ -10711,7 +10711,7 @@ with st.sidebar:
 			help='Overrides GOOGLE_API_KEY from config.py for this session only.' )
 		
 		xai_key = st.text_input( 'xAi API Key', type='password',
-			value=cfg.XAI_API_KE,
+			value=cfg.XAI_API_KEY,
 			help='Overrides XAI_API_KEY from config.py for this session only.' )
 		
 		googlemaps_key = st.text_input( 'Google Maps API Key', type='password',
