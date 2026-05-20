@@ -10695,69 +10695,68 @@ with st.sidebar:
 	#-----API KEY Expander------------------------------
 	with st.expander( label='Keys:', icon='🔑', expanded=False ):
 		openai_key = st.text_input( 'OpenAI API Key', type='password',
-			value=cfg.OPENAI_API_KEY,
-			help='Overrides OPENAI_API_KEY from config.py for this session only.' )
+			value=st.session_state.get( 'openai_api_key', cfg.OPENAI_API_KEY ),
+			help='Overrides OPENAI_API_KEY from config.py for this session only.',
+			key='sidebar_openai_api_key' )
 		
 		gemini_key = st.text_input( 'Gemini API Key', type='password',
-			value=cfg.GEMINI_API_KEY,
-			help='Overrides GEMINI_API_KEY from config.py for this session only.' )
+			value=st.session_state.get( 'gemini_api_key', cfg.GEMINI_API_KEY ),
+			help='Overrides GEMINI_API_KEY from config.py for this session only.',
+			key='sidebar_gemini_api_key' )
 		
-		groq_key = st.text_input( 'Groq API Key', type='password',
-			value=cfg.GROQ_API_KEY,
-			help='Overrides GROQ_API_KEY from config.py for this session only.' )
+		xai_key = st.text_input( 'xAI API Key', type='password',
+			value=st.session_state.get( 'xai_api_key', cfg.XAI_API_KEY ),
+			help='Overrides XAI_API_KEY from config.py for this session only.',
+			key='sidebar_xai_api_key' )
 		
 		google_key = st.text_input( 'Google API Key', type='password',
-			value=cfg.GOOGLE_API_KEY,
-			help='Overrides GOOGLE_API_KEY from config.py for this session only.' )
+			value=st.session_state.get( 'google_api_key', cfg.GOOGLE_API_KEY ),
+			help='Overrides GOOGLE_API_KEY from config.py for this session only.',
+			key='sidebar_google_api_key' )
 		
-		xai_key = st.text_input( 'xAi API Key', type='password',
-			value=cfg.XAI_API_KEY,
-			help='Overrides XAI_API_KEY from config.py for this session only.' )
+		google_cse_id = st.text_input( 'Google CSE ID', type='password',
+			value=st.session_state.get( 'google_cse_id', cfg.GOOGLE_CSE_ID ),
+			help='Overrides GOOGLE_CSE_ID from config.py for this session only.',
+			key='sidebar_google_cse_id' )
 		
-		googlemaps_key = st.text_input( 'Google Maps API Key', type='password',
-			value=cfg.GOOGLEMAPS_API_KEY,
-			help='Overrides GOOGLEMAPS_API_KEY from config.py for this session only.' )
+		google_cloud_project_id = st.text_input( 'Google Cloud Project ID', type='password',
+			value=st.session_state.get( 'google_cloud_project_id', cfg.GOOGLE_CLOUD_PROJECT_ID ),
+			help='Overrides GOOGLE_CLOUD_PROJECT_ID from config.py for this session only.',
+			key='sidebar_google_cloud_project_id' )
 		
-		geocoding_key = st.text_input( 'Geocoding API Key', type='password',
-			value=cfg.GEOCODING_API_KEY,
-			help='Overrides GEOCODING_API_KEY from config.py for this session only.' )
-		
-		google_cse_id = st.text_input( 'Google Custom Search ID', type='password',
-			value=cfg.GOOGLE_CSE_ID,
-			help='Overrides GOOGLE_CSE_ID from config.py for this session only.' )
+		google_cloud_location = st.text_input( 'Google Cloud Location', type='password',
+			value=st.session_state.get( 'google_cloud_location', cfg.GOOGLE_CLOUD_LOCATION ),
+			help='Overrides GOOGLE_CLOUD_LOCATION from config.py for this session only.',
+			key='sidebar_google_cloud_location'
+		)
 		
 		if openai_key:
-			st.session_state.openai_api_key = openai_key
+			st.session_state[ 'openai_api_key' ] = openai_key
 			os.environ[ 'OPENAI_API_KEY' ] = openai_key
 		
 		if gemini_key:
-			st.session_state.gemini_api_key = gemini_key
+			st.session_state[ 'gemini_api_key' ] = gemini_key
 			os.environ[ 'GEMINI_API_KEY' ] = gemini_key
 		
-		if groq_key:
-			st.session_state.groq_api_key = groq_key
-			os.environ[ 'GROQ_API_KEY' ] = groq_key
-		
-		if google_key:
-			st.session_state.google_api_key = google_key
-			os.environ[ 'GOOGLE_API_KEY' ] = google_key
-		
 		if xai_key:
-			st.session_state.xai_api_key = xai_key
+			st.session_state[ 'xai_api_key' ] = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
 		
-		if googlemaps_key:
-			st.session_state.googlemaps_api_key = googlemaps_key
-			os.environ[ 'GOOGLEMAPS_API_KEY' ] = googlemaps_key
-		
-		if geocoding_key:
-			st.session_state.geocoding_api_key = geocoding_key
-			os.environ[ 'GEOCODING_API_KEY' ] = geocoding_key
+		if google_key:
+			st.session_state[ 'google_api_key' ] = google_key
+			os.environ[ 'GOOGLE_API_KEY' ] = google_key
 		
 		if google_cse_id:
-			st.session_state.google_cse_id = google_cse_id
+			st.session_state[ 'google_cse_id' ] = google_cse_id
 			os.environ[ 'GOOGLE_CSE_ID' ] = google_cse_id
 		
+		if google_cloud_project_id:
+			st.session_state[ 'google_cloud_project_id' ] = google_cloud_project_id
+			os.environ[ 'GOOGLE_CLOUD_PROJECT_ID' ] = google_cloud_project_id
+		
+		if google_cloud_location:
+			st.session_state[ 'google_cloud_location' ] = google_cloud_location
+			os.environ[ 'GOOGLE_CLOUD_LOCATION' ] = google_cloud_location
 	
 	if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 		st.session_state[ 'provider' ] = 'GPT'
