@@ -42,6 +42,9 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 
 
+## 🧱 Databricks
+[![Buddy](https://img.shields.io/badge/Databricks-Buddy-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351)
+- A data engineering, analytics, and artificial intelligence collaborative workspace
 
 - Customize the knowledge-base, use computer vision, and text embeddings
 
