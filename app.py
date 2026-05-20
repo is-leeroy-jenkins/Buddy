@@ -10695,36 +10695,68 @@ with st.sidebar:
 	#-----API KEY Expander------------------------------
 	with st.expander( label='Keys:', icon='🔑', expanded=False ):
 		openai_key = st.text_input( 'OpenAI API Key', type='password',
-			value=cfg.OPENAI_API_KEY or '',
+			value=cfg.OPENAI_API_KEY,
 			help='Overrides OPENAI_API_KEY from config.py for this session only.' )
 		
 		gemini_key = st.text_input( 'Gemini API Key', type='password',
-			value=cfg.GEMINI_API_KEY or '',
+			value=cfg.GEMINI_API_KEY,
 			help='Overrides GEMINI_API_KEY from config.py for this session only.' )
 		
 		groq_key = st.text_input( 'Groq API Key', type='password',
-			value=cfg.GROQ_API_KEY or '',
+			value=cfg.GROQ_API_KEY,
 			help='Overrides GROQ_API_KEY from config.py for this session only.' )
 		
 		google_key = st.text_input( 'Google API Key', type='password',
-			value=cfg.GOOGLE_API_KEY or '',
+			value=cfg.GOOGLE_API_KEY,
 			help='Overrides GOOGLE_API_KEY from config.py for this session only.' )
 		
 		xai_key = st.text_input( 'xAi API Key', type='password',
-			value=cfg.XAI_API_KEY or '',
+			value=cfg.XAI_API_KE,
 			help='Overrides XAI_API_KEY from config.py for this session only.' )
 		
 		googlemaps_key = st.text_input( 'Google Maps API Key', type='password',
-			value=cfg.GOOGLEMAPS_API_KEY or '',
+			value=cfg.GOOGLEMAPS_API_KEY,
 			help='Overrides GOOGLEMAPS_API_KEY from config.py for this session only.' )
 		
 		geocoding_key = st.text_input( 'Geocoding API Key', type='password',
-			value=cfg.GEOCODING_API_KEY or '',
+			value=cfg.GEOCODING_API_KEY,
 			help='Overrides GEOCODING_API_KEY from config.py for this session only.' )
 		
 		google_cse_id = st.text_input( 'Google Custom Search ID', type='password',
-			value=cfg.GOOGLE_CSE_ID or '',
+			value=cfg.GOOGLE_CSE_ID,
 			help='Overrides GOOGLE_CSE_ID from config.py for this session only.' )
+		
+		if openai_key:
+			st.session_state.openai_api_key = openai_key
+			os.environ[ 'OPENAI_API_KEY' ] = openai_key
+		
+		if gemini_key:
+			st.session_state.gemini_api_key = gemini_key
+			os.environ[ 'GEMINI_API_KEY' ] = gemini_key
+		
+		if groq_key:
+			st.session_state.groq_api_key = groq_key
+			os.environ[ 'GROQ_API_KEY' ] = groq_key
+		
+		if google_key:
+			st.session_state.google_api_key = google_key
+			os.environ[ 'GOOGLE_API_KEY' ] = google_key
+		
+		if xai_key:
+			st.session_state.xai_api_key = xai_key
+			os.environ[ 'XAI_API_KEY' ] = xai_key
+		
+		if googlemaps_key:
+			st.session_state.googlemaps_api_key = googlemaps_key
+			os.environ[ 'GOOGLEMAPS_API_KEY' ] = googlemaps_key
+		
+		if geocoding_key:
+			st.session_state.geocoding_api_key = geocoding_key
+			os.environ[ 'GEOCODING_API_KEY' ] = geocoding_key
+		
+		if google_cse_id:
+			st.session_state.google_cse_id = google_cse_id
+			os.environ[ 'GOOGLE_CSE_ID' ] = google_cse_id
 		
 	
 	if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
