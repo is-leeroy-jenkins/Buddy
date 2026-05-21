@@ -556,41 +556,6 @@ class Chat( Gemini ):
 			exception.method = 'append_urls_to_content( self, content: str, urls: List[ str ] )'
 			raise exception
 	
-	def build_tools( self, tools: List[ str ] ) -> List[ Tool ] | None:
-		"""
-		
-			Purpose:
-			--------
-			Builds the Google Search grounding tool for Text mode when explicitly enabled.
-			
-			Parameters:
-			-----------
-			tools: List[ str ] - Derived tool names for the request.
-			file_search_store_names: List[ str ] - Ignored for Google Search-only grounding.
-			
-			Returns:
-			--------
-			List[ Tool ] | None - Google Search tool list or None.
-		
-		"""
-		try:
-			self.tools = [
-					str( tool ).strip( )
-					for tool in (tools or [ ])
-					if str( tool ).strip( )
-			]
-			
-			if 'google_search' not in self.tools:
-				return None
-			
-			return [ Tool( google_search=GoogleSearch( ) ) ]
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gemini'
-			exception.cause = 'Chat'
-			exception.method = 'build_tools( self, tools: List[ str ], file_search_store_names: List[ str ] )'
-			raise exception
-		
 	def build_tool_config( self, tool_choice: str = None,
 			tools: List[ Tool ] = None ) -> ToolConfig | None:
 		"""
@@ -1056,6 +1021,62 @@ class Chat( Gemini ):
 			exception.cause = 'Chat'
 			exception.method = 'get_structured_history( self ) -> List[ Content ] | None'
 			raise exception
+		
+	def build_tools( self, tools: List[ str ] = None,
+			file_search_store_names: List[ str ] = None ) -> List[ Tool ] | None:
+		"""
+		
+			Purpose:
+			--------
+			Build Gemini built-in tool objects for content generation. File Search Store
+			names take precedence because Gemini File Search cannot be combined with other
+			built-in tools such as Google Search or URL Context.
+			
+			Parameters:
+			-----------
+			tools: List[ str ]
+				Selected tool names from the UI.
+			
+			file_search_store_names: List[ str ]
+				Gemini File Search Store resource names.
+			
+			Returns:
+			--------
+			List[ Tool ] | None
+				Gemini tool objects or None.
+		
+		"""
+		
+		try:
+			self.tools = [
+					str( tool ).strip( )
+					for tool in (tools or [ ])
+					if tool is not None and str( tool ).strip( )
+			]
+			
+			self.file_search_store_names = [
+					str( name ).strip( )
+					for name in (file_search_store_names or [ ])
+					if name is not None and str( name ).strip( )
+			]
+			
+			if len( self.file_search_store_names ) > 0:
+				return [
+						Tool(
+							file_search=types.FileSearch(
+								file_search_store_names=self.file_search_store_names ) )
+				]
+			
+			if 'google_search' not in self.tools:
+				return None
+			
+			return [ Tool( google_search=GoogleSearch( ) ) ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Chat'
+			exception.method = 'build_tools( self, tools, file_search_store_names )'
+			raise exception
 	
 	def build_config( self, model: str = 'gemini-2.5-flash-lite', number: int = None,
 			temperature: float = None, top_p: float = None, top_k: int = None,
@@ -1069,33 +1090,72 @@ class Chat( Gemini ):
 		
 			Purpose:
 			--------
-			Builds the GenerateContentConfig object used for Gemini text generation.
+			Builds the GenerateContentConfig object used for Gemini text generation and
+			Document Q&A grounding.
 			
 			Parameters:
 			-----------
-			model: str - Gemini model identifier.
-			number: int - Candidate count.
-			temperature: float - Sampling temperature.
-			top_p: float - Nucleus sampling probability.
-			top_k: int - Top-k token selection count.
-			frequency: float - Frequency penalty.
-			presence: float - Presence penalty.
-			max_tokens: int - Maximum output tokens.
-			stops: List[ str ] - Stop sequences.
-			instruct: str - System instruction text.
-			response_format: str - Response MIME type.
-			tools: List[ str ] - Selected tool names.
-			tool_choice: str - Tool-choice mode.
-			reasoning: str - Thinking level.
-			modalities: List[ str ] - Response modalities.
-			media_resolution: str - Media resolution.
-			response_schema: Any - Structured-output schema.
-			safety_profile: str - Safety profile.
-			file_search_store_names: List[ str ] - Gemini File Search Store names.
+			model: str
+				Gemini model identifier.
+			
+			number: int
+				Candidate count.
+			
+			temperature: float
+				Sampling temperature.
+			
+			top_p: float
+				Nucleus sampling probability.
+			
+			top_k: int
+				Top-k token selection count.
+			
+			frequency: float
+				Frequency penalty.
+			
+			presence: float
+				Presence penalty.
+			
+			max_tokens: int
+				Maximum output tokens.
+			
+			stops: List[ str ]
+				Stop sequences.
+			
+			instruct: str
+				System instruction text.
+			
+			response_format: str
+				Response MIME type.
+			
+			tools: List[ str ]
+				Selected tool names.
+			
+			tool_choice: str
+				Tool-choice mode.
+			
+			reasoning: str
+				Thinking level.
+			
+			modalities: List[ str ]
+				Response modalities.
+			
+			media_resolution: str
+				Media resolution.
+			
+			response_schema: Any
+				Structured-output schema.
+			
+			safety_profile: str
+				Safety profile.
+			
+			file_search_store_names: List[ str ]
+				Gemini File Search Store resource names.
 			
 			Returns:
 			--------
-			GenerateContentConfig - Configured content settings.
+			GenerateContentConfig
+				Configured content settings.
 		
 		"""
 		try:
@@ -1112,14 +1172,21 @@ class Chat( Gemini ):
 			self.max_tokens = int( max_tokens or 0 )
 			self.stops = stops if stops is not None else [ ]
 			self.instructions = instruct
-			self.file_search_store_names = file_search_store_names
+			self.file_search_store_names = [
+					str( name ).strip( )
+					for name in (file_search_store_names or [ ])
+					if name is not None and str( name ).strip( )
+			]
 			self.response_mime_type = str( response_format or '' ).strip( )
 			self.response_schema = self.parse_response_schema( response_schema )
 			self.safety_settings = self.build_safety_settings( safety_profile )
 			self.tool_choice = tool_choice
 			self.media_resolution = str( media_resolution ).strip( ) if media_resolution else None
-			self.tool_objects = self.build_tools( tools=tools )
-			self.function_tool_config = self.build_tool_config( tool_choice=self.tool_choice,
+			self.tool_objects = self.build_tools(
+				tools=tools,
+				file_search_store_names=self.file_search_store_names )
+			self.function_tool_config = self.build_tool_config(
+				tool_choice=self.tool_choice,
 				tools=self.tool_objects )
 			self.response_modalities = self.build_modalities( modalities=modalities )
 			self.thought_config = self.build_reasoning( reasoning )
@@ -1167,7 +1234,7 @@ class Chat( Gemini ):
 			if self.tool_objects is not None and len( self.tool_objects ) > 0:
 				self.config_kwargs[ 'tools' ] = self.tool_objects
 			
-			if self.function_tool_config is not None:
+			if self.function_tool_config is not None and len( self.file_search_store_names ) == 0:
 				self.config_kwargs[ 'tool_config' ] = self.function_tool_config
 			
 			if self.safety_settings is not None and len( self.safety_settings ) > 0:
@@ -1187,7 +1254,7 @@ class Chat( Gemini ):
 			exception.cause = 'Chat'
 			exception.method = 'build_config( self, model ) -> GenerateContentConfig'
 			raise exception
-	
+		
 	def generate_text( self, prompt: str, model: str = 'gemini-2.5-flash-lite',
 			number: int = None, temperature: float = None, top_p: float = None,
 			top_k: int = None, frequency: float = None, presence: float = None,
@@ -1503,7 +1570,7 @@ class Images( Gemini ):
 		'''
 		return [ '1K', '2K', '4K' ]
 		
-	def supports_image_size( self, model: str='gemini-2.5-flash-image' ) -> bool:
+	def supports_image_size( self, model: str = 'gemini-2.5-flash-image' ) -> bool:
 		"""
 			
 			Purpose:
@@ -1513,17 +1580,20 @@ class Images( Gemini ):
 			
 			Parameters:
 			-----------
-			model: str - Gemini image model identifier selected by the UI.
+			model: str
+				Gemini image model identifier selected by the UI.
 			
 			Returns:
 			--------
-			bool - True when the model supports image_size; otherwise False.
+			bool
+				True when the model supports image_size; otherwise False.
 			
 		"""
 		try:
 			self.model_name = str( model or '' ).strip( ).lower( )
 			self.image_size_models = [ 'gemini-3.1-flash-image-preview',
-					'gemini-3-pro-image-preview' ]
+					'gemini-3-pro-image-preview', ]
+			
 			return self.model_name in self.image_size_models
 		except Exception as e:
 			exception = Error( e )
@@ -1587,7 +1657,58 @@ class Images( Gemini ):
 			exception.cause = 'Images'
 			exception.method = 'supports_image_search( self, model: str ) -> bool'
 			raise exception
-	
+		
+	def normalize_image_size( self, resolution: str=None, model: str='gemini-2.5-flash-image' ) -> str:
+		"""
+			
+			Purpose:
+			-----------
+			Normalizes UI resolution values into Gemini image_size values accepted by Gemini
+			3 image models.
+			
+			Parameters:
+			-----------
+			resolution: str
+				UI-selected image resolution value.
+			
+			model: str
+				Gemini image model identifier.
+			
+			Returns:
+			--------
+			str | None
+				Gemini image_size value, or None when unsupported or unselected.
+			
+		"""
+		try:
+			if not self.supports_image_size( model ):
+				return None
+			
+			self.resolution_value = str( resolution or '' ).strip( )
+			if not self.resolution_value:
+				return None
+			
+			self.resolution_map = {
+					'media_resolution_low': '512',
+					'media_resolution_medium': '1K',
+					'media_resolution_high': '2K',
+					'low': '512',
+					'medium': '1K',
+					'high': '2K',
+					'512': '512',
+					'1K': '1K',
+					'2K': '2K',
+					'4K': '4K',
+			}
+			
+			return self.resolution_map.get( self.resolution_value )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Images'
+			exception.method = 'normalize_image_size( self, resolution: str=None, model: str=None )'
+			raise exception
+		
 	def normalize_response_modalities( self, response_modalities: Optional[ str ],
 			image_only: bool=False ) -> List[ str ]:
 		"""
@@ -1703,9 +1824,9 @@ class Images( Gemini ):
 			self.aspect_value = str( self.aspect_ratio or '' ).strip( )
 			if self.aspect_value:
 				self.image_kwargs[ 'aspect_ratio' ] = self.aspect_value
-			
-			self.size_value = str( self.size or '' ).strip( )
-			if self.size_value and self.supports_image_size( self.model ):
+				
+			self.size_value = self.normalize_image_size( resolution=self.size, model=self.model )
+			if self.size_value:
 				self.image_kwargs[ 'image_size' ] = self.size_value
 			
 			if len( self.image_kwargs ) > 0:
@@ -2273,52 +2394,6 @@ class Embeddings( Gemini ):
 			exception.method = 'normalize_contents( self, text: str | List[ str ] )'
 			raise exception
 	
-	def build_embedding_config( self, model: str='gemini-embedding-001',
-			dimensions: int=None, task_type: str=None, title: str=None ) -> EmbedContentConfig:
-		"""
-		
-			Purpose:
-			--------
-			Builds the Gemini embedding configuration for the selected model.
-			
-			Parameters:
-			-----------
-			model: str - Gemini embedding model identifier.
-			dimensions: int - Optional output dimensionality.
-			task_type: str - Optional embedding task type.
-			title: str - Optional retrieval-document title.
-			
-			Returns:
-			--------
-			EmbedContentConfig - Embedding configuration object.
-		
-		"""
-		try:
-			self.model = model
-			self.dimensions = dimensions
-			self.task_type = task_type.strip( ).upper( )
-			self.title = title.strip( )
-			self.config_kwargs = { }
-			
-			if self.dimensions is not None:
-				self.config_kwargs[ 'output_dimensionality' ]=self.dimensions
-			
-			if self.task_type and 'gemini-embedding-2' not in self.model:
-				self.config_kwargs[ 'task_type' ]=self.task_type
-			
-			if self.title and self.task_type == 'RETRIEVAL_DOCUMENT' \
-					and 'gemini-embedding-2' not in self.model:
-				self.config_kwargs[ 'title' ]=self.title
-			
-			self.embedding_config = EmbedContentConfig( **self.config_kwargs )
-			return self.embedding_config
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gemini'
-			exception.cause = 'Embeddings'
-			exception.method = 'build_embedding_config( self, model, dimensions, task_type, title )'
-			raise exception
-	
 	def extract_embeddings( self ) -> List[ float ] | List[ List[ float ] ] | None:
 		"""
 		
@@ -2362,9 +2437,64 @@ class Embeddings( Gemini ):
 			exception.method = 'extract_embeddings( self )'
 			raise exception
 		
-	def create( self, text: str | List[ str ], model: str='gemini-embedding-001',
-			dimensions: int=None, task_type: str=None, title: str=None,
-			encoding_format: str='float' ) -> List[ float ] | List[ List[ float ] ] | None:
+	def build_embedding_config( self, model: str = 'gemini-embedding-001',
+			dimensions: int = None, task_type: str = None,
+			title: str = None ) -> EmbedContentConfig:
+		"""
+		
+			Purpose:
+			--------
+			Builds the Gemini embedding configuration for the selected model.
+			
+			Parameters:
+			-----------
+			model: str
+				Gemini embedding model identifier.
+			
+			dimensions: int
+				Optional output dimensionality.
+			
+			task_type: str
+				Optional embedding task type.
+			
+			title: str
+				Optional retrieval-document title.
+			
+			Returns:
+			--------
+			EmbedContentConfig
+				Embedding configuration object.
+		
+		"""
+		try:
+			self.model = str( model or 'gemini-embedding-001' ).strip( )
+			self.dimensions = self.normalize_dimensions( dimensions )
+			self.task_type = str( task_type or '' ).strip( ).upper( )
+			self.title = str( title or '' ).strip( )
+			self.config_kwargs = { }
+			
+			if self.dimensions is not None:
+				self.config_kwargs[ 'output_dimensionality' ] = self.dimensions
+			
+			if self.task_type and 'gemini-embedding-2' not in self.model:
+				self.config_kwargs[ 'task_type' ] = self.task_type
+			
+			if self.title and self.task_type == 'RETRIEVAL_DOCUMENT' \
+					and 'gemini-embedding-2' not in self.model:
+				self.config_kwargs[ 'title' ] = self.title
+			
+			self.embedding_config = EmbedContentConfig( **self.config_kwargs )
+			return self.embedding_config
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'Embeddings'
+			exception.method = 'build_embedding_config( self, model, dimensions, task_type, title )'
+			raise exception
+	
+	def create( self, text: str | List[ str ], model: str = 'gemini-embedding-001',
+			dimensions: int = None, task_type: str = None, title: str = None,
+			encoding_format: str = 'float' ) -> List[ float ] | List[ List[ float ] ] | None:
 		"""
 			
 			Purpose:
@@ -2373,34 +2503,51 @@ class Embeddings( Gemini ):
 			
 			Parameters:
 			-----------
-			text: str | List[ str ] - Input text string or chunk list.
-			model: str - Embedding model identifier.
-			dimensions: int - Optional output dimensionality.
-			task_type: str - Optional embedding task type.
-			title: str - Optional retrieval-document title.
-			encoding_format: str - UI-retained encoding format value.
+			text: str | List[ str ]
+				Input text string or chunk list.
+			
+			model: str
+				Embedding model identifier.
+			
+			dimensions: int
+				Optional output dimensionality.
+			
+			task_type: str
+				Optional embedding task type.
+			
+			title: str
+				Optional retrieval-document title.
+			
+			encoding_format: str
+				UI-retained encoding format value.
 			
 			Returns:
 			--------
-			List[ float ] | List[ List[ float ] ] | None - Embedding vector or vectors.
+			List[ float ] | List[ List[ float ] ] | None
+				Embedding vector or vectors.
 		
 		"""
 		try:
 			throw_if( 'text', text )
 			self.api_key = cfg.GEMINI_API_KEY
 			throw_if( 'api_key', self.api_key )
-			self.dimensions = dimensions
-			self.task_type = task_type
-			self.title = title
-			self.encoding_format = encoding_format
+			self.model = str( model or 'gemini-embedding-001' ).strip( )
+			throw_if( 'model', self.model )
+			self.dimensions = self.normalize_dimensions( dimensions )
+			self.task_type = str( task_type or '' ).strip( ).upper( )
+			self.title = str( title or '' ).strip( )
+			self.encoding_format = encoding_format or 'float'
 			self.input_text = self.normalize_contents( text=text )
-			self.model = model.strip( )
-			self.encoding_format = encoding_format
-			self.embedding_config = self.build_embedding_config( model=self.model,
-				dimensions=self.imensions, task_type=self.task_type, title=self.title )
+			self.embedding_config = self.build_embedding_config(
+				model=self.model,
+				dimensions=self.dimensions,
+				task_type=self.task_type,
+				title=self.title )
 			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			self.response = self.client.models.embed_content( model=self.model,
-				contents=self.input_text, config=self.embedding_config )
+			self.response = self.client.models.embed_content(
+				model=self.model,
+				contents=self.input_text,
+				config=self.embedding_config )
 			
 			return self.extract_embeddings( )
 		except Exception as e:
@@ -3259,635 +3406,909 @@ class Files( Gemini ):
 
 		Purpose:
 		--------
-		Class encapsulating Gemini's FileStores API for uploading and managing remote assets.
+		Provide Gemini Files API upload, list, retrieve, delete, metadata extraction, and
+		file-aware content generation for Buddy Files mode.
 
 		Attributes:
 		-----------
-		client       : Client - Initialized GenAI client
-		file_id      : str - ID of the target file
-		display_name : str - User-friendly label for the file
-		mime_type    : str - Content type of the file
-		file_path    : str - Local filesystem path
-		file_list    : list - Collection of remote File objects
-		response     : any - RAW API response object
-		use_vertex   : bool - Integration flag
+		client:
+			Initialized Gemini GenAI client.
+
+		file_id:
+			Gemini file resource name.
+
+		file_path:
+			Local path used for file upload.
+
+		display_name:
+			Optional display name assigned during upload.
+
+		model:
+			Gemini model used for file-aware generation.
+
+		prompt:
+			User prompt used for file-aware generation.
+
+		response:
+			Last raw Gemini API response.
+
+		output_text:
+			Last extracted text output.
+
+		file_list:
+			Last Gemini Files API listing result.
+
+		files:
+			Resource names from the last file listing.
+
+		documents:
+			Display-name to file-resource-name mapping.
 
 		Methods:
 		--------
-		upload( path, name )      : Uploads a local file to Gemini storage
-		retrieve( file_id )       : Fetches metadata for a specific remote file
-		list_files( )             : Lists all files currently in remote storage
-		delete( file_id )         : Removes a file from remote storage
+		upload:
+			Upload a local file to Gemini Files API storage.
+
+		list:
+			List Gemini Files API files.
+
+		list_files:
+			Alias for list.
+
+		retrieve:
+			Retrieve Gemini file metadata.
+
+		extract:
+			Return Gemini file metadata as JSON text.
+
+		delete:
+			Delete a Gemini file.
+
+		summarize:
+			Ask a question about an uploaded Gemini file or a local file.
+
+		search:
+			Alias for summarize using query terminology.
+
+		survey:
+			Return normalized metadata for one Gemini file.
 
 	'''
-	api_version: Optional[ str ]
-	google_api_key: Optional[ str ]
-	storage_client: Optional[ storage.Client ]
-	project_id: Optional[ str ]
-	project_location: Optional[ str ]
+	client: Optional[ genai.Client ]
 	file_id: Optional[ str ]
-	bucket_id: Optional[ str ]
-	display_name: Optional[ str ]
-	mime_type: Optional[ str ]
 	file_path: Optional[ str ]
-	file_list: Optional[ List[ File ] ]
-	file_paths: Optional[ List[ str ] ]
-	file_lists: Optional[ List[ File ] ]
+	display_name: Optional[ str ]
+	model: Optional[ str ]
+	prompt: Optional[ str ]
 	response: Optional[ Any ]
-	use_vertex: Optional[ bool ]
-	collections: Optional[ Dict[ str, str ] ]
+	output_text: Optional[ str ]
+	file_list: Optional[ List[ Any ] ]
+	files: Optional[ List[ str ] ]
 	documents: Optional[ Dict[ str, str ] ]
+	content_config: Optional[ GenerateContentConfig ]
+	config_kwargs: Optional[ Dict[ str, Any ] ]
 	
-	def __init__( self, model: str='gemini-2.0-flash' ):
-		super( ).__init__( )
-		self.google_api_key = cfg.GOOGLE_API_KEY
-		self.project_id = cfg.GOOGLE_CLOUD_PROJECT_ID
-		self.project_location = cfg.GOOGLE_CLOUD_LOCATION
-		self.model = model
-		self.top_p = None
-		self.top_k = None
-		self.temperature = None
-		self.frequency_penalty = None
-		self.presence_penalty = None
-		self.max_tokens = None
-		self.tool_choice = None
-		self.stops = [ ]
-		self.response_modalities = [ ]
-		self.tools = [ ]
-		self.domains = [ ]
-		self.files = [ ]
-		self.http_options = { }
-		self.storage_client = None
-		self.bucket_id = None
-		self.file_id = None
-		self.display_name = None
-		self.media_resolution = None
-		self.mime_type = None
-		self.file_path = None
-		self.file_list = [ ]
-		self.response = None
-		self.collections = { }
-		self.documents = { }
-	
-	@property
-	def file_options( self ) -> List[ str ] | None:
+	def __init__( self, model: str = 'gemini-2.5-flash-lite' ) -> None:
 		"""
-			
+
 			Purpose:
 			--------
-			Returns list of available chat llm.
-			
+			Initialize the Gemini Files wrapper.
+
+			Parameters:
+			-----------
+			model: str
+				Default Gemini model used for file-aware generation.
+
+			Returns:
+			--------
+			None
+
 		"""
-		return self.files
+		super( ).__init__( )
+		self.gemini_api_key = cfg.GEMINI_API_KEY
+		self.model = model
+		self.client = None
+		self.file_id = None
+		self.file_path = None
+		self.display_name = None
+		self.prompt = None
+		self.response = None
+		self.output_text = None
+		self.file_list = [ ]
+		self.files = [ ]
+		self.documents = { }
+		self.content_config = None
+		self.config_kwargs = { }
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
 		"""
-			
+
 			Purpose:
 			--------
-			Returns list of available chat llm.
-			
-		"""
-		return [ 'gemini-3.5-flash',
-		         'gemini-3.5 flash-lite',
-		         'gemini-3.0-flash',
-		         'gemini-3.0-flash-lite' ]
-	
-	@property
-	def media_options( self ):
-		'''
-		
-		Purpose:
-		--------
-		Returns a List[ str ] of media resolution options.
-		
-		'''
-		return [ 'media_resolution_high',
-		         'media_resolution_medium',
-		         'media_resolution_low' ]
-	
-	@property
-	def include_options( self ) -> List[ str ] | None:
-		'''
+			Return Gemini model options used by Files mode.
 
-			Returns:
-			--------
-			A List[ str ] of the includeable options
-
-		'''
-		return [ 'file_search_call.results',
-		         'message.input_image.image_url',
-		         'message.output_text.logprobs',
-		         'reasoning.encrypted_content' ]
-	
-	@property
-	def reasoning_options( self ) -> List[ str ] | None:
-		'''
-
-			Returns:
-			--------
-			A List[ str ] of thinking effort options
-
-		'''
-		return [ 'THINKING_LEVEL_UNSPECIFIED', 'MINIMAL',
-		         'LOW', 'MEDIUM', 'HIGH' ]
-	
-	@property
-	def choice_options( self ) -> List[ str ] | None:
-		'''
-
-			Returns:
-			--------
-			A List[ str ] of available tools options
-
-		'''
-		return [ 'AUTO',
-		         'ANY',
-		         'NONE',
-		         'VALIDATED' ]
-	
-	@property
-	def tool_options( self ) -> List[ str ] | None:
-		'''
-
-			Returns:
-			--------
-			A List[ str ] of available tools options
-
-		'''
-		return [ 'google_search',
-		         'google_maps',
-		         'file_search',
-		         'url_context',
-		         'code_execution',
-		         'computer_use' ]
-	
-	@property
-	def modality_options( self ) -> List[ str ] | None:
-		'''
-
-			Returns:
-			--------
-			A List[ str ] of available modality options
-
-		'''
-		return [ 'MODALITY_UNSPECIFIED', 'TEXT', 'IMAGE', 'AUDIO' ]
-	
-	@property
-	def media_options( self ):
-		'''
-		
-		Purpose:
-		--------
-		Returns a List[ str ] of media resolution options.
-		
-		'''
-		return [ 'media_resolution_high',
-		         'media_resolution_medium',
-		         'media_resolution_low' ]
-	
-	def upload( self, filepath: str, name: str=None ) -> File | None:
-		"""
-		
-			Purpose:
-			--------
-			Uploads a file from a local path to Gemini's remote temporal storage.
-			
 			Parameters:
 			-----------
-			path: str - Local filesystem path to the file.
-			name: str - Optional display name for the file.
+			None
+
 			Returns:
 			--------
-			Optional[ File ] - Metadata object of the uploaded file.
-			
+			List[str] | None
+				Model option names.
+
+		"""
+		return [
+				'gemini-3.1-flash-lite-preview',
+				'gemini-3.1-pro-preview',
+				'gemini-3-flash-preview',
+				'gemini-2.5-flash',
+				'gemini-2.5-flash-lite',
+				'gemini-2.5-pro',
+				'gemini-2.0-flash',
+				'gemini-2.0-flash-lite',
+		]
+	
+	@property
+	def file_options( self ) -> List[ str ] | None:
+		"""
+
+			Purpose:
+			--------
+			Return Gemini file resource names from the last listing.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str] | None
+				Gemini file resource names.
+
+		"""
+		return self.files
+	
+	def initialize_client( self ) -> genai.Client:
+		"""
+
+			Purpose:
+			--------
+			Initialize and return a Gemini GenAI client.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			genai.Client
+				Initialized Gemini GenAI client.
+
 		"""
 		try:
-			throw_if( 'filepath', filepath )
-			throw_if( 'name', name )
-			self.file_path = filepath;
-			self.display_name = name
+			throw_if( 'gemini_api_key', cfg.GEMINI_API_KEY )
 			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			self.response = self.client.files.upload( path=self.file_path,
-				config={ 'display_name': self.display_name } )
-			return self.response
-		except Exception as e:
-			ex = Error( e );
-			ex.module = 'gemini'
-			ex.cause = 'Files'
-			ex.method = 'upload( self, path: str, name: str ) -> Optional[ File ]'
-			raise ex
-		
-	def list( self, model: str = 'gemini-3.0-flash', top_p: float = 0.8, top_k: int = 50,
-			temperature: float = 0.5, frequency: float = 0.0, presence: float = 0.0,
-			max_tokens: int = 8192, tool_choice: str = 'auto', stops: List[ str ] = None,
-			tools: List[ str ] = None, domains: List[ str ] = None,
-			modalities: List[ str ] = None,
-			media_resolution: str = 'media_resolution_medium' ) -> Any | None:
-		"""
-		
-			Purpose:
-			--------
-			Lists files from the existing Google Cloud Storage-backed file listing path.
-			
-			Parameters:
-			-----------
-			model: str - Gemini model identifier retained for UI compatibility.
-			top_p: float - Nucleus sampling value retained for UI compatibility.
-			top_k: int - Top-k token selection count retained for UI compatibility.
-			temperature: float - Sampling temperature retained for UI compatibility.
-			frequency: float - Frequency penalty retained for UI compatibility.
-			presence: float - Presence penalty retained for UI compatibility.
-			max_tokens: int - Maximum output tokens retained for UI compatibility.
-			tool_choice: str - Tool-choice value retained for UI compatibility.
-			stops: List[ str ] - Stop sequences retained for UI compatibility.
-			tools: List[ str ] - Tool names retained for UI compatibility.
-			domains: List[ str ] - Domain filters retained for UI compatibility.
-			modalities: List[ str ] - Modalities retained for UI compatibility.
-			media_resolution: str - Media resolution retained for UI compatibility.
-			
-			Returns:
-			--------
-			Any | None - List of file names or None.
-			
-		"""
-		try:
-			self.files = [ ]
-			self.model = model
-			self.top_p = top_p
-			self.top_k = top_k
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.tool_choice = tool_choice
-			self.stops = stops if stops is not None else [ ]
-			self.tools = tools if tools is not None else [ ]
-			self.domains = domains if domains is not None else [ ]
-			self.response_modalities = modalities if modalities is not None else [ ]
-			self.media_resolution = media_resolution
-			
-			self.storage_client = storage.Client( )
-			name = 'jeni-financial'
-			prefix = 'regulations'
-			bucket = self.storage_client.bucket( bucket_name=name )
-			
-			for blob in bucket.list_blobs( prefix=prefix ):
-				self.files.append( blob.name )
-			
-			self.file_list = self.files
-			return self.files
+			return self.client
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'gemini'
 			ex.cause = 'Files'
-			ex.method = 'list( self ) -> Any | None'
-			raise ex
-		
-		"""
-			
-			Purpose:
-			-------
-			Uploads and summarizes a PDF or text document.
-			
-			Parameters:
-			-----------
-			prompt: str - Summarization instructions.
-			filepath: str - Path to the document file.
-			model: str - The model identifier for processing.
-			Returns:
-			--------
-			Optional[ str ] - The document summary or None on failure.
-			
-		"""
-		try:
-			self.model = model
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.storage_client = storage.Client( api_key=cfg.GOOGLE_API_KEY )
-			name = "jeni-financial"
-			prefix = "regulations"
-			bucket = self.storage_client.bucket( bucket_name=name )
-			for blob in bucket.list_blobs( prefix=prefix ):
-				self.files.append( blob.name )
-			return self.files
-		except Exception as e:
-			ex = Error( e );
-			ex.module = 'gemini'
-			ex.cause = 'Files'
-			ex.method = 'list_files( self ) -> Optional[ List[ File ] ]'
+			ex.method = 'initialize_client( self ) -> genai.Client'
 			raise ex
 	
-	def retrieve( self, file_id: str ) -> Optional[ File ]:
+	def normalize_file_id( self, file_id: str = None, id: str = None,
+			name: str = None ) -> str:
 		"""
-			
+
 			Purpose:
 			--------
-			Retrieves the metadata and state of a previously uploaded file.
-			
+			Normalize the Gemini file resource name from common caller aliases.
+
 			Parameters:
 			-----------
-			file_id: str - The unique identifier of the remote file.
-			
+			file_id: str
+				Gemini file resource name.
+
+			id: str
+				Gemini file resource name accepted for app.py compatibility.
+
+			name: str
+				Gemini file resource name accepted for SDK naming consistency.
+
 			Returns:
 			--------
-			Optional[ File ] - File metadata object.
-		
+			str
+				Normalized Gemini file resource name.
+
 		"""
 		try:
+			if isinstance( file_id, str ) and file_id.strip( ):
+				return file_id.strip( )
+			
+			if isinstance( id, str ) and id.strip( ):
+				return id.strip( )
+			
+			if isinstance( name, str ) and name.strip( ):
+				return name.strip( )
+			
 			throw_if( 'file_id', file_id )
-			self.file_id = file_id
+			return ''
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'normalize_file_id( self, file_id, id, name ) -> str'
+			raise ex
+	
+	def normalize_path( self, path: str = None, filepath: str = None ) -> str:
+		"""
+
+			Purpose:
+			--------
+			Normalize a local filesystem path from common caller aliases.
+
+			Parameters:
+			-----------
+			path: str
+				Local filesystem path.
+
+			filepath: str
+				Local filesystem path accepted for compatibility.
+
+			Returns:
+			--------
+			str
+				Normalized local filesystem path.
+
+		"""
+		try:
+			if isinstance( path, str ) and path.strip( ):
+				return path.strip( )
+			
+			if isinstance( filepath, str ) and filepath.strip( ):
+				return filepath.strip( )
+			
+			throw_if( 'path', path )
+			return ''
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'normalize_path( self, path, filepath ) -> str'
+			raise ex
+	
+	def normalize_file_object( self, file: Any ) -> Dict[ str, Any ]:
+		"""
+
+			Purpose:
+			--------
+			Normalize a Gemini File object into a dictionary for UI rendering.
+
+			Parameters:
+			-----------
+			file: Any
+				Gemini file metadata object.
+
+			Returns:
+			--------
+			Dict[str, Any]
+				Normalized file metadata.
+
+		"""
+		try:
+			if file is None:
+				return { }
+			
+			if hasattr( file, 'model_dump' ):
+				return file.model_dump( )
+			
+			return {
+					'name': getattr( file, 'name', None ),
+					'display_name': getattr( file, 'display_name', None ),
+					'mime_type': getattr( file, 'mime_type', None ),
+					'size_bytes': getattr( file, 'size_bytes', None ),
+					'create_time': getattr( file, 'create_time', None ),
+					'update_time': getattr( file, 'update_time', None ),
+					'expiration_time': getattr( file, 'expiration_time', None ),
+					'uri': getattr( file, 'uri', None ),
+					'state': getattr( file, 'state', None ),
+			}
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'normalize_file_object( self, file ) -> Dict[ str, Any ]'
+			raise ex
+	
+	def extract_output_text( self ) -> str | None:
+		"""
+
+			Purpose:
+			--------
+			Extract text from the last Gemini content-generation response.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str | None
+				Response text when available.
+
+		"""
+		try:
+			if self.response is None:
+				return None
+			
+			self.output_text = getattr( self.response, 'text', None )
+			if isinstance( self.output_text, str ) and self.output_text.strip( ):
+				return self.output_text.strip( )
+			
+			return str( self.response )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'extract_output_text( self ) -> str | None'
+			raise ex
+	
+	def build_generation_config( self, temperature: float = None, top_p: float = None,
+			top_k: int = None, max_tokens: int = None,
+			stops: List[ str ] = None, instruct: str = None ) -> GenerateContentConfig:
+		"""
+
+			Purpose:
+			--------
+			Build a Gemini GenerateContentConfig for file-aware generation.
+
+			Parameters:
+			-----------
+			temperature: float
+				Optional sampling temperature.
+
+			top_p: float
+				Optional nucleus sampling value.
+
+			top_k: int
+				Optional top-k value.
+
+			max_tokens: int
+				Optional maximum output tokens.
+
+			stops: List[str]
+				Optional stop sequences.
+
+			instruct: str
+				Optional system instruction.
+
+			Returns:
+			--------
+			GenerateContentConfig
+				Config object for Gemini content generation.
+
+		"""
+		try:
+			self.config_kwargs = { }
+			
+			if temperature is not None:
+				self.config_kwargs[ 'temperature' ] = temperature
+			
+			if top_p is not None and float( top_p ) > 0:
+				self.config_kwargs[ 'top_p' ] = top_p
+			
+			if top_k is not None and int( top_k ) > 0:
+				self.config_kwargs[ 'top_k' ] = int( top_k )
+			
+			if max_tokens is not None and int( max_tokens ) > 0:
+				self.config_kwargs[ 'max_output_tokens' ] = int( max_tokens )
+			
+			if isinstance( stops, list ) and len( stops ) > 0:
+				self.config_kwargs[ 'stop_sequences' ] = stops
+			
+			if isinstance( instruct, str ) and instruct.strip( ):
+				self.config_kwargs[ 'system_instruction' ] = instruct.strip( )
+			
+			self.content_config = GenerateContentConfig( **self.config_kwargs )
+			return self.content_config
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'build_generation_config( self, **kwargs ) -> GenerateContentConfig'
+			raise ex
+	
+	def upload( self, path: str = None, filepath: str = None,
+			display_name: str = None, name: str = None ) -> File | Any:
+		"""
+
+			Purpose:
+			--------
+			Upload a local file to Gemini Files API temporary storage.
+
+			Parameters:
+			-----------
+			path: str
+				Local filesystem path.
+
+			filepath: str
+				Local filesystem path accepted for compatibility.
+
+			display_name: str
+				Optional display name for the uploaded file.
+
+			name: str
+				Optional display name accepted for compatibility.
+
+			Returns:
+			--------
+			File | Any
+				Gemini File metadata object.
+
+		"""
+		try:
+			self.initialize_client( )
+			self.file_path = self.normalize_path( path=path, filepath=filepath )
+			self.display_name = display_name if isinstance(
+				display_name, str ) and display_name.strip( ) else name
+			
+			if not isinstance( self.display_name, str ) or not self.display_name.strip( ):
+				self.display_name = Path( self.file_path ).name
+			
+			self.response = self.client.files.upload(
+				file=self.file_path,
+				config={ 'display_name': self.display_name.strip( ) } )
+			
+			self.file_id = getattr( self.response, 'name', None )
+			if isinstance( self.file_id, str ) and self.file_id.strip( ):
+				self.documents[ self.display_name ] = self.file_id
+			
+			return self.response
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'upload( self, path: str=None, filepath: str=None ) -> File | Any'
+			raise ex
+	
+	def list( self, page_size: int = None ) -> List[ Any ]:
+		"""
+
+			Purpose:
+			--------
+			List uploaded Gemini Files API files.
+
+			Parameters:
+			-----------
+			page_size: int
+				Optional page size retained for compatibility.
+
+			Returns:
+			--------
+			List[Any]
+				Gemini file metadata objects.
+
+		"""
+		try:
+			self.initialize_client( )
+			self.file_list = [ ]
+			
+			for file in self.client.files.list( ):
+				self.file_list.append( file )
+			
+			self.files = [
+					getattr( file, 'name', '' )
+					for file in self.file_list
+					if getattr( file, 'name', None )
+			]
+			
+			self.documents = { }
+			for file in self.file_list:
+				resource_name = getattr( file, 'name', None )
+				display_name = getattr( file, 'display_name', None ) or resource_name
+				
+				if resource_name:
+					self.documents[ display_name ] = resource_name
+			
+			return self.file_list
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'list( self, page_size: int=None ) -> List[ Any ]'
+			raise ex
+	
+	def list_files( self, page_size: int = None ) -> List[ Any ]:
+		"""
+
+			Purpose:
+			--------
+			Alias for listing uploaded Gemini Files API files.
+
+			Parameters:
+			-----------
+			page_size: int
+				Optional page size retained for compatibility.
+
+			Returns:
+			--------
+			List[Any]
+				Gemini file metadata objects.
+
+		"""
+		try:
+			return self.list( page_size=page_size )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'list_files( self, page_size: int=None ) -> List[ Any ]'
+			raise ex
+	
+	def retrieve( self, file_id: str = None, id: str = None, name: str = None ) -> File | Any:
+		"""
+
+			Purpose:
+			--------
+			Retrieve metadata for a Gemini file.
+
+			Parameters:
+			-----------
+			file_id: str
+				Gemini file resource name.
+
+			id: str
+				Gemini file resource name accepted for compatibility.
+
+			name: str
+				Gemini file resource name accepted for SDK naming consistency.
+
+			Returns:
+			--------
+			File | Any
+				Gemini File metadata object.
+
+		"""
+		try:
+			self.initialize_client( )
+			self.file_id = self.normalize_file_id( file_id=file_id, id=id, name=name )
 			self.response = self.client.files.get( name=self.file_id )
 			return self.response
 		except Exception as e:
-			ex = Error( e );
+			ex = Error( e )
 			ex.module = 'gemini'
 			ex.cause = 'Files'
-			ex.method = 'retrieve( self, file_id: str ) -> Optional[ File ]'
+			ex.method = 'retrieve( self, file_id: str=None, id: str=None ) -> File | Any'
 			raise ex
 	
-	def summarize( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
-			temperature: float=None, top_p: float=None, frequency: float=None,
-			presence: float=None, max_tokens: int=None, stops: List[ str ]=None,
-			instruct: str=None ) -> str | None:
+	def extract( self, file_id: str = None, id: str = None, name: str = None ) -> str:
 		"""
-			
+
 			Purpose:
-			-------
-			Uploads and summarizes a PDF or text document.
-			
+			--------
+			Return Gemini file metadata as JSON text. Gemini Files API does not provide
+			file-content download.
+
 			Parameters:
 			-----------
-			prompt: str - Summarization instructions.
-			filepath: str - Path to the document file.
-			model: str - The model identifier for processing.
+			file_id: str
+				Gemini file resource name.
+
+			id: str
+				Gemini file resource name accepted for compatibility.
+
+			name: str
+				Gemini file resource name accepted for SDK naming consistency.
+
 			Returns:
 			--------
-			Optional[ str ] - The document summary or None on failure.
-			
+			str
+				Serialized Gemini file metadata.
+
 		"""
 		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'filepath', filepath )
-			self.prompt = prompt
-			self.file_path = filepath
-			self.model = model
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.instructions = instruct
-			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			if self.use_vertex:
-				with open( self.file_path, 'rb' ) as f:
-					doc_part = Part.from_bytes( data=f.read( ), mime_type="application/pdf" )
-				response = self.client.models.generate_content( model=self.model,
-					contents=[ doc_part, self.prompt ], config=self.content_config )
-			else:
-				uploaded_file = self.client.files.upload( path=self.file_path )
-				response = self.client.models.generate_content( model=self.model,
-					contents=[ uploaded_file, self.prompt ], config=self.content_config )
-			return response.text
+			file = self.retrieve( file_id=file_id, id=id, name=name )
+			metadata = self.normalize_file_object( file )
+			return json.dumps( metadata, indent=2, default=str )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'gemini'
 			ex.cause = 'Files'
-			ex.method = 'summarize_document( self, prompt, filepath, model ) -> str'
+			ex.method = 'extract( self, file_id: str=None, id: str=None ) -> str'
 			raise ex
 	
-	def search( self, prompt: str, filepath: str, model: str='gemini-2.0-flash',
-			temperature: float=None, top_p: float=None, frequency: float=None,
-			presence: float=None, max_tokens: int=None, stops: List[ str ]=None,
-			instruct: str=None ) -> str | None:
+	def delete( self, file_id: str = None, id: str = None, name: str = None ) -> Dict[ str, Any ]:
 		"""
-			
-			Purpose:
-			-------
-			Uploads and summarizes a PDF or text document.
-			
-			Parameters:
-			-----------
-			prompt: str - Summarization instructions.
-			filepath: str - Path to the document file.
-			model: str - The model identifier for processing.
-			Returns:
-			--------
-			Optional[ str ] - The document summary or None on failure.
-			
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'filepath', filepath )
-			self.prompt = prompt
-			self.file_path = filepath
-			self.model = model
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.instructions = instruct
-			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			if self.use_vertex:
-				with open( self.file_path, 'rb' ) as f:
-					doc_part = Part.from_bytes( data=f.read( ), mime_type="application/pdf" )
-				response = self.client.models.generate_content( model=self.model,
-					contents=[ doc_part, self.prompt ], config=self.content_config )
-			else:
-				uploaded_file = self.client.files.upload( path=self.file_path )
-				response = self.client.models.generate_content( model=self.model,
-					contents=[ uploaded_file,
-					           self.prompt ], config=self.content_config )
-			return response.text
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'gemini'
-			ex.cause = 'Files'
-			ex.method = 'search( self, prompt, filepath, model ) -> str'
-			raise ex
-	
-	def survey( self, prompt: str, filepaths: List[ str ], model: str='gemini-2.0-flash',
-			temperature: float=None, top_p: float=None, frequency: float=None,
-			presence: float=None, max_tokens: int=None,
-			stops: List[ str ]=None ) -> str | None:
-		"""
-			
-			Purpose:
-			-------
-			Uploads and summarizes a PDF or text document.
-			
-			Parameters:
-			-----------
-			prompt: str - Summarization instructions.
-			filepath: str - Path to the document file.
-			model: str - The model identifier for processing.
-			Returns:
-			--------
-			Optional[ str ] - The document summary or None on failure.
-			
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'filepaths', filepaths )
-			self.prompt = prompt
-			self.file_paths = filepaths
-			self.model = model
-			self.top_p = top_p
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.content_config = GenerateContentConfig( temperature=self.temperature )
-			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			if self.use_vertex:
-				with open( self.file_path, 'rb' ) as f:
-					doc_part = Part.from_bytes( data=f.read( ), mime_type="application/pdf" )
-				response = self.client.models.generate_content( model=self.model,
-					contents=[ doc_part, self.prompt ], config=self.content_config )
-			else:
-				uploaded_file = self.client.files.upload( path=self.file_paths )
-				response = self.client.models.generate_content( model=self.model,
-					contents=[ uploaded_file, self.prompt ], config=self.content_config )
-			return response.text
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'gemini'
-			ex.cause = 'Files'
-			ex.method = 'survey( self, prompt, filepaths, model ) -> str'
-			raise ex
-	
-	def web_search( self, prompt: str, model: str='gemini-2.5-flash-lite',
-			temperature: float=None, top_p: float=None, frequency: float=None, presence: float=None,
-			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
-		"""
-		
+
 			Purpose:
 			--------
-			Generates a response grounded in Google Search results.
-			
+			Delete a Gemini file.
+
 			Parameters:
 			-----------
-			prompt: str - The query for search-augmented generation.
-			model: str - The Gemini model identifier.
-			
+			file_id: str
+				Gemini file resource name.
+
+			id: str
+				Gemini file resource name accepted for compatibility.
+
+			name: str
+				Gemini file resource name accepted for SDK naming consistency.
+
 			Returns:
 			--------
-			Optional[ str ] - The grounded text response.
-		
+			Dict[str, Any]
+				Normalized deletion result.
+
 		"""
 		try:
-			throw_if( 'prompt', prompt )
-			self.contents = prompt;
-			self.model = model
-			self.contents = prompt;
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.instructions = instruct
-			self.tool_config = [
-					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
-			self.content_config = GenerateContentConfig( temperature=self.temperature,
-				tools=self.tool_config, system_instruction=self.instructions )
-			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			response = self.client.models.generate_content( model=self.model,
-				contents=self.contents, config=self.content_config )
-			return response.text
-		except Exception as e:
-			exception = Error( e );
-			exception.module = 'gemini'
-			exception.cause = 'Chat'
-			exception.method = 'web_search( self, prompt, model ) -> Optional[ str ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def search_maps( self, prompt: str, model: str='gemini-2.5-flash-lite',
-			temperature: float=None, top_p: float=None, frequency: float=None,
-			presence: float=None,
-			max_tokens: int=None, stops: List[ str ]=None, instruct: str=None ) -> str | None:
-		"""
-		
-			Purpose:
-			--------
-			Uses Google Search grounding specifically for location and place-based queries.
-			
-			Parameters:
-			-----------
-			prompt: str - The location or directions query.
-			model: str - The Gemini model identifier.
-			Returns:
-			--------
-			Optional[ str ] - The grounded response containing place data.
-			
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			self.contents = f"Using Google Search and Maps data, answer: {prompt}"
-			self.model = model
-			self.contents = prompt;
-			self.top_p = top_p;
-			self.temperature = temperature
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_tokens = max_tokens
-			self.stops = stops
-			self.instructions = instruct
-			self.tool_config = [
-					types.Tool( google_search_retrieval=types.GoogleSearchRetrieval( ) ) ]
-			self.content_config = GenerateContentConfig( temperature=self.temperature,
-				tools=self.tool_config )
-			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
-			response = self.client.models.generate_content( model=self.model,
-				contents=self.contents, config=self.content_config )
-			return response.text
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gemini'
-			exception.cause = 'Chat'
-			exception.method = 'search_maps( self, prompt, model ) -> Optional[ str ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def delete( self, file_id: str ) -> bool | None:
-		"""
-		
-			Purpose:
-			--------
-			Deletes a specific file from remote storage to free up project quota.
-			
-			Parameters:
-			-----------
-			file_id: str - Unique identifier of the file to remove.
-			
-			Returns:
-			--------
-			bool - True if deletion was successful.
-		
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
+			self.initialize_client( )
+			self.file_id = self.normalize_file_id( file_id=file_id, id=id, name=name )
 			self.client.files.delete( name=self.file_id )
+			
+			return {
+					'deleted': True,
+					'name': self.file_id,
+			}
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'gemini'
-			ex.cause = 'FileStore'
-			ex.method = 'delete( self, file_id: str ) -> bool'
+			ex.cause = 'Files'
+			ex.method = 'delete( self, file_id: str=None, id: str=None ) -> Dict[ str, Any ]'
 			raise ex
+	
+	def summarize( self, id: str = None, file_id: str = None, path: str = None,
+			filepath: str = None, prompt: str = None, model: str = 'gemini-2.5-flash-lite',
+			temperature: float = None, top_p: float = None, top_k: int = None,
+			max_tokens: int = None, stops: List[ str ] = None,
+			instruct: str = None ) -> str | None:
+		"""
+
+			Purpose:
+			--------
+			Ask Gemini to summarize or answer questions about an uploaded Gemini file or a
+			local file path.
+
+			Parameters:
+			-----------
+			id: str
+				Gemini file resource name.
+
+			file_id: str
+				Gemini file resource name accepted for compatibility.
+
+			path: str
+				Optional local file path.
+
+			filepath: str
+				Optional local file path accepted for compatibility.
+
+			prompt: str
+				User question or summarization instruction.
+
+			model: str
+				Gemini model identifier.
+
+			temperature: float
+				Optional sampling temperature.
+
+			top_p: float
+				Optional nucleus sampling value.
+
+			top_k: int
+				Optional top-k value.
+
+			max_tokens: int
+				Optional maximum output tokens.
+
+			stops: List[str]
+				Optional stop sequences.
+
+			instruct: str
+				Optional system instruction.
+
+			Returns:
+			--------
+			str | None
+				Generated answer or summary.
+
+		"""
+		try:
+			self.initialize_client( )
+			self.prompt = prompt if isinstance( prompt, str ) and prompt.strip( ) else \
+				'Summarize this file.'
+			self.model = model if isinstance( model, str ) and model.strip( ) else \
+				'gemini-2.5-flash-lite'
+			
+			self.content_config = self.build_generation_config(
+				temperature=temperature,
+				top_p=top_p,
+				top_k=top_k,
+				max_tokens=max_tokens,
+				stops=stops,
+				instruct=instruct )
+			
+			if isinstance( id, str ) and id.strip( ) or isinstance( file_id,
+					str ) and file_id.strip( ):
+				self.file_id = self.normalize_file_id( file_id=file_id, id=id )
+				file = self.client.files.get( name=self.file_id )
+			else:
+				self.file_path = self.normalize_path( path=path, filepath=filepath )
+				file = self.client.files.upload( file=self.file_path )
+				self.file_id = getattr( file, 'name', None )
+			
+			self.response = self.client.models.generate_content(
+				model=self.model,
+				contents=[ self.prompt, file ],
+				config=self.content_config )
+			
+			return self.extract_output_text( )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'summarize( self, id: str=None, prompt: str=None ) -> str | None'
+			raise ex
+	
+	def search( self, id: str = None, file_id: str = None, query: str = None,
+			prompt: str = None, model: str = 'gemini-2.5-flash-lite',
+			temperature: float = None, top_p: float = None, top_k: int = None,
+			max_tokens: int = None, stops: List[ str ] = None,
+			instruct: str = None ) -> str | None:
+		"""
+
+			Purpose:
+			--------
+			Ask a question about an uploaded Gemini file.
+
+			Parameters:
+			-----------
+			id: str
+				Gemini file resource name.
+
+			file_id: str
+				Gemini file resource name accepted for compatibility.
+
+			query: str
+				User question.
+
+			prompt: str
+				User prompt accepted for compatibility.
+
+			model: str
+				Gemini model identifier.
+
+			temperature: float
+				Optional sampling temperature.
+
+			top_p: float
+				Optional nucleus sampling value.
+
+			top_k: int
+				Optional top-k value.
+
+			max_tokens: int
+				Optional maximum output tokens.
+
+			stops: List[str]
+				Optional stop sequences.
+
+			instruct: str
+				Optional system instruction.
+
+			Returns:
+			--------
+			str | None
+				Generated answer.
+
+		"""
+		try:
+			question = query if isinstance( query, str ) and query.strip( ) else prompt
+			throw_if( 'query', question )
+			
+			return self.summarize(
+				id=id,
+				file_id=file_id,
+				prompt=question,
+				model=model,
+				temperature=temperature,
+				top_p=top_p,
+				top_k=top_k,
+				max_tokens=max_tokens,
+				stops=stops,
+				instruct=instruct )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'search( self, id: str=None, query: str=None ) -> str | None'
+			raise ex
+	
+	def survey( self, id: str = None, file_id: str = None, name: str = None ) -> Dict[ str, Any ]:
+		"""
+
+			Purpose:
+			--------
+			Return normalized metadata for a Gemini file.
+
+			Parameters:
+			-----------
+			id: str
+				Gemini file resource name.
+
+			file_id: str
+				Gemini file resource name accepted for compatibility.
+
+			name: str
+				Gemini file resource name accepted for SDK naming consistency.
+
+			Returns:
+			--------
+			Dict[str, Any]
+				Normalized Gemini file metadata.
+
+		"""
+		try:
+			file = self.retrieve( file_id=file_id, id=id, name=name )
+			return self.normalize_file_object( file )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'Files'
+			ex.method = 'survey( self, id: str=None, file_id: str=None ) -> Dict[ str, Any ]'
+			raise ex
+	
+	def __dir__( self ) -> List[ str ] | None:
+		'''
+
+			Purpose:
+			--------
+			Return member names for inspection.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str] | None
+				Member names.
+
+		'''
+		return [
+				'client',
+				'file_id',
+				'file_path',
+				'display_name',
+				'model',
+				'prompt',
+				'response',
+				'output_text',
+				'file_list',
+				'files',
+				'documents',
+				'content_config',
+				'config_kwargs',
+				'model_options',
+				'file_options',
+				'initialize_client',
+				'normalize_file_id',
+				'normalize_path',
+				'normalize_file_object',
+				'extract_output_text',
+				'build_generation_config',
+				'upload',
+				'list',
+				'list_files',
+				'retrieve',
+				'extract',
+				'delete',
+				'summarize',
+				'search',
+				'survey',
+		]
 
 class FileSearch( Gemini ):
 	"""
@@ -4088,6 +4509,268 @@ class FileSearch( Gemini ):
 			exception.module = 'gemini'
 			exception.cause = 'FileSearch'
 			exception.method = 'delete( self, store_id: str, force: bool=True ) -> bool | Any'
+			raise exception
+		
+	def upload_to_store( self, store_id: str = None, name: str = None, path: str = None,
+			filepath: str = None, display_name: str = None,
+			mime_type: str = None, metadata: Dict[ str, Any ] = None,
+			chunking_config: Dict[ str, Any ] = None ) -> Any:
+		"""
+
+			Purpose:
+			--------
+			Upload a local file to a Gemini File Search Store and import it as a searchable
+			File Search Store document.
+
+			Parameters:
+			-----------
+			store_id: str
+				Gemini File Search Store resource name in the form fileSearchStores/<id>.
+
+			name: str
+				Gemini File Search Store resource name accepted for compatibility.
+
+			path: str
+				Local filesystem path to upload.
+
+			filepath: str
+				Local filesystem path accepted for compatibility.
+
+			display_name: str
+				Optional display name for the imported document.
+
+			mime_type: str
+				Optional MIME type for the uploaded document.
+
+			metadata: Dict[str, Any]
+				Optional custom metadata.
+
+			chunking_config: Dict[str, Any]
+				Optional Gemini File Search chunking configuration.
+
+			Returns:
+			--------
+			Any
+				Gemini long-running operation or upload/import response.
+
+		"""
+		try:
+			self.store_id = store_id if isinstance( store_id, str ) and store_id.strip( ) else name
+			self.file_path = path if isinstance( path, str ) and path.strip( ) else filepath
+			throw_if( 'store_id', self.store_id )
+			throw_if( 'path', self.file_path )
+			self.client = genai.Client( api_key=cfg.GEMINI_API_KEY )
+			self.config = { }
+			
+			if isinstance( display_name, str ) and display_name.strip( ):
+				self.config[ 'display_name' ] = display_name.strip( )
+			
+			if isinstance( mime_type, str ) and mime_type.strip( ):
+				self.config[ 'mime_type' ] = mime_type.strip( )
+			
+			if isinstance( metadata, dict ) and len( metadata ) > 0:
+				self.config[ 'metadata' ] = metadata
+			
+			if isinstance( chunking_config, dict ) and len( chunking_config ) > 0:
+				self.config[ 'chunking_config' ] = chunking_config
+			
+			if len( self.config ) > 0:
+				self.response = self.client.file_search_stores.upload_to_file_search_store(
+					file_search_store_name=self.store_id.strip( ),
+					file=self.file_path,
+					config=self.config )
+			else:
+				self.response = self.client.file_search_stores.upload_to_file_search_store(
+					file_search_store_name=self.store_id.strip( ),
+					file=self.file_path )
+			
+			self.refresh_collections( )
+			return self.response
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'FileSearch'
+			exception.method = 'upload_to_store( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def upload( self, store_id: str = None, name: str = None, path: str = None,
+			filepath: str = None, display_name: str = None,
+			mime_type: str = None, metadata: Dict[ str, Any ] = None,
+			chunking_config: Dict[ str, Any ] = None ) -> Any:
+		"""
+
+			Purpose:
+			--------
+			Compatibility alias for uploading/importing a local file into a Gemini File
+			Search Store.
+
+			Parameters:
+			-----------
+			store_id: str
+				Gemini File Search Store resource name.
+
+			name: str
+				Gemini File Search Store resource name accepted for compatibility.
+
+			path: str
+				Local filesystem path to upload.
+
+			filepath: str
+				Local filesystem path accepted for compatibility.
+
+			display_name: str
+				Optional display name.
+
+			mime_type: str
+				Optional MIME type.
+
+			metadata: Dict[str, Any]
+				Optional custom metadata.
+
+			chunking_config: Dict[str, Any]
+				Optional chunking configuration.
+
+			Returns:
+			--------
+			Any
+				Gemini upload/import response.
+
+		"""
+		try:
+			return self.upload_to_store(
+				store_id=store_id,
+				name=name,
+				path=path,
+				filepath=filepath,
+				display_name=display_name,
+				mime_type=mime_type,
+				metadata=metadata,
+				chunking_config=chunking_config )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'FileSearch'
+			exception.method = 'upload( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def upload_file( self, store_id: str = None, name: str = None, path: str = None,
+			filepath: str = None, display_name: str = None,
+			mime_type: str = None, metadata: Dict[ str, Any ] = None,
+			chunking_config: Dict[ str, Any ] = None ) -> Any:
+		"""
+
+			Purpose:
+			--------
+			Compatibility alias for uploading/importing a local file into a Gemini File
+			Search Store.
+
+			Parameters:
+			-----------
+			store_id: str
+				Gemini File Search Store resource name.
+
+			name: str
+				Gemini File Search Store resource name accepted for compatibility.
+
+			path: str
+				Local filesystem path to upload.
+
+			filepath: str
+				Local filesystem path accepted for compatibility.
+
+			display_name: str
+				Optional display name.
+
+			mime_type: str
+				Optional MIME type.
+
+			metadata: Dict[str, Any]
+				Optional custom metadata.
+
+			chunking_config: Dict[str, Any]
+				Optional chunking configuration.
+
+			Returns:
+			--------
+			Any
+				Gemini upload/import response.
+
+		"""
+		try:
+			return self.upload_to_store(
+				store_id=store_id,
+				name=name,
+				path=path,
+				filepath=filepath,
+				display_name=display_name,
+				mime_type=mime_type,
+				metadata=metadata,
+				chunking_config=chunking_config )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'FileSearch'
+			exception.method = 'upload_file( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def import_file( self, store_id: str = None, name: str = None, path: str = None,
+			filepath: str = None, display_name: str = None,
+			mime_type: str = None, metadata: Dict[ str, Any ] = None,
+			chunking_config: Dict[ str, Any ] = None ) -> Any:
+		"""
+
+			Purpose:
+			--------
+			Compatibility alias for uploading/importing a local file into a Gemini File
+			Search Store.
+
+			Parameters:
+			-----------
+			store_id: str
+				Gemini File Search Store resource name.
+
+			name: str
+				Gemini File Search Store resource name accepted for compatibility.
+
+			path: str
+				Local filesystem path to upload.
+
+			filepath: str
+				Local filesystem path accepted for compatibility.
+
+			display_name: str
+				Optional display name.
+
+			mime_type: str
+				Optional MIME type.
+
+			metadata: Dict[str, Any]
+				Optional custom metadata.
+
+			chunking_config: Dict[str, Any]
+				Optional chunking configuration.
+
+			Returns:
+			--------
+			Any
+				Gemini upload/import response.
+
+		"""
+		try:
+			return self.upload_to_store(
+				store_id=store_id,
+				name=name,
+				path=path,
+				filepath=filepath,
+				display_name=display_name,
+				mime_type=mime_type,
+				metadata=metadata,
+				chunking_config=chunking_config )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gemini'
+			exception.cause = 'FileSearch'
+			exception.method = 'import_file( self, store_id: str=None, path: str=None )'
 			raise exception
 		
 class CloudBuckets( Gemini ):
@@ -4293,7 +4976,177 @@ class CloudBuckets( Gemini ):
 			ex.cause = 'VectorStores'
 			ex.method = 'retrieve( self, bucket, name )'
 			raise ex
+		
+		def delete( self, bucket: str = None, name: str = None,
+				bucket_name: str = None, object_name: str = None ) -> bool:
+			"""
 	
+				Purpose:
+				--------
+				Delete an object from a Google Cloud Storage bucket.
+	
+				Parameters:
+				-----------
+				bucket: str
+					GCS bucket name.
+	
+				name: str
+					Object name.
+	
+				bucket_name: str
+					GCS bucket name accepted for app.py compatibility.
+	
+				object_name: str
+					Object name accepted for app.py compatibility.
+	
+				Returns:
+				--------
+				bool
+					True when the delete request completes.
+	
+			"""
+		
+		try:
+			self.bucket_name = bucket_name if isinstance( bucket_name, str ) and \
+			                                  bucket_name.strip( ) else bucket
+			self.object_name = object_name if isinstance( object_name, str ) and \
+			                                  object_name.strip( ) else name
+			throw_if( 'bucket', self.bucket_name )
+			throw_if( 'name', self.object_name )
+			self.bucket = self.client.bucket( self.bucket_name )
+			blob = self.bucket.blob( self.object_name )
+			blob.delete( )
+			return True
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'CloudBuckets'
+			ex.method = 'delete( self, bucket: str=None, name: str=None ) -> bool'
+			raise ex
+	
+	def delete_object( self, bucket: str = None, name: str = None,
+			bucket_name: str = None, object_name: str = None ) -> bool:
+		"""
+
+			Purpose:
+			--------
+			Compatibility alias for deleting an object from a Google Cloud Storage bucket.
+
+			Parameters:
+			-----------
+			bucket: str
+				GCS bucket name.
+
+			name: str
+				Object name.
+
+			bucket_name: str
+				GCS bucket name accepted for app.py compatibility.
+
+			object_name: str
+				Object name accepted for app.py compatibility.
+
+			Returns:
+			--------
+			bool
+				True when the delete request completes.
+
+		"""
+		try:
+			return self.delete(
+				bucket=bucket,
+				name=name,
+				bucket_name=bucket_name,
+				object_name=object_name )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'CloudBuckets'
+			ex.method = 'delete_object( self, bucket: str=None, name: str=None ) -> bool'
+			raise ex
+	
+	def delete_blob( self, bucket: str = None, name: str = None,
+			bucket_name: str = None, object_name: str = None ) -> bool:
+		"""
+
+			Purpose:
+			--------
+			Compatibility alias for deleting an object from a Google Cloud Storage bucket.
+
+			Parameters:
+			-----------
+			bucket: str
+				GCS bucket name.
+
+			name: str
+				Object name.
+
+			bucket_name: str
+				GCS bucket name accepted for app.py compatibility.
+
+			object_name: str
+				Object name accepted for app.py compatibility.
+
+			Returns:
+			--------
+			bool
+				True when the delete request completes.
+
+		"""
+		try:
+			return self.delete(
+				bucket=bucket,
+				name=name,
+				bucket_name=bucket_name,
+				object_name=object_name )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'CloudBuckets'
+			ex.method = 'delete_blob( self, bucket: str=None, name: str=None ) -> bool'
+			raise ex
+	
+	def delete_file( self, bucket: str = None, name: str = None,
+			bucket_name: str = None, object_name: str = None ) -> bool:
+		"""
+
+			Purpose:
+			--------
+			Compatibility alias for deleting an object from a Google Cloud Storage bucket.
+
+			Parameters:
+			-----------
+			bucket: str
+				GCS bucket name.
+
+			name: str
+				Object name.
+
+			bucket_name: str
+				GCS bucket name accepted for app.py compatibility.
+
+			object_name: str
+				Object name accepted for app.py compatibility.
+
+			Returns:
+			--------
+			bool
+				True when the delete request completes.
+
+		"""
+		try:
+			return self.delete(
+				bucket=bucket,
+				name=name,
+				bucket_name=bucket_name,
+				object_name=object_name )
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gemini'
+			ex.cause = 'CloudBuckets'
+			ex.method = 'delete_file( self, bucket: str=None, name: str=None ) -> bool'
+			raise ex
+		
 	def list( self, bucket: str ):
 		"""
 

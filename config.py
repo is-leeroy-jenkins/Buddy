@@ -109,17 +109,15 @@ GPT_DOMAINS = [ 'congress.gov',
                 'omb.gov',
                 'defense.gov' ]
 
-GPT_MODES = [ 'Chat',
-              'Text',
-              'Images',
-              'Audio',
-              'Embeddings',
-              'Document Q&A',
-              'Files',
-              'Vector Stores',
-              'Prompt Engineering',
-              'Data Management',
-              'Export' ]
+GROK_MODES = [ 'Chat',
+               'Text',
+               'Images',
+               'Document Q&A',
+               'Files',
+               'Vector Stores',
+               'Prompt Engineering',
+               'Data Management',
+               'Export' ]
 
 GPT_GENERATION = [ 'gpt-image-1.5', 'dall-e-2', 'dall-e-3', 'gpt-image-1', 'gpt-image-1-mini' ]
 

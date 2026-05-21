@@ -8435,22 +8435,22 @@ def build_docqna_local_prompt( query: str, hits: List[ Dict[ str, Any ] ] ) -> s
 
 def run_docqna_query( query: str ) -> str:
 	"""
-	
+
 		Purpose:
 		--------
 		Run a local-upload Document Q&A query using retrieved document chunks and the
 		selected provider chat wrapper.
-		
+
 		Parameters:
 		-----------
 		query: str
 			User question.
-		
+
 		Returns:
 		--------
 		str
 			Generated answer.
-		
+
 	"""
 	provider_name = get_provider_name( )
 	chat = get_chat_module( )
@@ -8473,8 +8473,9 @@ def run_docqna_query( query: str ) -> str:
 		apply_gemini_runtime_config( )
 		result = chat.generate_text(
 			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'gemini-2.5-flash-lite',
+			model=st.session_state.get( 'docqna_model' )
+			      or st.session_state.get( 'text_model' )
+			      or 'gemini-2.5-flash-lite',
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			top_k=st.session_state.get( 'docqna_top_k' ),
@@ -8486,8 +8487,9 @@ def run_docqna_query( query: str ) -> str:
 	if provider_name == 'GPT':
 		result = chat.generate_text(
 			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'gpt-5-nano',
+			model=st.session_state.get( 'docqna_model' )
+			      or st.session_state.get( 'text_model' )
+			      or 'gpt-5-nano',
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
@@ -8498,25 +8500,30 @@ def run_docqna_query( query: str ) -> str:
 			instruct=st.session_state.get( 'docqna_system_instructions' ) )
 		return str( result or '' ).strip( )
 	
-	try:
-		result = chat.create(
-			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'grok-4.20',
-			max_tokens=st.session_state.get( 'docqna_max_tokens' ) or 10000,
-			temperature=st.session_state.get( 'docqna_temperature' ) or 0.8,
-			top_p=st.session_state.get( 'docqna_top_percent' ) or 0.9,
-			effort=st.session_state.get( 'docqna_reasoning' ) or 'high',
-			format=st.session_state.get( 'docqna_response_format' ) or 'text',
-			store=bool( st.session_state.get( 'docqna_store', True ) ),
-			instruct=st.session_state.get( 'docqna_system_instructions' ) )
-		return str( result or '' ).strip( )
-	except Exception:
+	if provider_name == 'Grok':
 		result = chat.generate_text(
 			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'grok-4.20' )
+			model=st.session_state.get( 'docqna_model' )
+			      or st.session_state.get( 'text_model' )
+			      or 'grok-4.3',
+			temperature=st.session_state.get( 'docqna_temperature' ),
+			top_p=st.session_state.get( 'docqna_top_percent' ),
+			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
+			presence=st.session_state.get( 'docqna_presence_penalty' ),
+			max_tokens=st.session_state.get( 'docqna_max_tokens' ) or 10000,
+			store=bool( st.session_state.get( 'docqna_store', True ) ),
+			stream=False,
+			instruct=st.session_state.get( 'docqna_system_instructions' ),
+			reasoning=st.session_state.get( 'docqna_reasoning' ) or 'high',
+			response_format=st.session_state.get( 'docqna_response_format' ) or 'text' )
+		
+		response_obj = getattr( chat, 'response', None )
+		st.session_state[ 'docqna_last_sources' ] = extract_sources( response_obj )
+		st.session_state[ 'last_sources' ] = st.session_state[ 'docqna_last_sources' ]
+		
 		return str( result or '' ).strip( )
+	
+	return ''
 
 def run_remote_query( query: str ) -> str:
 	"""
@@ -9422,49 +9429,65 @@ def delete_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
 	
 	return normalize_files_object( result )
 
-def analyze_provider_file( files: Any, prompt: str, file_id: str | None=None,
-		model: str | None=None ) -> str:
+def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
+		model: str | None = None ) -> str:
 	"""
-	
+
 		Purpose:
 		--------
 		Analyze, summarize, search, or survey file content through provider-supported Files
 		wrapper helpers.
-		
+
 		Parameters:
 		-----------
 		files: Any
 			Provider Files wrapper instance.
-		
+
 		prompt: str
 			User question or analysis instruction.
-		
+
 		file_id: str | None
 			Optional provider file identifier.
-		
+
 		model: str | None
 			Optional model name.
-		
+
 		Returns:
 		--------
 		str
 			Provider analysis answer.
-		
+
 	"""
 	if not isinstance( prompt, str ) or not prompt.strip( ):
 		return ''
 	
+	provider_name = get_provider_name( )
 	clean_prompt = prompt.strip( )
 	clean_file_id = file_id.strip( ) if isinstance( file_id, str ) and file_id.strip( ) else None
+	
+	if provider_name == 'GPT':
+		selected_model = model or st.session_state.get( 'files_model' ) or 'gpt-5-nano'
+	elif provider_name == 'Gemini':
+		selected_model = model or st.session_state.get( 'files_model' ) or 'gemini-2.5-flash-lite'
+	elif provider_name == 'Grok':
+		selected_model = model or st.session_state.get( 'files_model' ) or 'grok-4.3'
+	else:
+		selected_model = model or st.session_state.get( 'files_model' )
 	
 	if clean_file_id and hasattr( files, 'summarize' ):
 		try:
 			return str( files.summarize(
 				id=clean_file_id,
 				prompt=clean_prompt,
-				model=model ) or '' ).strip( )
+				model=selected_model ) or '' ).strip( )
 		except TypeError:
-			pass
+			try:
+				return str( files.summarize(
+					file_id=clean_file_id,
+					prompt=clean_prompt,
+					model=selected_model ) or '' ).strip( )
+			except TypeError:
+				pass
 	
 	if clean_file_id and hasattr( files, 'survey' ):
 		try:
@@ -9482,11 +9505,13 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None=None,
 					f'File Content:\n{content[ :12000 ]}\n\n'
 					f'User Request:\n{clean_prompt}'
 			).strip( )
+			
 			chat = get_chat_module( )
+			
 			try:
 				answer = chat.generate_text(
 					prompt=query,
-					model=model or st.session_state.get( 'files_model' ),
+					model=selected_model,
 					temperature=st.session_state.get( 'files_temperature' ),
 					top_p=st.session_state.get( 'files_top_percent' ),
 					max_tokens=st.session_state.get( 'files_max_tokens' ),
@@ -10876,6 +10901,7 @@ if mode == 'Chat':
 					chat = get_chat_module( )
 					effective_input = f'{intent_prefix}{user_input}' if intent_prefix else user_input
 					
+					# Chat provider dispatch
 					with st.spinner( 'Running prompt...' ):
 						if provider_name == 'GPT':
 							response = chat.completion(
@@ -10894,9 +10920,11 @@ if mode == 'Chat':
 								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
 								background=chat_background,
 								reasoning=chat_reasoning or None,
-								include=[ 'web_search_call.action.sources',
-								          'code_interpreter_call.outputs',
-								          'file_search_call.results', ],
+								include=[
+										'web_search_call.action.sources',
+										'code_interpreter_call.outputs',
+										'file_search_call.results',
+								],
 								tools=[
 										{
 												'type': 'file_search',
@@ -10918,6 +10946,7 @@ if mode == 'Chat':
 								previous_id=st.session_state.get( 'chat_previous_response_id', '' ) or None,
 							)
 							st.session_state.chat_previous_response_id = getattr( response, 'id', '' ) or ''
+							output_text = getattr( response, 'output_text', None ) or ''
 						elif provider_name == 'Gemini':
 							apply_gemini_runtime_config( )
 							gemini_context = chat_history if isinstance( chat_history, list ) else [ ]
@@ -10941,6 +10970,30 @@ if mode == 'Chat':
 								max_urls=10,
 								stream=False )
 							response = None
+						elif provider_name == 'Grok':
+							output_text = chat.generate_text(
+								prompt=effective_input,
+								model=chat_model or 'grok-4.3',
+								temperature=chat_temperature,
+								format=chat_format if isinstance( chat_format, dict ) else None,
+								top_p=chat_top_p,
+								frequency=chat_freq,
+								presence=chat_presense,
+								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
+								store=chat_store,
+								stream=False,
+								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								background=False,
+								reasoning=chat_reasoning or None,
+								include=[ 'inline_citations' ],
+								tools=[ { 'type': 'web_search' } ],
+								tool_choice=chat_choice or None,
+								is_parallel=chat_parallel,
+								previous_id=st.session_state.get( 'chat_previous_response_id', '' ) or None,
+								context=chat_history if isinstance( chat_history, list ) else [ ] )
+							
+							response = getattr( chat, 'response', None )
+							st.session_state.chat_previous_response_id = getattr( response, 'id', '' ) or ''
 						else:
 							output_text = chat.generate_text(
 								prompt=effective_input,
@@ -10957,8 +11010,7 @@ if mode == 'Chat':
 								background=chat_background,
 								reasoning=chat_reasoning or None,
 								tool_choice=chat_choice or None,
-								is_parallel=chat_parallel,
-							)
+								is_parallel=chat_parallel )
 							response = None
 					
 					sources = [ ]
@@ -11561,11 +11613,11 @@ elif mode == 'Text':
 								
 								if structured_history is not None and len( structured_history ) > 0:
 									st.session_state[ 'text_gemini_history' ] = structured_history
-						
 						elif provider_name == 'Grok':
 							grok_collection_ids = get_active_grok_collection_ids( 'Grok' )
 							
-							if len( grok_collection_ids ) > 0 and provider_supports( 'VectorStores', 'Grok' ):
+							if len( grok_collection_ids ) > 0 and provider_supports( 'VectorStores',
+									'Grok' ):
 								try:
 									grok_vectorstores = get_vectorstores_module( 'Grok' )
 									search_result = grok_vectorstores.search(
@@ -11573,27 +11625,74 @@ elif mode == 'Text':
 										store_id=grok_collection_ids[ 0 ] )
 									
 									if isinstance( search_result, str ) and search_result.strip( ):
-										prompt = ( 'Use xAI Collection search result as retrieval context.\n\n'
+										prompt = (
+												'Use xAI Collection search result as retrieval context.\n\n'
 												f'{search_result.strip( )}\n\n'
-												f'User Question:\n{prompt}' )
+												f'User Question:\n{prompt}'
+										)
 								except Exception as exc:
 									st.warning( f'Grok collection search was skipped: {exc}' )
 							
 							if hasattr( text, 'user' ):
 								text.user = prompt
 							
-							response_obj = text.create( prompt=prompt,
-								model=st.session_state.get( 'text_model' ) or 'grok-4',
-								max_tokens=st.session_state.get( 'text_max_tokens' ) or 10000,
-								temperature=st.session_state.get( 'text_temperature' ) or 0.8,
-								top_p=st.session_state.get( 'text_top_percent' ) or 0.9,
-								effort=st.session_state.get( 'text_reasoning' ) or 'high',
-								format=st.session_state.get( 'text_response_format' ) or 'text',
-								store=bool( st.session_state.get( 'text_store', True ) ),
-								include=st.session_state.get( 'text_include', [ ] ),
-								instruct=st.session_state.get( 'text_system_instructions' ) )
+							if st.session_state.get( 'text_input' ) != 'single_turn':
+								text_context = build_text_context(
+									messages=st.session_state.get( 'text_messages', [ ] ),
+									include_last_message=False )
+							else:
+								text_context = [ ]
 							
-							response_text = str( response_obj or '' ).strip( )
+							st.session_state[ 'text_context' ] = text_context
+							
+							text_previous_id = get_text_previous_response_id(
+								input_mode=st.session_state.get( 'text_input' ),
+								previous_id=st.session_state.get( 'text_previous_response_id' ) )
+							
+							text_conversation_id = get_text_conversation_id(
+								input_mode=st.session_state.get( 'text_input' ),
+								conversation_id=st.session_state.get( 'text_conversation_id' ) )
+							
+							grok_tools = [ ]
+							selected_tools = st.session_state.get( 'text_tools', [ ] )
+							
+							if isinstance( selected_tools, list ):
+								for selected_tool in selected_tools:
+									if isinstance( selected_tool, dict ):
+										grok_tools.append( selected_tool )
+										continue
+									
+									if isinstance( selected_tool, str ) and selected_tool.strip( ):
+										grok_tools.append( { 'type': selected_tool.strip( ) } )
+							
+							response_text = text.generate_text(
+								prompt=prompt,
+								model=st.session_state.get( 'text_model' ) or 'grok-4',
+								temperature=st.session_state.get( 'text_temperature' ),
+								format=st.session_state.get( 'text_response_format' ) or 'text',
+								top_p=st.session_state.get( 'text_top_percent' ),
+								frequency=st.session_state.get( 'text_frequency_penalty' ),
+								max_tools=st.session_state.get( 'text_max_calls' ),
+								presence=st.session_state.get( 'text_presence_penalty' ),
+								max_tokens=st.session_state.get( 'text_max_tokens' ) or 10000,
+								store=bool( st.session_state.get( 'text_store', True ) ),
+								stream=False,
+								instruct=st.session_state.get( 'text_system_instructions' ),
+								background=False,
+								reasoning=st.session_state.get( 'text_reasoning' ) or 'high',
+								include=st.session_state.get( 'text_include', [ ] ),
+								tools=grok_tools,
+								allowed_domains=st.session_state.get( 'text_domains', [ ] ),
+								previous_id=text_previous_id,
+								tool_choice=st.session_state.get( 'text_tool_choice' ),
+								is_parallel=st.session_state.get( 'text_parallel_tools' ),
+								context=text_context,
+								vector_store_ids=grok_collection_ids,
+								conversation_id=text_conversation_id )
+							
+							response_obj = getattr( text, 'response', None )
+							st.session_state[ 'text_previous_response_id' ] = getattr(
+								response_obj, 'id', '' ) or ''
 						
 						else:
 							response_text = ''
@@ -11711,8 +11810,7 @@ elif mode == 'Images':
 			# ------------------------------------------------------------------
 			# Visual Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Visual Settings', icon='👁️', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Visual Settings', icon='👁️', expanded=False, width='stretch' ):
 				vis_c1, vis_c2, vis_c3, vis_c4, vis_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -11825,8 +11923,7 @@ elif mode == 'Images':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 				
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
@@ -11859,8 +11956,7 @@ elif mode == 'Images':
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-				width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
@@ -11936,17 +12032,33 @@ elif mode == 'Images':
 										st.session_state.get( 'image_domains_input', '' ),
 										delimiter=',' )
 									
-									image_result = image.generate(
-										prompt=prompt_value,
-										number=st.session_state.get( 'image_number' ) or 1,
-										model=st.session_state.get( 'image_model' )
-										      or 'gpt-image-1-mini',
-										size=st.session_state.get( 'image_size' ) or '1024x1024',
-										quality=st.session_state.get( 'image_quality' ) or 'auto',
-										fmt=st.session_state.get( 'image_mime_type' ) or 'jpeg',
-										compression=st.session_state.get( 'image_compression' ),
-										background=st.session_state.get( 'image_backcolor' )
-										           or None )
+									if provider_name == 'Grok':
+										image_result = image.generate( prompt=prompt_value,
+											number=st.session_state.get( 'image_number' ) or 1,
+											model=st.session_state.get( 'image_model' )
+											      or 'grok-imagine-image',
+											size=st.session_state.get( 'image_size' ),
+											quality=st.session_state.get( 'image_quality' ),
+											fmt=st.session_state.get( 'image_mime_type' ),
+											compression=st.session_state.get( 'image_compression' ),
+											background=st.session_state.get( 'image_backcolor' ),
+											aspect_ratio=st.session_state.get( 'image_aspect_ratio' ),
+											response_modalities=st.session_state.get( 'image_modality' ))
+									else:
+										image_result = image.generate( prompt=prompt_value,
+											number=st.session_state.get( 'image_number' ) or 1,
+											model=st.session_state.get( 'image_model' )
+											      or 'gpt-image-1-mini',
+											size=st.session_state.get( 'image_size' )
+											     or '1024x1024',
+											quality=st.session_state.get( 'image_quality' )
+											        or 'auto',
+											fmt=st.session_state.get( 'image_mime_type' )
+											    or 'jpeg',
+											compression=st.session_state.get(
+												'image_compression' ),
+											background=st.session_state.get( 'image_backcolor' )
+											           or None )
 								
 								if render_image_output( image_result, caption='Generated image' ):
 									append_image_message( 'assistant', 'Generated image.' )
@@ -12027,45 +12139,34 @@ elif mode == 'Images':
 										image_search=st.session_state.get(
 											'image_image_search', False ) )
 								else:
-									analysis_model = (
-											st.session_state.get( 'image_analysis_model' )
-											or st.session_state.get( 'image_model' )
-											or 'gpt-4o-mini'
-									)
-									
-									analysis_result = image.analyze(
-										text=prompt_value,
-										path=tmp_path,
-										instruct=st.session_state.get(
-											'image_system_instructions' ),
-										model=analysis_model,
-										max_tokens=st.session_state.get(
-											'image_max_tokens' ),
-										temperature=st.session_state.get(
-											'image_temperature' ),
-										include=st.session_state.get( 'image_include', [ ] ),
-										store=st.session_state.get( 'image_store' ),
-										stream=False,
-										detail=st.session_state.get(
-											'image_analysis_detail' ) or 'auto' )
-								
-								if analysis_result is not None and str( analysis_result ).strip( ):
-									st.markdown( '**Analysis result:**' )
-									st.write( analysis_result )
-									append_image_message( 'assistant',
-										str( analysis_result ).strip( ) )
-									st.session_state[ 'last_answer' ] = str(
-										analysis_result ).strip( )
-								else:
-									st.warning( 'No analysis output was returned.' )
-								
-								try:
-									update_token_counters(
-										getattr( image, 'response', None )
-										or getattr( image, 'content_response', None )
-										or getattr( image, 'image_response', None ) )
-								except Exception:
-									pass
+									if provider_name == 'Grok':
+										analysis_model = ( st.session_state.get( 'image_analysis_model' )
+												or st.session_state.get( 'image_model' )
+												or 'grok-4.20-reasoning' )
+										
+										analysis_result = image.analyze( prompt=prompt_value,
+											path=tmp_path,
+											instruct=st.session_state.get( 'image_system_instructions' ),
+											model=analysis_model,
+											max_output_tokens=st.session_state.get( 'image_max_tokens' ),
+											temperature=st.session_state.get( 'image_temperature' ),
+											top_p=st.session_state.get( 'image_top_percent' ),
+											store=st.session_state.get( 'image_store' ),
+											detail=st.session_state.get( 'image_analysis_detail' ) or 'high' )
+									else:
+										analysis_model = ( st.session_state.get( 'image_analysis_model' )
+												or st.session_state.get( 'image_model' ) or 'gpt-4o-mini' )
+										
+										analysis_result = image.analyze( text=prompt_value, path=tmp_path,
+											instruct=st.session_state.get( 'image_system_instructions' ),
+											model=analysis_model,
+											max_tokens=st.session_state.get('image_max_tokens' ),
+											temperature=st.session_state.get('image_temperature' ),
+											include=st.session_state.get( 'image_include', [ ] ),
+											store=st.session_state.get( 'image_store' ),
+											stream=False,
+											detail=st.session_state.get( 'image_analysis_detail' )
+											       or 'auto' )
 							
 							except Exception as exc:
 								st.error( f'Analysis Failed: {exc}' )
@@ -12105,9 +12206,7 @@ elif mode == 'Images':
 								if provider_name == 'Gemini':
 									apply_gemini_runtime_config( )
 									
-									edit_result = image.edit(
-										prompt=prompt_value,
-										path=tmp_path,
+									edit_result = image.edit( prompt=prompt_value, path=tmp_path,
 										model=st.session_state.get( 'image_model' )
 										      or 'gemini-2.5-flash-image',
 										aspect=st.session_state.get( 'image_aspect_ratio' )
@@ -12135,22 +12234,33 @@ elif mode == 'Images':
 										image_search=st.session_state.get(
 											'image_image_search', False ) )
 								else:
-									edit_result = image.edit(
-										prompt=prompt_value,
-										path=tmp_path,
-										model=st.session_state.get( 'image_model' )
-										      or 'gpt-image-1-mini',
-										size=st.session_state.get( 'image_size' )
-										     or '1024x1024',
-										quality=st.session_state.get( 'image_quality' )
-										        or 'auto',
-										fmt=st.session_state.get( 'image_mime_type' )
-										    or 'jpeg',
-										compression=st.session_state.get(
-											'image_compression' ),
-										background=st.session_state.get( 'image_backcolor' )
-										           or None,
-										number=st.session_state.get( 'image_number' ) )
+									if provider_name == 'Grok':
+										edit_result = image.edit( prompt=prompt_value, path=tmp_path,
+											model=st.session_state.get( 'image_model' )
+											      or 'grok-imagine-image',
+											size=st.session_state.get( 'image_size' ) or None,
+											quality=st.session_state.get( 'image_quality' )  or None,
+											fmt=st.session_state.get( 'image_mime_type' ) or None,
+											compression=st.session_state.get( 'image_compression' ),
+											background=st.session_state.get( 'image_backcolor' ) or None,
+											number=st.session_state.get( 'image_number' ),
+											aspect_ratio=st.session_state.get(
+												'image_aspect_ratio' ) or None )
+									else:
+										edit_result = image.edit( prompt=prompt_value, path=tmp_path,
+											model=st.session_state.get( 'image_model' )
+											      or 'gpt-image-1-mini',
+											size=st.session_state.get( 'image_size' )
+											     or '1024x1024',
+											quality=st.session_state.get( 'image_quality' )
+											        or 'auto',
+											fmt=st.session_state.get( 'image_mime_type' )
+											    or 'jpeg',
+											compression=st.session_state.get(
+												'image_compression' ),
+											background=st.session_state.get( 'image_backcolor' )
+											           or None,
+											number=st.session_state.get( 'image_number' ) )
 								
 								if render_image_output( edit_result, caption='Edited image' ):
 									append_image_message( 'assistant', 'Edited image.' )
@@ -12160,8 +12270,7 @@ elif mode == 'Images':
 									st.warning( 'No edited image output was returned.' )
 								
 								try:
-									update_token_counters(
-										getattr( image, 'response', None )
+									update_token_counters( getattr( image, 'response', None )
 										or getattr( image, 'content_response', None )
 										or getattr( image, 'image_response', None ) )
 								except Exception:
