@@ -6937,11 +6937,8 @@ def embedding_model_supports_dimensions( model: str | None, embedding: Any ) -> 
 	if isinstance( support, dict ):
 		return bool( support.get( model.strip( ), False ) )
 	
-	return model.strip( ) in [
-			'text-embedding-3-small',
-			'text-embedding-3-large',
-			'gemini-embedding-001',
-	]
+	return model.strip( ) in [ 'text-embedding-3-small', 'text-embedding-3-large',
+			'gemini-embedding-001', ]
 
 def normalize_embedding_dimensions( model: str | None, dimensions: int | None, embedding: Any ) -> int | None:
 	"""
@@ -10727,8 +10724,7 @@ with st.sidebar:
 		google_cloud_location = st.text_input( 'Google Cloud Location', type='password',
 			value=st.session_state.get( 'google_cloud_location', cfg.GOOGLE_CLOUD_LOCATION ),
 			help='Overrides GOOGLE_CLOUD_LOCATION from config.py for this session only.',
-			key='sidebar_google_cloud_location'
-		)
+			key='sidebar_google_cloud_location' )
 		
 		if openai_key:
 			st.session_state[ 'openai_api_key' ] = openai_key
