@@ -3478,7 +3478,7 @@ def get_storage_display_name( row: Dict[ str, Any ] ) -> str:
 	
 	return 'resource'
 
-def build_storage_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
+def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -3984,7 +3984,7 @@ def require_storage_value( name: str, value: Any ) -> str:
 	
 	return text
 
-def get_grok_collection_rows( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
+def get_grok_collections( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
 	"""
 	
 		Purpose:
@@ -7674,7 +7674,7 @@ def clear_docqna_instructions( ) -> None:
 	st.session_state[ 'docqna_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
-def load_docqna_instruction_template( ) -> None:
+def load_docqna_instruction( ) -> None:
 	"""
 	
 		Purpose:
@@ -7696,7 +7696,7 @@ def load_docqna_instruction_template( ) -> None:
 		if prompt_text is not None:
 			st.session_state[ 'docqna_system_instructions' ] = prompt_text
 
-def convert_docqna_system_instructions( ) -> None:
+def convert_docqna_instructions( ) -> None:
 	"""
 	
 		Purpose:
@@ -7725,7 +7725,7 @@ def convert_docqna_system_instructions( ) -> None:
 	
 	st.session_state[ 'docqna_system_instructions' ] = converted
 
-def get_docqna_source_options( ) -> List[ str ]:
+def get_docqna_sources( ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -7757,7 +7757,7 @@ def get_docqna_source_options( ) -> List[ str ]:
 	
 	return options
 
-def get_docqna_file_extension( filename: str | None ) -> str:
+def get_docqna_extension( filename: str | None ) -> str:
 	"""
 	
 		Purpose:
@@ -7780,7 +7780,7 @@ def get_docqna_file_extension( filename: str | None ) -> str:
 	
 	return Path( filename ).suffix.lower( )
 
-def compute_docqna_fingerprint( documents: List[ Dict[ str, Any ] ] ) -> str:
+def compute_fingerprint( documents: List[ Dict[ str, Any ] ] ) -> str:
 	"""
 	
 		Purpose:
@@ -7816,7 +7816,7 @@ def compute_docqna_fingerprint( documents: List[ Dict[ str, Any ] ] ) -> str:
 	
 	return hasher.hexdigest( )
 
-def extract_docqna_pdf_text( file_bytes: bytes ) -> str:
+def extract_pdf_text( file_bytes: bytes ) -> str:
 	"""
 	
 		Purpose:
@@ -7847,9 +7847,9 @@ def extract_docqna_pdf_text( file_bytes: bytes ) -> str:
 		
 		return '\n\n'.join( pages ).strip( )
 	except Exception:
-		return extract_docqna_text_file( file_bytes )
+		return extract_text_bytes( file_bytes )
 
-def extract_docqna_text_file( file_bytes: bytes ) -> str:
+def extract_text_bytes( file_bytes: bytes ) -> str:
 	"""
 	
 		Purpose:
@@ -7878,7 +7878,7 @@ def extract_docqna_text_file( file_bytes: bytes ) -> str:
 	
 	return ''
 
-def extract_docqna_docx_text( file_bytes: bytes ) -> str:
+def extract_docx_text( file_bytes: bytes ) -> str:
 	"""
 	
 		Purpose:
@@ -7943,19 +7943,19 @@ def extract_docqna_text( filename: str, file_bytes: bytes ) -> str:
 			Extracted text.
 		
 	"""
-	extension = get_docqna_file_extension( filename )
+	extension = get_docqna_extension( filename )
 	
 	if extension == '.pdf':
-		return extract_docqna_pdf_text( file_bytes )
+		return extract_pdf_text( file_bytes )
 	
 	if extension == '.docx':
-		return extract_docqna_docx_text( file_bytes )
+		return extract_docx_text( file_bytes )
 	
 	if extension in [ '.txt', '.md', '.csv', '.json', '.xml', '.py', '.cs', '.sql',
 	                  '.yaml', '.yml', '.html', '.css', '.js', '.ts' ]:
-		return extract_docqna_text_file( file_bytes )
+		return extract_text_bytes( file_bytes )
 	
-	return extract_docqna_text_file( file_bytes )
+	return extract_text_bytes( file_bytes )
 
 def normalize_docqna_text( text: str ) -> str:
 	"""
@@ -8051,7 +8051,7 @@ def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int = 15
 	
 	return chunks
 
-def load_docqna_uploaded_files( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
+def load_docqna_file( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
 	"""
 	
 		Purpose:
@@ -8097,7 +8097,7 @@ def load_docqna_uploaded_files( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
 		active_docs.append(
 			{
 					'name': name,
-					'extension': get_docqna_file_extension( name ),
+					'extension': get_docqna_extension( name ),
 					'bytes': content,
 					'text': text,
 					'size': len( content ),
@@ -8118,7 +8118,7 @@ def load_docqna_uploaded_files( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
 	else:
 		st.session_state[ 'docqna_bytes' ] = None
 	
-	fingerprint = compute_docqna_fingerprint( active_docs )
+	fingerprint = compute_fingerprint( active_docs )
 	if fingerprint != st.session_state.get( 'docqna_fingerprint', '' ):
 		st.session_state[ 'docqna_vec_ready' ] = False
 		st.session_state[ 'docqna_fingerprint' ] = fingerprint
@@ -8126,7 +8126,7 @@ def load_docqna_uploaded_files( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	return active_docs
 
-def get_docqna_active_document_names( ) -> List[ str ]:
+def get_document_names( ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -8150,7 +8150,7 @@ def get_docqna_active_document_names( ) -> List[ str ]:
 	
 	return [ doc.get( 'name', '' ) for doc in docs if isinstance( doc, dict ) and doc.get( 'name' ) ]
 
-def render_docqna_document_preview( ) -> None:
+def render_document_preview( ) -> None:
 	"""
 	
 		Purpose:
@@ -8259,7 +8259,7 @@ def rebuild_docqna_index( ) -> List[ Dict[ str, Any ] ]:
 	
 	return chunk_records
 
-def score_docqna_chunk( query: str, chunk: str ) -> float:
+def score_chunk( query: str, chunk: str ) -> float:
 	"""
 	
 		Purpose:
@@ -8302,7 +8302,7 @@ def score_docqna_chunk( query: str, chunk: str ) -> float:
 	
 	return float( density )
 
-def retrieve_docqna_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any ] ]:
+def retrieve_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any ] ]:
 	"""
 	
 		Purpose:
@@ -8335,7 +8335,7 @@ def retrieve_docqna_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any
 			continue
 		
 		text_value = item.get( 'text', '' )
-		score = score_docqna_chunk( query, text_value )
+		score = score_chunk( query, text_value )
 		
 		if score <= 0:
 			continue
@@ -8414,7 +8414,7 @@ def build_docqna_local_prompt( query: str, hits: List[ Dict[ str, Any ] ] ) -> s
 	
 	return '\n\n'.join( prompt_parts ).strip( )
 
-def run_local_docqna_query( query: str ) -> str:
+def run_docqna_query( query: str ) -> str:
 	"""
 	
 		Purpose:
@@ -8436,7 +8436,7 @@ def run_local_docqna_query( query: str ) -> str:
 	provider_name = get_provider_name( )
 	chat = get_chat_module( )
 	top_k = int( st.session_state.get( 'docqna_top_k', 6 ) or 6 )
-	hits = retrieve_docqna_chunks( query=query, top_k=top_k )
+	hits = retrieve_chunks( query=query, top_k=top_k )
 	
 	st.session_state[ 'docqna_last_hits' ] = hits
 	st.session_state[ 'docqna_last_sources' ] = [ {
@@ -8493,7 +8493,7 @@ def run_local_docqna_query( query: str ) -> str:
 		result = chat.generate_text( prompt=prompt )
 		return str( result or '' ).strip( )
 
-def run_remote_docqna_query( query: str ) -> str:
+def run_remote_query( query: str ) -> str:
 	"""
 	
 		Purpose:
@@ -8517,7 +8517,7 @@ def run_remote_docqna_query( query: str ) -> str:
 	source = st.session_state.get( 'docqna_source', 'Local Upload' )
 	
 	if provider_name == 'GPT':
-		selected_vector_store_ids = get_active_vector_store_ids( 'GPT' )
+		selected_vector_store_ids = get_store_ids( 'GPT' )
 		manual_vector_store_ids = [ ]
 		
 		if source == 'OpenAI Vector Store ID':
@@ -8625,7 +8625,7 @@ def run_remote_docqna_query( query: str ) -> str:
 		
 		return str( result or '' ).strip( )
 	
-	return run_local_docqna_query( query )
+	return run_docqna_query( query )
 
 def route_document_query( prompt: str ) -> str:
 	"""
@@ -8652,11 +8652,11 @@ def route_document_query( prompt: str ) -> str:
 	source = st.session_state.get( 'docqna_source', 'Local Upload' )
 	
 	if source == 'Local Upload':
-		return run_local_docqna_query( query )
+		return run_docqna_query( query )
 	
-	return run_remote_docqna_query( query )
+	return run_remote_query( query )
 
-def summarize_active_document( ) -> str:
+def summarize_document( ) -> str:
 	"""
 	
 		Purpose:
@@ -8687,7 +8687,7 @@ def summarize_active_document( ) -> str:
 	"""
 	return route_document_query( summary_prompt.strip( ) )
 
-def render_docqna_retrieval_hits( ) -> None:
+def render_hits( ) -> None:
 	"""
 	
 		Purpose:
@@ -8751,7 +8751,7 @@ def get_docqna_avatar( provider_name: str ) -> str:
 # FILES MODE UTILITIES
 # ======================================================================================
 
-def ensure_files_runtime_state( ) -> None:
+def ensure_runtime_state( ) -> None:
 	"""
 	
 		Purpose:
@@ -8888,7 +8888,7 @@ def clear_files_instructions( ) -> None:
 	st.session_state[ 'files_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
-def load_files_instruction_template( ) -> None:
+def load_files_instruction( ) -> None:
 	"""
 	
 		Purpose:
@@ -8910,7 +8910,7 @@ def load_files_instruction_template( ) -> None:
 		if prompt_text is not None:
 			st.session_state[ 'files_system_instructions' ] = prompt_text
 
-def convert_files_system_instructions( ) -> None:
+def convert_files_instructions( ) -> None:
 	"""
 	
 		Purpose:
@@ -8939,7 +8939,7 @@ def convert_files_system_instructions( ) -> None:
 	
 	st.session_state[ 'files_system_instructions' ] = converted
 
-def get_files_upload_purpose_options( files: Any ) -> List[ str ]:
+def get_purpose_options( files: Any ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -8971,7 +8971,7 @@ def get_files_upload_purpose_options( files: Any ) -> List[ str ]:
 	
 	return [ 'user_data' ]
 
-def get_files_filter_purpose_options( files: Any ) -> List[ str ]:
+def get_filter_options( files: Any ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -9086,7 +9086,7 @@ def normalize_files_list( value: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	return [ normalize_files_object( value ) ]
 
-def get_files_id_from_row( row: Dict[ str, Any ] ) -> str:
+def get_files_id ( row: Dict[ str, Any ] ) -> str:
 	"""
 	
 		Purpose:
@@ -9114,7 +9114,7 @@ def get_files_id_from_row( row: Dict[ str, Any ] ) -> str:
 	
 	return ''
 
-def build_files_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
+def build_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -9138,7 +9138,7 @@ def build_files_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str 
 		if not isinstance( row, dict ):
 			continue
 		
-		file_id = get_files_id_from_row( row )
+		file_id = get_files_id ( row )
 		name = ( row.get( 'filename' )
 				or row.get( 'display_name' )
 				or row.get( 'name' )
@@ -9150,7 +9150,7 @@ def build_files_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str 
 	
 	return options
 
-def get_file_id_from_option( option: str | None ) -> str:
+def get_option_id( option: str | None ) -> str:
 	"""
 	
 		Purpose:
@@ -9307,7 +9307,7 @@ def retrieve_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
 	
 	return normalize_files_object( result )
 
-def extract_provider_file_content( files: Any, file_id: str ) -> str:
+def extract_file_content( files: Any, file_id: str ) -> str:
 	"""
 	
 		Purpose:
@@ -9447,7 +9447,7 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None=None,
 			pass
 	
 	if clean_file_id:
-		content = extract_provider_file_content( files=files, file_id=clean_file_id )
+		content = extract_file_content( files=files, file_id=clean_file_id )
 		if content:
 			query = (
 					f'{st.session_state.get( "files_system_instructions", "" )}\n\n'
@@ -9474,7 +9474,7 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None=None,
 # VECTOR STORE / FILE SEARCH / CLOUD BUCKET UTILITIES
 # ======================================================================================
 
-def ensure_storage_runtime_state( ) -> None:
+def ensure_storage_state( ) -> None:
 	"""
 	
 		Purpose:
@@ -9658,7 +9658,7 @@ def normalize_storage_list( value: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	return [ normalize_storage_object( value ) ]
 
-def get_storage_id_from_row( row: Dict[ str, Any ] ) -> str:
+def get_storage_rowid( row: Dict[ str, Any ] ) -> str:
 	"""
 	
 		Purpose:
@@ -9686,7 +9686,7 @@ def get_storage_id_from_row( row: Dict[ str, Any ] ) -> str:
 	
 	return ''
 
-def build_storage_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
+def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -9709,7 +9709,7 @@ def build_storage_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ st
 		if not isinstance( row, dict ):
 			continue
 		
-		resource_id = get_storage_id_from_row( row )
+		resource_id = get_storage_rowid( row )
 		name = ( row.get( 'display_name' )
 				or row.get( 'name' )
 				or row.get( 'id' )
@@ -10232,7 +10232,7 @@ def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str,
 # VECTOR STORES RETRIEVAL HOOK UTILITIES
 # ======================================================================================
 
-def get_active_retrieval_backend( provider_name: Optional[ str ] = None ) -> Dict[ str, Any ]:
+def get_retrieval_backend( provider_name: Optional[ str ] = None ) -> Dict[ str, Any ]:
 	"""
 	
 		Purpose:
@@ -10297,7 +10297,7 @@ def get_active_retrieval_backend( provider_name: Optional[ str ] = None ) -> Dic
 			if provider == 'Gemini' else '',
 	}
 
-def get_active_vector_store_ids( provider_name: Optional[ str ] = None ) -> List[ str ]:
+def get_store_ids( provider_name: Optional[ str ] = None ) -> List[ str ]:
 	"""
 	
 		Purpose:
@@ -10320,7 +10320,7 @@ def get_active_vector_store_ids( provider_name: Optional[ str ] = None ) -> List
 	if provider != 'GPT':
 		return [ ]
 	
-	backend = get_active_retrieval_backend( provider )
+	backend = get_retrieval_backend( provider )
 	resource_id = backend.get( 'resource_id', '' )
 	
 	return parse_storage_ids( resource_id )
@@ -10348,7 +10348,7 @@ def get_active_grok_collection_ids( provider_name: Optional[ str ] = None ) -> L
 	if provider != 'Grok':
 		return [ ]
 	
-	backend = get_active_retrieval_backend( provider )
+	backend = get_retrieval_backend( provider )
 	resource_id = backend.get( 'resource_id', '' )
 	
 	return parse_storage_ids( resource_id )
@@ -10385,7 +10385,7 @@ def get_active_gemini_file_search_store_names( provider_name: Optional[ str ]=No
 	if get_gemini_vector_backend( ) != 'File Search Stores':
 		return [ ]
 	
-	backend = get_active_retrieval_backend( provider )
+	backend = get_retrieval_backend( provider )
 	resource_id = backend.get( 'resource_id', '' )
 	
 	return parse_storage_ids( resource_id )
@@ -10443,7 +10443,7 @@ def build_provider_retrieval_summary( provider_name: Optional[ str ] = None ) ->
 			User-facing retrieval summary.
 		
 	"""
-	backend = get_active_retrieval_backend( provider_name )
+	backend = get_retrieval_backend( provider_name )
 	provider = backend.get( 'provider', '' )
 	backend_name = backend.get( 'backend', '' )
 	resource_id = backend.get( 'resource_id', '' )
@@ -10640,7 +10640,7 @@ def extract_text_from_bytes( file_bytes: bytes ) -> str:
 		except Exception:
 			return ""
 
-def summarize_active_document( ) -> str:
+def summarize_document( ) -> str:
 	"""
 		Uses the routing layer to summarize the currently active document.
 	"""
@@ -11227,8 +11227,7 @@ elif mode == 'Text':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 				
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
 					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True,
@@ -11378,7 +11377,7 @@ elif mode == 'Text':
 							manual_vector_store_ids = parse_text_vector_store_ids(
 								st.session_state.get( 'text_vector_store_ids', '' ) )
 
-							selected_vector_store_ids = get_active_vector_store_ids( 'GPT' )
+							selected_vector_store_ids = get_store_ids( 'GPT' )
 							
 							vector_store_ids = merge_unique_strings(
 								primary=manual_vector_store_ids,
@@ -11446,10 +11445,10 @@ elif mode == 'Text':
 							apply_gemini_runtime_config( )
 							
 							structured_context = st.session_state.get( 'text_gemini_history', [ ] )
-							if not isinstance( structured_context, list ) or len(
+							if not isinstance( structured_context, list ) or len( 
 									structured_context ) == 0:
-								structured_context = st.session_state.get( 'text_messages', [ ] )[
-									:-1 ]
+								structured_context = st.session_state.get( 
+									'text_messages', [ ] )[ :-1 ]
 							
 							grounding_enabled = bool(
 								st.session_state.get( 'text_google_grounding', False ) )
@@ -12132,9 +12131,6 @@ elif mode == 'Images':
 elif mode == 'Audio':
 	ensure_audio_runtime_state( )
 	
-	st.subheader( '🎧 Audio API', help=cfg.AUDIO_API )
-	st.divider( )
-	
 	provider_name = get_provider_name( )
 	transcriber = get_transcription_module( ) if provider_supports( 'Transcription' ) else None
 	translator = get_translation_module( ) if provider_supports( 'Translation' ) else None
@@ -12147,6 +12143,8 @@ elif mode == 'Audio':
 	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
+		st.subheader( '🎧 Audio API', help=cfg.AUDIO_API )
+		st.divider( )
 		with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# LLM Settings
@@ -12510,11 +12508,6 @@ elif mode == 'Audio':
 elif mode == 'Embeddings':
 	ensure_embeddings_mode_state( )
 	
-	st.subheader( '🧬 Embeddings API',
-		help=getattr( cfg, 'EMBEDDINGS_API',
-			'Create vector embeddings from text using the selected provider.' ) )
-	st.divider( )
-	
 	provider_name = get_provider_name( )
 	embedding = get_embeddings_module( )
 	
@@ -12545,6 +12538,8 @@ elif mode == 'Embeddings':
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
+		st.subheader( '🧬 Embeddings API' )
+		st.divider( )
 		with st.expander( label='Configuration', icon='🧊', expanded=False, width='stretch' ):
 			cfg_c1, cfg_c2, cfg_c3, cfg_c4, cfg_c5 = st.columns(
 				[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
@@ -12555,8 +12550,7 @@ elif mode == 'Embeddings':
 				if st.session_state.get( 'embedding_model' ) not in model_options:
 					st.session_state[ 'embedding_model' ] = ''
 				
-				st.selectbox( label='Model',
-					options=model_options, key='embedding_model',
+				st.selectbox( label='Model', options=model_options, key='embedding_model',
 					help='Embedding model used by the selected provider.',
 					index=None, placeholder='Options' )
 				
@@ -12586,22 +12580,16 @@ elif mode == 'Embeddings':
 				if st.session_state.get( 'embeddings_encoding_format' ) not in encoding_options:
 					st.session_state[ 'embeddings_encoding_format' ] = 'float'
 				
-				st.selectbox( label='Encoding Format',
-					options=encoding_options, key='embeddings_encoding_format',
-					help='Embedding encoding format returned by the API.',
-					index=None, placeholder='Options' )
+				st.selectbox( label='Encoding Format', options=encoding_options,
+					key='embeddings_encoding_format',index=None, placeholder='Options' )
 				
 				embeddings_encoding_format = st.session_state.get(
 					'embeddings_encoding_format', 'float' )
 			
 			# ---------- Dimensions ------------
 			with cfg_c3:
-				st.slider( label='Dimensions',
-					min_value=0, max_value=max_dimensions, step=1,
-					help=('Optional reduced dimensions when supported. '
-					      'Zero omits the dimensions parameter.'),
-					key='embeddings_dimensions',
-					disabled=not supports_dimensions )
+				st.slider( label='Dimensions', min_value=0, max_value=max_dimensions, step=1,
+					key='embeddings_dimensions', disabled=not supports_dimensions )
 				
 				embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', 0 )
 				
@@ -12883,10 +12871,7 @@ elif mode == 'Document Q&A':
 	
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
-		st.subheader( '📖 Document Q & A',
-			help=getattr( cfg, 'DOCUMENT_QNA',
-				getattr( cfg, 'DOCUMENT_Q_AND_A',
-					'Ask questions against local uploads, provider files, or vector stores.' ) ) )
+		st.subheader( '📖 Document Q & A' )
 		st.divider( )
 		
 		# ------------------------------------------------------------------
@@ -12901,7 +12886,7 @@ elif mode == 'Document Q&A':
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 				
 				with source_c1:
-					source_options = get_docqna_source_options( )
+					source_options = get_docqna_sources( )
 					if st.session_state.get( 'docqna_source' ) not in source_options:
 						st.session_state[ 'docqna_source' ] = 'Local Upload'
 					
@@ -13062,7 +13047,7 @@ elif mode == 'Document Q&A':
 					options=prompt_names,
 					index=None,
 					key='instructions',
-					on_change=load_docqna_instruction_template )
+					on_change=load_docqna_instruction )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
@@ -13074,7 +13059,7 @@ elif mode == 'Document Q&A':
 			with btn_c2:
 				st.button( label='XML <-> Markdown',
 					width='stretch',
-					on_click=convert_docqna_system_instructions )
+					on_click=convert_docqna_instructions )
 		
 		# ------------------------------------------------------------------
 		# Document Loading
@@ -13098,7 +13083,7 @@ elif mode == 'Document Q&A':
 						key='docqna_local_file_uploader' )
 					
 					if uploaded_docs is not None:
-						docs = load_docqna_uploaded_files( uploaded_docs )
+						docs = load_docqna_file( uploaded_docs )
 						if len( docs ) > 0:
 							st.success( f'Loaded {len( docs )} document(s).' )
 					
@@ -13114,7 +13099,7 @@ elif mode == 'Document Q&A':
 						key='docqna_summarize_active',
 						width='stretch' ):
 					with st.spinner( 'Summarizing active document source…' ):
-						answer = summarize_active_document( )
+						answer = summarize_document( )
 						if isinstance( answer, str ) and answer.strip( ):
 							st.session_state[ 'docqna_last_answer' ] = answer.strip( )
 							st.session_state[ 'last_answer' ] = answer.strip( )
@@ -13128,7 +13113,7 @@ elif mode == 'Document Q&A':
 				source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
 				
 				if source_value == 'Local Upload':
-					render_docqna_document_preview( )
+					render_document_preview( )
 				else:
 					st.json(
 						{
@@ -13154,7 +13139,7 @@ elif mode == 'Document Q&A':
 				
 				with diag_c1:
 					st.metric( 'Documents',
-						len( get_docqna_active_document_names( ) ) )
+						len( get_document_names( ) ) )
 				
 				with diag_c2:
 					st.metric( 'Chunks',
@@ -13174,10 +13159,10 @@ elif mode == 'Document Q&A':
 								'docqna_index_status', 'Not indexed' ),
 							'fingerprint': st.session_state.get(
 								'docqna_fingerprint', '' ),
-							'active_documents': get_docqna_active_document_names( ),
+							'active_documents': get_document_names( ),
 					} )
 				
-				render_docqna_retrieval_hits( )
+				render_hits( )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
@@ -13212,8 +13197,7 @@ elif mode == 'Document Q&A':
 						
 						if isinstance( answer, str ) and answer.strip( ):
 							st.markdown( answer )
-							st.session_state[ 'docqna_messages' ].append(
-								{
+							st.session_state[ 'docqna_messages' ].append( {
 										'role': 'assistant',
 										'content': answer.strip( ),
 								} )
@@ -13222,8 +13206,7 @@ elif mode == 'Document Q&A':
 						else:
 							message = 'No Document Q&A answer was returned.'
 							st.warning( message )
-							st.session_state[ 'docqna_messages' ].append(
-								{
+							st.session_state[ 'docqna_messages' ].append( {
 										'role': 'assistant',
 										'content': message,
 								} )
@@ -13241,8 +13224,9 @@ elif mode == 'Document Q&A':
 		
 		last_sources = st.session_state.get( 'docqna_last_sources', [ ] )
 		if isinstance( last_sources, list ) and len( last_sources ) > 0:
-			with st.expander( label='Last Document Sources', icon='📌',
-					expanded=False, width='stretch' ):
+			with st.expander( label='Last Document Sources', icon='📌', expanded=False,
+					width='stretch' ):
+				
 				df_sources = pd.DataFrame( last_sources )
 				st.data_editor( df_sources, use_container_width=True, hide_index=True )
 		
@@ -13253,29 +13237,22 @@ elif mode == 'Document Q&A':
 			[ 0.34, 0.33, 0.33 ], border=True, gap='xxsmall' )
 		
 		with reset_c1:
-			st.button( label='Clear Messages',
-				key='docqna_clear_messages',
-				width='stretch',
+			st.button( label='Clear Messages', key='docqna_clear_messages', width='stretch',
 				on_click=clear_docqna_messages )
 		
 		with reset_c2:
-			st.button( label='Clear Outputs',
-				key='docqna_clear_outputs',
-				width='stretch',
+			st.button( label='Clear Outputs', key='docqna_clear_outputs', width='stretch',
 				on_click=clear_docqna_outputs )
 		
 		with reset_c3:
-			st.button( label='Reset All',
-				key='docqna_reset_all',
-				width='stretch',
+			st.button( label='Reset All', key='docqna_reset_all', width='stretch',
 				on_click=reset_docqna_all )
 
 # ======================================================================================
 # FILES API MODE
 # ======================================================================================
 elif mode == 'Files':
-	ensure_files_runtime_state( )
-	
+	ensure_runtime_state( )
 	if not isinstance( st.session_state.get( 'files_messages' ), list ):
 		st.session_state[ 'files_messages' ] = [ ]
 	
@@ -13312,11 +13289,12 @@ elif mode == 'Files':
 			# ------------------------------------------------------------------
 			with st.expander( label='File Management', icon='📂', expanded=False,
 					width='stretch' ):
+				
 				mgmt_c1, mgmt_c2, mgmt_c3, mgmt_c4 = st.columns(
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 				
 				with mgmt_c1:
-					upload_purposes = get_files_upload_purpose_options( files )
+					upload_purposes = get_purpose_options( files )
 					if st.session_state.get( 'files_purpose' ) not in upload_purposes:
 						st.session_state[ 'files_purpose' ] = upload_purposes[ 0 ] \
 							if len( upload_purposes ) > 0 else 'user_data'
@@ -13329,7 +13307,7 @@ elif mode == 'Files':
 						placeholder='Options' )
 				
 				with mgmt_c2:
-					filter_purposes = get_files_filter_purpose_options( files )
+					filter_purposes = get_filter_options( files )
 					if st.session_state.get( 'files_filter_purpose' ) not in filter_purposes:
 						st.session_state[ 'files_filter_purpose' ] = ''
 					
@@ -13358,6 +13336,7 @@ elif mode == 'Files':
 			# ------------------------------------------------------------------
 			with st.expander( label='Analysis Controls', icon='🧊', expanded=False,
 					width='stretch' ):
+				
 				analysis_c1, analysis_c2, analysis_c3, analysis_c4, analysis_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -13414,32 +13393,23 @@ elif mode == 'Files':
 				prompt_names = [ 'No Templates Found' ]
 			
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall' )
-			
 			with in_left:
-				st.text_area( label='Enter Text',
-					height=90,
-					width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS,
-					key='files_system_instructions' )
+				st.text_area( label='Enter Text', height=90,
+					width='stretch', help=cfg.SYSTEM_INSTRUCTIONS, key='files_system_instructions' )
 			
 			with in_right:
-				st.selectbox( label='Use Template',
-					options=prompt_names,
-					index=None,
-					key='instructions',
-					on_change=load_files_instruction_template )
+				st.selectbox( label='Use Template', options=prompt_names, index=None,
+					key='instructions', on_change=load_files_instruction )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
 			with btn_c1:
-				st.button( label='Clear Instructions',
-					width='stretch',
+				st.button( label='Clear Instructions', width='stretch',
 					on_click=clear_files_instructions )
 			
 			with btn_c2:
-				st.button( label='XML <-> Markdown',
-					width='stretch',
-					on_click=convert_files_system_instructions )
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=convert_files_instructions )
 		
 		# ------------------------------------------------------------------
 		# File Operations
@@ -13451,14 +13421,13 @@ elif mode == 'Files':
 			uploaded_file = st.file_uploader( label='Upload file to provider Files API',
 				type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml',
 				       'png', 'jpg', 'jpeg', 'webp', 'py', 'cs', 'sql',
-				       'yaml', 'yml', 'html', 'css', 'js', 'ts' ], accept_multiple_files=False, key='files_api_file_uploader' )
+				       'yaml', 'yml', 'html', 'css', 'js', 'ts' ],
+				accept_multiple_files=False, key='files_api_file_uploader' )
 			
 			if uploaded_file is not None:
 				tmp_path = save_temp( uploaded_file )
 				
-				if st.button( label='Upload File',
-						key='files_upload_button',
-						width='stretch' ):
+				if st.button( label='Upload File', key='files_upload_button', width='stretch' ):
 					if not tmp_path:
 						st.warning( 'Could not save uploaded file for provider upload.' )
 					else:
@@ -13472,7 +13441,7 @@ elif mode == 'Files':
 								st.session_state[ 'files_metadata' ] = metadata
 								st.session_state[ 'files_last_operation' ] = 'upload'
 								
-								file_id = get_files_id_from_row( metadata )
+								file_id = get_files_id ( metadata )
 								if file_id:
 									st.session_state[ 'files_id' ] = file_id
 								
@@ -13482,7 +13451,6 @@ elif mode == 'Files':
 			
 			st.caption( 'Operations' )
 			op_c1, op_c2 = st.columns( [ 0.5, 0.5 ], gap='xxsmall' )
-			
 			with op_c1:
 				if st.button( label='List Files', key='files_list_button', width='stretch' ):
 					with st.spinner( 'Listing files…' ):
@@ -13526,7 +13494,7 @@ elif mode == 'Files':
 					else:
 						with st.spinner( 'Extracting file content…' ):
 							try:
-								content = extract_provider_file_content(
+								content = extract_file_content(
 									files=files,
 									file_id=file_id )
 								
@@ -13564,7 +13532,7 @@ elif mode == 'Files':
 			if isinstance( rows, list ) and len( rows ) > 0:
 				df_files = pd.DataFrame( rows )
 				st.data_editor( df_files, use_container_width=True, hide_index=True )
-				options = build_files_selector_options( rows )
+				options = build_selector_options( rows )
 				if len( options ) > 0:
 					selected_file = st.selectbox( label='Select Listed File',
 						options=options,
@@ -13572,7 +13540,7 @@ elif mode == 'Files':
 						index=None,
 						placeholder='Options' )
 					
-					selected_id = get_file_id_from_option( selected_file )
+					selected_id = get_option_id( selected_file )
 					if selected_id:
 						st.session_state[ 'files_id' ] = selected_id
 			
@@ -13676,20 +13644,11 @@ elif mode == 'Vector Stores':
 	backend_name = get_vectorstores_backend_name( provider_name )
 	backend_summary = get_storage_backend_summary( provider_name )
 	
-	st.subheader(
-		'🧠 Vector Stores',
-		help=getattr(
-			cfg,
-			'VECTORSTORES_API',
-			'Manage provider retrieval stores, xAI collections, Gemini File Search Stores, '
-			'and Gemini Cloud Buckets through Buddy’s Vector Stores alias.'
-		)
-	)
-	st.divider( )
-	
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-	
 	with center:
+		st.subheader( '🧠 Vector Stores' )
+		st.divider( )
+		
 		# ------------------------------------------------------------------
 		# Routing / Backend Summary
 		# ------------------------------------------------------------------
@@ -13741,12 +13700,8 @@ elif mode == 'Vector Stores':
 			with ops_left:
 				st.caption( 'OpenAI Vector Store Controls' )
 				
-				st.text_input(
-					label='Vector Store Name',
-					key='stores_name',
-					width='stretch',
-					placeholder='Federal Financial Regulations'
-				)
+				st.text_input( label='Vector Store Name', key='stores_name',
+					width='stretch', placeholder='Federal Financial Regulations' )
 				
 				st.text_area(
 					label='Metadata JSON',
@@ -14014,7 +13969,7 @@ elif mode == 'Vector Stores':
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True )
 					
-					options = build_storage_selector_options( rows )
+					options = build_storage_selectors( rows )
 					if len( options ) > 0:
 						selected = st.selectbox(
 							label='Select Vector Store',
@@ -14077,7 +14032,7 @@ elif mode == 'Vector Stores':
 							width='stretch' ):
 						with st.spinner( 'Listing configured xAI collections…' ):
 							try:
-								rows = get_grok_collection_rows( vectorstores )
+								rows = get_grok_collections( vectorstores )
 								set_storage_rows( rows, table_key='stores_table' )
 								st.success( f'Found {len( rows )} configured collection(s).' )
 							except Exception as exc:
@@ -14236,7 +14191,7 @@ elif mode == 'Vector Stores':
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True )
 					
-					options = build_storage_selector_options( rows )
+					options = build_storage_selectors( rows )
 					if len( options ) > 0:
 						selected = st.selectbox(
 							label='Select Collection',
@@ -14423,7 +14378,7 @@ elif mode == 'Vector Stores':
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True )
 					
-					options = build_storage_selector_options( rows )
+					options = build_storage_selectors( rows )
 					if len( options ) > 0:
 						selected = st.selectbox(
 							label='Select File Search Store',
@@ -14609,7 +14564,7 @@ elif mode == 'Vector Stores':
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True )
 					
-					options = build_storage_selector_options( rows )
+					options = build_storage_selectors( rows )
 					if len( options ) > 0:
 						selected = st.selectbox( label='Select Object / Bucket Row',
 							options=options, key='storage_selected_option', index=None,
@@ -14637,7 +14592,6 @@ elif mode == 'Vector Stores':
 		# Shared Output / Reset Controls
 		# ------------------------------------------------------------------
 		shared_c1, shared_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall' )
-		
 		with shared_c1:
 			st.button( label='Clear Outputs', key='vectorstores_clear_outputs',
 				width='stretch', on_click=clear_vectorstore_outputs )
@@ -14654,8 +14608,6 @@ elif mode == 'Vector Stores':
 # PROMPT ENGINEERING MODE
 # ======================================================================================
 elif mode == 'Prompt Engineering':
-	st.subheader( '📝 Prompt Engineering', help=cfg.PROMPT_ENGINEERING )
-	st.divider( )
 	import sqlite3
 	import math
 	
@@ -14664,6 +14616,8 @@ elif mode == 'Prompt Engineering':
 	st.session_state.setdefault( 'pe_cascade_enabled', False )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
+		st.subheader( '📝 Prompt Engineering', help=cfg.PROMPT_ENGINEERING )
+		st.divider( )
 		st.checkbox( 'Cascade selection into System Instructions', key='pe_cascade_enabled' )
 		
 		# ------------------------------------------------------------------
@@ -14889,10 +14843,9 @@ elif mode == 'Prompt Engineering':
 # EXPORT MODE
 # ==============================================================================
 elif mode == 'Data Export':
-	st.subheader( '📭  Export' )
-	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
+		st.subheader( '📭  Export' )
 		st.divider( )
 		
 		# -----------------------------------
@@ -14949,10 +14902,10 @@ elif mode == 'Data Export':
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
-	st.subheader( '🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
-	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
+		st.subheader( '🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
+		st.divider( )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
 				'🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 		
