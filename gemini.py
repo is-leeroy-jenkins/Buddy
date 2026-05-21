@@ -457,39 +457,45 @@ class Chat( Gemini ):
 			exception.cause = 'Chat'
 			exception.method = 'supports_google_maps( self, model: str=None ) -> bool'
 			raise exception
-	
+		
 	def build_urls( self, urls: List[ str ], max_urls: int = 10 ) -> List[ str ]:
 		"""
 		
 			Purpose:
 			--------
-			Normalizes URL context values selected or entered in the UI.
+			Normalize URL context values selected or entered in the UI without mutating the
+			input list during iteration.
 			
 			Parameters:
 			-----------
-			urls: List[ str ] - Candidate URL values.
-			max_urls: int - Optional maximum number of URLs to include.
+			urls: List[ str ]
+				Candidate URL values.
+			
+			max_urls: int
+				Optional maximum number of URLs to include.
 			
 			Returns:
 			--------
-			List[ str ] - Clean URL list.
+			List[ str ]
+				Clean URL list.
 		
 		"""
 		try:
-			throw_if( 'max_urls', max_urls )
-			self.urls = urls if urls is not None else [ ]
-			for url in urls:
+			self.max_urls = int( max_urls or 0 )
+			self.source_urls = urls if isinstance( urls, list ) else [ ]
+			self.urls = [ ]
+			
+			for url in self.source_urls:
 				if url is None:
 					continue
 				
-				self.url = url.strip( )
+				self.url = str( url ).strip( )
 				if not self.url:
 					continue
 				
 				self.urls.append( self.url )
 			
-			self.max_urls = max_urls
-			if self.max_urls is not None:
+			if self.max_urls > 0:
 				self.urls = self.urls[ : self.max_urls ]
 			
 			return self.urls
@@ -497,7 +503,7 @@ class Chat( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Chat'
-			exception.method = 'build_urls( self, urls: List[ str ]=None, max_urls: int=None )'
+			exception.method = 'build_urls( self, urls: List[ str ], max_urls: int=10 )'
 			raise exception
 	
 	def append_urls_to_content( self, content: str, urls: List[ str ] ) -> str | None:
@@ -505,22 +511,40 @@ class Chat( Gemini ):
 		
 			Purpose:
 			--------
-			Appends URL context values to the optional content block used in generation.
+			Append URL context values to the optional content block used in generation.
 			
 			Parameters:
 			-----------
-			content: str - Optional content/context text.
-			urls: List[ str ] - URLs to include in the prompt context.
+			content: str
+				Optional content or context text.
+			
+			urls: List[ str ]
+				URLs to include in the prompt context.
 			
 			Returns:
 			--------
-			str | None - Combined context block or None.
+			str | None
+				Combined context block or None.
 		
 		"""
 		try:
 			self.content_blocks = [ ]
-			self.content_blocks.append( content.strip( ) )
-			self.urls = urls
+			self.urls = urls if isinstance( urls, list ) else [ ]
+			
+			if isinstance( content, str ) and content.strip( ):
+				self.content_blocks.append( content.strip( ) )
+			elif isinstance( content, list ) and len( content ) > 0:
+				self.content_text = '\n'.join(
+					str( item ).strip( )
+					for item in content
+					if item is not None and str( item ).strip( )
+				)
+				
+				if self.content_text:
+					self.content_blocks.append( self.content_text )
+			elif content is not None and str( content ).strip( ):
+				self.content_blocks.append( str( content ).strip( ) )
+			
 			if len( self.urls ) > 0:
 				self.content_blocks.append( 'Reference URLs:\n' + '\n'.join( self.urls ) )
 			
@@ -529,7 +553,7 @@ class Chat( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Chat'
-			exception.method = ('append_urls_to_content( self, **kwargs ) -> str')
+			exception.method = 'append_urls_to_content( self, content: str, urls: List[ str ] )'
 			raise exception
 	
 	def build_tools( self, tools: List[ str ] ) -> List[ Tool ] | None:
@@ -2688,12 +2712,7 @@ class TTS( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'TTS'
-			exception.method = (
-					'create_speech( self, text: str, filepath: str=None, '
-					'model: str="gemini-3.1-flash-tts-preview", format: str="audio/wav", '
-					'speed: float=None, voice: str=None, frequency: float=None, '
-					'presense: float=None, max_tokens: int=None, instruct: str=None, '
-					'temperature: float=None, top_p: float=None ) -> bytes | str | None')
+			exception.method = 'create_speech( self, text: str, *args ) -> bytes | str | None'
 			error = ErrorDialog( exception )
 			error.show( )
 			return None

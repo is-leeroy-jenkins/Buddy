@@ -192,6 +192,9 @@ class Chat( GPT ):
 
 	    Methods:
 	    --------
+	    completion:
+	        Creates a Responses API call and returns the full response object.
+
 	    generate_text:
 	        Generates a text response through the OpenAI Responses API.
 
@@ -212,6 +215,9 @@ class Chat( GPT ):
 
 	    build_text_format:
 	        Builds the Responses API text-format object.
+
+	    build_prompt_template:
+	        Builds a valid Responses API prompt template object.
 
 	    build_request:
 	        Builds the full Responses API request dictionary.
@@ -248,20 +254,20 @@ class Chat( GPT ):
 	file: Optional[ FileObject ]
 	purpose: Optional[ str ]
 	
-	def __init__( self, model: str='gpt-5-nano', prompt: str=None, temperature: float=None,
-			top_p: float=None, presense: float=None, presence: float=None, store: bool=None,
-			stream: bool=None, stops: List[ str ]=None,
-			response_format: Dict[ str, Any ]=None,
-			number: int=None, instruct: str=None, context: List[ Dict[ str, str ] ]=None,
-			allowed_domains: List[ str ]=None, include: List[ str ]=None,
-			tools: List[ Dict[ str, Any ] ]=None, max_tools: int=None,
-			tool_choice: str=None, file_path: str=None, background: bool=None,
-			is_parallel: bool=None, max_tokens: int=None, frequency: float=None,
-			input: List[ Dict[ str, Any ] ]=None, file_ids: List[ str ]=None,
-			previous_id: str=None, conversation_id: str=None,
-			reasoning: Dict[ str, str ] | str = None, output_text: str=None,
-			max_search_results: int=None, content: str=None,
-			vector_store_ids: List[ str ]=None ):
+	def __init__( self, model: str = 'gpt-5-nano', prompt: str = None, temperature: float = None,
+			top_p: float = None, presense: float = None, presence: float = None, store: bool = None,
+			stream: bool = None, stops: List[ str ] = None,
+			response_format: Dict[ str, Any ] = None,
+			number: int = None, instruct: str = None, context: List[ Dict[ str, str ] ] = None,
+			allowed_domains: List[ str ] = None, include: List[ str ] = None,
+			tools: List[ Dict[ str, Any ] ] = None, max_tools: int = None,
+			tool_choice: str = None, file_path: str = None, background: bool = None,
+			is_parallel: bool = None, max_tokens: int = None, frequency: float = None,
+			input: List[ Dict[ str, Any ] ] = None, file_ids: List[ str ] = None,
+			previous_id: str = None, conversation_id: str = None,
+			reasoning: Dict[ str, str ] | str = None, output_text: str = None,
+			max_search_results: int = None, content: str = None,
+			vector_store_ids: List[ str ] = None ):
 		"""
 		
 			Purpose:
@@ -412,6 +418,10 @@ class Chat( GPT ):
 		self.purpose = None
 		self.request = { }
 		self.messages = [ ]
+		self.built_tools = [ ]
+		self.stream_requested = False
+		self.background_requested = False
+		self.prompt_template = None
 		self.vector_stores = {
 				'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
 				'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN',
@@ -441,8 +451,9 @@ class Chat( GPT ):
 	            Model option names.
 
         '''
-		return [ 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
-		         'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', ]
+		return [ 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.2', 'gpt-5.1',
+		         'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1', 'gpt-4.1-mini',
+		         'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', ]
 	
 	@property
 	def include_options( self ) -> List[ str ] | None:
@@ -492,6 +503,7 @@ class Chat( GPT ):
 		return [
 				'web_search',
 				'file_search',
+				'code_interpreter',
 		]
 	
 	@property
@@ -609,9 +621,7 @@ class Chat( GPT ):
 				Modality names.
 
 		'''
-		return [
-				'text',
-		]
+		return [ 'text', ]
 	
 	def build_reasoning( self, reasoning: str | Dict[ str, str ]=None ) -> Dict[ str, str ] | None:
 		"""
@@ -661,8 +671,8 @@ class Chat( GPT ):
 			exception.method = 'build_reasoning( self, reasoning )'
 			raise exception
 	
-	def build_input( self, prompt: str, context: List[ Dict[ str, str ] ]=None,
-			input_data: List[ Dict[ str, Any ] ]=None ) -> List[ Dict[ str, Any ] ]:
+	def build_input( self, prompt: str, context: List[ Dict[ str, str ] ] = None,
+			input_data: List[ Dict[ str, Any ] ] = None ) -> List[ Dict[ str, Any ] ]:
 		"""
 	
 	        Purpose:
@@ -706,8 +716,7 @@ class Chat( GPT ):
 					if not isinstance( content, str ) or not content.strip( ):
 						continue
 					
-					self.messages.append(
-						{
+					self.messages.append( {
 								'role': role,
 								'content': [
 										{
@@ -716,8 +725,7 @@ class Chat( GPT ):
 										}, ],
 						} )
 			
-			self.messages.append(
-				{
+			self.messages.append( {
 						'role': 'user',
 						'content': [
 								{
@@ -734,14 +742,14 @@ class Chat( GPT ):
 			exception.method = 'build_input( self, prompt, context, input_data )'
 			raise exception
 	
-	def build_tools( self, tools: List[ Dict[ str, Any ] ]=None,
-			allowed_domains: List[ str ]=None,
-			vector_store_ids: List[ str ]=None ) -> List[ Dict[ str, Any ] ] | None:
+	def build_tools( self, tools: List[ Dict[ str, Any ] ] = None,
+			allowed_domains: List[ str ] = None,
+			vector_store_ids: List[ str ] = None ) -> List[ Dict[ str, Any ] ] | None:
 		"""
 
 			Purpose:
 			--------
-			Normalize supported built-in Responses API tool objects for Text mode.
+			Normalize supported built-in Responses API tool objects for Text and Chat mode.
 
 			Parameters:
 			-----------
@@ -763,10 +771,11 @@ class Chat( GPT ):
 		try:
 			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
 			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
+			self.built_tools = [ ]
+			
 			if tools is None or len( tools ) == 0:
 				return None
 			
-			self.built_tools = [ ]
 			for tool in tools:
 				if not isinstance( tool, dict ):
 					continue
@@ -777,21 +786,58 @@ class Chat( GPT ):
 				
 				if tool_type == 'web_search':
 					built_tool = { 'type': 'web_search' }
-					if len( self.allowed_domains ) > 0:
-						built_tool[ 'filters' ]={ 'allowed_domains': self.allowed_domains }
+					
+					filters = tool.get( 'filters' )
+					if isinstance( filters, dict ) and len( filters ) > 0:
+						built_tool[ 'filters' ] = filters
+					elif len( self.allowed_domains ) > 0:
+						built_tool[ 'filters' ] = { 'allowed_domains': self.allowed_domains }
+					
+					search_context_size = tool.get( 'search_context_size' )
+					if isinstance( search_context_size, str ) and search_context_size.strip( ):
+						built_tool[ 'search_context_size' ] = search_context_size.strip( )
+					
+					user_location = tool.get( 'user_location' )
+					if isinstance( user_location, dict ) and len( user_location ) > 0:
+						built_tool[ 'user_location' ] = user_location
 					
 					self.built_tools.append( built_tool )
 					continue
 				
 				if tool_type == 'file_search':
+					ids = tool.get( 'vector_store_ids' )
+					if isinstance( ids, list ) and len( ids ) > 0:
+						self.vector_store_ids = ids
+					
 					if len( self.vector_store_ids ) == 0:
 						continue
 					
-					self.built_tools.append(
-						{
-								'type': 'file_search',
-								'vector_store_ids': self.vector_store_ids,
-						} )
+					built_tool = { 'type': 'file_search',
+							'vector_store_ids': self.vector_store_ids, }
+					
+					max_num_results = tool.get( 'max_num_results' )
+					if isinstance( max_num_results, int ) and max_num_results > 0:
+						built_tool[ 'max_num_results' ] = max_num_results
+					
+					filters = tool.get( 'filters' )
+					if isinstance( filters, dict ) and len( filters ) > 0:
+						built_tool[ 'filters' ] = filters
+					
+					self.built_tools.append( built_tool )
+					continue
+				
+				if tool_type == 'code_interpreter':
+					built_tool = { 'type': 'code_interpreter' }
+					container = tool.get( 'container' )
+					
+					if isinstance( container, dict ) and len( container ) > 0:
+						built_tool[ 'container' ] = container
+					elif isinstance( container, str ) and container.strip( ):
+						built_tool[ 'container' ] = container.strip( )
+					else:
+						built_tool[ 'container' ] = { 'type': 'auto' }
+					
+					self.built_tools.append( built_tool )
 					continue
 			
 			return self.built_tools if len( self.built_tools ) > 0 else None
@@ -802,8 +848,8 @@ class Chat( GPT ):
 			exception.method = 'build_tools( self, tools, allowed_domains, vector_store_ids )'
 			raise exception
 	
-	def build_tool_choice( self, tool_choice: str=None,
-			tools: List[ Dict[ str, Any ] ]=None ) -> str | None:
+	def build_tool_choice( self, tool_choice: str = None,
+			tools: List[ Dict[ str, Any ] ] = None ) -> str | None:
 		"""
 		
 			Purpose:
@@ -846,8 +892,8 @@ class Chat( GPT ):
 			exception.method = 'build_tool_choice( self, tool_choice, tools )'
 			raise exception
 	
-	def build_include( self, include: List[ str ]=None,
-			tools: List[ Dict[ str, Any ] ]=None ) -> List[ str ] | None:
+	def build_include( self, include: List[ str ] = None,
+			tools: List[ Dict[ str, Any ] ] = None ) -> List[ str ] | None:
 		"""
 		
 			Purpose:
@@ -897,6 +943,10 @@ class Chat( GPT ):
 					continue
 				
 				if name == 'file_search_call.results' and 'file_search' in tool_types:
+					allowed.append( name )
+					continue
+				
+				if name == 'code_interpreter_call.outputs' and 'code_interpreter' in tool_types:
 					allowed.append( name )
 					continue
 			
@@ -955,15 +1005,62 @@ class Chat( GPT ):
 			exception.method = 'build_text_format( self, format )'
 			raise exception
 	
-	def build_request( self, prompt: str, model: str, temperature: float=None,
-			format: Dict[ str, Any ]=None, top_p: float=None, frequency: float=None,
-			max_tools: int=None, presence: float=None, max_tokens: int=None,
-			store: bool=None, stream: bool=None, instruct: str=None,
-			background: bool=False, reasoning: str=None, include: List[ str ]=None,
-			tools: List[ Dict[ str, Any ] ]=None, allowed_domains: List[ str ]=None,
-			previous_id: str=None, tool_choice: str=None, is_parallel: bool=None,
-			context: List[ Dict[ str, str ] ]=None, input_data: List[ Dict[ str, Any ] ]=None,
-			vector_store_ids: List[ str ]=None, conversation_id: str=None ) -> Dict[ str, Any ]:
+	def build_prompt_template( self, prompt_id: str = None, prompt_version: str = None,
+			prompt_variables: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+		
+			Purpose:
+			--------
+			Build a Responses API prompt-template reference object.
+
+			Parameters:
+			-----------
+			prompt_id: str
+				Prompt template identifier.
+
+			prompt_version: str
+				Optional prompt template version.
+
+			prompt_variables: Dict[ str, Any ]
+				Optional prompt template variables.
+
+			Returns:
+			--------
+			Dict[ str, Any ] | None:
+				Prompt template object or None.
+
+		"""
+		try:
+			if not isinstance( prompt_id, str ) or not prompt_id.strip( ):
+				return None
+			
+			template = { 'id': prompt_id.strip( ) }
+			
+			if isinstance( prompt_version, str ) and prompt_version.strip( ):
+				template[ 'version' ] = prompt_version.strip( )
+			
+			if isinstance( prompt_variables, dict ) and len( prompt_variables ) > 0:
+				template[ 'variables' ] = prompt_variables
+			
+			return template
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'build_prompt_template( self, prompt_id, prompt_version, prompt_variables )'
+			raise exception
+	
+	def build_request( self, prompt: str, model: str, temperature: float = None,
+			format: Dict[ str, Any ] = None, top_p: float = None, frequency: float = None,
+			max_tools: int = None, presence: float = None, max_tokens: int = None,
+			store: bool = None, stream: bool = None, instruct: str = None,
+			background: bool = False, reasoning: str = None, include: List[ str ] = None,
+			tools: List[ Dict[ str, Any ] ] = None, allowed_domains: List[ str ] = None,
+			previous_id: str = None, tool_choice: str = None, is_parallel: bool = None,
+			context: List[ Dict[ str, str ] ] = None, input_data: List[ Dict[ str, Any ] ] = None,
+			vector_store_ids: List[ str ] = None, conversation_id: str = None,
+			prompt_id: str = None, prompt_version: str = None,
+			prompt_variables: Dict[ str, Any ] = None ) -> Dict[ str, Any ]:
 		"""
 
 			Purpose:
@@ -1044,6 +1141,15 @@ class Chat( GPT ):
 			conversation_id: str
 				Optional Responses API conversation identifier.
 
+			prompt_id: str
+				Optional OpenAI prompt template identifier.
+
+			prompt_version: str
+				Optional OpenAI prompt template version.
+
+			prompt_variables: Dict[ str, Any ]
+				Optional OpenAI prompt template variables.
+
 			Returns:
 			--------
 			Dict[ str, Any ]:
@@ -1071,6 +1177,8 @@ class Chat( GPT ):
 			self.conversation_id = conversation_id if isinstance( conversation_id, str ) else None
 			self.parallel_tools = is_parallel
 			self.reasoning = self.build_reasoning( reasoning )
+			self.prompt_template = self.build_prompt_template( prompt_id=prompt_id,
+				prompt_version=prompt_version, prompt_variables=prompt_variables )
 			self.tools = self.build_tools( tools=tools, allowed_domains=allowed_domains,
 				vector_store_ids=self.vector_store_ids )
 			self.tool_choice = self.build_tool_choice( tool_choice=tool_choice, tools=self.tools )
@@ -1082,52 +1190,58 @@ class Chat( GPT ):
 			}
 			
 			if self.instructions:
-				self.request[ 'instructions' ]=self.instructions
+				self.request[ 'instructions' ] = self.instructions
+			
+			if self.prompt_template is not None:
+				self.request[ 'prompt' ] = self.prompt_template
 			
 			if self.reasoning is not None:
-				self.request[ 'reasoning' ]=self.reasoning
+				self.request[ 'reasoning' ] = self.reasoning
 			
 			if isinstance( self.max_tokens, int ) and self.max_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_tokens
+				self.request[ 'max_output_tokens' ] = self.max_tokens
 			
 			if self.temperature is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'temperature' ]=self.temperature
+				self.request[ 'temperature' ] = self.temperature
 			
 			if self.top_percent is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'top_p' ]=self.top_percent
+				self.request[ 'top_p' ] = self.top_percent
 			
 			if self.frequency_penalty is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'frequency_penalty' ]=self.frequency_penalty
+				self.request[ 'frequency_penalty' ] = self.frequency_penalty
 			
 			if self.presence_penalty is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'presence_penalty' ]=self.presence_penalty
+				self.request[ 'presence_penalty' ] = self.presence_penalty
 			
 			if self.store is not None:
-				self.request[ 'store' ]=self.store
+				self.request[ 'store' ] = self.store
+			
+			if self.background is not None:
+				self.request[ 'background' ] = bool( self.background )
 			
 			if self.include is not None and len( self.include ) > 0:
-				self.request[ 'include' ]=self.include
+				self.request[ 'include' ] = self.include
 			
 			if self.tools is not None and len( self.tools ) > 0:
-				self.request[ 'tools' ]=self.tools
+				self.request[ 'tools' ] = self.tools
 			
 			if self.tool_choice:
-				self.request[ 'tool_choice' ]=self.tool_choice
+				self.request[ 'tool_choice' ] = self.tool_choice
 			
 			if self.parallel_tools is not None and self.tools is not None:
-				self.request[ 'parallel_tool_calls' ]=self.parallel_tools
+				self.request[ 'parallel_tool_calls' ] = self.parallel_tools
 			
 			if self.previous_id and self.previous_id.strip( ):
-				self.request[ 'previous_response_id' ]=self.previous_id.strip( )
+				self.request[ 'previous_response_id' ] = self.previous_id.strip( )
 			
 			if self.conversation_id and self.conversation_id.strip( ):
-				self.request[ 'conversation' ]=self.conversation_id.strip( )
+				self.request[ 'conversation' ] = self.conversation_id.strip( )
 			
 			if isinstance( self.max_tools, int ) and self.max_tools > 0 and self.tools is not None:
-				self.request[ 'max_tool_calls' ]=self.max_tools
+				self.request[ 'max_tool_calls' ] = self.max_tools
 			
 			if self.response_format is not None and len( self.response_format ) > 0:
-				self.request[ 'text' ]=self.response_format
+				self.request[ 'text' ] = self.response_format
 			
 			return self.request
 		except Exception as e:
@@ -1218,16 +1332,151 @@ class Chat( GPT ):
 			exception.method = 'get_usage( self ) -> Any'
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str, temperature: float=None,
-			format: Dict[ str, Any ]=None, top_p: float=None, frequency: float=None,
-			max_tools: int=None, presence: float=None, max_tokens: int=None,
-			store: bool=None, stream: bool=None, instruct: str=None, background: bool=False,
-			reasoning: str=None, include: List[ str ]=None,
-			tools: List[ Dict[ str, Any ] ]=None,
-			allowed_domains: List[ str ]=None, previous_id: str=None, tool_choice: str=None,
-			is_parallel: bool=None, context: List[ Dict[ str, str ] ]=None,
-			input_data: List[ Dict[ str, Any ] ]=None, vector_store_ids: List[ str ]=None,
-			conversation_id: str=None ) -> str | None:
+	def completion( self, prompt_id: str = None, prompt_version: str = None, model: str = None,
+			user_input: str = None, temperature: float = None, format: Dict[ str, Any ] = None,
+			top_p: float = None, frequency: float = None, presence: float = None,
+			max_tokens: int = None, store: bool = None, stream: bool = None, instruct: str = None,
+			background: bool = False, reasoning: str = None, include: List[ str ] = None,
+			tools: List[ Dict[ str, Any ] ] = None, tool_choice: str = None,
+			is_parallel: bool = None,
+			previous_id: str = None, context: List[ Dict[ str, str ] ] = None,
+			input_data: List[ Dict[ str, Any ] ] = None, allowed_domains: List[ str ] = None,
+			vector_store_ids: List[ str ] = None, conversation_id: str = None,
+			max_tools: int = None, prompt_variables: Dict[ str, Any ] = None ) -> Response | Any:
+		"""
+		
+			Purpose:
+			--------
+			Create a Responses API completion and return the full response object.
+
+			Parameters:
+			-----------
+			prompt_id: str
+				Optional OpenAI prompt template identifier.
+
+			prompt_version: str
+				Optional OpenAI prompt template version.
+
+			model: str
+				OpenAI model identifier.
+
+			user_input: str
+				User input submitted to the model.
+
+			temperature: float
+				Optional sampling temperature.
+
+			format: Dict[ str, Any ]
+				Optional Responses API text format object.
+
+			top_p: float
+				Optional nucleus sampling value.
+
+			frequency: float
+				Optional frequency penalty.
+
+			presence: float
+				Optional presence penalty.
+
+			max_tokens: int
+				Optional maximum output token count.
+
+			store: bool
+				Optional response storage flag.
+
+			stream: bool
+				Optional stream flag retained for compatibility.
+
+			instruct: str
+				Optional system or developer instructions.
+
+			background: bool
+				Optional background execution flag.
+
+			reasoning: str
+				Optional reasoning effort.
+
+			include: List[ str ]
+				Optional include fields.
+
+			tools: List[ Dict[ str, Any ] ]
+				Optional Responses API tool dictionaries.
+
+			tool_choice: str
+				Optional tool-choice policy.
+
+			is_parallel: bool
+				Optional parallel tool-call flag.
+
+			previous_id: str
+				Optional previous response identifier.
+
+			context: List[ Dict[ str, str ] ]
+				Optional conversation context.
+
+			input_data: List[ Dict[ str, Any ] ]
+				Optional prebuilt Responses API input items.
+
+			allowed_domains: List[ str ]
+				Optional web-search allowed-domain list.
+
+			vector_store_ids: List[ str ]
+				Optional vector store identifiers.
+
+			conversation_id: str
+				Optional Responses API conversation identifier.
+
+			max_tools: int
+				Optional maximum tool-call count.
+
+			prompt_variables: Dict[ str, Any ]
+				Optional prompt template variables.
+
+			Returns:
+			--------
+			Response | Any:
+				Full Responses API response object.
+
+		"""
+		try:
+			prompt = user_input if user_input is not None else self.prompt
+			selected_model = model if model is not None else self.model
+			throw_if( 'user_input', prompt )
+			throw_if( 'model', selected_model )
+			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			self.stream_requested = bool( stream )
+			self.background_requested = bool( background )
+			self.request = self.build_request( prompt=prompt, model=selected_model,
+				temperature=temperature, format=format, top_p=top_p, frequency=frequency,
+				max_tools=max_tools, presence=presence, max_tokens=max_tokens, store=store,
+				stream=False, instruct=instruct, background=background, reasoning=reasoning,
+				include=include, tools=tools, allowed_domains=allowed_domains,
+				previous_id=previous_id, tool_choice=tool_choice, is_parallel=is_parallel,
+				context=context, input_data=input_data, vector_store_ids=vector_store_ids,
+				conversation_id=conversation_id, prompt_id=prompt_id,
+				prompt_version=prompt_version, prompt_variables=prompt_variables )
+			
+			self.response = self.client.responses.create( **self.request )
+			self.previous_id = getattr( self.response, 'id', None )
+			self.output_text = self.get_output_text( )
+			return self.response
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Chat'
+			exception.method = 'completion( self, **kwargs ) -> Response | Any'
+			raise exception
+	
+	def generate_text( self, prompt: str, model: str, temperature: float = None,
+			format: Dict[ str, Any ] = None, top_p: float = None, frequency: float = None,
+			max_tools: int = None, presence: float = None, max_tokens: int = None,
+			store: bool = None, stream: bool = None, instruct: str = None, background: bool=False,
+			reasoning: str = None, include: List[ str ] = None,
+			tools: List[ Dict[ str, Any ] ] = None,
+			allowed_domains: List[ str ] = None, previous_id: str = None, tool_choice: str = None,
+			is_parallel: bool = None, context: List[ Dict[ str, str ] ] = None,
+			input_data: List[ Dict[ str, Any ] ] = None, vector_store_ids: List[ str ] = None,
+			conversation_id: str = None ) -> str | None:
 		"""
 
 			Purpose:
@@ -1317,25 +1566,18 @@ class Chat( GPT ):
 
 		"""
 		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			response = self.completion( model=model, user_input=prompt, temperature=temperature,
+				format=format, top_p=top_p, frequency=frequency, presence=presence,
+				max_tokens=max_tokens, store=store, stream=stream, instruct=instruct,
+				background=False, reasoning=reasoning, include=include, tools=tools,
+				tool_choice=tool_choice, is_parallel=is_parallel, previous_id=previous_id,
+				context=context, input_data=input_data, allowed_domains=allowed_domains,
+				vector_store_ids=vector_store_ids, conversation_id=conversation_id,
+				max_tools=max_tools )
 			
-			self.stream_requested = bool( stream )
-			self.background_requested = bool( background )
+			if response is None:
+				return None
 			
-			self.request = self.build_request( prompt=prompt, model=model,
-				temperature=temperature, format=format, top_p=top_p, frequency=frequency,
-				max_tools=max_tools, presence=presence, max_tokens=max_tokens, store=store,
-				stream=False, instruct=instruct, background=False, reasoning=reasoning,
-				include=include, tools=tools, allowed_domains=allowed_domains,
-				previous_id=previous_id, tool_choice=tool_choice, is_parallel=is_parallel,
-				context=context, input_data=input_data, vector_store_ids=vector_store_ids,
-				conversation_id=conversation_id )
-			
-			self.response = self.client.responses.create( **self.request )
-			self.previous_id = getattr( self.response, 'id', None )
-			self.output_text = self.get_output_text( )
 			return self.output_text
 		except Exception as e:
 			exception = Error( e )
@@ -1410,9 +1652,11 @@ class Chat( GPT ):
 				'build_tool_choice',
 				'build_include',
 				'build_text_format',
+				'build_prompt_template',
 				'build_request',
 				'get_output_text',
 				'get_usage',
+				'completion',
 				'generate_text',
 		]
 
@@ -1495,11 +1739,11 @@ class Images( GPT ):
 	include: Optional[ List[ str ] ]
 	tool_choice: Optional[ str ]
 	parallel_tools: Optional[ bool ]
-	input: Optional[ List[ Dict[ str, str ] ] | str ]
+	input: Optional[ List[ Dict[ str, Any ] ] | str ]
 	instructions: Optional[ str ]
 	max_tools: Optional[ int ]
-	tools: Optional[ List[ Dict[ str, str ] ] ]
-	messages: Optional[ List[ Dict[ str, str ] ] ]
+	tools: Optional[ List[ Dict[ str, Any ] ] ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	reasoning: Optional[ Dict[ str, str ] ]
 	image_url: Optional[ str ]
 	image_path: Optional[ str ]
@@ -1509,42 +1753,35 @@ class Images( GPT ):
 	allowed_domains: Optional[ List[ str ] ]
 	response_format: Optional[ str ]
 	mime_format: Optional[ str ]
-	background: Optional[ bool ]
+	background: Optional[ str ]
 	backcolor: Optional[ str ]
 	compression: Optional[ float ]
 	
-	def __init__( self, prompt: str=None, model: str='gpt-image-1', temperature: float=None,
-			top_p: float=None, presence: float=None, frequency: float=None,
-			max_tokens: int=None, store: bool=None, stream: bool=False, backcolor: str=None,
-			instruct: str=None, background: bool=None, number: int=None,
-			image_format: str=None, include: List[ Dict[ str, str ] ]=None,
-			tools: List[ Dict[ str, str ] ]=None, max_tools: int=None,
-			respose_format: Dict[ str, str ]=None, response_format: Dict[ str, str ]=None,
-			tool_choice: str=None, image_path: str=None, is_parallel: bool=None,
-			input: List[ Dict[ str, str ] ]=None, previous_id: str=None,
-			reasoning: Dict[ str, str ]=None, input_text: str=None, image_url: str=None,
-			content: List[ Dict[ str, str ] ]=None, quality: str=None, size: str=None,
-			detail: str=None, style: str=None, compression: float=None ):
+	def __init__( self, prompt: str = None, model: str = 'gpt-image-1', temperature: float = None,
+			top_p: float = None, presence: float = None, frequency: float = None,
+			max_tokens: int = None, store: bool = None, stream: bool = False, backcolor: str = None,
+			instruct: str = None, background: bool = None, number: int = None,
+			response_format: str = None, path: str = None, image_url: str = None, size: str = None,
+			quality: str = None, detail: str = None, style: str = None, compression: float = None ):
 		"""
 		
 			Purpose:
 			--------
-			Initialize the Images wrapper with optional defaults used by generation,
-			analysis, and editing calls.
+			Initialize the OpenAI Images wrapper.
 
 			Parameters:
 			-----------
 			prompt: str
-				Optional prompt used as default input text.
+				Optional prompt used for image generation or image editing.
 
 			model: str
-				Optional OpenAI image or vision model.
+				Optional image model or vision model.
 
 			temperature: float
 				Optional sampling temperature for vision analysis.
 
 			top_p: float
-				Optional top-p value retained for compatibility.
+				Optional nucleus sampling value retained for compatibility.
 
 			presence: float
 				Optional presence penalty retained for compatibility.
@@ -1553,85 +1790,49 @@ class Images( GPT ):
 				Optional frequency penalty retained for compatibility.
 
 			max_tokens: int
-				Optional maximum output token count for vision analysis.
+				Optional maximum output tokens for image analysis.
 
 			store: bool
-				Optional Responses API store setting.
+				Optional Responses API storage flag.
 
 			stream: bool
-				Optional Responses API stream setting.
+				Optional stream flag retained for compatibility.
 
 			backcolor: str
-				Optional background setting retained for compatibility.
+				Optional background behavior value.
 
 			instruct: str
-				Optional system/developer instructions.
+				Optional system or developer instructions.
 
 			background: bool
-				Optional background flag retained for compatibility.
+				Optional background value retained for compatibility.
 
 			number: int
-				Optional number of images to request.
+				Optional number of images to generate or edit.
 
-			image_format: str
-				Optional output image format.
+			response_format: str
+				Optional output format or response format.
 
-			include: List[ Dict[ str, str ] ]
-				Optional include fields retained for compatibility.
-
-			tools: List[ Dict[ str, str ] ]
-				Optional tools retained for compatibility.
-
-			max_tools: int
-				Optional maximum tool calls retained for compatibility.
-
-			respose_format: Dict[ str, str ]
-				Backward-compatible misspelled response format parameter.
-
-			response_format: Dict[ str, str ]
-				Optional corrected response format parameter.
-
-			tool_choice: str
-				Optional tool-choice setting retained for compatibility.
-
-			image_path: str
-				Optional local image path.
-
-			is_parallel: bool
-				Optional parallel-tool setting retained for compatibility.
-
-			input: List[ Dict[ str, str ] ]
-				Optional Responses API input payload.
-
-			previous_id: str
-				Optional previous response identifier.
-
-			reasoning: Dict[ str, str ]
-				Optional reasoning object retained for compatibility.
-
-			input_text: str
-				Optional prompt text.
+			path: str
+				Optional local image path for analysis or editing.
 
 			image_url: str
-				Optional image URL.
+				Optional image URL for analysis.
 
-			content: List[ Dict[ str, str ] ]
-				Optional content payload retained for compatibility.
+			size: str
+				Optional image output size.
 
 			quality: str
 				Optional image quality.
 
-			size: str
-				Optional image size.
-
 			detail: str
-				Optional vision detail value.
+				Optional image analysis detail value.
 
 			style: str
-				Optional style retained for compatibility.
+				Optional style value retained for compatibility.
 
 			compression: float
-				Optional output compression value.
+				Optional output compression value from 0.0 to 1.0.
 
 			Returns:
 			--------
@@ -1642,8 +1843,8 @@ class Images( GPT ):
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.model = model
-		self.number = number
-		self.previous_id = previous_id
+		self.prompt = prompt
+		self.input_text = None
 		self.temperature = temperature
 		self.top_percent = top_p
 		self.frequency_penalty = frequency
@@ -1651,29 +1852,128 @@ class Images( GPT ):
 		self.max_tokens = max_tokens
 		self.store = store
 		self.stream = stream
-		self.instruct = instruct
-		self.max_tools = max_tools
-		self.reasoning = reasoning
-		self.tools = tools
-		self.tool_choice = tool_choice
-		self.input_text = input_text if input_text is not None else prompt
-		self.input = input
-		self.content = content
-		self.background = background
+		self.instructions = instruct
+		self.background = backcolor if backcolor is not None else background
 		self.backcolor = backcolor
-		self.image_path = image_path
-		self.image_url = image_url
-		self.include = include
+		self.number = number
+		self.size = size
 		self.quality = quality
 		self.detail = detail
-		self.size = size
 		self.style = style
 		self.compression = compression
-		self.response_format = response_format if response_format is not None else respose_format
-		self.mime_format = image_format
-		self.parallel_tools = is_parallel
+		self.response_format = response_format
+		self.mime_format = response_format
+		self.output_format = response_format
+		self.output_compression = None
+		self.image_path = path
+		self.file_path = path
+		self.image_url = image_url
+		self.file_url = None
 		self.response = None
 		self.file = None
+		self.data = None
+		self.outputs = [ ]
+		self.request = { }
+		self.messages = [ ]
+		self.include = [ ]
+		self.tool_choice = None
+		self.parallel_tools = None
+		self.max_tools = None
+		self.tools = [ ]
+		self.reasoning = None
+		self.allowed_domains = [ ]
+		self.previous_id = None
+		self.b64_json = None
+		self.url = None
+	
+	@property
+	def model_options( self ) -> List[ str ]:
+		'''
+
+	        Purpose:
+	        --------
+	        Return supported GPT image generation model names.
+
+	        Parameters:
+	        -----------
+	        None
+
+	        Returns:
+	        --------
+	        List[ str ]:
+	            Image generation model names.
+
+        '''
+		return [
+				'gpt-image-2',
+				'gpt-image-1.5',
+				'gpt-image-1',
+				'gpt-image-1-mini',
+				'dall-e-3',
+				'dall-e-2',
+		]
+	
+	@property
+	def analysis_model_options( self ) -> List[ str ]:
+		'''
+
+	        Purpose:
+	        --------
+	        Return supported image analysis model names.
+
+	        Parameters:
+	        -----------
+	        None
+
+	        Returns:
+	        --------
+	        List[ str ]:
+	            Vision-capable model names.
+
+        '''
+		return [
+				'gpt-5.5',
+				'gpt-5.4',
+				'gpt-5.4-mini',
+				'gpt-5.4-nano',
+				'gpt-5.2',
+				'gpt-5.1',
+				'gpt-5',
+				'gpt-5-mini',
+				'gpt-5-nano',
+				'gpt-4.1',
+				'gpt-4.1-mini',
+				'gpt-4.1-nano',
+				'gpt-4o',
+				'gpt-4o-mini',
+		]
+	
+	@property
+	def edit_model_options( self ) -> List[ str ]:
+		'''
+
+	        Purpose:
+	        --------
+	        Return supported GPT image editing model names.
+
+	        Parameters:
+	        -----------
+	        None
+
+	        Returns:
+	        --------
+	        List[ str ]:
+	            Image editing model names.
+
+        '''
+		return [
+				'gpt-image-2',
+				'gpt-image-1.5',
+				'gpt-image-1',
+				'gpt-image-1-mini',
+				'chatgpt-image-latest',
+				'dall-e-2',
+		]
 	
 	@property
 	def style_options( self ) -> List[ str ]:
@@ -1681,7 +1981,7 @@ class Images( GPT ):
 
 	        Purpose:
 	        --------
-	        Return style options retained for legacy DALL-E compatibility.
+	        Return image style options retained for UI compatibility.
 
 	        Parameters:
 	        -----------
@@ -1699,91 +1999,12 @@ class Images( GPT ):
 		]
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		'''
-
-	        Purpose:
-	        --------
-	        Returns GPT image models supported by this OpenAI Images API wrapper.
-
-	        Parameters:
-	        -----------
-	        None
-
-	        Returns:
-	        --------
-	        List[ str ] | None:
-	            List of GPT image model names.
-
-        '''
-		return [
-				'gpt-image-2',
-				'gpt-image-1.5',
-				'gpt-image-1',
-				'gpt-image-1-mini',
-		]
-	
-	@property
-	def size_options( self ) -> List[ str ]:
-		'''
-
-	        Purpose:
-	        --------
-	        Returns supported image size options for current GPT image workflows.
-
-	        Parameters:
-	        -----------
-	        None
-
-	        Returns:
-	        --------
-	        List[ str ]:
-	            Image size options supported by generation and editing controls.
-
-        '''
-		return [
-				'auto',
-				'1024x1024',
-				'1024x1536',
-				'1536x1024',
-		]
-	
-	@property
-	def analysis_model_options( self ) -> List[ str ] | None:
-		'''
-
-	        Purpose:
-	        --------
-	        Returns vision-capable Responses API models for image analysis.
-
-	        Parameters:
-	        -----------
-	        None
-
-	        Returns:
-	        --------
-	        List[ str ] | None:
-	            List of model names suitable for image analysis.
-
-        '''
-		return [
-				'gpt-5.4',
-				'gpt-5.4-mini',
-				'gpt-5',
-				'gpt-5-mini',
-				'gpt-4.1',
-				'gpt-4.1-mini',
-				'gpt-4o',
-				'gpt-4o-mini',
-		]
-	
-	@property
 	def format_options( self ) -> List[ str ]:
 		'''
-	
+
 	        Purpose:
 	        --------
-	        Return legacy image response format options.
+	        Return image output format options.
 
 	        Parameters:
 	        -----------
@@ -1792,30 +2013,7 @@ class Images( GPT ):
 	        Returns:
 	        --------
 	        List[ str ]:
-	            Legacy response format names.
-
-        '''
-		return [
-				'url',
-				'b64_json',
-		]
-	
-	@property
-	def mime_options( self ) -> List[ str ]:
-		'''
-	
-	        Purpose:
-	        --------
-	        Return supported image output formats.
-
-	        Parameters:
-	        -----------
-	        None
-
-	        Returns:
-	        --------
-	        List[ str ]:
-	            Image output formats.
+	            Output format names.
 
         '''
 		return [
@@ -1825,78 +2023,76 @@ class Images( GPT ):
 		]
 	
 	@property
-	def include_options( self ) -> List[ str ] | None:
+	def mime_options( self ) -> List[ str ]:
 		'''
 
-			Purpose:
-			--------
-			Return Responses API include options relevant to image and multimodal calls.
+	        Purpose:
+	        --------
+	        Return MIME/output format options for Image mode controls.
 
-			Parameters:
-			-----------
-			None
+	        Parameters:
+	        -----------
+	        None
 
-			Returns:
-			--------
-			List[ str ] | None:
-				Include option names.
+	        Returns:
+	        --------
+	        List[ str ]:
+	            MIME/output format names.
 
-		'''
+        '''
 		return [
-				'file_search_call.results',
-				'web_search_call.results',
-				'web_search_call.action.sources',
-				'message.input_image.image_url',
-				'computer_call_output.output.image_url',
-				'code_interpreter_call.outputs',
-				'reasoning.encrypted_content',
-				'message.output_text.logprobs',
+				'png',
+				'jpeg',
+				'webp',
 		]
 	
 	@property
-	def tool_options( self ) -> List[ str ] | None:
+	def size_options( self ) -> List[ str ]:
 		'''
 
-			Purpose:
-			--------
-			Return Responses API tool options retained for Image mode compatibility.
+	        Purpose:
+	        --------
+	        Return supported image output sizes.
 
-			Parameters:
-			-----------
-			None
+	        Parameters:
+	        -----------
+	        None
 
-			Returns:
-			--------
-			List[ str ] | None:
-				Tool option names.
+	        Returns:
+	        --------
+	        List[ str ]:
+	            Image size names.
 
-		'''
+        '''
 		return [
-				'web_search',
-				'image_generation',
-				'file_search',
-				'code_interpreter',
-				'computer_use_preview',
+				'auto',
+				'1024x1024',
+				'1024x1536',
+				'1536x1024',
+				'1792x1024',
+				'1024x1792',
+				'512x512',
+				'256x256',
 		]
 	
 	@property
-	def choice_options( self ) -> List[ str ] | None:
+	def choice_options( self ) -> List[ str ]:
 		'''
 
-			Purpose:
-			--------
-			Return tool-choice options retained for Image mode compatibility.
+	        Purpose:
+	        --------
+	        Return tool choice options retained for Image mode compatibility.
 
-			Parameters:
-			-----------
-			None
+	        Parameters:
+	        -----------
+	        None
 
-			Returns:
-			--------
-			List[ str ] | None:
-				Tool-choice option names.
+	        Returns:
+	        --------
+	        List[ str ]:
+	            Tool choice option names.
 
-		'''
+        '''
 		return [
 				'auto',
 				'required',
@@ -1933,7 +2129,7 @@ class Images( GPT ):
 
 	        Purpose:
 	        --------
-	        Returns supported GPT image quality options.
+	        Return supported GPT image quality options.
 
 	        Parameters:
 	        -----------
@@ -1942,7 +2138,7 @@ class Images( GPT ):
 	        Returns:
 	        --------
 	        List[ str ]:
-	            Image quality options supported by GPT image generation and editing.
+	            Image quality option names.
 
         '''
 		return [
@@ -1950,6 +2146,8 @@ class Images( GPT ):
 				'low',
 				'medium',
 				'high',
+				'standard',
+				'hd',
 		]
 	
 	@property
@@ -2029,10 +2227,294 @@ class Images( GPT ):
 				'audio',
 		]
 	
-	def generate( self, prompt: str, number: int=1, model: str='gpt-image-1-mini',
-			size: str='1024x1024', quality: str='auto', fmt: str='jpeg',
-			compression: float=None, background: str=None ) -> str | bytes | list[
-		str | bytes ] | None:
+	def is_gpt_image_model( self, model: str ) -> bool:
+		"""
+		
+			Purpose:
+			--------
+			Determine whether a model uses GPT image parameter semantics.
+
+			Parameters:
+			-----------
+			model: str
+				Image generation or editing model name.
+
+			Returns:
+			--------
+			bool:
+				True if the model is a GPT image model; otherwise, False.
+		
+		"""
+		return isinstance( model, str ) and model in [
+				'gpt-image-2',
+				'gpt-image-1.5',
+				'gpt-image-1',
+				'gpt-image-1-mini',
+				'chatgpt-image-latest',
+		]
+	
+	def normalize_count( self, number: int = None ) -> int:
+		"""
+		
+			Purpose:
+			--------
+			Normalize the requested image count to the OpenAI Images API range.
+
+			Parameters:
+			-----------
+			number: int
+				Requested image count.
+
+			Returns:
+			--------
+			int:
+				Normalized image count.
+		
+		"""
+		try:
+			if isinstance( number, int ) and number > 0:
+				return max( 1, min( 10, number ) )
+			
+			return 1
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_count( self, number ) -> int'
+			raise exception
+	
+	def normalize_output_format( self, fmt: str = None, background: str = None ) -> str:
+		"""
+		
+			Purpose:
+			--------
+			Normalize image output format and prevent transparent JPEG requests.
+
+			Parameters:
+			-----------
+			fmt: str
+				Requested output format.
+
+			background: str
+				Requested background mode.
+
+			Returns:
+			--------
+			str:
+				Normalized output format.
+		
+		"""
+		try:
+			valid_formats = [ 'png', 'jpeg', 'webp' ]
+			output_format = fmt if isinstance( fmt, str ) and fmt in valid_formats else 'jpeg'
+			
+			if background == 'transparent' and output_format == 'jpeg':
+				output_format = 'png'
+			
+			return output_format
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_output_format( self, fmt, background ) -> str'
+			raise exception
+	
+	def normalize_background( self, background: str = None, model: str = None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Normalize image background behavior for supported GPT image models.
+
+			Parameters:
+			-----------
+			background: str
+				Requested background mode.
+
+			model: str
+				Selected image model.
+
+			Returns:
+			--------
+			str | None:
+				Normalized background value or None.
+		
+		"""
+		try:
+			valid_backgrounds = [ 'auto', 'transparent', 'opaque' ]
+			value = background if isinstance( background,
+				str ) and background in valid_backgrounds else None
+			
+			if model == 'gpt-image-2' and value == 'transparent':
+				return 'auto'
+			
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_background( self, background, model ) -> str | None'
+			raise exception
+	
+	def normalize_size( self, size: str = None, model: str = None ) -> str:
+		"""
+		
+			Purpose:
+			--------
+			Normalize image output size by selected model family.
+
+			Parameters:
+			-----------
+			size: str
+				Requested image size.
+
+			model: str
+				Selected image model.
+
+			Returns:
+			--------
+			str:
+				Normalized image size.
+		
+		"""
+		try:
+			if model == 'dall-e-2':
+				valid_sizes = [ '256x256', '512x512', '1024x1024' ]
+				return size if isinstance( size, str ) and size in valid_sizes else '1024x1024'
+			
+			if model == 'dall-e-3':
+				valid_sizes = [ '1024x1024', '1792x1024', '1024x1792' ]
+				return size if isinstance( size, str ) and size in valid_sizes else '1024x1024'
+			
+			valid_sizes = [ 'auto', '1024x1024', '1024x1536', '1536x1024' ]
+			return size if isinstance( size, str ) and size in valid_sizes else '1024x1024'
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_size( self, size, model ) -> str'
+			raise exception
+	
+	def normalize_quality( self, quality: str = None, model: str = None ) -> str | None:
+		"""
+		
+			Purpose:
+			--------
+			Normalize image quality by selected model family.
+
+			Parameters:
+			-----------
+			quality: str
+				Requested image quality.
+
+			model: str
+				Selected image model.
+
+			Returns:
+			--------
+			str | None:
+				Normalized image quality or None.
+		
+		"""
+		try:
+			if model == 'dall-e-2':
+				return None
+			
+			if model == 'dall-e-3':
+				valid_qualities = [ 'standard', 'hd' ]
+				return quality if isinstance( quality,
+					str ) and quality in valid_qualities else 'standard'
+			
+			valid_qualities = [ 'auto', 'low', 'medium', 'high' ]
+			return quality if isinstance( quality, str ) and quality in valid_qualities else 'auto'
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_quality( self, quality, model ) -> str | None'
+			raise exception
+	
+	def normalize_compression( self, compression: float = None ) -> int | None:
+		"""
+		
+			Purpose:
+			--------
+			Normalize a 0.0 to 1.0 compression value into OpenAI's 0 to 100 integer scale.
+
+			Parameters:
+			-----------
+			compression: float
+				Requested compression value.
+
+			Returns:
+			--------
+			int | None:
+				Normalized compression value or None.
+		
+		"""
+		try:
+			if compression is None:
+				return None
+			
+			return max( 0, min( 100, int( round( float( compression ) * 100 ) ) ) )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_compression( self, compression ) -> int | None'
+			raise exception
+	
+	def normalize_image_outputs( self ) -> str | bytes | list[ str | bytes ] | None:
+		"""
+		
+			Purpose:
+			--------
+			Normalize OpenAI Images API response data into bytes, URLs, lists, or None.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str | bytes | list[ str | bytes ] | None:
+				Image bytes, URL fallback, list of outputs, or None.
+		
+		"""
+		try:
+			self.data = getattr( self.response, 'data', None )
+			self.outputs = [ ]
+			
+			if self.data and len( self.data ) > 0:
+				for item in self.data:
+					self.b64_json = getattr( item, 'b64_json', None )
+					self.url = getattr( item, 'url', None )
+					
+					if self.b64_json:
+						self.outputs.append( base64.b64decode( self.b64_json ) )
+						continue
+					
+					if self.url:
+						self.outputs.append( self.url )
+						continue
+				
+				if len( self.outputs ) == 1:
+					return self.outputs[ 0 ]
+				
+				if len( self.outputs ) > 1:
+					return self.outputs
+			
+			return None
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'normalize_image_outputs( self ) -> str | bytes | list[ str | bytes ] | None'
+			raise exception
+	
+	def generate( self, prompt: str, number: int = 1, model: str = 'gpt-image-1-mini',
+			size: str = '1024x1024', quality: str = 'auto', fmt: str = 'jpeg',
+			compression: float = None, background: str = None ) -> str | bytes | list[ str | bytes ] | None:
 		'''
 
 			Purpose:
@@ -2074,134 +2556,86 @@ class Images( GPT ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.prompt = prompt
-			self.number = number if isinstance( number, int ) and number > 0 else 1
-			self.number = min( 10, max( 1, int( self.number ) ) )
-			self.model = model if isinstance( model,
-				str ) and model.strip( ) else 'gpt-image-1-mini'
-			self.size = size if isinstance( size, str ) and size.strip( ) else '1024x1024'
-			self.quality = quality if isinstance( quality, str ) and quality.strip( ) else 'auto'
-			self.response_format = fmt if isinstance( fmt, str ) and fmt.strip( ) else 'jpeg'
-			self.output_format = self.response_format.lower( ).replace( '.', '' )
-			self.background = background if isinstance( background, str ) else None
+			self.model = model or 'gpt-image-1-mini'
+			self.number = self.normalize_count( number )
 			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			
-			valid_models = [
+			valid_generation_models = [
 					'gpt-image-2',
 					'gpt-image-1.5',
 					'gpt-image-1',
 					'gpt-image-1-mini',
+					'dall-e-3',
+					'dall-e-2',
 			]
 			
-			valid_sizes = [
-					'auto',
-					'1024x1024',
-					'1024x1536',
-					'1536x1024',
-			]
-			
-			valid_qualities = [
-					'auto',
-					'low',
-					'medium',
-					'high',
-			]
-			
-			valid_formats = [
-					'png',
-					'jpeg',
-					'webp',
-			]
-			
-			valid_backgrounds = [
-					'auto',
-					'transparent',
-					'opaque',
-			]
-			
-			if self.model not in valid_models:
+			if self.model not in valid_generation_models:
 				raise ValueError( f'Unsupported GPT image generation model: {self.model}' )
 			
-			if self.size not in valid_sizes:
-				self.size = '1024x1024'
-			
-			if self.quality not in valid_qualities:
-				self.quality = 'auto'
-			
-			if self.output_format not in valid_formats:
-				self.output_format = 'jpeg'
-			
-			if self.background not in valid_backgrounds:
-				self.background = None
-			
-			if self.model == 'gpt-image-2' and self.background == 'transparent':
-				self.background = 'auto'
-			
+			self.size = self.normalize_size( size=size, model=self.model )
+			self.quality = self.normalize_quality( quality=quality, model=self.model )
+			self.background = self.normalize_background( background=background, model=self.model )
+			self.output_format = self.normalize_output_format( fmt=fmt, background=self.background )
 			self.request = {
 					'model': self.model,
 					'prompt': self.prompt,
 					'n': self.number,
 					'size': self.size,
-					'quality': self.quality,
-					'output_format': self.output_format,
 			}
 			
-			if self.background:
-				self.request[ 'background' ]=self.background
-			
-			if compression is not None and self.output_format in [ 'jpeg', 'webp' ]:
-				self.output_compression = max( 0, min( 100, int( round( compression * 100 ) ) ) )
-				self.request[ 'output_compression' ]=self.output_compression
+			if self.is_gpt_image_model( self.model ):
+				self.request[ 'output_format' ] = self.output_format
+				
+				if self.quality:
+					self.request[ 'quality' ] = self.quality
+				
+				if self.background:
+					self.request[ 'background' ] = self.background
+				
+				if compression is not None and self.output_format in [ 'jpeg', 'webp' ]:
+					self.output_compression = self.normalize_compression( compression )
+					self.request[ 'output_compression' ] = self.output_compression
+			else:
+				self.request[ 'response_format' ] = 'b64_json'
+				
+				if self.quality:
+					self.request[ 'quality' ] = self.quality
 			
 			self.response = self.client.images.generate( **self.request )
-			self.data = getattr( self.response, 'data', None )
-			self.outputs = [ ]
-			
-			if self.data and len( self.data ) > 0:
-				for item in self.data:
-					self.b64_json = getattr( item, 'b64_json', None )
-					self.url = getattr( item, 'url', None )
-					
-					if self.b64_json:
-						self.outputs.append( base64.b64decode( self.b64_json ) )
-					elif self.url:
-						self.outputs.append( self.url )
-				
-				if len( self.outputs ) == 1:
-					return self.outputs[ 0 ]
-				
-				if len( self.outputs ) > 1:
-					return self.outputs
-			
-			return None
+			return self.normalize_image_outputs( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Image'
+			exception.cause = 'Images'
 			exception.method = 'generate( self, prompt: str ) -> str | bytes | list[ str | bytes ] | None'
 			raise exception
 	
-	def analyze( self, text: str, path: str, instruct: str=None, model: str='gpt-4o-mini',
-			max_tokens: int=None, temperature: float=None, include: List[ str ]=None,
-			store: bool=None, stream: bool=None, detail: str='auto' ) -> str | None:
+	def analyze( self, text: str, path: str = None, image_url: str = None,
+			instruct: str = None, model: str = 'gpt-4.1-mini', max_tokens: int = None,
+			temperature: float = None, include: List[ str ] = None, store: bool = None,
+			stream: bool = False, detail: str = 'auto' ) -> str | None:
 		'''
-
+		
 			Purpose:
 			--------
-			Analyzes an uploaded image using a vision-capable Responses API model.
+			Analyze a local image or image URL using a vision-capable Responses API model.
 
 			Parameters:
 			-----------
 			text: str
-				Analysis prompt.
+				Question or instruction for image analysis.
 
 			path: str
-				Local image path.
+				Optional local image path.
+
+			image_url: str
+				Optional public image URL or data URL.
 
 			instruct: str
 				Optional system or developer instructions.
 
 			model: str
-				Vision-capable model name.
+				Vision-capable OpenAI model name.
 
 			max_tokens: int
 				Optional maximum output token count.
@@ -2216,88 +2650,68 @@ class Images( GPT ):
 				Optional Responses API store flag.
 
 			stream: bool
-				Optional Responses API stream flag.
+				Optional stream flag retained for compatibility.
 
 			detail: str
-				Optional vision detail level: auto, low, high, or original.
+				Image input detail value.
 
 			Returns:
 			--------
 			str | None
-				Text analysis result.
+				Image analysis text when available.
 
 		'''
 		try:
 			throw_if( 'text', text )
-			throw_if( 'path', path )
-			self.instructions = instruct if isinstance( instruct, str ) else ''
 			self.input_text = text
-			self.model = model if isinstance( model, str ) and model.strip( ) else 'gpt-4o-mini'
-			if self.model.startswith( 'gpt-image' ) or self.model.startswith( 'dall-e' ):
-				self.model = 'gpt-4o-mini'
-			
+			self.file_path = path
+			self.image_path = path
+			self.image_url = image_url
+			self.model = model or 'gpt-4.1-mini'
+			self.instructions = instruct
 			self.max_tokens = max_tokens
 			self.temperature = temperature
 			self.include = include if include is not None else [ ]
 			self.store = store
 			self.stream = stream
-			self.detail = detail if isinstance( detail, str ) and detail.strip( ) else 'auto'
-			self.file_path = path
+			self.detail = detail if detail in self.detail_options else 'auto'
 			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			
-			valid_details = [
-					'auto',
-					'low',
-					'high',
-					'original',
-			]
+			if self.image_url is None and self.image_path:
+				encoded = encode_image( self.image_path )
+				self.image_url = f'data:image/png;base64,{encoded}'
 			
-			if self.detail not in valid_details:
-				self.detail = 'auto'
+			throw_if( 'image_url', self.image_url )
+			self.request = { 'model': self.model,
+					'input': [ {
+									'role': 'user',
+									'content': [
+											{
+													'type': 'input_text',
+													'text': self.input_text,
+											},
+											{
+													'type': 'input_image',
+													'image_url': self.image_url,
+													'detail': self.detail,
+											},
+									],
+							}, ], }
 			
-			with open( self.file_path, 'rb' ) as source:
-				self.file = self.client.files.create( file=source, purpose='vision' )
-			
-			self.image_content = {
-					'type': 'input_image',
-					'file_id': self.file.id,
-			}
-			
-			if self.detail:
-				self.image_content[ 'detail' ]=self.detail
-			
-			self.input = [
-					{
-							'role': 'user',
-							'content': [
-									{ 'type': 'input_text', 'text': self.input_text },
-									self.image_content,
-							],
-					}
-			]
-			
-			self.request = {
-					'model': self.model,
-					'input': self.input,
-			}
-			
-			if self.instructions and self.instructions.strip( ):
-				self.request[ 'instructions' ]=self.instructions.strip( )
+			if self.instructions:
+				self.request[ 'instructions' ] = self.instructions
 			
 			if isinstance( self.max_tokens, int ) and self.max_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_tokens
+				self.request[ 'max_output_tokens' ] = self.max_tokens
 			
 			if self.temperature is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'temperature' ]=self.temperature
-			
-			if self.include is not None and len( self.include ) > 0:
-				self.request[ 'include' ]=self.include
-			
-			if self.stream is not None:
-				self.request[ 'stream' ]=self.stream
+				self.request[ 'temperature' ] = self.temperature
 			
 			if self.store is not None:
-				self.request[ 'store' ]=self.store
+				self.request[ 'store' ] = self.store
+			
+			if self.include:
+				self.request[ 'include' ] = self.include
 			
 			self.response = self.client.responses.create( **self.request )
 			self.output_text = getattr( self.response, 'output_text', None )
@@ -2306,6 +2720,7 @@ class Images( GPT ):
 				return self.output_text
 			
 			if hasattr( self.response, 'output' ) and self.response.output:
+				text_parts = [ ]
 				for item in self.response.output:
 					if getattr( item, 'type', None ) != 'message':
 						continue
@@ -2315,47 +2730,50 @@ class Images( GPT ):
 					
 					for block in item.content:
 						if getattr( block, 'type', None ) == 'output_text':
-							self.output_text = getattr( block, 'text', None )
-							if self.output_text:
-								return self.output_text
+							output = getattr( block, 'text', None )
+							if output:
+								text_parts.append( output )
+				
+				if len( text_parts ) > 0:
+					return ''.join( text_parts ).strip( )
 			
 			return None
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Image'
-			exception.method = 'analyze( self, text: str, path: str, instruct: str=None ) -> str | None'
+			exception.cause = 'Images'
+			exception.method = 'analyze( self, text: str, path: str=None ) -> str | None'
 			raise exception
 	
-	def edit( self, prompt: str, path: str, model: str='gpt-image-1-mini',
-			size: str='1024x1024', quality: str='auto', fmt: str='jpeg',
-			compression: float=None, background: str=None,
-			number: int=None ) -> str | bytes | list[ str | bytes ] | None:
-		"""
-
+	def edit( self, prompt: str, path: str, model: str = 'gpt-image-1',
+			size: str = '1024x1024', quality: str = 'auto', fmt: str = 'jpeg',
+			compression: float = None, background: str = None,
+			number: int = 1 ) -> str | bytes | list[ str | bytes ] | None:
+		'''
+		
 			Purpose:
 			--------
-			Edits an uploaded image using the OpenAI Images API.
+			Edit an image using the OpenAI Images API.
 
 			Parameters:
 			-----------
 			prompt: str
-				Image editing instruction.
+				Text instruction used to edit the image.
 
 			path: str
-				Local source image path.
+				Local image path.
 
 			model: str
-				GPT image model name.
+				OpenAI image editing model name.
 
 			size: str
 				Requested output image size.
 
 			quality: str
-				Requested output image quality.
+				Requested image quality.
 
 			fmt: str
-				Requested output image format.
+				Requested output format.
 
 			compression: float
 				Optional compression value from 0.0 to 1.0 for jpeg and webp outputs.
@@ -2364,126 +2782,71 @@ class Images( GPT ):
 				Optional background mode.
 
 			number: int
-				Optional number of edited images to request.
+				Number of edited images to request.
 
 			Returns:
 			--------
 			str | bytes | list[ str | bytes ] | None
 				Edited image bytes, URL fallback, list of outputs, or None.
 
-		"""
+		'''
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'path', path )
-			
+			self.prompt = prompt
 			self.input_text = prompt
 			self.file_path = path
-			self.model = model if isinstance( model,
-				str ) and model.strip( ) else 'gpt-image-1-mini'
-			self.size = size if isinstance( size, str ) and size.strip( ) else '1024x1024'
-			self.quality = quality if isinstance( quality, str ) and quality.strip( ) else 'auto'
-			self.response_format = fmt if isinstance( fmt, str ) and fmt.strip( ) else 'jpeg'
-			self.output_format = self.response_format.lower( ).replace( '.', '' )
-			self.background = background if isinstance( background, str ) else None
-			self.number = number if isinstance( number, int ) and number > 0 else self.number
-			self.number = self.number if isinstance( self.number, int ) and self.number > 0 else 1
-			self.number = min( 10, max( 1, int( self.number ) ) )
+			self.image_path = path
+			self.model = model or 'gpt-image-1'
+			self.number = self.normalize_count( number )
 			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			
-			valid_models = [
+			valid_edit_models = [
 					'gpt-image-2',
 					'gpt-image-1.5',
 					'gpt-image-1',
 					'gpt-image-1-mini',
+					'chatgpt-image-latest',
+					'dall-e-2',
 			]
 			
-			valid_sizes = [
-					'auto',
-					'1024x1024',
-					'1024x1536',
-					'1536x1024',
-			]
-			
-			valid_qualities = [
-					'auto',
-					'low',
-					'medium',
-					'high',
-			]
-			
-			valid_formats = [
-					'png',
-					'jpeg',
-					'webp',
-			]
-			
-			valid_backgrounds = [
-					'auto',
-					'opaque',
-					'transparent',
-			]
-			
-			if self.model not in valid_models:
+			if self.model not in valid_edit_models:
 				raise ValueError( f'Unsupported GPT image edit model: {self.model}' )
 			
-			if self.size not in valid_sizes:
-				self.size = '1024x1024'
-			
-			if self.quality not in valid_qualities:
-				self.quality = 'auto'
-			
-			if self.output_format not in valid_formats:
-				self.output_format = 'jpeg'
-			
-			if self.background not in valid_backgrounds:
-				self.background = None
-			
-			if self.model == 'gpt-image-2' and self.background == 'transparent':
-				self.background = 'auto'
-			
+			self.size = self.normalize_size( size=size, model=self.model )
+			self.quality = self.normalize_quality( quality=quality, model=self.model )
+			self.background = self.normalize_background( background=background, model=self.model )
+			self.output_format = self.normalize_output_format( fmt=fmt, background=self.background )
 			self.request = {
 					'model': self.model,
 					'prompt': self.input_text,
 					'size': self.size,
-					'quality': self.quality,
-					'output_format': self.output_format,
 					'n': self.number,
 			}
 			
-			if self.background:
-				self.request[ 'background' ]=self.background
-			
-			if compression is not None and self.output_format in [ 'jpeg', 'webp' ]:
-				self.output_compression = max( 0, min( 100, int( round( compression * 100 ) ) ) )
-				self.request[ 'output_compression' ]=self.output_compression
+			if self.is_gpt_image_model( self.model ):
+				self.request[ 'output_format' ] = self.output_format
+				
+				if self.quality:
+					self.request[ 'quality' ] = self.quality
+				
+				if self.background:
+					self.request[ 'background' ] = self.background
+				
+				if compression is not None and self.output_format in [ 'jpeg', 'webp' ]:
+					self.output_compression = self.normalize_compression( compression )
+					self.request[ 'output_compression' ] = self.output_compression
+			else:
+				self.request[ 'response_format' ] = 'b64_json'
 			
 			with open( self.file_path, 'rb' ) as source:
 				self.response = self.client.images.edit( image=source, **self.request )
 			
-			self.data = getattr( self.response, 'data', None )
-			self.outputs = [ ]
-			
-			if self.data and len( self.data ) > 0:
-				for item in self.data:
-					self.b64_json = getattr( item, 'b64_json', None )
-					self.url = getattr( item, 'url', None )
-					
-					if self.b64_json:
-						self.outputs.append( base64.b64decode( self.b64_json ) )
-					elif self.url:
-						self.outputs.append( self.url )
-				
-				if len( self.outputs ) == 1:
-					return self.outputs[ 0 ]
-				
-				if len( self.outputs ) > 1:
-					return self.outputs
-			
-			return None
+			return self.normalize_image_outputs( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
-			exception.cause = 'Image'
+			exception.cause = 'Images'
 			exception.method = 'edit( self, **kwargs ) -> str | bytes | list[ str | bytes ] | None'
 			raise exception
 	
@@ -2527,12 +2890,21 @@ class Images( GPT ):
 				'style_options',
 				'model_options',
 				'analysis_model_options',
+				'edit_model_options',
 				'detail_options',
 				'format_options',
 				'mime_options',
 				'size_options',
 				'quality_options',
 				'backcolor_options',
+				'is_gpt_image_model',
+				'normalize_count',
+				'normalize_output_format',
+				'normalize_background',
+				'normalize_size',
+				'normalize_quality',
+				'normalize_compression',
+				'normalize_image_outputs',
 				'generate',
 				'analyze',
 				'edit',
@@ -5773,75 +6145,81 @@ class Files( GPT ):
 			exception.cause = 'Files'
 			exception.method = 'delete( self, id: str ) -> Dict[ str, Any ] | None'
 			raise exception
-	
-	def summarize( self, id: str, prompt: str=None, model: str='gpt-4o-mini',
-			max_chars: int=120000 ) -> str | None:
+		
+	def summarize( self, id: str, prompt: str = None, model: str = 'gpt-4o-mini',
+			max_chars: int = 120000 ) -> str | None:
 		"""
 
-	        Purpose:
-	        --------
-	        Summarize or analyze retrieved text file content with the Responses API.
+			Purpose:
+			--------
+			Summarize or analyze an uploaded OpenAI file using the Responses API input_file
+			contract.
 
-	        Parameters:
-	        -----------
-	        id: str
-	            OpenAI file identifier.
+			Parameters:
+			-----------
+			id: str
+				OpenAI file identifier.
 
-	        prompt: str
-	            Optional analysis prompt.
+			prompt: str
+				Optional analysis prompt.
 
-	        model: str
-	            Model used for summarization or analysis.
+			model: str
+				Model used for summarization or analysis.
 
-	        max_chars: int
-	            Maximum content characters to include in the request.
+			max_chars: int
+				Retained for backward compatibility. The Responses API receives the file by
+				file_id and does not need this local truncation value.
 
-	        Returns:
-	        --------
-	        str | None:
-	            Model output text, or None.
+			Returns:
+			--------
+			str | None:
+				Model output text, or None.
 
-        """
+		"""
 		try:
 			self.file_id = self.validate_file_id( id )
 			self.prompt = prompt if isinstance( prompt, str ) and prompt.strip( ) else \
 				'Summarize the selected file content.'
 			self.model = model if isinstance( model, str ) and model.strip( ) else 'gpt-4o-mini'
-			
-			content = self.extract( self.file_id )
-			if isinstance( content, bytes ):
-				try:
-					content_text = content.decode( 'utf-8' )
-				except Exception:
-					content_text = str( content )
-			elif isinstance( content, dict ):
-				content_text = str( content )
-			else:
-				content_text = content if isinstance( content, str ) else ''
-			
-			throw_if( 'content_text', content_text )
-			content_text = content_text[ :max_chars ] if isinstance( max_chars,
-				int ) else content_text
-			
 			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.request = {
-					'model': self.model,
-					'input': [
+			self.request = { 'model': self.model, 'input': [
 							{
 									'role': 'user',
 									'content': [
 											{
+													'type': 'input_file',
+													'file_id': self.file_id,
+											},
+											{
 													'type': 'input_text',
-													'text': f'{self.prompt}\n\nFile ID: {self.file_id}\n\n{content_text}',
+													'text': self.prompt,
 											}, ],
-							}, ],
-			}
+							}, ], }
 			
 			self.response = self.client.responses.create( **self.request )
 			self.output_text = getattr( self.response, 'output_text', None )
-			
 			if self.output_text:
 				return self.output_text
+			
+			if hasattr( self.response, 'output' ) and self.response.output:
+				text_parts: List[ str ] = [ ]
+				
+				for item in self.response.output:
+					if getattr( item, 'type', None ) != 'message':
+						continue
+					
+					if not hasattr( item, 'content' ) or item.content is None:
+						continue
+					
+					for block in item.content:
+						if getattr( block, 'type', None ) == 'output_text':
+							text = getattr( block, 'text', None )
+							if text:
+								text_parts.append( text )
+				
+				if len( text_parts ) > 0:
+					self.output_text = ''.join( text_parts ).strip( )
+					return self.output_text
 			
 			return str( self.response )
 		except Exception as e:
@@ -5851,13 +6229,14 @@ class Files( GPT ):
 			exception.method = 'summarize( self, id: str, prompt: str=None ) -> str | None'
 			raise exception
 	
-	def search( self, id: str, query: str, model: str='gpt-4o-mini',
-			max_chars: int=120000 ) -> str | None:
+	def search( self, id: str, query: str, model: str = 'gpt-4o-mini',
+			max_chars: int = 120000 ) -> str | None:
 		"""
 
 	        Purpose:
 	        --------
-	        Search or question retrieved text file content using the Responses API.
+	        Search or question an uploaded OpenAI file using the Responses API input_file
+	        contract.
 
 	        Parameters:
 	        -----------
@@ -5871,7 +6250,7 @@ class Files( GPT ):
 	            Model used for analysis.
 
 	        max_chars: int
-	            Maximum content characters to include in the request.
+	            Retained for backward compatibility.
 
 	        Returns:
 	        --------
@@ -5881,10 +6260,8 @@ class Files( GPT ):
         """
 		try:
 			throw_if( 'query', query )
-			prompt = (
-					'Answer the user question using only the selected file content when possible. '
-					f'Question: {query}'
-			)
+			prompt = ( 'Answer the user question using the uploaded file when possible.\n\n'
+					f'Question: {query}' )
 			
 			return self.summarize( id=id, prompt=prompt, model=model, max_chars=max_chars )
 		except Exception as e:
@@ -7058,61 +7435,6 @@ class VectorStores( GPT ):
 			exception.method = 'delete( self, store_id: str ) -> Dict[ str, Any ] | None'
 			raise exception
 	
-	def attach_file( self, store_id: str, file_id: str, attributes: Dict[ str, Any ]=None,
-			chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""
-
-	        Purpose:
-	        --------
-	        Attach an OpenAI file to a vector store.
-
-	        Parameters:
-	        -----------
-	        store_id: str
-	            OpenAI vector store identifier.
-
-	        file_id: str
-	            OpenAI file identifier.
-
-	        attributes: Dict[str, Any]
-	            Optional file attributes.
-
-	        chunking_strategy: Dict[str, Any]
-	            Optional chunking strategy.
-
-	        Returns:
-	        --------
-	        Dict[str, Any] | None:
-	            Normalized vector store file metadata.
-
-        """
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.file_id = self.validate_file_id( file_id )
-			self.request = {
-					'file_id': self.file_id,
-			}
-			
-			if isinstance( attributes, dict ) and len( attributes ) > 0:
-				self.request[ 'attributes' ]=attributes
-			
-			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
-				self.request[ 'chunking_strategy' ]=chunking_strategy
-			
-			self.response = self.client.vector_stores.files.create(
-				vector_store_id=self.store_id,
-				**self.request )
-			
-			self.vector_file = self.normalize_vector_store_file( self.response )
-			return self.vector_file
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'attach_file( self, store_id: str, file_id: str )'
-			raise exception
-	
 	def list( self, store_id: str, limit: int=100, order: str='desc' ) -> List[ Dict[ str, Any ] ]:
 		"""
 
@@ -7231,7 +7553,386 @@ class VectorStores( GPT ):
 			exception.cause = 'VectorStores'
 			exception.method = 'retrieve_file( self, store_id: str, file_id: str )'
 			raise exception
+		
+	def attach_file( self, store_id: str = None, file_id: str = None,
+			vector_store_id: str = None, attributes: Dict[ str, Any ] = None,
+			chunking_strategy: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Attach an existing OpenAI file to a vector store.
+
+			Parameters:
+			-----------
+			store_id: str
+				OpenAI vector store identifier.
+
+			file_id: str
+				OpenAI file identifier.
+
+			vector_store_id: str
+				OpenAI vector store identifier accepted for app.py compatibility.
+
+			attributes: Dict[str, Any]
+				Optional file attributes.
+
+			chunking_strategy: Dict[str, Any]
+				Optional file chunking strategy.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Normalized vector store file metadata.
+
+		"""
+		try:
+			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			selected_store_id = vector_store_id if isinstance(
+				vector_store_id, str ) and vector_store_id.strip( ) else store_id
+			self.store_id = self.validate_store_id( selected_store_id )
+			self.file_id = self.validate_file_id( file_id )
+			self.request = {
+					'file_id': self.file_id,
+			}
+			
+			if isinstance( attributes, dict ) and len( attributes ) > 0:
+				self.request[ 'attributes' ] = attributes
+			
+			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
+				self.request[ 'chunking_strategy' ] = chunking_strategy
+			
+			self.response = self.client.vector_stores.files.create(
+				vector_store_id=self.store_id,
+				**self.request )
+			
+			self.vector_file = self.normalize_vector_store_file( self.response )
+			return self.vector_file
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'attach_file( self, store_id: str=None, file_id: str=None )'
+			raise exception
 	
+	def upload_and_attach( self, store_id: str = None, vector_store_id: str = None,
+			path: str = None, filepath: str = None, purpose: str = 'assistants',
+			attributes: Dict[ str, Any ] = None,
+			chunking_strategy: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+
+	        Purpose:
+	        --------
+	        Upload a local file to OpenAI and attach the uploaded file to a vector store.
+
+	        Parameters:
+	        -----------
+	        store_id: str
+	            OpenAI vector store identifier.
+
+	        vector_store_id: str
+	            OpenAI vector store identifier accepted for app.py compatibility.
+
+	        path: str
+	            Local file path.
+
+	        filepath: str
+	            Local file path accepted for compatibility with file wrappers.
+
+	        purpose: str
+	            OpenAI file upload purpose.
+
+	        attributes: Dict[str, Any]
+	            Optional vector store file attributes.
+
+	        chunking_strategy: Dict[str, Any]
+	            Optional file chunking strategy.
+
+	        Returns:
+	        --------
+	        Dict[str, Any] | None:
+	            Combined upload and vector store attachment result.
+
+        """
+		try:
+			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			selected_store_id = vector_store_id if isinstance(
+				vector_store_id, str ) and vector_store_id.strip( ) else store_id
+			selected_path = path if isinstance( path, str ) and path.strip( ) else filepath
+			self.store_id = self.validate_store_id( selected_store_id )
+			throw_if( 'path', selected_path )
+			upload_purpose = purpose if isinstance( purpose, str ) and purpose.strip( ) else \
+				'assistants'
+			
+			with open( selected_path, 'rb' ) as source:
+				uploaded_file = self.client.files.create(
+					file=source,
+					purpose=upload_purpose )
+			
+			if hasattr( uploaded_file, 'model_dump' ):
+				file_metadata = uploaded_file.model_dump( )
+			else:
+				file_metadata = {
+						'id': getattr( uploaded_file, 'id', None ),
+						'object': getattr( uploaded_file, 'object', None ),
+						'bytes': getattr( uploaded_file, 'bytes', None ),
+						'created_at': getattr( uploaded_file, 'created_at', None ),
+						'filename': getattr( uploaded_file, 'filename', None ),
+						'purpose': getattr( uploaded_file, 'purpose', upload_purpose ),
+				}
+			
+			self.file_id = file_metadata.get( 'id' )
+			self.vector_file = self.attach_file(
+				store_id=self.store_id,
+				file_id=self.file_id,
+				attributes=attributes,
+				chunking_strategy=chunking_strategy )
+			
+			return {
+					'file': file_metadata,
+					'vector_store_file': self.vector_file,
+					'file_id': self.file_id,
+					'vector_store_id': self.store_id,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'upload_and_attach( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def upload_file( self, store_id: str = None, vector_store_id: str = None,
+			path: str = None, filepath: str = None, purpose: str = 'assistants',
+			attributes: Dict[ str, Any ] = None,
+			chunking_strategy: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+
+	        Purpose:
+	        --------
+	        Compatibility alias for uploading and attaching a file to a vector store.
+
+	        Parameters:
+	        -----------
+	        store_id: str
+	            OpenAI vector store identifier.
+
+	        vector_store_id: str
+	            OpenAI vector store identifier accepted for app.py compatibility.
+
+	        path: str
+	            Local file path.
+
+	        filepath: str
+	            Local file path accepted for compatibility.
+
+	        purpose: str
+	            OpenAI file upload purpose.
+
+	        attributes: Dict[str, Any]
+	            Optional file attributes.
+
+	        chunking_strategy: Dict[str, Any]
+	            Optional chunking strategy.
+
+	        Returns:
+	        --------
+	        Dict[str, Any] | None:
+	            Combined upload and vector store attachment result.
+
+        """
+		try:
+			return self.upload_and_attach(
+				store_id=store_id,
+				vector_store_id=vector_store_id,
+				path=path,
+				filepath=filepath,
+				purpose=purpose,
+				attributes=attributes,
+				chunking_strategy=chunking_strategy )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'upload_file( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def attach_upload( self, store_id: str = None, vector_store_id: str = None,
+			path: str = None, filepath: str = None, purpose: str = 'assistants',
+			attributes: Dict[ str, Any ] = None,
+			chunking_strategy: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+
+	        Purpose:
+	        --------
+	        Compatibility alias for uploading and attaching a file to a vector store.
+
+	        Parameters:
+	        -----------
+	        store_id: str
+	            OpenAI vector store identifier.
+
+	        vector_store_id: str
+	            OpenAI vector store identifier accepted for app.py compatibility.
+
+	        path: str
+	            Local file path.
+
+	        filepath: str
+	            Local file path accepted for compatibility.
+
+	        purpose: str
+	            OpenAI file upload purpose.
+
+	        attributes: Dict[str, Any]
+	            Optional file attributes.
+
+	        chunking_strategy: Dict[str, Any]
+	            Optional chunking strategy.
+
+	        Returns:
+	        --------
+	        Dict[str, Any] | None:
+	            Combined upload and vector store attachment result.
+
+        """
+		try:
+			return self.upload_and_attach(
+				store_id=store_id,
+				vector_store_id=vector_store_id,
+				path=path,
+				filepath=filepath,
+				purpose=purpose,
+				attributes=attributes,
+				chunking_strategy=chunking_strategy )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'attach_upload( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def upload( self, store_id: str = None, vector_store_id: str = None,
+			path: str = None, filepath: str = None, purpose: str = 'assistants',
+			attributes: Dict[ str, Any ] = None,
+			chunking_strategy: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+
+	        Purpose:
+	        --------
+	        Compatibility alias for uploading and attaching a file to a vector store.
+
+	        Parameters:
+	        -----------
+	        store_id: str
+	            OpenAI vector store identifier.
+
+	        vector_store_id: str
+	            OpenAI vector store identifier accepted for app.py compatibility.
+
+	        path: str
+	            Local file path.
+
+	        filepath: str
+	            Local file path accepted for compatibility.
+
+	        purpose: str
+	            OpenAI file upload purpose.
+
+	        attributes: Dict[str, Any]
+	            Optional file attributes.
+
+	        chunking_strategy: Dict[str, Any]
+	            Optional chunking strategy.
+
+	        Returns:
+	        --------
+	        Dict[str, Any] | None:
+	            Combined upload and vector store attachment result.
+
+        """
+		try:
+			return self.upload_and_attach(
+				store_id=store_id,
+				vector_store_id=vector_store_id,
+				path=path,
+				filepath=filepath,
+				purpose=purpose,
+				attributes=attributes,
+				chunking_strategy=chunking_strategy )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'upload( self, store_id: str=None, path: str=None )'
+			raise exception
+	
+	def create_file_batch( self, store_id: str = None, file_ids: List[ str ] = None,
+			vector_store_id: str = None, attributes: Dict[ str, Any ] = None,
+			chunking_strategy: Dict[ str, Any ] = None ) -> Dict[ str, Any ] | None:
+		"""
+
+	        Purpose:
+	        --------
+	        Create a vector store file batch.
+
+	        Parameters:
+	        -----------
+	        store_id: str
+	            OpenAI vector store identifier.
+
+	        file_ids: List[str]
+	            OpenAI file identifiers.
+
+	        vector_store_id: str
+	            OpenAI vector store identifier accepted for app.py compatibility.
+
+	        attributes: Dict[str, Any]
+	            Optional attributes applied to files.
+
+	        chunking_strategy: Dict[str, Any]
+	            Optional chunking strategy.
+
+	        Returns:
+	        --------
+	        Dict[str, Any] | None:
+	            Normalized file batch metadata.
+
+        """
+		try:
+			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			selected_store_id = vector_store_id if isinstance(
+				vector_store_id, str ) and vector_store_id.strip( ) else store_id
+			self.store_id = self.validate_store_id( selected_store_id )
+			clean_file_ids = self.validate_file_ids( file_ids )
+			throw_if( 'file_ids', clean_file_ids )
+			
+			if len( clean_file_ids ) > 2000:
+				raise ValueError( 'Vector store file batches cannot exceed 2000 files.' )
+			
+			self.request = {
+					'file_ids': clean_file_ids,
+			}
+			
+			if isinstance( attributes, dict ) and len( attributes ) > 0:
+				self.request[ 'attributes' ] = attributes
+			
+			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
+				self.request[ 'chunking_strategy' ] = chunking_strategy
+			
+			self.response = self.client.vector_stores.file_batches.create(
+				vector_store_id=self.store_id,
+				**self.request )
+			
+			self.file_batch = self.normalize_file_batch( self.response )
+			self.batch_id = self.file_batch.get( 'id' )
+			return self.file_batch
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'create_file_batch( self, store_id: str=None, file_ids: List[ str ]=None )'
+			raise exception
+		
 	def update_file( self, store_id: str, file_id: str,
 			attributes: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
 		"""
@@ -7364,68 +8065,6 @@ class VectorStores( GPT ):
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
 			exception.method = 'retrieve_file_content( self, store_id: str, file_id: str )'
-			raise exception
-	
-	def create_file_batch( self, store_id: str, file_ids: List[ str ],
-			attributes: Dict[ str, Any ]=None,
-			chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""
-
-	        Purpose:
-	        --------
-	        Create a vector store file batch.
-
-	        Parameters:
-	        -----------
-	        store_id: str
-	            OpenAI vector store identifier.
-
-	        file_ids: List[str]
-	            OpenAI file identifiers.
-
-	        attributes: Dict[str, Any]
-	            Optional attributes applied to files.
-
-	        chunking_strategy: Dict[str, Any]
-	            Optional chunking strategy.
-
-	        Returns:
-	        --------
-	        Dict[str, Any] | None:
-	            Normalized file batch metadata.
-
-        """
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			clean_file_ids = self.validate_file_ids( file_ids )
-			throw_if( 'file_ids', clean_file_ids )
-			
-			if len( clean_file_ids ) > 2000:
-				raise ValueError( 'Vector store file batches cannot exceed 2000 files.' )
-			
-			self.request = {
-					'file_ids': clean_file_ids,
-			}
-			
-			if isinstance( attributes, dict ) and len( attributes ) > 0:
-				self.request[ 'attributes' ]=attributes
-			
-			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
-				self.request[ 'chunking_strategy' ]=chunking_strategy
-			
-			self.response = self.client.vector_stores.file_batches.create(
-				vector_store_id=self.store_id,
-				**self.request )
-			
-			self.file_batch = self.normalize_file_batch( self.response )
-			self.batch_id = self.file_batch.get( 'id' )
-			return self.file_batch
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'create_file_batch( self, store_id: str, file_ids: List[ str ] )'
 			raise exception
 	
 	def retrieve_file_batch( self, store_id: str, batch_id: str ) -> Dict[ str, Any ] | None:

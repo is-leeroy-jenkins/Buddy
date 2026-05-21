@@ -6610,6 +6610,28 @@ def run_audio_file_task( task: str | None, file_path: str | None,
 		st.warning( 'Upload or record audio before processing.' )
 		return None
 	
+	provider_name = get_provider_name( )
+	file_suffix = Path( file_path ).suffix.lower( ).replace( '.', '' )
+	
+	if provider_name == 'GPT':
+		valid_extensions = [
+				'flac',
+				'mp3',
+				'mp4',
+				'mpeg',
+				'mpga',
+				'm4a',
+				'ogg',
+				'wav',
+				'webm',
+		]
+		
+		if file_suffix not in valid_extensions:
+			st.warning( 'OpenAI audio transcription and translation support flac, mp3, mp4, '
+				'mpeg, mpga, m4a, ogg, wav, and webm files. Convert the file before '
+				'processing it with GPT.' )
+			return None
+	
 	prompt_value = get_audio_prompt_value(
 		task=task,
 		prompt=st.session_state.get( 'audio_system_instructions', '' ) )
@@ -8437,11 +8459,11 @@ def run_docqna_query( query: str ) -> str:
 	
 	st.session_state[ 'docqna_last_hits' ] = hits
 	st.session_state[ 'docqna_last_sources' ] = [ {
-					'document': hit.get( 'document' ),
-					'chunk_index': hit.get( 'chunk_index' ),
-					'score': hit.get( 'score' ),
-					'tokens': hit.get( 'tokens' ),
-			}
+			'document': hit.get( 'document' ),
+			'chunk_index': hit.get( 'chunk_index' ),
+			'score': hit.get( 'score' ),
+			'tokens': hit.get( 'tokens' ),
+	}
 			for hit in hits
 			if isinstance( hit, dict ) ]
 	
@@ -8451,7 +8473,8 @@ def run_docqna_query( query: str ) -> str:
 		apply_gemini_runtime_config( )
 		result = chat.generate_text(
 			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
+			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
+				'text_model' ) or 'gemini-2.5-flash-lite',
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			top_k=st.session_state.get( 'docqna_top_k' ),
@@ -8463,7 +8486,8 @@ def run_docqna_query( query: str ) -> str:
 	if provider_name == 'GPT':
 		result = chat.generate_text(
 			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
+			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
+				'text_model' ) or 'gpt-5-nano',
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
@@ -8477,7 +8501,8 @@ def run_docqna_query( query: str ) -> str:
 	try:
 		result = chat.create(
 			prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
+			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
+				'text_model' ) or 'grok-4.20',
 			max_tokens=st.session_state.get( 'docqna_max_tokens' ) or 10000,
 			temperature=st.session_state.get( 'docqna_temperature' ) or 0.8,
 			top_p=st.session_state.get( 'docqna_top_percent' ) or 0.9,
@@ -8487,7 +8512,10 @@ def run_docqna_query( query: str ) -> str:
 			instruct=st.session_state.get( 'docqna_system_instructions' ) )
 		return str( result or '' ).strip( )
 	except Exception:
-		result = chat.generate_text( prompt=prompt )
+		result = chat.generate_text(
+			prompt=prompt,
+			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
+				'text_model' ) or 'grok-4.20' )
 		return str( result or '' ).strip( )
 
 def run_remote_query( query: str ) -> str:
@@ -8543,7 +8571,8 @@ def run_remote_query( query: str ) -> str:
 		
 		result = chat.generate_text(
 			prompt=query,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
+			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
+				'text_model' ) or 'gpt-5-nano',
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
@@ -8592,7 +8621,8 @@ def run_remote_query( query: str ) -> str:
 		
 		result = chat.generate_text(
 			prompt=query,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get( 'text_model' ),
+			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
+				'text_model' ) or 'gemini-2.5-flash-lite',
 			temperature=st.session_state.get( 'docqna_temperature' ),
 			top_p=st.session_state.get( 'docqna_top_percent' ),
 			top_k=st.session_state.get( 'docqna_top_k' ),
@@ -10866,21 +10896,21 @@ if mode == 'Chat':
 								reasoning=chat_reasoning or None,
 								include=[ 'web_search_call.action.sources',
 								          'code_interpreter_call.outputs',
-										'file_search_call.results', ],
+								          'file_search_call.results', ],
 								tools=[
 										{
-											'type': 'file_search',
-											'vector_store_ids': cfg.GPT_VECTORSTORES,
+												'type': 'file_search',
+												'vector_store_ids': cfg.GPT_VECTORSTORES,
 										},
 										{
-											'type': 'web_search',
-											'filters': { 'allowed_domains': cfg.GPT_DOMAINS, },
-											'search_context_size': 'medium',
-											'user_location': { 'type': 'approximate' },
+												'type': 'web_search',
+												'filters': { 'allowed_domains': cfg.GPT_DOMAINS, },
+												'search_context_size': 'medium',
+												'user_location': { 'type': 'approximate' },
 										},
 										{
-											'type': 'code_interpreter',
-											'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
+												'type': 'code_interpreter',
+												'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
 										},
 								],
 								tool_choice=chat_choice or None,
@@ -10888,6 +10918,29 @@ if mode == 'Chat':
 								previous_id=st.session_state.get( 'chat_previous_response_id', '' ) or None,
 							)
 							st.session_state.chat_previous_response_id = getattr( response, 'id', '' ) or ''
+						elif provider_name == 'Gemini':
+							apply_gemini_runtime_config( )
+							gemini_context = chat_history if isinstance( chat_history, list ) else [ ]
+							
+							output_text = chat.generate_text(
+								prompt=effective_input,
+								model=chat_model or 'gemini-2.5-flash-lite',
+								number=chat_number or None,
+								temperature=chat_temperature,
+								top_p=chat_top_p,
+								frequency=chat_freq,
+								presence=chat_presense,
+								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
+								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								response_format=chat_format if isinstance( chat_format, str ) else None,
+								tool_choice=chat_choice or None,
+								reasoning=chat_reasoning or None,
+								context=gemini_context,
+								content='',
+								urls=[ ],
+								max_urls=10,
+								stream=False )
+							response = None
 						else:
 							output_text = chat.generate_text(
 								prompt=effective_input,
