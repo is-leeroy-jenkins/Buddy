@@ -10887,7 +10887,7 @@ if mode == 'Chat':
 	# ------------------------------------------------------------------
 	# Main Chat UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
 		st.divider( )
