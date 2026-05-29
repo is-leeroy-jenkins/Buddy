@@ -10846,8 +10846,6 @@ with st.sidebar:
 # CHAT MODE
 # ======================================================================================
 if mode == 'Chat':
-	st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
-	st.divider( )
 	provider_module = get_provider_module( )
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	chat_number = st.session_state.get( 'number', 0 )
@@ -10891,6 +10889,8 @@ if mode == 'Chat':
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.25, 3.5, 0.25 ] )
 	with center:
+		st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
+		st.divider( )
 		user_input = st.chat_input( 'Have a Planning, Programming, or Budget Execution question?' )
 		if user_input:
 			with st.chat_message( 'user', avatar=cfg.ANALYST ):
