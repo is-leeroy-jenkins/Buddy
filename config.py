@@ -109,7 +109,7 @@ GPT_DOMAINS = [ 'congress.gov',
                 'omb.gov',
                 'defense.gov' ]
 
-GROK_MODES = [ 'Chat',
+GPT_MODES = [ 'Chat',
                'Text',
                'Images',
                'Document Q&A',
