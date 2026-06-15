@@ -42809,34 +42809,32 @@ document-processing steps.</p>
 <span class="normal"><a href="#__codelineno-0-9449">9449</a></span>
 <span class="normal"><a href="#__codelineno-0-9450">9450</a></span>
 <span class="normal"><a href="#__codelineno-0-9451">9451</a></span>
-<span class="normal"><a href="#__codelineno-0-9452">9452</a></span>
-<span class="normal"><a href="#__codelineno-0-9453">9453</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9427" name="__codelineno-0-9427"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_active_gemini_file_search_store_names</span><span class="p">(</span> <span class="n">provider_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span>
-<a id="__codelineno-0-9428" name="__codelineno-0-9428"></a>	<span class="nb">str</span> <span class="p">]:</span>
-<a id="__codelineno-0-9429" name="__codelineno-0-9429"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Get active gemini file search store names.</span>
-<a id="__codelineno-0-9430" name="__codelineno-0-9430"></a>
-<a id="__codelineno-0-9431" name="__codelineno-0-9431"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9432" name="__codelineno-0-9432"></a><span class="sd">	    Retrieves get active gemini file search store names for the Streamlit application</span>
-<a id="__codelineno-0-9433" name="__codelineno-0-9433"></a><span class="sd">	    workflow and returns the normalized value used by downstream UI, provider, database, or</span>
-<a id="__codelineno-0-9434" name="__codelineno-0-9434"></a><span class="sd">	    document-processing steps.</span>
-<a id="__codelineno-0-9435" name="__codelineno-0-9435"></a>
-<a id="__codelineno-0-9436" name="__codelineno-0-9436"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9437" name="__codelineno-0-9437"></a><span class="sd">	    provider_name: Provider name used to route the operation.</span>
-<a id="__codelineno-0-9438" name="__codelineno-0-9438"></a>
-<a id="__codelineno-0-9439" name="__codelineno-0-9439"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9440" name="__codelineno-0-9440"></a><span class="sd">	    List[str]: List of normalized values used by the application workflow.</span>
-<a id="__codelineno-0-9441" name="__codelineno-0-9441"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9442" name="__codelineno-0-9442"></a>	<span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider_name</span><span class="p">(</span> <span class="n">provider_name</span> <span class="p">)</span>
-<a id="__codelineno-0-9443" name="__codelineno-0-9443"></a>
-<a id="__codelineno-0-9444" name="__codelineno-0-9444"></a>	<span class="k">if</span> <span class="n">provider</span> <span class="o">!=</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9445" name="__codelineno-0-9445"></a>		<span class="k">return</span> <span class="p">[</span> <span class="p">]</span>
-<a id="__codelineno-0-9446" name="__codelineno-0-9446"></a>
-<a id="__codelineno-0-9447" name="__codelineno-0-9447"></a>	<span class="k">if</span> <span class="n">get_gemini_vector_backend</span><span class="p">(</span> <span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;File Search Stores&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9448" name="__codelineno-0-9448"></a>		<span class="k">return</span> <span class="p">[</span> <span class="p">]</span>
-<a id="__codelineno-0-9449" name="__codelineno-0-9449"></a>
-<a id="__codelineno-0-9450" name="__codelineno-0-9450"></a>	<span class="n">backend</span> <span class="o">=</span> <span class="n">get_retrieval_backend</span><span class="p">(</span> <span class="n">provider</span> <span class="p">)</span>
-<a id="__codelineno-0-9451" name="__codelineno-0-9451"></a>	<span class="n">resource_id</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;resource_id&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
-<a id="__codelineno-0-9452" name="__codelineno-0-9452"></a>
-<a id="__codelineno-0-9453" name="__codelineno-0-9453"></a>	<span class="k">return</span> <span class="n">parse_storage_ids</span><span class="p">(</span> <span class="n">resource_id</span> <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-9452">9452</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9427" name="__codelineno-0-9427"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_active_gemini_file_search_store_names</span><span class="p">(</span> <span class="n">provider_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]:</span>
+<a id="__codelineno-0-9428" name="__codelineno-0-9428"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Get active gemini file search store names.</span>
+<a id="__codelineno-0-9429" name="__codelineno-0-9429"></a>
+<a id="__codelineno-0-9430" name="__codelineno-0-9430"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9431" name="__codelineno-0-9431"></a><span class="sd">	    Retrieves get active gemini file search store names for the Streamlit application</span>
+<a id="__codelineno-0-9432" name="__codelineno-0-9432"></a><span class="sd">	    workflow and returns the normalized value used by downstream UI, provider, database, or</span>
+<a id="__codelineno-0-9433" name="__codelineno-0-9433"></a><span class="sd">	    document-processing steps.</span>
+<a id="__codelineno-0-9434" name="__codelineno-0-9434"></a>
+<a id="__codelineno-0-9435" name="__codelineno-0-9435"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9436" name="__codelineno-0-9436"></a><span class="sd">	    provider_name: Provider name used to route the operation.</span>
+<a id="__codelineno-0-9437" name="__codelineno-0-9437"></a>
+<a id="__codelineno-0-9438" name="__codelineno-0-9438"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9439" name="__codelineno-0-9439"></a><span class="sd">	    List[str]: List of normalized values used by the application workflow.</span>
+<a id="__codelineno-0-9440" name="__codelineno-0-9440"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9441" name="__codelineno-0-9441"></a>	<span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider_name</span><span class="p">(</span> <span class="n">provider_name</span> <span class="p">)</span>
+<a id="__codelineno-0-9442" name="__codelineno-0-9442"></a>
+<a id="__codelineno-0-9443" name="__codelineno-0-9443"></a>	<span class="k">if</span> <span class="n">provider</span> <span class="o">!=</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9444" name="__codelineno-0-9444"></a>		<span class="k">return</span> <span class="p">[</span> <span class="p">]</span>
+<a id="__codelineno-0-9445" name="__codelineno-0-9445"></a>
+<a id="__codelineno-0-9446" name="__codelineno-0-9446"></a>	<span class="k">if</span> <span class="n">get_gemini_vector_backend</span><span class="p">(</span> <span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;File Search Stores&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9447" name="__codelineno-0-9447"></a>		<span class="k">return</span> <span class="p">[</span> <span class="p">]</span>
+<a id="__codelineno-0-9448" name="__codelineno-0-9448"></a>
+<a id="__codelineno-0-9449" name="__codelineno-0-9449"></a>	<span class="n">backend</span> <span class="o">=</span> <span class="n">get_retrieval_backend</span><span class="p">(</span> <span class="n">provider</span> <span class="p">)</span>
+<a id="__codelineno-0-9450" name="__codelineno-0-9450"></a>	<span class="n">resource_id</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;resource_id&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
+<a id="__codelineno-0-9451" name="__codelineno-0-9451"></a>
+<a id="__codelineno-0-9452" name="__codelineno-0-9452"></a>	<span class="k">return</span> <span class="n">parse_storage_ids</span><span class="p">(</span> <span class="n">resource_id</span> <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -42939,7 +42937,8 @@ provider calls, document retrieval, data management, or UI rendering.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9455">9455</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9454">9454</a></span>
+<span class="normal"><a href="#__codelineno-0-9455">9455</a></span>
 <span class="normal"><a href="#__codelineno-0-9456">9456</a></span>
 <span class="normal"><a href="#__codelineno-0-9457">9457</a></span>
 <span class="normal"><a href="#__codelineno-0-9458">9458</a></span>
@@ -42964,34 +42963,33 @@ provider calls, document retrieval, data management, or UI rendering.</p>
 <span class="normal"><a href="#__codelineno-0-9477">9477</a></span>
 <span class="normal"><a href="#__codelineno-0-9478">9478</a></span>
 <span class="normal"><a href="#__codelineno-0-9479">9479</a></span>
-<span class="normal"><a href="#__codelineno-0-9480">9480</a></span>
-<span class="normal"><a href="#__codelineno-0-9481">9481</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9455" name="__codelineno-0-9455"></a><span class="k">def</span><span class="w"> </span><span class="nf">merge_unique_strings</span><span class="p">(</span> <span class="n">primary</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">],</span> <span class="n">secondary</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]:</span>
-<a id="__codelineno-0-9456" name="__codelineno-0-9456"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Merge unique strings.</span>
-<a id="__codelineno-0-9457" name="__codelineno-0-9457"></a>
-<a id="__codelineno-0-9458" name="__codelineno-0-9458"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9459" name="__codelineno-0-9459"></a><span class="sd">	    Transforms merge unique strings inputs into a normalized representation used by</span>
-<a id="__codelineno-0-9460" name="__codelineno-0-9460"></a><span class="sd">	    provider calls, document retrieval, data management, or UI rendering.</span>
-<a id="__codelineno-0-9461" name="__codelineno-0-9461"></a>
-<a id="__codelineno-0-9462" name="__codelineno-0-9462"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9463" name="__codelineno-0-9463"></a><span class="sd">	    primary: Primary value used by the application workflow.</span>
-<a id="__codelineno-0-9464" name="__codelineno-0-9464"></a><span class="sd">	    secondary: Secondary value used by the application workflow.</span>
-<a id="__codelineno-0-9465" name="__codelineno-0-9465"></a>
-<a id="__codelineno-0-9466" name="__codelineno-0-9466"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9467" name="__codelineno-0-9467"></a><span class="sd">	    List[str]: List of normalized values used by the application workflow.</span>
-<a id="__codelineno-0-9468" name="__codelineno-0-9468"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9469" name="__codelineno-0-9469"></a>	<span class="n">merged</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="p">]</span>
-<a id="__codelineno-0-9470" name="__codelineno-0-9470"></a>
-<a id="__codelineno-0-9471" name="__codelineno-0-9471"></a>	<span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">primary</span><span class="p">,</span> <span class="n">secondary</span> <span class="p">]:</span>
-<a id="__codelineno-0-9472" name="__codelineno-0-9472"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">source</span><span class="p">,</span> <span class="nb">list</span> <span class="p">):</span>
-<a id="__codelineno-0-9473" name="__codelineno-0-9473"></a>			<span class="k">continue</span>
-<a id="__codelineno-0-9474" name="__codelineno-0-9474"></a>
-<a id="__codelineno-0-9475" name="__codelineno-0-9475"></a>		<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
-<a id="__codelineno-0-9476" name="__codelineno-0-9476"></a>			<span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">item</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-9477" name="__codelineno-0-9477"></a>
-<a id="__codelineno-0-9478" name="__codelineno-0-9478"></a>			<span class="k">if</span> <span class="n">text</span> <span class="ow">and</span> <span class="n">text</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">merged</span><span class="p">:</span>
-<a id="__codelineno-0-9479" name="__codelineno-0-9479"></a>				<span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">text</span> <span class="p">)</span>
-<a id="__codelineno-0-9480" name="__codelineno-0-9480"></a>
-<a id="__codelineno-0-9481" name="__codelineno-0-9481"></a>	<span class="k">return</span> <span class="n">merged</span>
+<span class="normal"><a href="#__codelineno-0-9480">9480</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9454" name="__codelineno-0-9454"></a><span class="k">def</span><span class="w"> </span><span class="nf">merge_unique_strings</span><span class="p">(</span> <span class="n">primary</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">],</span> <span class="n">secondary</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]:</span>
+<a id="__codelineno-0-9455" name="__codelineno-0-9455"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Merge unique strings.</span>
+<a id="__codelineno-0-9456" name="__codelineno-0-9456"></a>
+<a id="__codelineno-0-9457" name="__codelineno-0-9457"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9458" name="__codelineno-0-9458"></a><span class="sd">	    Transforms merge unique strings inputs into a normalized representation used by</span>
+<a id="__codelineno-0-9459" name="__codelineno-0-9459"></a><span class="sd">	    provider calls, document retrieval, data management, or UI rendering.</span>
+<a id="__codelineno-0-9460" name="__codelineno-0-9460"></a>
+<a id="__codelineno-0-9461" name="__codelineno-0-9461"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9462" name="__codelineno-0-9462"></a><span class="sd">	    primary: Primary value used by the application workflow.</span>
+<a id="__codelineno-0-9463" name="__codelineno-0-9463"></a><span class="sd">	    secondary: Secondary value used by the application workflow.</span>
+<a id="__codelineno-0-9464" name="__codelineno-0-9464"></a>
+<a id="__codelineno-0-9465" name="__codelineno-0-9465"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9466" name="__codelineno-0-9466"></a><span class="sd">	    List[str]: List of normalized values used by the application workflow.</span>
+<a id="__codelineno-0-9467" name="__codelineno-0-9467"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9468" name="__codelineno-0-9468"></a>	<span class="n">merged</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="p">]</span>
+<a id="__codelineno-0-9469" name="__codelineno-0-9469"></a>
+<a id="__codelineno-0-9470" name="__codelineno-0-9470"></a>	<span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">primary</span><span class="p">,</span> <span class="n">secondary</span> <span class="p">]:</span>
+<a id="__codelineno-0-9471" name="__codelineno-0-9471"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">source</span><span class="p">,</span> <span class="nb">list</span> <span class="p">):</span>
+<a id="__codelineno-0-9472" name="__codelineno-0-9472"></a>			<span class="k">continue</span>
+<a id="__codelineno-0-9473" name="__codelineno-0-9473"></a>
+<a id="__codelineno-0-9474" name="__codelineno-0-9474"></a>		<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+<a id="__codelineno-0-9475" name="__codelineno-0-9475"></a>			<span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">item</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-9476" name="__codelineno-0-9476"></a>
+<a id="__codelineno-0-9477" name="__codelineno-0-9477"></a>			<span class="k">if</span> <span class="n">text</span> <span class="ow">and</span> <span class="n">text</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">merged</span><span class="p">:</span>
+<a id="__codelineno-0-9478" name="__codelineno-0-9478"></a>				<span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">text</span> <span class="p">)</span>
+<a id="__codelineno-0-9479" name="__codelineno-0-9479"></a>
+<a id="__codelineno-0-9480" name="__codelineno-0-9480"></a>	<span class="k">return</span> <span class="n">merged</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43079,7 +43077,8 @@ processing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9483">9483</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9482">9482</a></span>
+<span class="normal"><a href="#__codelineno-0-9483">9483</a></span>
 <span class="normal"><a href="#__codelineno-0-9484">9484</a></span>
 <span class="normal"><a href="#__codelineno-0-9485">9485</a></span>
 <span class="normal"><a href="#__codelineno-0-9486">9486</a></span>
@@ -43104,34 +43103,33 @@ processing.</p>
 <span class="normal"><a href="#__codelineno-0-9505">9505</a></span>
 <span class="normal"><a href="#__codelineno-0-9506">9506</a></span>
 <span class="normal"><a href="#__codelineno-0-9507">9507</a></span>
-<span class="normal"><a href="#__codelineno-0-9508">9508</a></span>
-<span class="normal"><a href="#__codelineno-0-9509">9509</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9483" name="__codelineno-0-9483"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_provider_retrieval_summary</span><span class="p">(</span> <span class="n">provider_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-9484" name="__codelineno-0-9484"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Build provider retrieval summary.</span>
-<a id="__codelineno-0-9485" name="__codelineno-0-9485"></a>
-<a id="__codelineno-0-9486" name="__codelineno-0-9486"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9487" name="__codelineno-0-9487"></a><span class="sd">	    Builds build provider retrieval summary from validated runtime inputs and prepares the</span>
-<a id="__codelineno-0-9488" name="__codelineno-0-9488"></a><span class="sd">	    resulting object, payload, table, or display structure for later application</span>
-<a id="__codelineno-0-9489" name="__codelineno-0-9489"></a><span class="sd">	    processing.</span>
-<a id="__codelineno-0-9490" name="__codelineno-0-9490"></a>
-<a id="__codelineno-0-9491" name="__codelineno-0-9491"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9492" name="__codelineno-0-9492"></a><span class="sd">	    provider_name: Provider name used to route the operation.</span>
-<a id="__codelineno-0-9493" name="__codelineno-0-9493"></a>
-<a id="__codelineno-0-9494" name="__codelineno-0-9494"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9495" name="__codelineno-0-9495"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
-<a id="__codelineno-0-9496" name="__codelineno-0-9496"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9497" name="__codelineno-0-9497"></a>	<span class="n">backend</span> <span class="o">=</span> <span class="n">get_retrieval_backend</span><span class="p">(</span> <span class="n">provider_name</span> <span class="p">)</span>
-<a id="__codelineno-0-9498" name="__codelineno-0-9498"></a>	<span class="n">provider</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;provider&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
-<a id="__codelineno-0-9499" name="__codelineno-0-9499"></a>	<span class="n">backend_name</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;backend&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
-<a id="__codelineno-0-9500" name="__codelineno-0-9500"></a>	<span class="n">resource_id</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;resource_id&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
-<a id="__codelineno-0-9501" name="__codelineno-0-9501"></a>	<span class="n">ready</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;is_retrieval_ready&#39;</span><span class="p">,</span> <span class="kc">False</span> <span class="p">)</span>
-<a id="__codelineno-0-9502" name="__codelineno-0-9502"></a>
-<a id="__codelineno-0-9503" name="__codelineno-0-9503"></a>	<span class="k">if</span> <span class="ow">not</span> <span class="n">resource_id</span><span class="p">:</span>
-<a id="__codelineno-0-9504" name="__codelineno-0-9504"></a>		<span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s1">: no Vector Stores resource selected.&#39;</span>
-<a id="__codelineno-0-9505" name="__codelineno-0-9505"></a>
-<a id="__codelineno-0-9506" name="__codelineno-0-9506"></a>	<span class="k">if</span> <span class="n">ready</span><span class="p">:</span>
-<a id="__codelineno-0-9507" name="__codelineno-0-9507"></a>		<span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s1">: using </span><span class="si">{</span><span class="n">backend_name</span><span class="si">}</span><span class="s1"> resource </span><span class="si">{</span><span class="n">resource_id</span><span class="si">}</span><span class="s1">.&#39;</span>
-<a id="__codelineno-0-9508" name="__codelineno-0-9508"></a>
-<a id="__codelineno-0-9509" name="__codelineno-0-9509"></a>	<span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s1">: selected </span><span class="si">{</span><span class="n">backend_name</span><span class="si">}</span><span class="s1"> resource </span><span class="si">{</span><span class="n">resource_id</span><span class="si">}</span><span class="s1">, but it is not a retrieval store.&#39;</span>
+<span class="normal"><a href="#__codelineno-0-9508">9508</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9482" name="__codelineno-0-9482"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_provider_retrieval_summary</span><span class="p">(</span> <span class="n">provider_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-9483" name="__codelineno-0-9483"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Build provider retrieval summary.</span>
+<a id="__codelineno-0-9484" name="__codelineno-0-9484"></a>
+<a id="__codelineno-0-9485" name="__codelineno-0-9485"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9486" name="__codelineno-0-9486"></a><span class="sd">	    Builds build provider retrieval summary from validated runtime inputs and prepares the</span>
+<a id="__codelineno-0-9487" name="__codelineno-0-9487"></a><span class="sd">	    resulting object, payload, table, or display structure for later application</span>
+<a id="__codelineno-0-9488" name="__codelineno-0-9488"></a><span class="sd">	    processing.</span>
+<a id="__codelineno-0-9489" name="__codelineno-0-9489"></a>
+<a id="__codelineno-0-9490" name="__codelineno-0-9490"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9491" name="__codelineno-0-9491"></a><span class="sd">	    provider_name: Provider name used to route the operation.</span>
+<a id="__codelineno-0-9492" name="__codelineno-0-9492"></a>
+<a id="__codelineno-0-9493" name="__codelineno-0-9493"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9494" name="__codelineno-0-9494"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
+<a id="__codelineno-0-9495" name="__codelineno-0-9495"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9496" name="__codelineno-0-9496"></a>	<span class="n">backend</span> <span class="o">=</span> <span class="n">get_retrieval_backend</span><span class="p">(</span> <span class="n">provider_name</span> <span class="p">)</span>
+<a id="__codelineno-0-9497" name="__codelineno-0-9497"></a>	<span class="n">provider</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;provider&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
+<a id="__codelineno-0-9498" name="__codelineno-0-9498"></a>	<span class="n">backend_name</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;backend&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
+<a id="__codelineno-0-9499" name="__codelineno-0-9499"></a>	<span class="n">resource_id</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;resource_id&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span> <span class="p">)</span>
+<a id="__codelineno-0-9500" name="__codelineno-0-9500"></a>	<span class="n">ready</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;is_retrieval_ready&#39;</span><span class="p">,</span> <span class="kc">False</span> <span class="p">)</span>
+<a id="__codelineno-0-9501" name="__codelineno-0-9501"></a>
+<a id="__codelineno-0-9502" name="__codelineno-0-9502"></a>	<span class="k">if</span> <span class="ow">not</span> <span class="n">resource_id</span><span class="p">:</span>
+<a id="__codelineno-0-9503" name="__codelineno-0-9503"></a>		<span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s1">: no Vector Stores resource selected.&#39;</span>
+<a id="__codelineno-0-9504" name="__codelineno-0-9504"></a>
+<a id="__codelineno-0-9505" name="__codelineno-0-9505"></a>	<span class="k">if</span> <span class="n">ready</span><span class="p">:</span>
+<a id="__codelineno-0-9506" name="__codelineno-0-9506"></a>		<span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s1">: using </span><span class="si">{</span><span class="n">backend_name</span><span class="si">}</span><span class="s1"> resource </span><span class="si">{</span><span class="n">resource_id</span><span class="si">}</span><span class="s1">.&#39;</span>
+<a id="__codelineno-0-9507" name="__codelineno-0-9507"></a>
+<a id="__codelineno-0-9508" name="__codelineno-0-9508"></a>	<span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s1">: selected </span><span class="si">{</span><span class="n">backend_name</span><span class="si">}</span><span class="s1"> resource </span><span class="si">{</span><span class="n">resource_id</span><span class="si">}</span><span class="s1">, but it is not a retrieval store.&#39;</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43216,7 +43214,8 @@ Streamlit session state, provider configuration, and local data processing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9512">9512</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9511">9511</a></span>
+<span class="normal"><a href="#__codelineno-0-9512">9512</a></span>
 <span class="normal"><a href="#__codelineno-0-9513">9513</a></span>
 <span class="normal"><a href="#__codelineno-0-9514">9514</a></span>
 <span class="normal"><a href="#__codelineno-0-9515">9515</a></span>
@@ -43234,27 +43233,26 @@ Streamlit session state, provider configuration, and local data processing.</p>
 <span class="normal"><a href="#__codelineno-0-9527">9527</a></span>
 <span class="normal"><a href="#__codelineno-0-9528">9528</a></span>
 <span class="normal"><a href="#__codelineno-0-9529">9529</a></span>
-<span class="normal"><a href="#__codelineno-0-9530">9530</a></span>
-<span class="normal"><a href="#__codelineno-0-9531">9531</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9512" name="__codelineno-0-9512"></a><span class="k">def</span><span class="w"> </span><span class="nf">text_model_options</span><span class="p">(</span> <span class="n">chat</span><span class="p">:</span> <span class="nb">object</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]:</span>
-<a id="__codelineno-0-9513" name="__codelineno-0-9513"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Text model options.</span>
-<a id="__codelineno-0-9514" name="__codelineno-0-9514"></a>
-<a id="__codelineno-0-9515" name="__codelineno-0-9515"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9516" name="__codelineno-0-9516"></a><span class="sd">	    Supports the text model options application workflow by coordinating validated inputs,</span>
-<a id="__codelineno-0-9517" name="__codelineno-0-9517"></a><span class="sd">	    Streamlit session state, provider configuration, and local data processing.</span>
-<a id="__codelineno-0-9518" name="__codelineno-0-9518"></a>
-<a id="__codelineno-0-9519" name="__codelineno-0-9519"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9520" name="__codelineno-0-9520"></a><span class="sd">	    chat: object Chat value used by the application workflow.</span>
-<a id="__codelineno-0-9521" name="__codelineno-0-9521"></a>
-<a id="__codelineno-0-9522" name="__codelineno-0-9522"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9523" name="__codelineno-0-9523"></a><span class="sd">	    List[ str ]: Text value produced for the active application workflow.</span>
-<a id="__codelineno-0-9524" name="__codelineno-0-9524"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9525" name="__codelineno-0-9525"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9526" name="__codelineno-0-9526"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9527" name="__codelineno-0-9527"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9528" name="__codelineno-0-9528"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9529" name="__codelineno-0-9529"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Grok&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9530" name="__codelineno-0-9530"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;grok&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9531" name="__codelineno-0-9531"></a>	<span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span>
+<span class="normal"><a href="#__codelineno-0-9530">9530</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9511" name="__codelineno-0-9511"></a><span class="k">def</span><span class="w"> </span><span class="nf">text_model_options</span><span class="p">(</span> <span class="n">chat</span><span class="p">:</span> <span class="nb">object</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span> <span class="nb">str</span> <span class="p">]:</span>
+<a id="__codelineno-0-9512" name="__codelineno-0-9512"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Text model options.</span>
+<a id="__codelineno-0-9513" name="__codelineno-0-9513"></a>
+<a id="__codelineno-0-9514" name="__codelineno-0-9514"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9515" name="__codelineno-0-9515"></a><span class="sd">	    Supports the text model options application workflow by coordinating validated inputs,</span>
+<a id="__codelineno-0-9516" name="__codelineno-0-9516"></a><span class="sd">	    Streamlit session state, provider configuration, and local data processing.</span>
+<a id="__codelineno-0-9517" name="__codelineno-0-9517"></a>
+<a id="__codelineno-0-9518" name="__codelineno-0-9518"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9519" name="__codelineno-0-9519"></a><span class="sd">	    chat: object Chat value used by the application workflow.</span>
+<a id="__codelineno-0-9520" name="__codelineno-0-9520"></a>
+<a id="__codelineno-0-9521" name="__codelineno-0-9521"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9522" name="__codelineno-0-9522"></a><span class="sd">	    List[ str ]: Text value produced for the active application workflow.</span>
+<a id="__codelineno-0-9523" name="__codelineno-0-9523"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9524" name="__codelineno-0-9524"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9525" name="__codelineno-0-9525"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9526" name="__codelineno-0-9526"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9527" name="__codelineno-0-9527"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9528" name="__codelineno-0-9528"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Grok&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9529" name="__codelineno-0-9529"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;grok&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9530" name="__codelineno-0-9530"></a>	<span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">model_options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43339,7 +43337,8 @@ Streamlit session state, provider configuration, and local data processing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9534">9534</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9533">9533</a></span>
+<span class="normal"><a href="#__codelineno-0-9534">9534</a></span>
 <span class="normal"><a href="#__codelineno-0-9535">9535</a></span>
 <span class="normal"><a href="#__codelineno-0-9536">9536</a></span>
 <span class="normal"><a href="#__codelineno-0-9537">9537</a></span>
@@ -43357,27 +43356,26 @@ Streamlit session state, provider configuration, and local data processing.</p>
 <span class="normal"><a href="#__codelineno-0-9549">9549</a></span>
 <span class="normal"><a href="#__codelineno-0-9550">9550</a></span>
 <span class="normal"><a href="#__codelineno-0-9551">9551</a></span>
-<span class="normal"><a href="#__codelineno-0-9552">9552</a></span>
-<span class="normal"><a href="#__codelineno-0-9553">9553</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9534" name="__codelineno-0-9534"></a><span class="k">def</span><span class="w"> </span><span class="nf">image_model_options</span><span class="p">(</span> <span class="n">image</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-9535" name="__codelineno-0-9535"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Image model options.</span>
-<a id="__codelineno-0-9536" name="__codelineno-0-9536"></a>
-<a id="__codelineno-0-9537" name="__codelineno-0-9537"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9538" name="__codelineno-0-9538"></a><span class="sd">	    Supports the image model options application workflow by coordinating validated inputs,</span>
-<a id="__codelineno-0-9539" name="__codelineno-0-9539"></a><span class="sd">	    Streamlit session state, provider configuration, and local data processing.</span>
-<a id="__codelineno-0-9540" name="__codelineno-0-9540"></a>
-<a id="__codelineno-0-9541" name="__codelineno-0-9541"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9542" name="__codelineno-0-9542"></a><span class="sd">	    image: Image value used by the application workflow.</span>
-<a id="__codelineno-0-9543" name="__codelineno-0-9543"></a>
-<a id="__codelineno-0-9544" name="__codelineno-0-9544"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9545" name="__codelineno-0-9545"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
-<a id="__codelineno-0-9546" name="__codelineno-0-9546"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9547" name="__codelineno-0-9547"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9548" name="__codelineno-0-9548"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;image_model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9549" name="__codelineno-0-9549"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9550" name="__codelineno-0-9550"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;image_model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9551" name="__codelineno-0-9551"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Grok&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9552" name="__codelineno-0-9552"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;grok&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9553" name="__codelineno-0-9553"></a>	<span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span>
+<span class="normal"><a href="#__codelineno-0-9552">9552</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9533" name="__codelineno-0-9533"></a><span class="k">def</span><span class="w"> </span><span class="nf">image_model_options</span><span class="p">(</span> <span class="n">image</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-9534" name="__codelineno-0-9534"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Image model options.</span>
+<a id="__codelineno-0-9535" name="__codelineno-0-9535"></a>
+<a id="__codelineno-0-9536" name="__codelineno-0-9536"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9537" name="__codelineno-0-9537"></a><span class="sd">	    Supports the image model options application workflow by coordinating validated inputs,</span>
+<a id="__codelineno-0-9538" name="__codelineno-0-9538"></a><span class="sd">	    Streamlit session state, provider configuration, and local data processing.</span>
+<a id="__codelineno-0-9539" name="__codelineno-0-9539"></a>
+<a id="__codelineno-0-9540" name="__codelineno-0-9540"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9541" name="__codelineno-0-9541"></a><span class="sd">	    image: Image value used by the application workflow.</span>
+<a id="__codelineno-0-9542" name="__codelineno-0-9542"></a>
+<a id="__codelineno-0-9543" name="__codelineno-0-9543"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9544" name="__codelineno-0-9544"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
+<a id="__codelineno-0-9545" name="__codelineno-0-9545"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9546" name="__codelineno-0-9546"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9547" name="__codelineno-0-9547"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;image_model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9548" name="__codelineno-0-9548"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9549" name="__codelineno-0-9549"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;image_model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9550" name="__codelineno-0-9550"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Grok&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9551" name="__codelineno-0-9551"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;grok&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9552" name="__codelineno-0-9552"></a>	<span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">model_options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43463,7 +43461,8 @@ processing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9555">9555</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9554">9554</a></span>
+<span class="normal"><a href="#__codelineno-0-9555">9555</a></span>
 <span class="normal"><a href="#__codelineno-0-9556">9556</a></span>
 <span class="normal"><a href="#__codelineno-0-9557">9557</a></span>
 <span class="normal"><a href="#__codelineno-0-9558">9558</a></span>
@@ -43482,28 +43481,27 @@ processing.</p>
 <span class="normal"><a href="#__codelineno-0-9571">9571</a></span>
 <span class="normal"><a href="#__codelineno-0-9572">9572</a></span>
 <span class="normal"><a href="#__codelineno-0-9573">9573</a></span>
-<span class="normal"><a href="#__codelineno-0-9574">9574</a></span>
-<span class="normal"><a href="#__codelineno-0-9575">9575</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9555" name="__codelineno-0-9555"></a><span class="k">def</span><span class="w"> </span><span class="nf">image_size_or_aspect_options</span><span class="p">(</span> <span class="n">image</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-9556" name="__codelineno-0-9556"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Image size or aspect options.</span>
-<a id="__codelineno-0-9557" name="__codelineno-0-9557"></a>
-<a id="__codelineno-0-9558" name="__codelineno-0-9558"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9559" name="__codelineno-0-9559"></a><span class="sd">	    Supports the image size or aspect options application workflow by coordinating</span>
-<a id="__codelineno-0-9560" name="__codelineno-0-9560"></a><span class="sd">	    validated inputs, Streamlit session state, provider configuration, and local data</span>
-<a id="__codelineno-0-9561" name="__codelineno-0-9561"></a><span class="sd">	    processing.</span>
-<a id="__codelineno-0-9562" name="__codelineno-0-9562"></a>
-<a id="__codelineno-0-9563" name="__codelineno-0-9563"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9564" name="__codelineno-0-9564"></a><span class="sd">	    image: Image value used by the application workflow.</span>
-<a id="__codelineno-0-9565" name="__codelineno-0-9565"></a>
-<a id="__codelineno-0-9566" name="__codelineno-0-9566"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9567" name="__codelineno-0-9567"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
-<a id="__codelineno-0-9568" name="__codelineno-0-9568"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9569" name="__codelineno-0-9569"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9570" name="__codelineno-0-9570"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;aspect_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9571" name="__codelineno-0-9571"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9572" name="__codelineno-0-9572"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;aspect_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9573" name="__codelineno-0-9573"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Grok&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9574" name="__codelineno-0-9574"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;grok&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9575" name="__codelineno-0-9575"></a>	<span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span>
+<span class="normal"><a href="#__codelineno-0-9574">9574</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9554" name="__codelineno-0-9554"></a><span class="k">def</span><span class="w"> </span><span class="nf">image_size_or_aspect_options</span><span class="p">(</span> <span class="n">image</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-9555" name="__codelineno-0-9555"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Image size or aspect options.</span>
+<a id="__codelineno-0-9556" name="__codelineno-0-9556"></a>
+<a id="__codelineno-0-9557" name="__codelineno-0-9557"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9558" name="__codelineno-0-9558"></a><span class="sd">	    Supports the image size or aspect options application workflow by coordinating</span>
+<a id="__codelineno-0-9559" name="__codelineno-0-9559"></a><span class="sd">	    validated inputs, Streamlit session state, provider configuration, and local data</span>
+<a id="__codelineno-0-9560" name="__codelineno-0-9560"></a><span class="sd">	    processing.</span>
+<a id="__codelineno-0-9561" name="__codelineno-0-9561"></a>
+<a id="__codelineno-0-9562" name="__codelineno-0-9562"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9563" name="__codelineno-0-9563"></a><span class="sd">	    image: Image value used by the application workflow.</span>
+<a id="__codelineno-0-9564" name="__codelineno-0-9564"></a>
+<a id="__codelineno-0-9565" name="__codelineno-0-9565"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9566" name="__codelineno-0-9566"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
+<a id="__codelineno-0-9567" name="__codelineno-0-9567"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9568" name="__codelineno-0-9568"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9569" name="__codelineno-0-9569"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;aspect_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9570" name="__codelineno-0-9570"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9571" name="__codelineno-0-9571"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;aspect_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9572" name="__codelineno-0-9572"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Grok&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9573" name="__codelineno-0-9573"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;grok&#39;</span><span class="p">,</span> <span class="s1">&#39;model_options&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9574" name="__codelineno-0-9574"></a>	<span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">size_options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43588,7 +43586,8 @@ Streamlit session state, provider configuration, and local data processing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9578">9578</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9577">9577</a></span>
+<span class="normal"><a href="#__codelineno-0-9578">9578</a></span>
 <span class="normal"><a href="#__codelineno-0-9579">9579</a></span>
 <span class="normal"><a href="#__codelineno-0-9580">9580</a></span>
 <span class="normal"><a href="#__codelineno-0-9581">9581</a></span>
@@ -43604,25 +43603,24 @@ Streamlit session state, provider configuration, and local data processing.</p>
 <span class="normal"><a href="#__codelineno-0-9591">9591</a></span>
 <span class="normal"><a href="#__codelineno-0-9592">9592</a></span>
 <span class="normal"><a href="#__codelineno-0-9593">9593</a></span>
-<span class="normal"><a href="#__codelineno-0-9594">9594</a></span>
-<span class="normal"><a href="#__codelineno-0-9595">9595</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9578" name="__codelineno-0-9578"></a><span class="k">def</span><span class="w"> </span><span class="nf">audio_model_options</span><span class="p">(</span> <span class="n">transcriber</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-9579" name="__codelineno-0-9579"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Audio model options.</span>
-<a id="__codelineno-0-9580" name="__codelineno-0-9580"></a>
-<a id="__codelineno-0-9581" name="__codelineno-0-9581"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9582" name="__codelineno-0-9582"></a><span class="sd">	    Supports the audio model options application workflow by coordinating validated inputs,</span>
-<a id="__codelineno-0-9583" name="__codelineno-0-9583"></a><span class="sd">	    Streamlit session state, provider configuration, and local data processing.</span>
-<a id="__codelineno-0-9584" name="__codelineno-0-9584"></a>
-<a id="__codelineno-0-9585" name="__codelineno-0-9585"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9586" name="__codelineno-0-9586"></a><span class="sd">	    transcriber: Transcriber value used by the application workflow.</span>
-<a id="__codelineno-0-9587" name="__codelineno-0-9587"></a>
-<a id="__codelineno-0-9588" name="__codelineno-0-9588"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9589" name="__codelineno-0-9589"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
-<a id="__codelineno-0-9590" name="__codelineno-0-9590"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9591" name="__codelineno-0-9591"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9592" name="__codelineno-0-9592"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;audio_model_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9593" name="__codelineno-0-9593"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9594" name="__codelineno-0-9594"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;audio_model_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9595" name="__codelineno-0-9595"></a>	<span class="k">return</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">model_options</span>
+<span class="normal"><a href="#__codelineno-0-9594">9594</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9577" name="__codelineno-0-9577"></a><span class="k">def</span><span class="w"> </span><span class="nf">audio_model_options</span><span class="p">(</span> <span class="n">transcriber</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-9578" name="__codelineno-0-9578"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Audio model options.</span>
+<a id="__codelineno-0-9579" name="__codelineno-0-9579"></a>
+<a id="__codelineno-0-9580" name="__codelineno-0-9580"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9581" name="__codelineno-0-9581"></a><span class="sd">	    Supports the audio model options application workflow by coordinating validated inputs,</span>
+<a id="__codelineno-0-9582" name="__codelineno-0-9582"></a><span class="sd">	    Streamlit session state, provider configuration, and local data processing.</span>
+<a id="__codelineno-0-9583" name="__codelineno-0-9583"></a>
+<a id="__codelineno-0-9584" name="__codelineno-0-9584"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9585" name="__codelineno-0-9585"></a><span class="sd">	    transcriber: Transcriber value used by the application workflow.</span>
+<a id="__codelineno-0-9586" name="__codelineno-0-9586"></a>
+<a id="__codelineno-0-9587" name="__codelineno-0-9587"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9588" name="__codelineno-0-9588"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
+<a id="__codelineno-0-9589" name="__codelineno-0-9589"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9590" name="__codelineno-0-9590"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9591" name="__codelineno-0-9591"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;audio_model_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9592" name="__codelineno-0-9592"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9593" name="__codelineno-0-9593"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;audio_model_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9594" name="__codelineno-0-9594"></a>	<span class="k">return</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">model_options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43707,7 +43705,8 @@ inputs, Streamlit session state, provider configuration, and local data processi
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9597">9597</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9596">9596</a></span>
+<span class="normal"><a href="#__codelineno-0-9597">9597</a></span>
 <span class="normal"><a href="#__codelineno-0-9598">9598</a></span>
 <span class="normal"><a href="#__codelineno-0-9599">9599</a></span>
 <span class="normal"><a href="#__codelineno-0-9600">9600</a></span>
@@ -43723,25 +43722,24 @@ inputs, Streamlit session state, provider configuration, and local data processi
 <span class="normal"><a href="#__codelineno-0-9610">9610</a></span>
 <span class="normal"><a href="#__codelineno-0-9611">9611</a></span>
 <span class="normal"><a href="#__codelineno-0-9612">9612</a></span>
-<span class="normal"><a href="#__codelineno-0-9613">9613</a></span>
-<span class="normal"><a href="#__codelineno-0-9614">9614</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9597" name="__codelineno-0-9597"></a><span class="k">def</span><span class="w"> </span><span class="nf">audio_language_options</span><span class="p">(</span> <span class="n">transcriber</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-9598" name="__codelineno-0-9598"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Audio language options.</span>
-<a id="__codelineno-0-9599" name="__codelineno-0-9599"></a>
-<a id="__codelineno-0-9600" name="__codelineno-0-9600"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9601" name="__codelineno-0-9601"></a><span class="sd">	    Supports the audio language options application workflow by coordinating validated</span>
-<a id="__codelineno-0-9602" name="__codelineno-0-9602"></a><span class="sd">	    inputs, Streamlit session state, provider configuration, and local data processing.</span>
-<a id="__codelineno-0-9603" name="__codelineno-0-9603"></a>
-<a id="__codelineno-0-9604" name="__codelineno-0-9604"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9605" name="__codelineno-0-9605"></a><span class="sd">	    transcriber: Transcriber value used by the application workflow.</span>
-<a id="__codelineno-0-9606" name="__codelineno-0-9606"></a>
-<a id="__codelineno-0-9607" name="__codelineno-0-9607"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9608" name="__codelineno-0-9608"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
-<a id="__codelineno-0-9609" name="__codelineno-0-9609"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9610" name="__codelineno-0-9610"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9611" name="__codelineno-0-9611"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;language_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">language_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9612" name="__codelineno-0-9612"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9613" name="__codelineno-0-9613"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;language_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">language_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9614" name="__codelineno-0-9614"></a>	<span class="k">return</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">language_options</span>
+<span class="normal"><a href="#__codelineno-0-9613">9613</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9596" name="__codelineno-0-9596"></a><span class="k">def</span><span class="w"> </span><span class="nf">audio_language_options</span><span class="p">(</span> <span class="n">transcriber</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-9597" name="__codelineno-0-9597"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Audio language options.</span>
+<a id="__codelineno-0-9598" name="__codelineno-0-9598"></a>
+<a id="__codelineno-0-9599" name="__codelineno-0-9599"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9600" name="__codelineno-0-9600"></a><span class="sd">	    Supports the audio language options application workflow by coordinating validated</span>
+<a id="__codelineno-0-9601" name="__codelineno-0-9601"></a><span class="sd">	    inputs, Streamlit session state, provider configuration, and local data processing.</span>
+<a id="__codelineno-0-9602" name="__codelineno-0-9602"></a>
+<a id="__codelineno-0-9603" name="__codelineno-0-9603"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9604" name="__codelineno-0-9604"></a><span class="sd">	    transcriber: Transcriber value used by the application workflow.</span>
+<a id="__codelineno-0-9605" name="__codelineno-0-9605"></a>
+<a id="__codelineno-0-9606" name="__codelineno-0-9606"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9607" name="__codelineno-0-9607"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
+<a id="__codelineno-0-9608" name="__codelineno-0-9608"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9609" name="__codelineno-0-9609"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9610" name="__codelineno-0-9610"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;language_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">language_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9611" name="__codelineno-0-9611"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9612" name="__codelineno-0-9612"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;language_options&#39;</span><span class="p">,</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">language_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9613" name="__codelineno-0-9613"></a>	<span class="k">return</span> <span class="n">transcriber</span><span class="o">.</span><span class="n">language_options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43826,7 +43824,8 @@ inputs, Streamlit session state, provider configuration, and local data processi
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9617">9617</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9616">9616</a></span>
+<span class="normal"><a href="#__codelineno-0-9617">9617</a></span>
 <span class="normal"><a href="#__codelineno-0-9618">9618</a></span>
 <span class="normal"><a href="#__codelineno-0-9619">9619</a></span>
 <span class="normal"><a href="#__codelineno-0-9620">9620</a></span>
@@ -43842,25 +43841,24 @@ inputs, Streamlit session state, provider configuration, and local data processi
 <span class="normal"><a href="#__codelineno-0-9630">9630</a></span>
 <span class="normal"><a href="#__codelineno-0-9631">9631</a></span>
 <span class="normal"><a href="#__codelineno-0-9632">9632</a></span>
-<span class="normal"><a href="#__codelineno-0-9633">9633</a></span>
-<span class="normal"><a href="#__codelineno-0-9634">9634</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9617" name="__codelineno-0-9617"></a><span class="k">def</span><span class="w"> </span><span class="nf">embedding_model_options</span><span class="p">(</span> <span class="n">embed</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-9618" name="__codelineno-0-9618"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Embedding model options.</span>
-<a id="__codelineno-0-9619" name="__codelineno-0-9619"></a>
-<a id="__codelineno-0-9620" name="__codelineno-0-9620"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9621" name="__codelineno-0-9621"></a><span class="sd">	    Supports the embedding model options application workflow by coordinating validated</span>
-<a id="__codelineno-0-9622" name="__codelineno-0-9622"></a><span class="sd">	    inputs, Streamlit session state, provider configuration, and local data processing.</span>
-<a id="__codelineno-0-9623" name="__codelineno-0-9623"></a>
-<a id="__codelineno-0-9624" name="__codelineno-0-9624"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9625" name="__codelineno-0-9625"></a><span class="sd">	    embed: Embed value used by the application workflow.</span>
-<a id="__codelineno-0-9626" name="__codelineno-0-9626"></a>
-<a id="__codelineno-0-9627" name="__codelineno-0-9627"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9628" name="__codelineno-0-9628"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
-<a id="__codelineno-0-9629" name="__codelineno-0-9629"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9630" name="__codelineno-0-9630"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9631" name="__codelineno-0-9631"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;embedding_model_options&#39;</span><span class="p">,</span> <span class="n">embed</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9632" name="__codelineno-0-9632"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9633" name="__codelineno-0-9633"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;embedding_model_options&#39;</span><span class="p">,</span> <span class="n">embed</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
-<a id="__codelineno-0-9634" name="__codelineno-0-9634"></a>	<span class="k">return</span> <span class="n">embed</span><span class="o">.</span><span class="n">model_options</span>
+<span class="normal"><a href="#__codelineno-0-9633">9633</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9616" name="__codelineno-0-9616"></a><span class="k">def</span><span class="w"> </span><span class="nf">embedding_model_options</span><span class="p">(</span> <span class="n">embed</span><span class="p">:</span> <span class="n">Any</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-9617" name="__codelineno-0-9617"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Embedding model options.</span>
+<a id="__codelineno-0-9618" name="__codelineno-0-9618"></a>
+<a id="__codelineno-0-9619" name="__codelineno-0-9619"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9620" name="__codelineno-0-9620"></a><span class="sd">	    Supports the embedding model options application workflow by coordinating validated</span>
+<a id="__codelineno-0-9621" name="__codelineno-0-9621"></a><span class="sd">	    inputs, Streamlit session state, provider configuration, and local data processing.</span>
+<a id="__codelineno-0-9622" name="__codelineno-0-9622"></a>
+<a id="__codelineno-0-9623" name="__codelineno-0-9623"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9624" name="__codelineno-0-9624"></a><span class="sd">	    embed: Embed value used by the application workflow.</span>
+<a id="__codelineno-0-9625" name="__codelineno-0-9625"></a>
+<a id="__codelineno-0-9626" name="__codelineno-0-9626"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9627" name="__codelineno-0-9627"></a><span class="sd">	    Any: Normalized result produced for the active application workflow.</span>
+<a id="__codelineno-0-9628" name="__codelineno-0-9628"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9629" name="__codelineno-0-9629"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;GPT&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9630" name="__codelineno-0-9630"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gpt&#39;</span><span class="p">,</span> <span class="s1">&#39;embedding_model_options&#39;</span><span class="p">,</span> <span class="n">embed</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9631" name="__codelineno-0-9631"></a>	<span class="k">if</span> <span class="n">_provider</span><span class="p">(</span> <span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;Gemini&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9632" name="__codelineno-0-9632"></a>		<span class="k">return</span> <span class="n">_safe</span><span class="p">(</span> <span class="s1">&#39;gemini&#39;</span><span class="p">,</span> <span class="s1">&#39;embedding_model_options&#39;</span><span class="p">,</span> <span class="n">embed</span><span class="o">.</span><span class="n">model_options</span> <span class="p">)</span>
+<a id="__codelineno-0-9633" name="__codelineno-0-9633"></a>	<span class="k">return</span> <span class="n">embed</span><span class="o">.</span><span class="n">model_options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -43945,7 +43943,8 @@ prompt, and session-state configuration.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9637">9637</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9636">9636</a></span>
+<span class="normal"><a href="#__codelineno-0-9637">9637</a></span>
 <span class="normal"><a href="#__codelineno-0-9638">9638</a></span>
 <span class="normal"><a href="#__codelineno-0-9639">9639</a></span>
 <span class="normal"><a href="#__codelineno-0-9640">9640</a></span>
@@ -44066,130 +44065,129 @@ prompt, and session-state configuration.</p>
 <span class="normal"><a href="#__codelineno-0-9755">9755</a></span>
 <span class="normal"><a href="#__codelineno-0-9756">9756</a></span>
 <span class="normal"><a href="#__codelineno-0-9757">9757</a></span>
-<span class="normal"><a href="#__codelineno-0-9758">9758</a></span>
-<span class="normal"><a href="#__codelineno-0-9759">9759</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9637" name="__codelineno-0-9637"></a><span class="k">def</span><span class="w"> </span><span class="nf">route_document_query</span><span class="p">(</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-9638" name="__codelineno-0-9638"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Route document query.</span>
-<a id="__codelineno-0-9639" name="__codelineno-0-9639"></a>
-<a id="__codelineno-0-9640" name="__codelineno-0-9640"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9641" name="__codelineno-0-9641"></a><span class="sd">	    Executes the route document query workflow using the current provider, document,</span>
-<a id="__codelineno-0-9642" name="__codelineno-0-9642"></a><span class="sd">	    prompt, and session-state configuration.</span>
-<a id="__codelineno-0-9643" name="__codelineno-0-9643"></a>
-<a id="__codelineno-0-9644" name="__codelineno-0-9644"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9645" name="__codelineno-0-9645"></a><span class="sd">	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.</span>
-<a id="__codelineno-0-9646" name="__codelineno-0-9646"></a>
-<a id="__codelineno-0-9647" name="__codelineno-0-9647"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9648" name="__codelineno-0-9648"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
-<a id="__codelineno-0-9649" name="__codelineno-0-9649"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9650" name="__codelineno-0-9650"></a>	<span class="n">source</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;doc_source&#39;</span> <span class="p">)</span>
-<a id="__codelineno-0-9651" name="__codelineno-0-9651"></a>	<span class="n">active_docs</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;docqna_active_docs&#39;</span><span class="p">,</span> <span class="p">[</span> <span class="p">]</span> <span class="p">)</span>
-<a id="__codelineno-0-9652" name="__codelineno-0-9652"></a>	<span class="n">doc_bytes</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;doc_bytes&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="p">}</span> <span class="p">)</span>
-<a id="__codelineno-0-9653" name="__codelineno-0-9653"></a>	<span class="n">instructions</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;docqna_system_instructions&#39;</span> <span class="p">)</span>
-<a id="__codelineno-0-9654" name="__codelineno-0-9654"></a>
-<a id="__codelineno-0-9655" name="__codelineno-0-9655"></a>	<span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="p">:</span>
-<a id="__codelineno-0-9656" name="__codelineno-0-9656"></a>		<span class="k">return</span> <span class="s1">&#39;No document source selected.&#39;</span>
-<a id="__codelineno-0-9657" name="__codelineno-0-9657"></a>
-<a id="__codelineno-0-9658" name="__codelineno-0-9658"></a>	<span class="k">if</span> <span class="ow">not</span> <span class="n">active_docs</span><span class="p">:</span>
-<a id="__codelineno-0-9659" name="__codelineno-0-9659"></a>		<span class="k">return</span> <span class="s1">&#39;No document selected.&#39;</span>
-<a id="__codelineno-0-9660" name="__codelineno-0-9660"></a>
-<a id="__codelineno-0-9661" name="__codelineno-0-9661"></a>	<span class="c1"># --------------------------------------------------</span>
-<a id="__codelineno-0-9662" name="__codelineno-0-9662"></a>	<span class="c1"># LOCAL DOCUMENT → Chat (single or multi)</span>
-<a id="__codelineno-0-9663" name="__codelineno-0-9663"></a>	<span class="c1"># --------------------------------------------------</span>
-<a id="__codelineno-0-9664" name="__codelineno-0-9664"></a>	<span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s1">&#39;uploadlocal&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9665" name="__codelineno-0-9665"></a>		<span class="n">chat</span> <span class="o">=</span> <span class="n">get_chat_module</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-9666" name="__codelineno-0-9666"></a>
-<a id="__codelineno-0-9667" name="__codelineno-0-9667"></a>		<span class="c1"># Single document</span>
-<a id="__codelineno-0-9668" name="__codelineno-0-9668"></a>		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">active_docs</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-9669" name="__codelineno-0-9669"></a>			<span class="n">name</span> <span class="o">=</span> <span class="n">active_docs</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span>
-<a id="__codelineno-0-9670" name="__codelineno-0-9670"></a>			<span class="n">file_bytes</span> <span class="o">=</span> <span class="n">doc_bytes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">name</span> <span class="p">)</span>
-<a id="__codelineno-0-9671" name="__codelineno-0-9671"></a>
-<a id="__codelineno-0-9672" name="__codelineno-0-9672"></a>			<span class="k">if</span> <span class="ow">not</span> <span class="n">file_bytes</span><span class="p">:</span>
-<a id="__codelineno-0-9673" name="__codelineno-0-9673"></a>				<span class="k">return</span> <span class="s1">&#39;Document content not available.&#39;</span>
-<a id="__codelineno-0-9674" name="__codelineno-0-9674"></a>
-<a id="__codelineno-0-9675" name="__codelineno-0-9675"></a>			<span class="n">text</span> <span class="o">=</span> <span class="n">extract_text_from_bytes</span><span class="p">(</span> <span class="n">file_bytes</span> <span class="p">)</span>
-<a id="__codelineno-0-9676" name="__codelineno-0-9676"></a>
-<a id="__codelineno-0-9677" name="__codelineno-0-9677"></a>			<span class="n">full_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9678" name="__codelineno-0-9678"></a><span class="s2">				</span><span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
-<a id="__codelineno-0-9679" name="__codelineno-0-9679"></a>
-<a id="__codelineno-0-9680" name="__codelineno-0-9680"></a><span class="s2">				Use the following document to answer the question.</span>
-<a id="__codelineno-0-9681" name="__codelineno-0-9681"></a><span class="s2">				Be precise and cite relevant portions when possible.</span>
-<a id="__codelineno-0-9682" name="__codelineno-0-9682"></a>
-<a id="__codelineno-0-9683" name="__codelineno-0-9683"></a><span class="s2">				DOCUMENT:</span>
-<a id="__codelineno-0-9684" name="__codelineno-0-9684"></a><span class="s2">				</span><span class="si">{</span><span class="n">text</span><span class="si">}</span>
-<a id="__codelineno-0-9685" name="__codelineno-0-9685"></a>
-<a id="__codelineno-0-9686" name="__codelineno-0-9686"></a><span class="s2">				QUESTION:</span>
-<a id="__codelineno-0-9687" name="__codelineno-0-9687"></a><span class="s2">				</span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span>
-<a id="__codelineno-0-9688" name="__codelineno-0-9688"></a><span class="s2">				&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9689" name="__codelineno-0-9689"></a>			<span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">generate_text</span><span class="p">(</span> <span class="n">prompt</span><span class="o">=</span><span class="n">full_prompt</span> <span class="p">)</span>
-<a id="__codelineno-0-9690" name="__codelineno-0-9690"></a>
-<a id="__codelineno-0-9691" name="__codelineno-0-9691"></a>		<span class="c1"># Multi-document injection</span>
-<a id="__codelineno-0-9692" name="__codelineno-0-9692"></a>		<span class="n">combined_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-0-9693" name="__codelineno-0-9693"></a>
-<a id="__codelineno-0-9694" name="__codelineno-0-9694"></a>		<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">active_docs</span><span class="p">:</span>
-<a id="__codelineno-0-9695" name="__codelineno-0-9695"></a>			<span class="n">file_bytes</span> <span class="o">=</span> <span class="n">doc_bytes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">name</span> <span class="p">)</span>
-<a id="__codelineno-0-9696" name="__codelineno-0-9696"></a>			<span class="k">if</span> <span class="ow">not</span> <span class="n">file_bytes</span><span class="p">:</span>
-<a id="__codelineno-0-9697" name="__codelineno-0-9697"></a>				<span class="k">continue</span>
-<a id="__codelineno-0-9698" name="__codelineno-0-9698"></a>
-<a id="__codelineno-0-9699" name="__codelineno-0-9699"></a>			<span class="n">text</span> <span class="o">=</span> <span class="n">extract_text_from_bytes</span><span class="p">(</span> <span class="n">file_bytes</span> <span class="p">)</span>
-<a id="__codelineno-0-9700" name="__codelineno-0-9700"></a>
-<a id="__codelineno-0-9701" name="__codelineno-0-9701"></a>			<span class="n">combined_text</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">===== DOCUMENT: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> =====</span><span class="se">\n\n</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-9702" name="__codelineno-0-9702"></a>
-<a id="__codelineno-0-9703" name="__codelineno-0-9703"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="n">combined_text</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">):</span>
-<a id="__codelineno-0-9704" name="__codelineno-0-9704"></a>			<span class="k">return</span> <span class="s1">&#39;No readable document content available.&#39;</span>
-<a id="__codelineno-0-9705" name="__codelineno-0-9705"></a>
-<a id="__codelineno-0-9706" name="__codelineno-0-9706"></a>		<span class="n">full_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9707" name="__codelineno-0-9707"></a><span class="s2">			</span><span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
-<a id="__codelineno-0-9708" name="__codelineno-0-9708"></a>
-<a id="__codelineno-0-9709" name="__codelineno-0-9709"></a><span class="s2">			You are analyzing multiple documents.</span>
-<a id="__codelineno-0-9710" name="__codelineno-0-9710"></a>
-<a id="__codelineno-0-9711" name="__codelineno-0-9711"></a><span class="s2">			Use the content below to answer the question.</span>
-<a id="__codelineno-0-9712" name="__codelineno-0-9712"></a><span class="s2">			If multiple documents are relevant, compare them.</span>
-<a id="__codelineno-0-9713" name="__codelineno-0-9713"></a><span class="s2">			Cite document names when possible.</span>
-<a id="__codelineno-0-9714" name="__codelineno-0-9714"></a>
-<a id="__codelineno-0-9715" name="__codelineno-0-9715"></a><span class="s2">			DOCUMENT SET:</span>
-<a id="__codelineno-0-9716" name="__codelineno-0-9716"></a><span class="s2">			</span><span class="si">{</span><span class="n">combined_text</span><span class="si">}</span>
-<a id="__codelineno-0-9717" name="__codelineno-0-9717"></a>
-<a id="__codelineno-0-9718" name="__codelineno-0-9718"></a><span class="s2">			QUESTION:</span>
-<a id="__codelineno-0-9719" name="__codelineno-0-9719"></a><span class="s2">			</span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span>
-<a id="__codelineno-0-9720" name="__codelineno-0-9720"></a><span class="s2">			&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9721" name="__codelineno-0-9721"></a>
-<a id="__codelineno-0-9722" name="__codelineno-0-9722"></a>		<span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">generate_text</span><span class="p">(</span> <span class="n">prompt</span><span class="o">=</span><span class="n">full_prompt</span> <span class="p">)</span>
-<a id="__codelineno-0-9723" name="__codelineno-0-9723"></a>
-<a id="__codelineno-0-9724" name="__codelineno-0-9724"></a>	<span class="c1"># --------------------------------------------------</span>
-<a id="__codelineno-0-9725" name="__codelineno-0-9725"></a>	<span class="c1"># FILES API → Files class</span>
-<a id="__codelineno-0-9726" name="__codelineno-0-9726"></a>	<span class="c1"># --------------------------------------------------</span>
-<a id="__codelineno-0-9727" name="__codelineno-0-9727"></a>	<span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;filesapi&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-9728" name="__codelineno-0-9728"></a>		<span class="n">files</span> <span class="o">=</span> <span class="n">get_files_module</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-9729" name="__codelineno-0-9729"></a>
-<a id="__codelineno-0-9730" name="__codelineno-0-9730"></a>		<span class="c1"># Single file search</span>
-<a id="__codelineno-0-9731" name="__codelineno-0-9731"></a>		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">active_docs</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-9732" name="__codelineno-0-9732"></a>			<span class="k">return</span> <span class="n">files</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">active_docs</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">)</span>
-<a id="__codelineno-0-9733" name="__codelineno-0-9733"></a>
-<a id="__codelineno-0-9734" name="__codelineno-0-9734"></a>		<span class="c1"># Multi-file survey</span>
-<a id="__codelineno-0-9735" name="__codelineno-0-9735"></a>		<span class="k">return</span> <span class="n">files</span><span class="o">.</span><span class="n">survey</span><span class="p">(</span> <span class="n">prompt</span> <span class="p">)</span>
-<a id="__codelineno-0-9736" name="__codelineno-0-9736"></a>
-<a id="__codelineno-0-9737" name="__codelineno-0-9737"></a>	<span class="c1"># --------------------------------------------------</span>
-<a id="__codelineno-0-9738" name="__codelineno-0-9738"></a>	<span class="c1"># VECTOR STORE → VectorStores class</span>
-<a id="__codelineno-0-9739" name="__codelineno-0-9739"></a>	<span class="c1"># --------------------------------------------------</span>
-<a id="__codelineno-0-9740" name="__codelineno-0-9740"></a>	<span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s1">&#39;vectorstore&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-9741" name="__codelineno-0-9741"></a>		<span class="n">vectorstores</span> <span class="o">=</span> <span class="n">get_vectorstores_module</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-9742" name="__codelineno-0-9742"></a>
-<a id="__codelineno-0-9743" name="__codelineno-0-9743"></a>		<span class="c1"># Single store</span>
-<a id="__codelineno-0-9744" name="__codelineno-0-9744"></a>		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">active_docs</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-9745" name="__codelineno-0-9745"></a>			<span class="k">return</span> <span class="n">vectorstores</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">active_docs</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">)</span>
-<a id="__codelineno-0-9746" name="__codelineno-0-9746"></a>
-<a id="__codelineno-0-9747" name="__codelineno-0-9747"></a>		<span class="c1"># Multi-store aggregation</span>
-<a id="__codelineno-0-9748" name="__codelineno-0-9748"></a>		<span class="n">responses</span> <span class="o">=</span> <span class="p">[</span> <span class="p">]</span>
-<a id="__codelineno-0-9749" name="__codelineno-0-9749"></a>		<span class="k">for</span> <span class="n">store_id</span> <span class="ow">in</span> <span class="n">active_docs</span><span class="p">:</span>
-<a id="__codelineno-0-9750" name="__codelineno-0-9750"></a>			<span class="n">result</span> <span class="o">=</span> <span class="n">vectorstores</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">store_id</span> <span class="p">)</span>
-<a id="__codelineno-0-9751" name="__codelineno-0-9751"></a>			<span class="k">if</span> <span class="n">result</span><span class="p">:</span>
-<a id="__codelineno-0-9752" name="__codelineno-0-9752"></a>				<span class="n">responses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">result</span> <span class="p">)</span>
-<a id="__codelineno-0-9753" name="__codelineno-0-9753"></a>
-<a id="__codelineno-0-9754" name="__codelineno-0-9754"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="n">responses</span><span class="p">:</span>
-<a id="__codelineno-0-9755" name="__codelineno-0-9755"></a>			<span class="k">return</span> <span class="s1">&#39;No results found across selected vector stores.&#39;</span>
-<a id="__codelineno-0-9756" name="__codelineno-0-9756"></a>
-<a id="__codelineno-0-9757" name="__codelineno-0-9757"></a>		<span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">responses</span> <span class="p">)</span>
-<a id="__codelineno-0-9758" name="__codelineno-0-9758"></a>
-<a id="__codelineno-0-9759" name="__codelineno-0-9759"></a>	<span class="k">return</span> <span class="s1">&#39;Unsupported document source.&#39;</span>
+<span class="normal"><a href="#__codelineno-0-9758">9758</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9636" name="__codelineno-0-9636"></a><span class="k">def</span><span class="w"> </span><span class="nf">route_document_query</span><span class="p">(</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-9637" name="__codelineno-0-9637"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Route document query.</span>
+<a id="__codelineno-0-9638" name="__codelineno-0-9638"></a>
+<a id="__codelineno-0-9639" name="__codelineno-0-9639"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9640" name="__codelineno-0-9640"></a><span class="sd">	    Executes the route document query workflow using the current provider, document,</span>
+<a id="__codelineno-0-9641" name="__codelineno-0-9641"></a><span class="sd">	    prompt, and session-state configuration.</span>
+<a id="__codelineno-0-9642" name="__codelineno-0-9642"></a>
+<a id="__codelineno-0-9643" name="__codelineno-0-9643"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9644" name="__codelineno-0-9644"></a><span class="sd">	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.</span>
+<a id="__codelineno-0-9645" name="__codelineno-0-9645"></a>
+<a id="__codelineno-0-9646" name="__codelineno-0-9646"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9647" name="__codelineno-0-9647"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
+<a id="__codelineno-0-9648" name="__codelineno-0-9648"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9649" name="__codelineno-0-9649"></a>	<span class="n">source</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;doc_source&#39;</span> <span class="p">)</span>
+<a id="__codelineno-0-9650" name="__codelineno-0-9650"></a>	<span class="n">active_docs</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;docqna_active_docs&#39;</span><span class="p">,</span> <span class="p">[</span> <span class="p">]</span> <span class="p">)</span>
+<a id="__codelineno-0-9651" name="__codelineno-0-9651"></a>	<span class="n">doc_bytes</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;doc_bytes&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="p">}</span> <span class="p">)</span>
+<a id="__codelineno-0-9652" name="__codelineno-0-9652"></a>	<span class="n">instructions</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s1">&#39;docqna_system_instructions&#39;</span> <span class="p">)</span>
+<a id="__codelineno-0-9653" name="__codelineno-0-9653"></a>
+<a id="__codelineno-0-9654" name="__codelineno-0-9654"></a>	<span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="p">:</span>
+<a id="__codelineno-0-9655" name="__codelineno-0-9655"></a>		<span class="k">return</span> <span class="s1">&#39;No document source selected.&#39;</span>
+<a id="__codelineno-0-9656" name="__codelineno-0-9656"></a>
+<a id="__codelineno-0-9657" name="__codelineno-0-9657"></a>	<span class="k">if</span> <span class="ow">not</span> <span class="n">active_docs</span><span class="p">:</span>
+<a id="__codelineno-0-9658" name="__codelineno-0-9658"></a>		<span class="k">return</span> <span class="s1">&#39;No document selected.&#39;</span>
+<a id="__codelineno-0-9659" name="__codelineno-0-9659"></a>
+<a id="__codelineno-0-9660" name="__codelineno-0-9660"></a>	<span class="c1"># --------------------------------------------------</span>
+<a id="__codelineno-0-9661" name="__codelineno-0-9661"></a>	<span class="c1"># LOCAL DOCUMENT → Chat (single or multi)</span>
+<a id="__codelineno-0-9662" name="__codelineno-0-9662"></a>	<span class="c1"># --------------------------------------------------</span>
+<a id="__codelineno-0-9663" name="__codelineno-0-9663"></a>	<span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s1">&#39;uploadlocal&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9664" name="__codelineno-0-9664"></a>		<span class="n">chat</span> <span class="o">=</span> <span class="n">get_chat_module</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-9665" name="__codelineno-0-9665"></a>
+<a id="__codelineno-0-9666" name="__codelineno-0-9666"></a>		<span class="c1"># Single document</span>
+<a id="__codelineno-0-9667" name="__codelineno-0-9667"></a>		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">active_docs</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-9668" name="__codelineno-0-9668"></a>			<span class="n">name</span> <span class="o">=</span> <span class="n">active_docs</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span>
+<a id="__codelineno-0-9669" name="__codelineno-0-9669"></a>			<span class="n">file_bytes</span> <span class="o">=</span> <span class="n">doc_bytes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">name</span> <span class="p">)</span>
+<a id="__codelineno-0-9670" name="__codelineno-0-9670"></a>
+<a id="__codelineno-0-9671" name="__codelineno-0-9671"></a>			<span class="k">if</span> <span class="ow">not</span> <span class="n">file_bytes</span><span class="p">:</span>
+<a id="__codelineno-0-9672" name="__codelineno-0-9672"></a>				<span class="k">return</span> <span class="s1">&#39;Document content not available.&#39;</span>
+<a id="__codelineno-0-9673" name="__codelineno-0-9673"></a>
+<a id="__codelineno-0-9674" name="__codelineno-0-9674"></a>			<span class="n">text</span> <span class="o">=</span> <span class="n">extract_text_from_bytes</span><span class="p">(</span> <span class="n">file_bytes</span> <span class="p">)</span>
+<a id="__codelineno-0-9675" name="__codelineno-0-9675"></a>
+<a id="__codelineno-0-9676" name="__codelineno-0-9676"></a>			<span class="n">full_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9677" name="__codelineno-0-9677"></a><span class="s2">				</span><span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
+<a id="__codelineno-0-9678" name="__codelineno-0-9678"></a>
+<a id="__codelineno-0-9679" name="__codelineno-0-9679"></a><span class="s2">				Use the following document to answer the question.</span>
+<a id="__codelineno-0-9680" name="__codelineno-0-9680"></a><span class="s2">				Be precise and cite relevant portions when possible.</span>
+<a id="__codelineno-0-9681" name="__codelineno-0-9681"></a>
+<a id="__codelineno-0-9682" name="__codelineno-0-9682"></a><span class="s2">				DOCUMENT:</span>
+<a id="__codelineno-0-9683" name="__codelineno-0-9683"></a><span class="s2">				</span><span class="si">{</span><span class="n">text</span><span class="si">}</span>
+<a id="__codelineno-0-9684" name="__codelineno-0-9684"></a>
+<a id="__codelineno-0-9685" name="__codelineno-0-9685"></a><span class="s2">				QUESTION:</span>
+<a id="__codelineno-0-9686" name="__codelineno-0-9686"></a><span class="s2">				</span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span>
+<a id="__codelineno-0-9687" name="__codelineno-0-9687"></a><span class="s2">				&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9688" name="__codelineno-0-9688"></a>			<span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">generate_text</span><span class="p">(</span> <span class="n">prompt</span><span class="o">=</span><span class="n">full_prompt</span> <span class="p">)</span>
+<a id="__codelineno-0-9689" name="__codelineno-0-9689"></a>
+<a id="__codelineno-0-9690" name="__codelineno-0-9690"></a>		<span class="c1"># Multi-document injection</span>
+<a id="__codelineno-0-9691" name="__codelineno-0-9691"></a>		<span class="n">combined_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-9692" name="__codelineno-0-9692"></a>
+<a id="__codelineno-0-9693" name="__codelineno-0-9693"></a>		<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">active_docs</span><span class="p">:</span>
+<a id="__codelineno-0-9694" name="__codelineno-0-9694"></a>			<span class="n">file_bytes</span> <span class="o">=</span> <span class="n">doc_bytes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">name</span> <span class="p">)</span>
+<a id="__codelineno-0-9695" name="__codelineno-0-9695"></a>			<span class="k">if</span> <span class="ow">not</span> <span class="n">file_bytes</span><span class="p">:</span>
+<a id="__codelineno-0-9696" name="__codelineno-0-9696"></a>				<span class="k">continue</span>
+<a id="__codelineno-0-9697" name="__codelineno-0-9697"></a>
+<a id="__codelineno-0-9698" name="__codelineno-0-9698"></a>			<span class="n">text</span> <span class="o">=</span> <span class="n">extract_text_from_bytes</span><span class="p">(</span> <span class="n">file_bytes</span> <span class="p">)</span>
+<a id="__codelineno-0-9699" name="__codelineno-0-9699"></a>
+<a id="__codelineno-0-9700" name="__codelineno-0-9700"></a>			<span class="n">combined_text</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">===== DOCUMENT: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> =====</span><span class="se">\n\n</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-9701" name="__codelineno-0-9701"></a>
+<a id="__codelineno-0-9702" name="__codelineno-0-9702"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="n">combined_text</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">):</span>
+<a id="__codelineno-0-9703" name="__codelineno-0-9703"></a>			<span class="k">return</span> <span class="s1">&#39;No readable document content available.&#39;</span>
+<a id="__codelineno-0-9704" name="__codelineno-0-9704"></a>
+<a id="__codelineno-0-9705" name="__codelineno-0-9705"></a>		<span class="n">full_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9706" name="__codelineno-0-9706"></a><span class="s2">			</span><span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
+<a id="__codelineno-0-9707" name="__codelineno-0-9707"></a>
+<a id="__codelineno-0-9708" name="__codelineno-0-9708"></a><span class="s2">			You are analyzing multiple documents.</span>
+<a id="__codelineno-0-9709" name="__codelineno-0-9709"></a>
+<a id="__codelineno-0-9710" name="__codelineno-0-9710"></a><span class="s2">			Use the content below to answer the question.</span>
+<a id="__codelineno-0-9711" name="__codelineno-0-9711"></a><span class="s2">			If multiple documents are relevant, compare them.</span>
+<a id="__codelineno-0-9712" name="__codelineno-0-9712"></a><span class="s2">			Cite document names when possible.</span>
+<a id="__codelineno-0-9713" name="__codelineno-0-9713"></a>
+<a id="__codelineno-0-9714" name="__codelineno-0-9714"></a><span class="s2">			DOCUMENT SET:</span>
+<a id="__codelineno-0-9715" name="__codelineno-0-9715"></a><span class="s2">			</span><span class="si">{</span><span class="n">combined_text</span><span class="si">}</span>
+<a id="__codelineno-0-9716" name="__codelineno-0-9716"></a>
+<a id="__codelineno-0-9717" name="__codelineno-0-9717"></a><span class="s2">			QUESTION:</span>
+<a id="__codelineno-0-9718" name="__codelineno-0-9718"></a><span class="s2">			</span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span>
+<a id="__codelineno-0-9719" name="__codelineno-0-9719"></a><span class="s2">			&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9720" name="__codelineno-0-9720"></a>
+<a id="__codelineno-0-9721" name="__codelineno-0-9721"></a>		<span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">generate_text</span><span class="p">(</span> <span class="n">prompt</span><span class="o">=</span><span class="n">full_prompt</span> <span class="p">)</span>
+<a id="__codelineno-0-9722" name="__codelineno-0-9722"></a>
+<a id="__codelineno-0-9723" name="__codelineno-0-9723"></a>	<span class="c1"># --------------------------------------------------</span>
+<a id="__codelineno-0-9724" name="__codelineno-0-9724"></a>	<span class="c1"># FILES API → Files class</span>
+<a id="__codelineno-0-9725" name="__codelineno-0-9725"></a>	<span class="c1"># --------------------------------------------------</span>
+<a id="__codelineno-0-9726" name="__codelineno-0-9726"></a>	<span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;filesapi&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-9727" name="__codelineno-0-9727"></a>		<span class="n">files</span> <span class="o">=</span> <span class="n">get_files_module</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-9728" name="__codelineno-0-9728"></a>
+<a id="__codelineno-0-9729" name="__codelineno-0-9729"></a>		<span class="c1"># Single file search</span>
+<a id="__codelineno-0-9730" name="__codelineno-0-9730"></a>		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">active_docs</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-9731" name="__codelineno-0-9731"></a>			<span class="k">return</span> <span class="n">files</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">active_docs</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">)</span>
+<a id="__codelineno-0-9732" name="__codelineno-0-9732"></a>
+<a id="__codelineno-0-9733" name="__codelineno-0-9733"></a>		<span class="c1"># Multi-file survey</span>
+<a id="__codelineno-0-9734" name="__codelineno-0-9734"></a>		<span class="k">return</span> <span class="n">files</span><span class="o">.</span><span class="n">survey</span><span class="p">(</span> <span class="n">prompt</span> <span class="p">)</span>
+<a id="__codelineno-0-9735" name="__codelineno-0-9735"></a>
+<a id="__codelineno-0-9736" name="__codelineno-0-9736"></a>	<span class="c1"># --------------------------------------------------</span>
+<a id="__codelineno-0-9737" name="__codelineno-0-9737"></a>	<span class="c1"># VECTOR STORE → VectorStores class</span>
+<a id="__codelineno-0-9738" name="__codelineno-0-9738"></a>	<span class="c1"># --------------------------------------------------</span>
+<a id="__codelineno-0-9739" name="__codelineno-0-9739"></a>	<span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s1">&#39;vectorstore&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-9740" name="__codelineno-0-9740"></a>		<span class="n">vectorstores</span> <span class="o">=</span> <span class="n">get_vectorstores_module</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-9741" name="__codelineno-0-9741"></a>
+<a id="__codelineno-0-9742" name="__codelineno-0-9742"></a>		<span class="c1"># Single store</span>
+<a id="__codelineno-0-9743" name="__codelineno-0-9743"></a>		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">active_docs</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-9744" name="__codelineno-0-9744"></a>			<span class="k">return</span> <span class="n">vectorstores</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">active_docs</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">)</span>
+<a id="__codelineno-0-9745" name="__codelineno-0-9745"></a>
+<a id="__codelineno-0-9746" name="__codelineno-0-9746"></a>		<span class="c1"># Multi-store aggregation</span>
+<a id="__codelineno-0-9747" name="__codelineno-0-9747"></a>		<span class="n">responses</span> <span class="o">=</span> <span class="p">[</span> <span class="p">]</span>
+<a id="__codelineno-0-9748" name="__codelineno-0-9748"></a>		<span class="k">for</span> <span class="n">store_id</span> <span class="ow">in</span> <span class="n">active_docs</span><span class="p">:</span>
+<a id="__codelineno-0-9749" name="__codelineno-0-9749"></a>			<span class="n">result</span> <span class="o">=</span> <span class="n">vectorstores</span><span class="o">.</span><span class="n">search</span><span class="p">(</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">store_id</span> <span class="p">)</span>
+<a id="__codelineno-0-9750" name="__codelineno-0-9750"></a>			<span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+<a id="__codelineno-0-9751" name="__codelineno-0-9751"></a>				<span class="n">responses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">result</span> <span class="p">)</span>
+<a id="__codelineno-0-9752" name="__codelineno-0-9752"></a>
+<a id="__codelineno-0-9753" name="__codelineno-0-9753"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="n">responses</span><span class="p">:</span>
+<a id="__codelineno-0-9754" name="__codelineno-0-9754"></a>			<span class="k">return</span> <span class="s1">&#39;No results found across selected vector stores.&#39;</span>
+<a id="__codelineno-0-9755" name="__codelineno-0-9755"></a>
+<a id="__codelineno-0-9756" name="__codelineno-0-9756"></a>		<span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">responses</span> <span class="p">)</span>
+<a id="__codelineno-0-9757" name="__codelineno-0-9757"></a>
+<a id="__codelineno-0-9758" name="__codelineno-0-9758"></a>	<span class="k">return</span> <span class="s1">&#39;Unsupported document source.&#39;</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -44274,7 +44272,8 @@ provider calls, document retrieval, data management, or UI rendering.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9761">9761</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9760">9760</a></span>
+<span class="normal"><a href="#__codelineno-0-9761">9761</a></span>
 <span class="normal"><a href="#__codelineno-0-9762">9762</a></span>
 <span class="normal"><a href="#__codelineno-0-9763">9763</a></span>
 <span class="normal"><a href="#__codelineno-0-9764">9764</a></span>
@@ -44309,44 +44308,43 @@ provider calls, document retrieval, data management, or UI rendering.</p>
 <span class="normal"><a href="#__codelineno-0-9793">9793</a></span>
 <span class="normal"><a href="#__codelineno-0-9794">9794</a></span>
 <span class="normal"><a href="#__codelineno-0-9795">9795</a></span>
-<span class="normal"><a href="#__codelineno-0-9796">9796</a></span>
-<span class="normal"><a href="#__codelineno-0-9797">9797</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9761" name="__codelineno-0-9761"></a><span class="k">def</span><span class="w"> </span><span class="nf">extract_text_from_bytes</span><span class="p">(</span> <span class="n">file_bytes</span><span class="p">:</span> <span class="nb">bytes</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-9762" name="__codelineno-0-9762"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Extract text from bytes.</span>
-<a id="__codelineno-0-9763" name="__codelineno-0-9763"></a>
-<a id="__codelineno-0-9764" name="__codelineno-0-9764"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9765" name="__codelineno-0-9765"></a><span class="sd">	    Transforms extract text from bytes inputs into a normalized representation used by</span>
-<a id="__codelineno-0-9766" name="__codelineno-0-9766"></a><span class="sd">	    provider calls, document retrieval, data management, or UI rendering.</span>
-<a id="__codelineno-0-9767" name="__codelineno-0-9767"></a>
-<a id="__codelineno-0-9768" name="__codelineno-0-9768"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-9769" name="__codelineno-0-9769"></a><span class="sd">	    file_bytes: File, upload, or path value used by the document or storage workflow.</span>
-<a id="__codelineno-0-9770" name="__codelineno-0-9770"></a>
-<a id="__codelineno-0-9771" name="__codelineno-0-9771"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9772" name="__codelineno-0-9772"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
-<a id="__codelineno-0-9773" name="__codelineno-0-9773"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9774" name="__codelineno-0-9774"></a>	<span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-9775" name="__codelineno-0-9775"></a>		<span class="kn">import</span><span class="w"> </span><span class="nn">fitz</span>  <span class="c1"># PyMuPDF</span>
-<a id="__codelineno-0-9776" name="__codelineno-0-9776"></a>
-<a id="__codelineno-0-9777" name="__codelineno-0-9777"></a>		<span class="n">doc</span> <span class="o">=</span> <span class="n">fitz</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="n">stream</span><span class="o">=</span><span class="n">file_bytes</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span> <span class="p">)</span>
-<a id="__codelineno-0-9778" name="__codelineno-0-9778"></a>		<span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-0-9779" name="__codelineno-0-9779"></a>		<span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">:</span>
-<a id="__codelineno-0-9780" name="__codelineno-0-9780"></a>			<span class="n">text</span> <span class="o">+=</span> <span class="n">page</span><span class="o">.</span><span class="n">get_text</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-9781" name="__codelineno-0-9781"></a>		<span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-9782" name="__codelineno-0-9782"></a>
-<a id="__codelineno-0-9783" name="__codelineno-0-9783"></a>	<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-9784" name="__codelineno-0-9784"></a>		<span class="n">exception</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span> <span class="n">e</span> <span class="p">)</span>
-<a id="__codelineno-0-9785" name="__codelineno-0-9785"></a>		<span class="n">exception</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;app&#39;</span>
-<a id="__codelineno-0-9786" name="__codelineno-0-9786"></a>		<span class="n">exception</span><span class="o">.</span><span class="n">cause</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes&#39;</span>
-<a id="__codelineno-0-9787" name="__codelineno-0-9787"></a>		<span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes( file_bytes ) -&gt; str&#39;</span>
-<a id="__codelineno-0-9788" name="__codelineno-0-9788"></a>		<span class="n">Logger</span><span class="p">(</span> <span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span> <span class="n">exception</span> <span class="p">)</span>
-<a id="__codelineno-0-9789" name="__codelineno-0-9789"></a>		<span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-9790" name="__codelineno-0-9790"></a>			<span class="k">return</span> <span class="n">file_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span> <span class="p">)</span>
-<a id="__codelineno-0-9791" name="__codelineno-0-9791"></a>		<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-9792" name="__codelineno-0-9792"></a>			<span class="n">exception</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span> <span class="n">e</span> <span class="p">)</span>
-<a id="__codelineno-0-9793" name="__codelineno-0-9793"></a>			<span class="n">exception</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;app&#39;</span>
-<a id="__codelineno-0-9794" name="__codelineno-0-9794"></a>			<span class="n">exception</span><span class="o">.</span><span class="n">cause</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes&#39;</span>
-<a id="__codelineno-0-9795" name="__codelineno-0-9795"></a>			<span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes( file_bytes ) -&gt; str&#39;</span>
-<a id="__codelineno-0-9796" name="__codelineno-0-9796"></a>			<span class="n">Logger</span><span class="p">(</span> <span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span> <span class="n">exception</span> <span class="p">)</span>
-<a id="__codelineno-0-9797" name="__codelineno-0-9797"></a>			<span class="k">return</span> <span class="s2">&quot;&quot;</span>
+<span class="normal"><a href="#__codelineno-0-9796">9796</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9760" name="__codelineno-0-9760"></a><span class="k">def</span><span class="w"> </span><span class="nf">extract_text_from_bytes</span><span class="p">(</span> <span class="n">file_bytes</span><span class="p">:</span> <span class="nb">bytes</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-9761" name="__codelineno-0-9761"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Extract text from bytes.</span>
+<a id="__codelineno-0-9762" name="__codelineno-0-9762"></a>
+<a id="__codelineno-0-9763" name="__codelineno-0-9763"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9764" name="__codelineno-0-9764"></a><span class="sd">	    Transforms extract text from bytes inputs into a normalized representation used by</span>
+<a id="__codelineno-0-9765" name="__codelineno-0-9765"></a><span class="sd">	    provider calls, document retrieval, data management, or UI rendering.</span>
+<a id="__codelineno-0-9766" name="__codelineno-0-9766"></a>
+<a id="__codelineno-0-9767" name="__codelineno-0-9767"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-9768" name="__codelineno-0-9768"></a><span class="sd">	    file_bytes: File, upload, or path value used by the document or storage workflow.</span>
+<a id="__codelineno-0-9769" name="__codelineno-0-9769"></a>
+<a id="__codelineno-0-9770" name="__codelineno-0-9770"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9771" name="__codelineno-0-9771"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
+<a id="__codelineno-0-9772" name="__codelineno-0-9772"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9773" name="__codelineno-0-9773"></a>	<span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-9774" name="__codelineno-0-9774"></a>		<span class="kn">import</span><span class="w"> </span><span class="nn">fitz</span>  <span class="c1"># PyMuPDF</span>
+<a id="__codelineno-0-9775" name="__codelineno-0-9775"></a>
+<a id="__codelineno-0-9776" name="__codelineno-0-9776"></a>		<span class="n">doc</span> <span class="o">=</span> <span class="n">fitz</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="n">stream</span><span class="o">=</span><span class="n">file_bytes</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span> <span class="p">)</span>
+<a id="__codelineno-0-9777" name="__codelineno-0-9777"></a>		<span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-9778" name="__codelineno-0-9778"></a>		<span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">:</span>
+<a id="__codelineno-0-9779" name="__codelineno-0-9779"></a>			<span class="n">text</span> <span class="o">+=</span> <span class="n">page</span><span class="o">.</span><span class="n">get_text</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-9780" name="__codelineno-0-9780"></a>		<span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-9781" name="__codelineno-0-9781"></a>
+<a id="__codelineno-0-9782" name="__codelineno-0-9782"></a>	<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-9783" name="__codelineno-0-9783"></a>		<span class="n">exception</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span> <span class="n">e</span> <span class="p">)</span>
+<a id="__codelineno-0-9784" name="__codelineno-0-9784"></a>		<span class="n">exception</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;app&#39;</span>
+<a id="__codelineno-0-9785" name="__codelineno-0-9785"></a>		<span class="n">exception</span><span class="o">.</span><span class="n">cause</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes&#39;</span>
+<a id="__codelineno-0-9786" name="__codelineno-0-9786"></a>		<span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes( file_bytes ) -&gt; str&#39;</span>
+<a id="__codelineno-0-9787" name="__codelineno-0-9787"></a>		<span class="n">Logger</span><span class="p">(</span> <span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span> <span class="n">exception</span> <span class="p">)</span>
+<a id="__codelineno-0-9788" name="__codelineno-0-9788"></a>		<span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-9789" name="__codelineno-0-9789"></a>			<span class="k">return</span> <span class="n">file_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span> <span class="p">)</span>
+<a id="__codelineno-0-9790" name="__codelineno-0-9790"></a>		<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-9791" name="__codelineno-0-9791"></a>			<span class="n">exception</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span> <span class="n">e</span> <span class="p">)</span>
+<a id="__codelineno-0-9792" name="__codelineno-0-9792"></a>			<span class="n">exception</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;app&#39;</span>
+<a id="__codelineno-0-9793" name="__codelineno-0-9793"></a>			<span class="n">exception</span><span class="o">.</span><span class="n">cause</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes&#39;</span>
+<a id="__codelineno-0-9794" name="__codelineno-0-9794"></a>			<span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;extract_text_from_bytes( file_bytes ) -&gt; str&#39;</span>
+<a id="__codelineno-0-9795" name="__codelineno-0-9795"></a>			<span class="n">Logger</span><span class="p">(</span> <span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span> <span class="n">exception</span> <span class="p">)</span>
+<a id="__codelineno-0-9796" name="__codelineno-0-9796"></a>			<span class="k">return</span> <span class="s2">&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -44400,7 +44398,8 @@ and session-state configuration.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9799">9799</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9798">9798</a></span>
+<span class="normal"><a href="#__codelineno-0-9799">9799</a></span>
 <span class="normal"><a href="#__codelineno-0-9800">9800</a></span>
 <span class="normal"><a href="#__codelineno-0-9801">9801</a></span>
 <span class="normal"><a href="#__codelineno-0-9802">9802</a></span>
@@ -44424,33 +44423,32 @@ and session-state configuration.</p>
 <span class="normal"><a href="#__codelineno-0-9820">9820</a></span>
 <span class="normal"><a href="#__codelineno-0-9821">9821</a></span>
 <span class="normal"><a href="#__codelineno-0-9822">9822</a></span>
-<span class="normal"><a href="#__codelineno-0-9823">9823</a></span>
-<span class="normal"><a href="#__codelineno-0-9824">9824</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9799" name="__codelineno-0-9799"></a><span class="k">def</span><span class="w"> </span><span class="nf">summarize_document</span><span class="p">(</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-9800" name="__codelineno-0-9800"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Summarize document.</span>
-<a id="__codelineno-0-9801" name="__codelineno-0-9801"></a>
-<a id="__codelineno-0-9802" name="__codelineno-0-9802"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-9803" name="__codelineno-0-9803"></a><span class="sd">	    Executes the summarize document workflow using the current provider, document, prompt,</span>
-<a id="__codelineno-0-9804" name="__codelineno-0-9804"></a><span class="sd">	    and session-state configuration.</span>
-<a id="__codelineno-0-9805" name="__codelineno-0-9805"></a>
-<a id="__codelineno-0-9806" name="__codelineno-0-9806"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-9807" name="__codelineno-0-9807"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
-<a id="__codelineno-0-9808" name="__codelineno-0-9808"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9809" name="__codelineno-0-9809"></a>	<span class="n">doc_instructions</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s2">&quot;doc_instructions&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span>
-<a id="__codelineno-0-9810" name="__codelineno-0-9810"></a>	<span class="n">summary_prompt</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9811" name="__codelineno-0-9811"></a><span class="s2">		Provide a clear, structured summary of this document.</span>
-<a id="__codelineno-0-9812" name="__codelineno-0-9812"></a><span class="s2">		Include:</span>
-<a id="__codelineno-0-9813" name="__codelineno-0-9813"></a><span class="s2">		- Purpose</span>
-<a id="__codelineno-0-9814" name="__codelineno-0-9814"></a><span class="s2">		- Key themes</span>
-<a id="__codelineno-0-9815" name="__codelineno-0-9815"></a><span class="s2">		- Major conclusions</span>
-<a id="__codelineno-0-9816" name="__codelineno-0-9816"></a><span class="s2">		- Important data points (if any)</span>
-<a id="__codelineno-0-9817" name="__codelineno-0-9817"></a><span class="s2">		- Policy implications (if applicable)</span>
-<a id="__codelineno-0-9818" name="__codelineno-0-9818"></a>
-<a id="__codelineno-0-9819" name="__codelineno-0-9819"></a><span class="s2">		Be precise and concise.</span>
-<a id="__codelineno-0-9820" name="__codelineno-0-9820"></a><span class="s2">		&quot;&quot;&quot;</span>
-<a id="__codelineno-0-9821" name="__codelineno-0-9821"></a>	<span class="k">if</span> <span class="n">doc_instructions</span><span class="p">:</span>
-<a id="__codelineno-0-9822" name="__codelineno-0-9822"></a>		<span class="n">summary_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">doc_instructions</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">summary_prompt</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-9823" name="__codelineno-0-9823"></a>
-<a id="__codelineno-0-9824" name="__codelineno-0-9824"></a>	<span class="k">return</span> <span class="n">route_document_query</span><span class="p">(</span> <span class="n">summary_prompt</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">)</span> <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-9823">9823</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-9798" name="__codelineno-0-9798"></a><span class="k">def</span><span class="w"> </span><span class="nf">summarize_document</span><span class="p">(</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-9799" name="__codelineno-0-9799"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Summarize document.</span>
+<a id="__codelineno-0-9800" name="__codelineno-0-9800"></a>
+<a id="__codelineno-0-9801" name="__codelineno-0-9801"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-9802" name="__codelineno-0-9802"></a><span class="sd">	    Executes the summarize document workflow using the current provider, document, prompt,</span>
+<a id="__codelineno-0-9803" name="__codelineno-0-9803"></a><span class="sd">	    and session-state configuration.</span>
+<a id="__codelineno-0-9804" name="__codelineno-0-9804"></a>
+<a id="__codelineno-0-9805" name="__codelineno-0-9805"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-9806" name="__codelineno-0-9806"></a><span class="sd">	    str: Text value produced for the active application workflow.</span>
+<a id="__codelineno-0-9807" name="__codelineno-0-9807"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9808" name="__codelineno-0-9808"></a>	<span class="n">doc_instructions</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="s2">&quot;doc_instructions&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span>
+<a id="__codelineno-0-9809" name="__codelineno-0-9809"></a>	<span class="n">summary_prompt</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9810" name="__codelineno-0-9810"></a><span class="s2">		Provide a clear, structured summary of this document.</span>
+<a id="__codelineno-0-9811" name="__codelineno-0-9811"></a><span class="s2">		Include:</span>
+<a id="__codelineno-0-9812" name="__codelineno-0-9812"></a><span class="s2">		- Purpose</span>
+<a id="__codelineno-0-9813" name="__codelineno-0-9813"></a><span class="s2">		- Key themes</span>
+<a id="__codelineno-0-9814" name="__codelineno-0-9814"></a><span class="s2">		- Major conclusions</span>
+<a id="__codelineno-0-9815" name="__codelineno-0-9815"></a><span class="s2">		- Important data points (if any)</span>
+<a id="__codelineno-0-9816" name="__codelineno-0-9816"></a><span class="s2">		- Policy implications (if applicable)</span>
+<a id="__codelineno-0-9817" name="__codelineno-0-9817"></a>
+<a id="__codelineno-0-9818" name="__codelineno-0-9818"></a><span class="s2">		Be precise and concise.</span>
+<a id="__codelineno-0-9819" name="__codelineno-0-9819"></a><span class="s2">		&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9820" name="__codelineno-0-9820"></a>	<span class="k">if</span> <span class="n">doc_instructions</span><span class="p">:</span>
+<a id="__codelineno-0-9821" name="__codelineno-0-9821"></a>		<span class="n">summary_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">doc_instructions</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">summary_prompt</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-9822" name="__codelineno-0-9822"></a>
+<a id="__codelineno-0-9823" name="__codelineno-0-9823"></a>	<span class="k">return</span> <span class="n">route_document_query</span><span class="p">(</span> <span class="n">summary_prompt</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span> <span class="p">)</span> <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -44513,7 +44511,8 @@ processing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-10587">10587</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-10586">10586</a></span>
+<span class="normal"><a href="#__codelineno-0-10587">10587</a></span>
 <span class="normal"><a href="#__codelineno-0-10588">10588</a></span>
 <span class="normal"><a href="#__codelineno-0-10589">10589</a></span>
 <span class="normal"><a href="#__codelineno-0-10590">10590</a></span>
@@ -44527,23 +44526,22 @@ processing.</p>
 <span class="normal"><a href="#__codelineno-0-10598">10598</a></span>
 <span class="normal"><a href="#__codelineno-0-10599">10599</a></span>
 <span class="normal"><a href="#__codelineno-0-10600">10600</a></span>
-<span class="normal"><a href="#__codelineno-0-10601">10601</a></span>
-<span class="normal"><a href="#__codelineno-0-10602">10602</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-10587" name="__codelineno-0-10587"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_stream_chunk</span><span class="p">(</span> <span class="n">chunk</span><span class="p">:</span> <span class="nb">str</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-10588" name="__codelineno-0-10588"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;On stream chunk.</span>
-<a id="__codelineno-0-10589" name="__codelineno-0-10589"></a>
-<a id="__codelineno-0-10590" name="__codelineno-0-10590"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-10591" name="__codelineno-0-10591"></a><span class="sd">	    Supports the on stream chunk application workflow by coordinating validated</span>
-<a id="__codelineno-0-10592" name="__codelineno-0-10592"></a><span class="sd">	    inputs, Streamlit session state, provider configuration, and local data</span>
-<a id="__codelineno-0-10593" name="__codelineno-0-10593"></a><span class="sd">	    processing.</span>
-<a id="__codelineno-0-10594" name="__codelineno-0-10594"></a>
-<a id="__codelineno-0-10595" name="__codelineno-0-10595"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-10596" name="__codelineno-0-10596"></a><span class="sd">	    chunk: Chunk value used by the application workflow.</span>
-<a id="__codelineno-0-10597" name="__codelineno-0-10597"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-10598" name="__codelineno-0-10598"></a>	<span class="k">if</span> <span class="n">chunk</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-10599" name="__codelineno-0-10599"></a>		<span class="k">return</span>
-<a id="__codelineno-0-10600" name="__codelineno-0-10600"></a>
-<a id="__codelineno-0-10601" name="__codelineno-0-10601"></a>	<span class="n">stream_buffer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">str</span><span class="p">(</span> <span class="n">chunk</span> <span class="p">)</span> <span class="p">)</span>
-<a id="__codelineno-0-10602" name="__codelineno-0-10602"></a>	<span class="n">stream_placeholder</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">stream_buffer</span> <span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;▌&#39;</span> <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-10601">10601</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-10586" name="__codelineno-0-10586"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_stream_chunk</span><span class="p">(</span> <span class="n">chunk</span><span class="p">:</span> <span class="nb">str</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-10587" name="__codelineno-0-10587"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;On stream chunk.</span>
+<a id="__codelineno-0-10588" name="__codelineno-0-10588"></a>
+<a id="__codelineno-0-10589" name="__codelineno-0-10589"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-10590" name="__codelineno-0-10590"></a><span class="sd">	    Supports the on stream chunk application workflow by coordinating validated</span>
+<a id="__codelineno-0-10591" name="__codelineno-0-10591"></a><span class="sd">	    inputs, Streamlit session state, provider configuration, and local data</span>
+<a id="__codelineno-0-10592" name="__codelineno-0-10592"></a><span class="sd">	    processing.</span>
+<a id="__codelineno-0-10593" name="__codelineno-0-10593"></a>
+<a id="__codelineno-0-10594" name="__codelineno-0-10594"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-10595" name="__codelineno-0-10595"></a><span class="sd">	    chunk: Chunk value used by the application workflow.</span>
+<a id="__codelineno-0-10596" name="__codelineno-0-10596"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-10597" name="__codelineno-0-10597"></a>	<span class="k">if</span> <span class="n">chunk</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-10598" name="__codelineno-0-10598"></a>		<span class="k">return</span>
+<a id="__codelineno-0-10599" name="__codelineno-0-10599"></a>
+<a id="__codelineno-0-10600" name="__codelineno-0-10600"></a>	<span class="n">stream_buffer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">str</span><span class="p">(</span> <span class="n">chunk</span> <span class="p">)</span> <span class="p">)</span>
+<a id="__codelineno-0-10601" name="__codelineno-0-10601"></a>	<span class="n">stream_placeholder</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">stream_buffer</span> <span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;▌&#39;</span> <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -44597,7 +44595,8 @@ value used by downstream UI, provider, database, or document-processing steps.</
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-14172">14172</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-14171">14171</a></span>
+<span class="normal"><a href="#__codelineno-0-14172">14172</a></span>
 <span class="normal"><a href="#__codelineno-0-14173">14173</a></span>
 <span class="normal"><a href="#__codelineno-0-14174">14174</a></span>
 <span class="normal"><a href="#__codelineno-0-14175">14175</a></span>
@@ -44606,18 +44605,17 @@ value used by downstream UI, provider, database, or document-processing steps.</
 <span class="normal"><a href="#__codelineno-0-14178">14178</a></span>
 <span class="normal"><a href="#__codelineno-0-14179">14179</a></span>
 <span class="normal"><a href="#__codelineno-0-14180">14180</a></span>
-<span class="normal"><a href="#__codelineno-0-14181">14181</a></span>
-<span class="normal"><a href="#__codelineno-0-14182">14182</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14172" name="__codelineno-0-14172"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_conn</span><span class="p">(</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Connection</span><span class="p">:</span>
-<a id="__codelineno-0-14173" name="__codelineno-0-14173"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Get conn.</span>
-<a id="__codelineno-0-14174" name="__codelineno-0-14174"></a>
-<a id="__codelineno-0-14175" name="__codelineno-0-14175"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-14176" name="__codelineno-0-14176"></a><span class="sd">	    Retrieves get conn for the Streamlit application workflow and returns the normalized</span>
-<a id="__codelineno-0-14177" name="__codelineno-0-14177"></a><span class="sd">	    value used by downstream UI, provider, database, or document-processing steps.</span>
-<a id="__codelineno-0-14178" name="__codelineno-0-14178"></a>
-<a id="__codelineno-0-14179" name="__codelineno-0-14179"></a><span class="sd">	Returns:</span>
-<a id="__codelineno-0-14180" name="__codelineno-0-14180"></a><span class="sd">	    sqlite3.Connection: SQLite connection used by the local data-management workflow.</span>
-<a id="__codelineno-0-14181" name="__codelineno-0-14181"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-14182" name="__codelineno-0-14182"></a>	<span class="k">return</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span> <span class="n">cfg</span><span class="o">.</span><span class="n">DB_PATH</span> <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-14181">14181</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14171" name="__codelineno-0-14171"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_conn</span><span class="p">(</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Connection</span><span class="p">:</span>
+<a id="__codelineno-0-14172" name="__codelineno-0-14172"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Get conn.</span>
+<a id="__codelineno-0-14173" name="__codelineno-0-14173"></a>
+<a id="__codelineno-0-14174" name="__codelineno-0-14174"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-14175" name="__codelineno-0-14175"></a><span class="sd">	    Retrieves get conn for the Streamlit application workflow and returns the normalized</span>
+<a id="__codelineno-0-14176" name="__codelineno-0-14176"></a><span class="sd">	    value used by downstream UI, provider, database, or document-processing steps.</span>
+<a id="__codelineno-0-14177" name="__codelineno-0-14177"></a>
+<a id="__codelineno-0-14178" name="__codelineno-0-14178"></a><span class="sd">	Returns:</span>
+<a id="__codelineno-0-14179" name="__codelineno-0-14179"></a><span class="sd">	    sqlite3.Connection: SQLite connection used by the local data-management workflow.</span>
+<a id="__codelineno-0-14180" name="__codelineno-0-14180"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-14181" name="__codelineno-0-14181"></a>	<span class="k">return</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span> <span class="n">cfg</span><span class="o">.</span><span class="n">DB_PATH</span> <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -44648,7 +44646,8 @@ restoring the session values used by the active Streamlit workflow.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-14184">14184</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-14183">14183</a></span>
+<span class="normal"><a href="#__codelineno-0-14184">14184</a></span>
 <span class="normal"><a href="#__codelineno-0-14185">14185</a></span>
 <span class="normal"><a href="#__codelineno-0-14186">14186</a></span>
 <span class="normal"><a href="#__codelineno-0-14187">14187</a></span>
@@ -44659,20 +44658,19 @@ restoring the session values used by the active Streamlit workflow.</p>
 <span class="normal"><a href="#__codelineno-0-14192">14192</a></span>
 <span class="normal"><a href="#__codelineno-0-14193">14193</a></span>
 <span class="normal"><a href="#__codelineno-0-14194">14194</a></span>
-<span class="normal"><a href="#__codelineno-0-14195">14195</a></span>
-<span class="normal"><a href="#__codelineno-0-14196">14196</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14184" name="__codelineno-0-14184"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset_selection</span><span class="p">(</span> <span class="p">):</span>
-<a id="__codelineno-0-14185" name="__codelineno-0-14185"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Reset selection.</span>
-<a id="__codelineno-0-14186" name="__codelineno-0-14186"></a>
-<a id="__codelineno-0-14187" name="__codelineno-0-14187"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-14188" name="__codelineno-0-14188"></a><span class="sd">	    Maintains application runtime state for reset selection by initializing, clearing, or</span>
-<a id="__codelineno-0-14189" name="__codelineno-0-14189"></a><span class="sd">	    restoring the session values used by the active Streamlit workflow.</span>
-<a id="__codelineno-0-14190" name="__codelineno-0-14190"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-14191" name="__codelineno-0-14191"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_selected_id</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-14192" name="__codelineno-0-14192"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_caption</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-<a id="__codelineno-0-14193" name="__codelineno-0-14193"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-<a id="__codelineno-0-14194" name="__codelineno-0-14194"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_text</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-<a id="__codelineno-0-14195" name="__codelineno-0-14195"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_version</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-<a id="__codelineno-0-14196" name="__codelineno-0-14196"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_id</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="normal"><a href="#__codelineno-0-14195">14195</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14183" name="__codelineno-0-14183"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset_selection</span><span class="p">(</span> <span class="p">):</span>
+<a id="__codelineno-0-14184" name="__codelineno-0-14184"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Reset selection.</span>
+<a id="__codelineno-0-14185" name="__codelineno-0-14185"></a>
+<a id="__codelineno-0-14186" name="__codelineno-0-14186"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-14187" name="__codelineno-0-14187"></a><span class="sd">	    Maintains application runtime state for reset selection by initializing, clearing, or</span>
+<a id="__codelineno-0-14188" name="__codelineno-0-14188"></a><span class="sd">	    restoring the session values used by the active Streamlit workflow.</span>
+<a id="__codelineno-0-14189" name="__codelineno-0-14189"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-14190" name="__codelineno-0-14190"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_selected_id</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-14191" name="__codelineno-0-14191"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_caption</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<a id="__codelineno-0-14192" name="__codelineno-0-14192"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<a id="__codelineno-0-14193" name="__codelineno-0-14193"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_text</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<a id="__codelineno-0-14194" name="__codelineno-0-14194"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_version</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<a id="__codelineno-0-14195" name="__codelineno-0-14195"></a>	<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_id</span> <span class="o">=</span> <span class="mi">0</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -44735,7 +44733,8 @@ steps.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>app.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-14198">14198</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-14197">14197</a></span>
+<span class="normal"><a href="#__codelineno-0-14198">14198</a></span>
 <span class="normal"><a href="#__codelineno-0-14199">14199</a></span>
 <span class="normal"><a href="#__codelineno-0-14200">14200</a></span>
 <span class="normal"><a href="#__codelineno-0-14201">14201</a></span>
@@ -44755,29 +44754,28 @@ steps.</p>
 <span class="normal"><a href="#__codelineno-0-14215">14215</a></span>
 <span class="normal"><a href="#__codelineno-0-14216">14216</a></span>
 <span class="normal"><a href="#__codelineno-0-14217">14217</a></span>
-<span class="normal"><a href="#__codelineno-0-14218">14218</a></span>
-<span class="normal"><a href="#__codelineno-0-14219">14219</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14198" name="__codelineno-0-14198"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_prompt</span><span class="p">(</span> <span class="n">pid</span><span class="p">:</span> <span class="nb">int</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-14199" name="__codelineno-0-14199"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Load prompt.</span>
-<a id="__codelineno-0-14200" name="__codelineno-0-14200"></a>
-<a id="__codelineno-0-14201" name="__codelineno-0-14201"></a><span class="sd">	Purpose:</span>
-<a id="__codelineno-0-14202" name="__codelineno-0-14202"></a><span class="sd">	    Retrieves load prompt for the Streamlit application workflow and returns the</span>
-<a id="__codelineno-0-14203" name="__codelineno-0-14203"></a><span class="sd">	    normalized value used by downstream UI, provider, database, or document-processing</span>
-<a id="__codelineno-0-14204" name="__codelineno-0-14204"></a><span class="sd">	    steps.</span>
-<a id="__codelineno-0-14205" name="__codelineno-0-14205"></a>
-<a id="__codelineno-0-14206" name="__codelineno-0-14206"></a><span class="sd">	Args:</span>
-<a id="__codelineno-0-14207" name="__codelineno-0-14207"></a><span class="sd">	    pid: Pid value used by the application workflow.</span>
-<a id="__codelineno-0-14208" name="__codelineno-0-14208"></a><span class="sd">	&quot;&quot;&quot;</span>
-<a id="__codelineno-0-14209" name="__codelineno-0-14209"></a>	<span class="k">with</span> <span class="n">get_conn</span><span class="p">(</span> <span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-<a id="__codelineno-0-14210" name="__codelineno-0-14210"></a>		<span class="n">_select</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT Caption, Name, Text, Version, ID FROM </span><span class="si">{</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> WHERE PromptsId=?&quot;</span>
-<a id="__codelineno-0-14211" name="__codelineno-0-14211"></a>		<span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span> <span class="n">_select</span><span class="p">,</span> <span class="p">(</span><span class="n">pid</span><span class="p">,),</span> <span class="p">)</span>
-<a id="__codelineno-0-14212" name="__codelineno-0-14212"></a>		<span class="n">row</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">(</span> <span class="p">)</span>
-<a id="__codelineno-0-14213" name="__codelineno-0-14213"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">:</span>
-<a id="__codelineno-0-14214" name="__codelineno-0-14214"></a>			<span class="k">return</span>
-<a id="__codelineno-0-14215" name="__codelineno-0-14215"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_caption</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span>
-<a id="__codelineno-0-14216" name="__codelineno-0-14216"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span>
-<a id="__codelineno-0-14217" name="__codelineno-0-14217"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_text</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">2</span> <span class="p">]</span>
-<a id="__codelineno-0-14218" name="__codelineno-0-14218"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_version</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">3</span> <span class="p">]</span>
-<a id="__codelineno-0-14219" name="__codelineno-0-14219"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_id</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">4</span> <span class="p">]</span>
+<span class="normal"><a href="#__codelineno-0-14218">14218</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14197" name="__codelineno-0-14197"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_prompt</span><span class="p">(</span> <span class="n">pid</span><span class="p">:</span> <span class="nb">int</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-14198" name="__codelineno-0-14198"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot;Load prompt.</span>
+<a id="__codelineno-0-14199" name="__codelineno-0-14199"></a>
+<a id="__codelineno-0-14200" name="__codelineno-0-14200"></a><span class="sd">	Purpose:</span>
+<a id="__codelineno-0-14201" name="__codelineno-0-14201"></a><span class="sd">	    Retrieves load prompt for the Streamlit application workflow and returns the</span>
+<a id="__codelineno-0-14202" name="__codelineno-0-14202"></a><span class="sd">	    normalized value used by downstream UI, provider, database, or document-processing</span>
+<a id="__codelineno-0-14203" name="__codelineno-0-14203"></a><span class="sd">	    steps.</span>
+<a id="__codelineno-0-14204" name="__codelineno-0-14204"></a>
+<a id="__codelineno-0-14205" name="__codelineno-0-14205"></a><span class="sd">	Args:</span>
+<a id="__codelineno-0-14206" name="__codelineno-0-14206"></a><span class="sd">	    pid: Pid value used by the application workflow.</span>
+<a id="__codelineno-0-14207" name="__codelineno-0-14207"></a><span class="sd">	&quot;&quot;&quot;</span>
+<a id="__codelineno-0-14208" name="__codelineno-0-14208"></a>	<span class="k">with</span> <span class="n">get_conn</span><span class="p">(</span> <span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+<a id="__codelineno-0-14209" name="__codelineno-0-14209"></a>		<span class="n">_select</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT Caption, Name, Text, Version, ID FROM </span><span class="si">{</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> WHERE PromptsId=?&quot;</span>
+<a id="__codelineno-0-14210" name="__codelineno-0-14210"></a>		<span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span> <span class="n">_select</span><span class="p">,</span> <span class="p">(</span><span class="n">pid</span><span class="p">,),</span> <span class="p">)</span>
+<a id="__codelineno-0-14211" name="__codelineno-0-14211"></a>		<span class="n">row</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">(</span> <span class="p">)</span>
+<a id="__codelineno-0-14212" name="__codelineno-0-14212"></a>		<span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">:</span>
+<a id="__codelineno-0-14213" name="__codelineno-0-14213"></a>			<span class="k">return</span>
+<a id="__codelineno-0-14214" name="__codelineno-0-14214"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_caption</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span>
+<a id="__codelineno-0-14215" name="__codelineno-0-14215"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span>
+<a id="__codelineno-0-14216" name="__codelineno-0-14216"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_text</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">2</span> <span class="p">]</span>
+<a id="__codelineno-0-14217" name="__codelineno-0-14217"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_version</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">3</span> <span class="p">]</span>
+<a id="__codelineno-0-14218" name="__codelineno-0-14218"></a>		<span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">pe_id</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span> <span class="mi">4</span> <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
