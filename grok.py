@@ -48,7 +48,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
 from google.genai.types import ListFilesResponse
 import config as cfg
-from boogr import Error, Logger
+from boogr import ErrorDialog, Error, Logger
 import config as cfg
 from openai import OpenAI
 from xai_sdk.aio.image import ImageResponse
@@ -90,8 +90,7 @@ class Grok( ):
 	"""Grok workflow wrapper.
 	
 	Purpose:
-	    Provides shared xAI configuration state, API-key storage, request defaults, and common
-	    runtime containers used by Grok provider workflows.
+	    Provides shared xAI configuration state, API-key storage, request defaults, and common runtime containers used by Grok provider workflows.
 	
 	Attributes:
 	    api_key: Runtime attribute used by the Grok workflow.
@@ -138,8 +137,7 @@ class Grok( ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Grok state with default configuration values and runtime attributes used
-		    by later xAI provider calls.
+		    Initializes Grok state with default configuration values and runtime attributes used by later xAI provider calls.
 		"""
 		self.api_key = cfg.XAI_API_KEY
 		self.base_url = cfg.XAI_BASE_URL
@@ -165,8 +163,7 @@ class Chat( Grok ):
 	"""Chat workflow wrapper.
 	
 	Purpose:
-	    Builds and executes xAI text, retrieval-augmented, collection-search, web-search,
-	    X-search, code-execution, and tool-enabled chat workflows.
+	    Builds and executes xAI text, retrieval-augmented, collection-search, web-search, X-search, code-execution, and tool-enabled chat workflows.
 	
 	Attributes:
 	    include: Runtime attribute used by the Chat workflow.
@@ -212,8 +209,7 @@ class Chat( Grok ):
 	file_path: Optional[ str ]
 	
 	def __init__( self, model: str = 'grok-4.20', prompt: str = None, temperature: float = None,
-			top_p: float = None, presense: float = None, presence: float = None, store: bool =
-			None,
+			top_p: float = None, presense: float = None, presence: float = None, store: bool = None,
 			stream: bool = None, stops: List[ str ] = None,
 			response_format: Dict[ str, Any ] = None,
 			number: int = None, instruct: str = None, context: List[ Dict[ str, str ] ] = None,
@@ -229,8 +225,7 @@ class Chat( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Chat state with default configuration values and runtime attributes used
-		    by later xAI provider calls.
+		    Initializes Chat state with default configuration values and runtime attributes used by later xAI provider calls.
 		
 		Args:
 		    model (str): Model supplied to the xAI workflow.
@@ -324,8 +319,7 @@ class Chat( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -350,8 +344,7 @@ class Chat( Grok ):
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -372,8 +365,7 @@ class Chat( Grok ):
 		"""Tool options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -390,8 +382,7 @@ class Chat( Grok ):
 		"""Choice options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -403,8 +394,7 @@ class Chat( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -420,8 +410,7 @@ class Chat( Grok ):
 		"""Reasoning options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -439,8 +428,7 @@ class Chat( Grok ):
 		"""Modality options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -452,8 +440,7 @@ class Chat( Grok ):
 		"""Media options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -465,8 +452,7 @@ class Chat( Grok ):
 		"""Build reasoning.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    reasoning (str | Dict[str, str]): Reasoning supplied to the xAI workflow.
@@ -513,8 +499,7 @@ class Chat( Grok ):
 		"""Build input.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -583,8 +568,7 @@ class Chat( Grok ):
 		"""Build tools.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    tools (List[Any]): Tools supplied to the xAI workflow.
@@ -654,8 +638,7 @@ class Chat( Grok ):
 		"""Build tool choice.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    tool_choice (str): Tool choice supplied to the xAI workflow.
@@ -695,8 +678,7 @@ class Chat( Grok ):
 		"""Build include.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    include (List[str]): Include supplied to the xAI workflow.
@@ -762,8 +744,7 @@ class Chat( Grok ):
 		"""Build text format.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    format (Dict[str, Any] | str): Format supplied to the xAI workflow.
@@ -821,8 +802,7 @@ class Chat( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -871,8 +851,7 @@ class Chat( Grok ):
 			self.stream = stream
 			self.background = background
 			self.instructions = instruct
-			self.response_format = self.build_text_format( format,
-				response_schema=response_schema )
+			self.response_format = self.build_text_format( format, response_schema=response_schema )
 			self.max_tools = max_tools
 			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
 			self.previous_id = previous_id if isinstance( previous_id, str ) else None
@@ -914,8 +893,7 @@ class Chat( Grok ):
 			if self.store_messages is not None:
 				self.request[ 'store' ] = self.store_messages
 			
-			# Stream and background are retained on self for layout/UI parity. This path returns
-			# final text.
+			# Stream and background are retained on self for layout/UI parity. This path returns final text.
 			if self.include is not None and len( self.include ) > 0:
 				self.request[ 'include' ] = self.include
 			
@@ -953,8 +931,7 @@ class Chat( Grok ):
 		"""Get output text.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Returns:
 		    str | None: Result produced by the xAI workflow.
@@ -1002,8 +979,7 @@ class Chat( Grok ):
 		"""Get usage.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -1041,8 +1017,7 @@ class Chat( Grok ):
 		"""Generate text.
 		
 		Purpose:
-		    Executes an xAI generation workflow using validated request settings, captures the
-		    provider response, and returns displayable output.
+		    Executes an xAI generation workflow using validated request settings, captures the provider response, and returns displayable output.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -1128,8 +1103,7 @@ class Chat( Grok ):
 		"""Get grounding sources.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Returns:
 		    List[Dict[str, Any]]: Result produced by the xAI workflow.
@@ -1193,8 +1167,7 @@ class Chat( Grok ):
 		"""Answer document.
 		
 		Purpose:
-		    Provides answer document behavior for the Chat workflow while preserving provider
-		    request and response state.
+		    Provides answer document behavior for the Chat workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -1286,8 +1259,7 @@ class Chat( Grok ):
 			exception = Error( e )
 			exception.module = 'grok'
 			exception.cause = 'Chat'
-			exception.method = ('answer_document( self, prompt: str, document_text: str, model: str '
-			                    ') -> str | None')
+			exception.method = 'answer_document( self, prompt: str, document_text: str, model: str ) -> str | None'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -1295,8 +1267,7 @@ class Chat( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Chat workflow while preserving provider request and
-		    response state.
+		    Provides dir behavior for the Chat workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -1363,8 +1334,7 @@ class TTS( Grok ):
 	"""TTS workflow wrapper.
 	
 	Purpose:
-	    Builds text-to-speech request state for audio generation workflows exposed by the
-	    application.
+	    Builds text-to-speech request state for audio generation workflows exposed by the application.
 	
 	Attributes:
 	    client: Runtime attribute used by the TTS workflow.
@@ -1399,8 +1369,7 @@ class TTS( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes TTS state with default configuration values and runtime attributes used by
-		    later xAI provider calls.
+		    Initializes TTS state with default configuration values and runtime attributes used by later xAI provider calls.
 		
 		Args:
 		    model (str): Model supplied to the xAI workflow.
@@ -1442,8 +1411,7 @@ class TTS( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -1457,8 +1425,7 @@ class TTS( Grok ):
 		"""Voice options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -1476,8 +1443,7 @@ class TTS( Grok ):
 		"""Language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -1511,8 +1477,7 @@ class TTS( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -1530,8 +1495,7 @@ class TTS( Grok ):
 		"""Response format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -1543,8 +1507,7 @@ class TTS( Grok ):
 		"""Output format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -1556,8 +1519,7 @@ class TTS( Grok ):
 		"""Speed options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[float] | None: Result produced by the xAI workflow.
@@ -1579,8 +1541,7 @@ class TTS( Grok ):
 		"""Sample rate options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[int] | None: Result produced by the xAI workflow.
@@ -1599,8 +1560,7 @@ class TTS( Grok ):
 		"""Bit rate options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
 		
 		Returns:
 		    List[int] | None: Result produced by the xAI workflow.
@@ -1617,8 +1577,7 @@ class TTS( Grok ):
 		"""Validate voice.
 		
 		Purpose:
-		    Provides validate voice behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides validate voice behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    voice (str): Voice supplied to the xAI workflow.
@@ -1643,8 +1602,7 @@ class TTS( Grok ):
 		"""Validate language.
 		
 		Purpose:
-		    Provides validate language behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides validate language behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    language (str): Language supplied to the xAI workflow.
@@ -1671,8 +1629,7 @@ class TTS( Grok ):
 		"""Validate format.
 		
 		Purpose:
-		    Provides validate format behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides validate format behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    format (str): Format supplied to the xAI workflow.
@@ -1704,8 +1661,7 @@ class TTS( Grok ):
 		"""Validate sample rate.
 		
 		Purpose:
-		    Provides validate sample rate behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides validate sample rate behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    sample_rate (int): Sample rate supplied to the xAI workflow.
@@ -1733,8 +1689,7 @@ class TTS( Grok ):
 		"""Validate bit rate.
 		
 		Purpose:
-		    Provides validate bit rate behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides validate bit rate behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    bit_rate (int): Bit rate supplied to the xAI workflow.
@@ -1762,8 +1717,7 @@ class TTS( Grok ):
 		"""Validate speed.
 		
 		Purpose:
-		    Provides validate speed behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides validate speed behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    speed (float): Speed supplied to the xAI workflow.
@@ -1792,8 +1746,7 @@ class TTS( Grok ):
 		"""Build output format.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any] | None: Result produced by the xAI workflow.
@@ -1820,8 +1773,7 @@ class TTS( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -1858,8 +1810,7 @@ class TTS( Grok ):
 		"""Execute request.
 		
 		Purpose:
-		    Provides execute request behavior for the TTS workflow while preserving provider
-		    request and response state.
+		    Provides execute request behavior for the TTS workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -1886,11 +1837,10 @@ class TTS( Grok ):
 		"""Extract audio.
 		
 		Purpose:
-		    Provides extract audio behavior for the TTS workflow while preserving provider request
-		    and response state.
+		    Provides extract audio behavior for the TTS workflow while preserving provider request and response state.
 		
 		Returns:
-		    bytes | None: Result produced by the xAI workflow.
+		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
 		"""
 		try:
 			if self.response is None:
@@ -1920,8 +1870,7 @@ class TTS( Grok ):
 		"""Create speech.
 		
 		Purpose:
-		    Creates the requested xAI resource using validated names, paths, or configuration
-		    values.
+		    Creates the requested xAI resource using validated names, paths, or configuration values.
 		
 		Args:
 		    text (str): Text supplied to the xAI workflow.
@@ -1934,13 +1883,12 @@ class TTS( Grok ):
 		    language (str): Language supplied to the xAI workflow.
 		    sample_rate (int): Sample rate supplied to the xAI workflow.
 		    bit_rate (int): Bit rate supplied to the xAI workflow.
-		    optimize_streaming_latency (int): Optimize streaming latency supplied to the xAI
-		    workflow.
+		    optimize_streaming_latency (int): Optimize streaming latency supplied to the xAI workflow.
 		    text_normalization (bool): Text normalization supplied to the xAI workflow.
 		    **kwargs: Additional keyword values supplied to the xAI workflow.
 		
 		Returns:
-		    bytes | None: Result produced by the xAI workflow.
+		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
 		"""
 		try:
 			throw_if( 'text', text )
@@ -1975,8 +1923,7 @@ class TTS( Grok ):
 		"""Synthesize.
 		
 		Purpose:
-		    Provides synthesize behavior for the TTS workflow while preserving provider request
-		    and response state.
+		    Provides synthesize behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    text (str): Text supplied to the xAI workflow.
@@ -1990,7 +1937,7 @@ class TTS( Grok ):
 		    **kwargs: Additional keyword values supplied to the xAI workflow.
 		
 		Returns:
-		    bytes | None: Result produced by the xAI workflow.
+		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
 		"""
 		try:
 			return self.create_speech( text=text, model=model, format=format, speed=speed,
@@ -2009,8 +1956,7 @@ class TTS( Grok ):
 		"""Generate.
 		
 		Purpose:
-		    Provides generate behavior for the TTS workflow while preserving provider request and
-		    response state.
+		    Provides generate behavior for the TTS workflow while preserving provider request and response state.
 		
 		Args:
 		    text (str): Text supplied to the xAI workflow.
@@ -2025,7 +1971,7 @@ class TTS( Grok ):
 		    **kwargs: Additional keyword values supplied to the xAI workflow.
 		
 		Returns:
-		    bytes | None: Result produced by the xAI workflow.
+		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
 		"""
 		try:
 			input_text = text or prompt
@@ -2044,8 +1990,7 @@ class TTS( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the TTS workflow while preserving provider request and
-		    response state.
+		    Provides dir behavior for the TTS workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -2141,8 +2086,7 @@ class Transcription( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Transcription state with default configuration values and runtime
-		    attributes used by later xAI provider calls.
+		    Initializes Transcription state with default configuration values and runtime attributes used by later xAI provider calls.
 		
 		Args:
 		    number (int): Number supplied to the xAI workflow.
@@ -2190,8 +2134,7 @@ class Transcription( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2213,8 +2156,7 @@ class Transcription( Grok ):
 		"""Language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2243,8 +2185,7 @@ class Transcription( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2265,8 +2206,7 @@ class Transcription( Grok ):
 		"""Response format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2281,8 +2221,7 @@ class Transcription( Grok ):
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2293,8 +2232,7 @@ class Transcription( Grok ):
 		"""Build prompt.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2320,8 +2258,7 @@ class Transcription( Grok ):
 		"""Build messages.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    List[Any]: Result produced by the xAI workflow.
@@ -2345,8 +2282,7 @@ class Transcription( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -2371,8 +2307,7 @@ class Transcription( Grok ):
 		"""Execute request.
 		
 		Purpose:
-		    Provides execute request behavior for the Transcription workflow while preserving
-		    provider request and response state.
+		    Provides execute request behavior for the Transcription workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -2397,8 +2332,7 @@ class Transcription( Grok ):
 		"""Extract transcript.
 		
 		Purpose:
-		    Provides extract transcript behavior for the Transcription workflow while preserving
-		    provider request and response state.
+		    Provides extract transcript behavior for the Transcription workflow while preserving provider request and response state.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2476,8 +2410,7 @@ class Transcription( Grok ):
 			self.top_percent = top_p if top_p is not None else self.top_percent
 			self.frequency_penalty = frequency if frequency is not None else self.frequency_penalty
 			self.presence_penalty = presence if presence is not None else self.presence_penalty
-			self.max_output_tokens = max_tokens if max_tokens is not None else (
-					self.max_output_tokens)
+			self.max_output_tokens = max_tokens if max_tokens is not None else self.max_output_tokens
 			self.max_completion_tokens = self.max_output_tokens
 			self.store = store if store is not None else self.store
 			self.stream = stream if stream is not None else self.stream
@@ -2502,8 +2435,7 @@ class Transcription( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Transcription workflow while preserving provider request
-		    and response state.
+		    Provides dir behavior for the Transcription workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -2552,8 +2484,7 @@ class Translation( Grok ):
 	"""Translation workflow wrapper.
 	
 	Purpose:
-	    Builds translation request state from source content, language values, and provider model
-	    settings.
+	    Builds translation request state from source content, language values, and provider model settings.
 	
 	Attributes:
 	    client: Runtime attribute used by the Translation workflow.
@@ -2587,8 +2518,7 @@ class Translation( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Translation state with default configuration values and runtime attributes
-		    used by later xAI provider calls.
+		    Initializes Translation state with default configuration values and runtime attributes used by later xAI provider calls.
 		
 		Args:
 		    model (str): Model supplied to the xAI workflow.
@@ -2635,8 +2565,7 @@ class Translation( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2658,8 +2587,7 @@ class Translation( Grok ):
 		"""Language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2682,8 +2610,7 @@ class Translation( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2704,8 +2631,7 @@ class Translation( Grok ):
 		"""Response format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2720,8 +2646,7 @@ class Translation( Grok ):
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2732,8 +2657,7 @@ class Translation( Grok ):
 		"""Build prompt.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2750,14 +2674,12 @@ class Translation( Grok ):
 				return (
 						f'{base_prompt} Source language hint: {self.source_language}. '
 						f'Translate the speech into {self.target_language}. '
-						'Return only the translated text unless additional instructions require '
-						'otherwise.'
+						'Return only the translated text unless additional instructions require otherwise.'
 				)
 			
 			return (
 					f'{base_prompt} Translate the speech into {self.target_language}. '
-					'Return only the translated text unless additional instructions require '
-					'otherwise.'
+					'Return only the translated text unless additional instructions require otherwise.'
 			)
 		except Exception as e:
 			ex = Error( e )
@@ -2770,8 +2692,7 @@ class Translation( Grok ):
 		"""Build messages.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    List[Any]: Result produced by the xAI workflow.
@@ -2795,8 +2716,7 @@ class Translation( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -2822,8 +2742,7 @@ class Translation( Grok ):
 		"""Execute request.
 		
 		Purpose:
-		    Provides execute request behavior for the Translation workflow while preserving
-		    provider request and response state.
+		    Provides execute request behavior for the Translation workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -2848,8 +2767,7 @@ class Translation( Grok ):
 		"""Extract translation.
 		
 		Purpose:
-		    Provides extract translation behavior for the Translation workflow while preserving
-		    provider request and response state.
+		    Provides extract translation behavior for the Translation workflow while preserving provider request and response state.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2928,8 +2846,7 @@ class Translation( Grok ):
 			self.top_percent = top_p if top_p is not None else self.top_percent
 			self.frequency_penalty = frequency if frequency is not None else self.frequency_penalty
 			self.presence_penalty = presence if presence is not None else self.presence_penalty
-			self.max_output_tokens = max_tokens if max_tokens is not None else (
-					self.max_output_tokens)
+			self.max_output_tokens = max_tokens if max_tokens is not None else self.max_output_tokens
 			self.max_completion_tokens = self.max_output_tokens
 			self.store = store if store is not None else self.store
 			self.stream = stream if stream is not None else self.stream
@@ -2952,8 +2869,7 @@ class Translation( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Translation workflow while preserving provider request
-		    and response state.
+		    Provides dir behavior for the Translation workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -3003,8 +2919,7 @@ class Images( Grok ):
 	"""Images workflow wrapper.
 	
 	Purpose:
-	    Builds and executes xAI image-generation and image-analysis workflows while preserving
-	    prompt, model, and response state.
+	    Builds and executes xAI image-generation and image-analysis workflows while preserving prompt, model, and response state.
 	
 	Attributes:
 	    model: Runtime attribute used by the Images workflow.
@@ -3037,8 +2952,7 @@ class Images( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Images state with default configuration values and runtime attributes used
-		    by later xAI provider calls.
+		    Initializes Images state with default configuration values and runtime attributes used by later xAI provider calls.
 		"""
 		super( ).__init__( )
 		self.api_key = os.getenv( 'XAI_API_KEY' ) or cfg.XAI_API_KEY
@@ -3086,8 +3000,7 @@ class Images( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3099,8 +3012,7 @@ class Images( Grok ):
 		"""Analysis model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3119,8 +3031,7 @@ class Images( Grok ):
 		"""Tool options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -3132,8 +3043,7 @@ class Images( Grok ):
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -3145,8 +3055,7 @@ class Images( Grok ):
 		"""Choice options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -3158,8 +3067,7 @@ class Images( Grok ):
 		"""Aspect options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3186,8 +3094,7 @@ class Images( Grok ):
 		"""Size options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3199,8 +3106,7 @@ class Images( Grok ):
 		"""Quality options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3212,8 +3118,7 @@ class Images( Grok ):
 		"""Style options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3225,8 +3130,7 @@ class Images( Grok ):
 		"""Backcolor options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3238,8 +3142,7 @@ class Images( Grok ):
 		"""Detail options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3251,8 +3154,7 @@ class Images( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3264,8 +3166,7 @@ class Images( Grok ):
 		"""Mime options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3277,8 +3178,7 @@ class Images( Grok ):
 		"""Output options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -3289,8 +3189,7 @@ class Images( Grok ):
 		"""Initialize client.
 		
 		Purpose:
-		    Provides initialize client behavior for the Images workflow while preserving provider
-		    request and response state.
+		    Provides initialize client behavior for the Images workflow while preserving provider request and response state.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -3307,8 +3206,7 @@ class Images( Grok ):
 		"""Normalize resolution.
 		
 		Purpose:
-		    Provides normalize resolution behavior for the Images workflow while preserving
-		    provider request and response state.
+		    Provides normalize resolution behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    value (str): Value supplied to the xAI workflow.
@@ -3336,8 +3234,7 @@ class Images( Grok ):
 		"""Normalize response format.
 		
 		Purpose:
-		    Provides normalize response format behavior for the Images workflow while preserving
-		    provider request and response state.
+		    Provides normalize response format behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    value (str): Value supplied to the xAI workflow.
@@ -3368,8 +3265,7 @@ class Images( Grok ):
 		"""Encode image data uri.
 		
 		Purpose:
-		    Encodes local binary content into a text representation required by xAI request
-		    payloads.
+		    Encodes local binary content into a text representation required by xAI request payloads.
 		
 		Args:
 		    image_path (str): Image path supplied to the xAI workflow.
@@ -3405,8 +3301,7 @@ class Images( Grok ):
 		"""Get output text.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Returns:
 		    str | None: Result produced by the xAI workflow.
@@ -3450,8 +3345,7 @@ class Images( Grok ):
 		"""Normalize image result.
 		
 		Purpose:
-		    Provides normalize image result behavior for the Images workflow while preserving
-		    provider request and response state.
+		    Provides normalize image result behavior for the Images workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -3504,8 +3398,7 @@ class Images( Grok ):
 		"""Build generation request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -3546,8 +3439,7 @@ class Images( Grok ):
 		"""Build edit request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -3586,8 +3478,7 @@ class Images( Grok ):
 		"""Build analysis request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -3642,8 +3533,7 @@ class Images( Grok ):
 			size: str = None, quality: str = None, style: str = None, fmt: str = None,
 			mime_type: str = None, compression: float = None, background: str = None,
 			aspect_ratio: str = None, response_modalities: str = None, temperature: float = None,
-			top_p: float = None, top_k: int = None, frequency: float = None, presence: float =
-			None,
+			top_p: float = None, top_k: int = None, frequency: float = None, presence: float = None,
 			max_tokens: int = None, instruct: str = None, tools: List[ Any ] = None,
 			tool_choice: str = None, include: List[ str ] = None,
 			allowed_domains: List[ str ] = None,
@@ -3654,8 +3544,7 @@ class Images( Grok ):
 		"""Generate.
 		
 		Purpose:
-		    Provides generate behavior for the Images workflow while preserving provider request
-		    and response state.
+		    Provides generate behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -3750,8 +3639,7 @@ class Images( Grok ):
 		"""Generate image.
 		
 		Purpose:
-		    Executes an xAI generation workflow using validated request settings, captures the
-		    provider response, and returns displayable output.
+		    Executes an xAI generation workflow using validated request settings, captures the provider response, and returns displayable output.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -3789,8 +3677,7 @@ class Images( Grok ):
 		"""Create.
 		
 		Purpose:
-		    Provides create behavior for the Images workflow while preserving provider request and
-		    response state.
+		    Provides create behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -3822,8 +3709,7 @@ class Images( Grok ):
 		"""Create image.
 		
 		Purpose:
-		    Creates the requested xAI resource using validated names, paths, or configuration
-		    values.
+		    Creates the requested xAI resource using validated names, paths, or configuration values.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -3849,8 +3735,7 @@ class Images( Grok ):
 		"""Edit.
 		
 		Purpose:
-		    Provides edit behavior for the Images workflow while preserving provider request and
-		    response state.
+		    Provides edit behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    image_path (str): Image path supplied to the xAI workflow.
@@ -3919,8 +3804,7 @@ class Images( Grok ):
 		"""Edit image.
 		
 		Purpose:
-		    Provides edit image behavior for the Images workflow while preserving provider request
-		    and response state.
+		    Provides edit image behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    image_path (str): Image path supplied to the xAI workflow.
@@ -3945,8 +3829,7 @@ class Images( Grok ):
 		"""Modify.
 		
 		Purpose:
-		    Provides modify behavior for the Images workflow while preserving provider request and
-		    response state.
+		    Provides modify behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    image_path (str): Image path supplied to the xAI workflow.
@@ -3971,8 +3854,7 @@ class Images( Grok ):
 		"""Generate edit.
 		
 		Purpose:
-		    Executes an xAI generation workflow using validated request settings, captures the
-		    provider response, and returns displayable output.
+		    Executes an xAI generation workflow using validated request settings, captures the provider response, and returns displayable output.
 		
 		Args:
 		    image_path (str): Image path supplied to the xAI workflow.
@@ -3999,8 +3881,7 @@ class Images( Grok ):
 		"""Analyze.
 		
 		Purpose:
-		    Provides analyze behavior for the Images workflow while preserving provider request
-		    and response state.
+		    Provides analyze behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -4050,14 +3931,12 @@ class Images( Grok ):
 			ex.method = 'analyze( self, prompt: str, image_url: str )'
 			raise ex
 	
-	def analyze_image( self, prompt: str, image_url: str = None, model: str =
-	'grok-4.20-reasoning',
+	def analyze_image( self, prompt: str, image_url: str = None, model: str = 'grok-4.20-reasoning',
 			image_path: str = None, path: str = None, **kwargs: Any ) -> str | None:
 		"""Analyze image.
 		
 		Purpose:
-		    Provides analyze image behavior for the Images workflow while preserving provider
-		    request and response state.
+		    Provides analyze image behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -4085,8 +3964,7 @@ class Images( Grok ):
 		"""Vision.
 		
 		Purpose:
-		    Provides vision behavior for the Images workflow while preserving provider request and
-		    response state.
+		    Provides vision behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -4114,8 +3992,7 @@ class Images( Grok ):
 		"""Describe.
 		
 		Purpose:
-		    Provides describe behavior for the Images workflow while preserving provider request
-		    and response state.
+		    Provides describe behavior for the Images workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -4142,8 +4019,7 @@ class Images( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Images workflow while preserving provider request and
-		    response state.
+		    Provides dir behavior for the Images workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -4229,8 +4105,7 @@ class Files( Grok ):
 	"""Files workflow wrapper.
 	
 	Purpose:
-	    Manages xAI file upload, retrieval, listing, deletion, and metadata workflows used by
-	    document and provider operations.
+	    Manages xAI file upload, retrieval, listing, deletion, and metadata workflows used by document and provider operations.
 	
 	Attributes:
 	    client: Runtime attribute used by the Files workflow.
@@ -4271,8 +4146,7 @@ class Files( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Files state with default configuration values and runtime attributes used
-		    by later xAI provider calls.
+		    Initializes Files state with default configuration values and runtime attributes used by later xAI provider calls.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
@@ -4327,8 +4201,7 @@ class Files( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -4352,8 +4225,7 @@ class Files( Grok ):
 		"""Purpose options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -4370,8 +4242,7 @@ class Files( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -4386,8 +4257,7 @@ class Files( Grok ):
 		"""Tool options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -4401,8 +4271,7 @@ class Files( Grok ):
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -4415,8 +4284,7 @@ class Files( Grok ):
 		"""Initialize client.
 		
 		Purpose:
-		    Provides initialize client behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides initialize client behavior for the Files workflow while preserving provider request and response state.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -4433,8 +4301,7 @@ class Files( Grok ):
 		"""Build headers.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, str]: Result produced by the xAI workflow.
@@ -4455,8 +4322,7 @@ class Files( Grok ):
 		"""Build json headers.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, str]: Result produced by the xAI workflow.
@@ -4476,8 +4342,7 @@ class Files( Grok ):
 		"""Normalize file id.
 		
 		Purpose:
-		    Provides normalize file id behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides normalize file id behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    response (Any): Response supplied to the xAI workflow.
@@ -4508,8 +4373,7 @@ class Files( Grok ):
 		"""Get output text.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Returns:
 		    str | None: Result produced by the xAI workflow.
@@ -4554,8 +4418,7 @@ class Files( Grok ):
 		"""Build upload request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -4586,8 +4449,7 @@ class Files( Grok ):
 		"""Execute upload.
 		
 		Purpose:
-		    Provides execute upload behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides execute upload behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -4615,8 +4477,7 @@ class Files( Grok ):
 		"""Build list request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -4654,8 +4515,7 @@ class Files( Grok ):
 		"""Execute list.
 		
 		Purpose:
-		    Provides execute list behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides execute list behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -4678,8 +4538,7 @@ class Files( Grok ):
 		"""Build retrieve request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -4703,8 +4562,7 @@ class Files( Grok ):
 		"""Execute retrieve.
 		
 		Purpose:
-		    Provides execute retrieve behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides execute retrieve behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -4728,8 +4586,7 @@ class Files( Grok ):
 		"""Build extract request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -4759,8 +4616,7 @@ class Files( Grok ):
 		"""Execute extract.
 		
 		Purpose:
-		    Provides execute extract behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides execute extract behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    bytes | str | None: Result produced by the xAI workflow.
@@ -4794,8 +4650,7 @@ class Files( Grok ):
 		"""Build delete request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -4819,8 +4674,7 @@ class Files( Grok ):
 		"""Execute delete.
 		
 		Purpose:
-		    Provides execute delete behavior for the Files workflow while preserving provider
-		    request and response state.
+		    Provides execute delete behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -4851,8 +4705,7 @@ class Files( Grok ):
 		"""Build file input.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    List[Dict[str, Any]]: Result produced by the xAI workflow.
@@ -4885,8 +4738,7 @@ class Files( Grok ):
 		"""Build file response request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -4952,8 +4804,7 @@ class Files( Grok ):
 		"""Execute file response.
 		
 		Purpose:
-		    Provides execute file response behavior for the Files workflow while preserving
-		    provider request and response state.
+		    Provides execute file response behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    str | None: Result produced by the xAI workflow.
@@ -4974,8 +4825,7 @@ class Files( Grok ):
 		"""Upload.
 		
 		Purpose:
-		    Provides upload behavior for the Files workflow while preserving provider request and
-		    response state.
+		    Provides upload behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    filepath (str): Filepath supplied to the xAI workflow.
@@ -5006,8 +4856,7 @@ class Files( Grok ):
 		"""List.
 		
 		Purpose:
-		    Provides list behavior for the Files workflow while preserving provider request and
-		    response state.
+		    Provides list behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    limit (int): Limit supplied to the xAI workflow.
@@ -5043,8 +4892,7 @@ class Files( Grok ):
 		"""List files.
 		
 		Purpose:
-		    Lists xAI resources and returns normalized metadata for UI display or downstream
-		    selection.
+		    Lists xAI resources and returns normalized metadata for UI display or downstream selection.
 		
 		Args:
 		    limit (int): Limit supplied to the xAI workflow.
@@ -5072,8 +4920,7 @@ class Files( Grok ):
 		"""Retrieve.
 		
 		Purpose:
-		    Provides retrieve behavior for the Files workflow while preserving provider request
-		    and response state.
+		    Provides retrieve behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    file_id (str): File id supplied to the xAI workflow.
@@ -5102,8 +4949,7 @@ class Files( Grok ):
 		"""Extract.
 		
 		Purpose:
-		    Provides extract behavior for the Files workflow while preserving provider request and
-		    response state.
+		    Provides extract behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    file_id (str): File id supplied to the xAI workflow.
@@ -5136,8 +4982,7 @@ class Files( Grok ):
 		"""Download.
 		
 		Purpose:
-		    Provides download behavior for the Files workflow while preserving provider request
-		    and response state.
+		    Provides download behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    file_id (str): File id supplied to the xAI workflow.
@@ -5163,8 +5008,7 @@ class Files( Grok ):
 		"""Delete.
 		
 		Purpose:
-		    Provides delete behavior for the Files workflow while preserving provider request and
-		    response state.
+		    Provides delete behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    file_id (str): File id supplied to the xAI workflow.
@@ -5198,8 +5042,7 @@ class Files( Grok ):
 		"""Summarize.
 		
 		Purpose:
-		    Provides summarize behavior for the Files workflow while preserving provider request
-		    and response state.
+		    Provides summarize behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    filepath (str): Filepath supplied to the xAI workflow.
@@ -5275,8 +5118,7 @@ class Files( Grok ):
 		"""Survey.
 		
 		Purpose:
-		    Provides survey behavior for the Files workflow while preserving provider request and
-		    response state.
+		    Provides survey behavior for the Files workflow while preserving provider request and response state.
 		
 		Args:
 		    filepaths (List[str]): Filepaths supplied to the xAI workflow.
@@ -5337,8 +5179,7 @@ class Files( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Files workflow while preserving provider request and
-		    response state.
+		    Provides dir behavior for the Files workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
@@ -5423,8 +5264,7 @@ class VectorStores( Grok ):
 	"""VectorStores workflow wrapper.
 	
 	Purpose:
-	    Manages xAI collection and vector-store style operations used to connect documents to
-	    retrieval-enabled workflows.
+	    Manages xAI collection and vector-store style operations used to connect documents to retrieval-enabled workflows.
 	
 	Attributes:
 	    client: Runtime attribute used by the VectorStores workflow.
@@ -5467,8 +5307,7 @@ class VectorStores( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes VectorStores state with default configuration values and runtime
-		    attributes used by later xAI provider calls.
+		    Initializes VectorStores state with default configuration values and runtime attributes used by later xAI provider calls.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
@@ -5512,8 +5351,7 @@ class VectorStores( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the VectorStores workflow selector
-		    without mutating provider state.
+		    Returns the configured option values exposed by the VectorStores workflow selector without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -5546,8 +5384,7 @@ class VectorStores( Grok ):
 		"""Get collection id.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Args:
 		    store_id (str): Store id supplied to the xAI workflow.
@@ -5577,8 +5414,7 @@ class VectorStores( Grok ):
 		"""Get collection rows.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Returns:
 		    List[Dict[str, Any]]: Result produced by the xAI workflow.
@@ -5613,8 +5449,7 @@ class VectorStores( Grok ):
 		"""Get text output.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse,
-		    or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
 		
 		Args:
 		    response (Any): Response supplied to the xAI workflow.
@@ -5651,8 +5486,7 @@ class VectorStores( Grok ):
 		"""Raise management required.
 		
 		Purpose:
-		    Provides raise management required behavior for the VectorStores workflow while
-		    preserving provider request and response state.
+		    Provides raise management required behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    operation (str): Operation supplied to the xAI workflow.
@@ -5668,8 +5502,7 @@ class VectorStores( Grok ):
 		"""Create.
 		
 		Purpose:
-		    Provides create behavior for the VectorStores workflow while preserving provider
-		    request and response state.
+		    Provides create behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    name (str): Name supplied to the xAI workflow.
@@ -5695,8 +5528,7 @@ class VectorStores( Grok ):
 		"""List.
 		
 		Purpose:
-		    Provides list behavior for the VectorStores workflow while preserving provider request
-		    and response state.
+		    Provides list behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[Dict[str, Any]]: Result produced by the xAI workflow.
@@ -5715,8 +5547,7 @@ class VectorStores( Grok ):
 		"""Retrieve.
 		
 		Purpose:
-		    Provides retrieve behavior for the VectorStores workflow while preserving provider
-		    request and response state.
+		    Provides retrieve behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    store_id (str): Store id supplied to the xAI workflow.
@@ -5758,8 +5589,7 @@ class VectorStores( Grok ):
 		"""Search.
 		
 		Purpose:
-		    Provides search behavior for the VectorStores workflow while preserving provider
-		    request and response state.
+		    Provides search behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -5792,8 +5622,7 @@ class VectorStores( Grok ):
 		"""Survey.
 		
 		Purpose:
-		    Provides survey behavior for the VectorStores workflow while preserving provider
-		    request and response state.
+		    Provides survey behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -5827,8 +5656,7 @@ class VectorStores( Grok ):
 		"""Update.
 		
 		Purpose:
-		    Provides update behavior for the VectorStores workflow while preserving provider
-		    request and response state.
+		    Provides update behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    store_id (str): Store id supplied to the xAI workflow.
@@ -5849,16 +5677,14 @@ class VectorStores( Grok ):
 			ex = Error( e )
 			ex.module = 'grok'
 			ex.cause = 'VectorStores'
-			ex.method = ('update( self, store_id: str, filepath: str=None, filename: str=None ) -> '
-			             'Any')
+			ex.method = 'update( self, store_id: str, filepath: str=None, filename: str=None ) -> Any'
 			raise ex
 	
 	def delete( self, store_id: str ) -> Any:
 		"""Delete.
 		
 		Purpose:
-		    Provides delete behavior for the VectorStores workflow while preserving provider
-		    request and response state.
+		    Provides delete behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Args:
 		    store_id (str): Store id supplied to the xAI workflow.
@@ -5882,8 +5708,7 @@ class VectorStores( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the VectorStores workflow while preserving provider request
-		    and response state.
+		    Provides dir behavior for the VectorStores workflow while preserving provider request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.

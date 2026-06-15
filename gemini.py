@@ -1,10 +1,48 @@
-"""Gemini provider integration for Buddy.
+'''
+  ******************************************************************************************
+      Assembly:                Buddy
+      Filename:                gemini.py
+      Author:                  Terry D. Eppler
+      Created:                 05-31-2022
 
-Purpose:
+      Last Modified By:        Terry D. Eppler
+      Last Modified On:        12-27-2025
+  ******************************************************************************************
+  <copyright file="gemini.py" company="Terry D. Eppler">
+
+	     gemini.py
+	     Copyright ©  2025 Terry Eppler
+
+     Permission is hereby granted, free of charge, to any person obtaining a copy
+     of this software and associated documentation files (the “Software”),
+     to deal in the Software without restriction,
+     including without limitation the rights to use,
+     copy, modify, merge, publish, distribute, sublicense,
+     and/or sell copies of the Software,
+     and to permit persons to whom the Software is furnished to do so,
+     subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be included in all
+     copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+     INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+     IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+     DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+     ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+     DEALINGS IN THE SOFTWARE.
+
+     You can contact me at:  terryeppler@gmail.com or eppler.terry@epa.gov
+
+  </copyright>
+  <summary>
     Provides Google Gemini, Google GenAI, file-search, cloud-storage, embedding, image,
     text, audio, transcription, translation, and file-management wrappers used by the
     Buddy Streamlit application and its MkDocs API reference.
-"""
+  </summary>
+  *****************************************************************************************
+'''
 from google.genai.file_search_stores import FileSearchStores
 import config as cfg
 import base64
@@ -303,14 +341,14 @@ class Chat( Gemini ):
 		         'LOW', 'MEDIUM', 'HIGH' ]
 	
 	@property
-	def media_options( self ):
+	def media_options( self ) -> List[ str ] | None:
 		"""Media options.
 		
 		Purpose:
 		    Returns the configured option values exposed by the Chat workflow selector.
 		
 		Returns:
-		    list[str] | None: Option values exposed to the application UI.
+		    Optional[List[str]]: Option values exposed to the application UI.
 		"""
 		return [ 'media_resolution_high',
 		         'media_resolution_medium',
@@ -356,14 +394,14 @@ class Chat( Gemini ):
 		return [ '', 'text', 'image', 'audio' ]
 	
 	@property
-	def format_options( self ):
+	def format_options( self ) -> List[ str ] | None:
 		"""Format options.
 		
 		Purpose:
 		    Returns the configured option values exposed by the Chat workflow selector.
 		
 		Returns:
-		    list[str] | None: Option values exposed to the application UI.
+		    Optional[List[str]]: Option values exposed to the application UI.
 		"""
 		return [ 'text/plain',
 		         'application/json',
@@ -1389,14 +1427,14 @@ class Images( Gemini ):
 		return [ '1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9' ]
 	
 	@property
-	def media_options( self ):
+	def media_options( self ) -> List[ str ] | None:
 		"""Media options.
 		
 		Purpose:
 		    Returns the configured option values exposed by the Images workflow selector.
 		
 		Returns:
-		    list[str] | None: Option values exposed to the application UI.
+		    Optional[List[str]]: Option values exposed to the application UI.
 		"""
 		return [ 'media_resolution_high',
 		         'media_resolution_medium',
@@ -1428,14 +1466,14 @@ class Images( Gemini ):
 		         'low', 'medium', 'high' ]
 	
 	@property
-	def size_options( self ):
+	def size_options( self ) -> List[ str ] | None:
 		"""Size options.
 		
 		Purpose:
 		    Returns the configured option values exposed by the Images workflow selector.
 		
 		Returns:
-		    list[str] | None: Option values exposed to the application UI.
+		    Optional[List[str]]: Option values exposed to the application UI.
 		"""
 		return [ '1K', '2K', '4K' ]
 	
@@ -4425,20 +4463,20 @@ class CloudBuckets( Gemini ):
 		         'gemini-2.0-flash-lite' ]
 	
 	@property
-	def media_options( self ):
+	def media_options( self ) -> List[ str ] | None:
 		"""Media options.
 		
 		Purpose:
 		    Returns the configured option values exposed by the CloudBuckets workflow selector.
 		
 		Returns:
-		    list[str] | None: Option values exposed to the application UI.
+		    Optional[List[str]]: Option values exposed to the application UI.
 		"""
 		return [ 'media_resolution_high',
 		         'media_resolution_medium',
 		         'media_resolution_low' ]
 	
-	def create( self, bucket: str, name: str ):
+	def create( self, bucket: str, name: str ) -> bool:
 		"""Create.
 		
 		Purpose:
@@ -4449,7 +4487,7 @@ class CloudBuckets( Gemini ):
 		    name (str): Name supplied to the Gemini workflow.
 		
 		Returns:
-		    object: Result returned by the Gemini workflow.
+		    bool: True when the cloud bucket object operation completes.
 		"""
 		try:
 			throw_if( 'bucket', bucket )
@@ -4467,7 +4505,7 @@ class CloudBuckets( Gemini ):
 			ex.method = 'delete( self, bucket, name )'
 			raise ex
 	
-	def upload( self, path: str, bucket: str, name: str = None ):
+	def upload( self, path: str, bucket: str, name: str = None ) -> Any:
 		"""Upload.
 		
 		Purpose:
@@ -4479,7 +4517,7 @@ class CloudBuckets( Gemini ):
 		    name (str): Name supplied to the Gemini workflow.
 		
 		Returns:
-		    object: Result returned by the Gemini workflow.
+		    Any: Result returned by the Gemini workflow.
 		"""
 		try:
 			throw_if( 'path', path )
@@ -4499,7 +4537,7 @@ class CloudBuckets( Gemini ):
 			ex.method = 'upload( self, path, bucket, name )'
 			raise ex
 	
-	def retrieve( self, bucket: str, name: str ):
+	def retrieve( self, bucket: str, name: str ) -> Any:
 		"""Retrieve.
 		
 		Purpose:
@@ -4510,7 +4548,7 @@ class CloudBuckets( Gemini ):
 		    name (str): Name supplied to the Gemini workflow.
 		
 		Returns:
-		    object: Result returned by the Gemini workflow.
+		    Any: Result returned by the Gemini workflow.
 		"""
 		try:
 			throw_if( 'bucket', bucket )
@@ -4649,7 +4687,7 @@ class CloudBuckets( Gemini ):
 			ex.method = 'delete_file( self, bucket: str=None, name: str=None ) -> bool'
 			raise ex
 	
-	def list( self, bucket: str ):
+	def list( self, bucket: str ) -> List[ Any ]:
 		"""List.
 		
 		Purpose:
@@ -4659,7 +4697,7 @@ class CloudBuckets( Gemini ):
 		    bucket (str): Bucket supplied to the Gemini workflow.
 		
 		Returns:
-		    object: Result returned by the Gemini workflow.
+		    List[Any]: Cloud bucket blob objects returned by the storage client.
 		"""
 		try:
 			throw_if( 'bucket', bucket )
@@ -4731,8 +4769,8 @@ class CloudBuckets( Gemini ):
 	
 	def search_maps( self, prompt: str, model: str = 'gemini-2.5-flash-lite',
 			temperature: float = None, top_p: float = None, frequency: float = None,
-			presence: float = None, max_tokens: int = None, stops: List[ str ] = None,
-			instruct: str = None ) -> str | None:
+			presence: float = None,
+			max_tokens: int = None, stops: List[ str ] = None, instruct: str = None ) -> str | None:
 		"""Search maps.
 		
 		Purpose:
@@ -4783,7 +4821,7 @@ class CloudBuckets( Gemini ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def delete( self, bucket: str, name: str ):
+	def delete( self, bucket: str, name: str ) -> bool:
 		"""Delete.
 		
 		Purpose:
@@ -4794,7 +4832,7 @@ class CloudBuckets( Gemini ):
 		    name (str): Name supplied to the Gemini workflow.
 		
 		Returns:
-		    object: Result returned by the Gemini workflow.
+		    bool: True when the cloud bucket object operation completes.
 		"""
 		try:
 			throw_if( 'bucket', bucket )

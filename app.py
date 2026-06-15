@@ -1308,7 +1308,7 @@ def reset_state( ) -> None:
 			'text': [ ],
 	}
 
-def normalize( obj ):
+def normalize( obj: Any ) -> Any:
 	"""Normalize.
 	
 	Purpose:
@@ -1316,10 +1316,10 @@ def normalize( obj ):
 	    session state, provider configuration, and local data processing.
 	
 	Args:
-	    obj: Obj value used by the application workflow.
+	    obj: Object or nested value to normalize for safe display, serialization, or provider handling.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	if obj is None or isinstance( obj, (str, int, float, bool) ):
 		return obj
@@ -1407,7 +1407,7 @@ def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	return sources
 
-def save_temp( upload ) -> str | None:
+def save_temp( upload: Any ) -> str | None:
 	"""Save temp.
 	
 	Purpose:
@@ -1415,7 +1415,7 @@ def save_temp( upload ) -> str | None:
 	    provider resources while preserving the surrounding workflow state.
 	
 	Args:
-	    upload: File, upload, or path value used by the document or storage workflow.
+	    upload: Streamlit uploaded-file object to persist to a temporary path.
 	
 	Returns:
 	    str | None: Text value produced for the active application workflow.
@@ -1609,7 +1609,7 @@ def clear_history( ) -> None:
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM chat_history" )
 
-def format_results( results ):
+def format_results( results: Any ) -> str:
 	"""Format results.
 	
 	Purpose:
@@ -1617,10 +1617,10 @@ def format_results( results ):
 	    Streamlit session state, provider configuration, and local data processing.
 	
 	Args:
-	    results: Results value used by the application workflow.
+	    results: Provider result collection containing a data sequence with name attributes.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    str: HTML list markup containing formatted result names.
 	"""
 	formatted_results = ''
 	for result in results.data:
@@ -2253,7 +2253,7 @@ def insert_data( table_name: str, df: pd.DataFrame ):
 		conn.executemany( stmt, df.values.tolist( ) )
 		conn.commit( )
 
-def get_sqlite_type( dtype ) -> str:
+def get_sqlite_type( dtype: Any ) -> str:
 	"""Get sqlite type.
 	
 	Purpose:
@@ -2262,7 +2262,7 @@ def get_sqlite_type( dtype ) -> str:
 	    steps.
 	
 	Args:
-	    dtype: Dtype value used by the application workflow.
+	    dtype: Pandas dtype or dtype-like object to map into a SQLite storage type.
 	
 	Returns:
 	    str: Text value produced for the active application workflow.
@@ -2432,7 +2432,7 @@ def create_identifier( name: str ) -> str:
 	
 	return safe
 
-def get_indexes( table: str ):
+def get_indexes( table: str ) -> List[ Tuple[ Any, ... ] ]:
 	"""Get indexes.
 	
 	Purpose:
@@ -2443,7 +2443,7 @@ def get_indexes( table: str ):
 	    table: SQLite table name used by the data-management workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    List[Tuple[Any, ...]]: SQLite index metadata rows returned by PRAGMA index_list.
 	"""
 	with create_connection( ) as conn:
 		rows = conn.execute( f'PRAGMA index_list("{table}");' ).fetchall( )
@@ -2469,7 +2469,7 @@ def add_column( table: str, column: str, col_type: str ):
 			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};' )
 		conn.commit( )
 
-def create_profile_table( table: str ):
+def create_profile_table( table: str ) -> pd.DataFrame:
 	"""Create profile table.
 	
 	Purpose:
@@ -2480,7 +2480,7 @@ def create_profile_table( table: str ):
 	    table: SQLite table name used by the data-management workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    pd.DataFrame: Column-level profile dataframe for the selected SQLite table.
 	"""
 	df = read_table( table )
 	profile_rows = [ ]
@@ -6097,7 +6097,7 @@ def save_audio_upload( upload: Any ) -> str | None:
 	    provider resources while preserving the surrounding workflow state.
 	
 	Args:
-	    upload: File, upload, or path value used by the document or storage workflow.
+	    upload: Streamlit uploaded-file object to persist to a temporary path.
 	
 	Returns:
 	    str | None: Text value produced for the active application workflow.
@@ -9509,7 +9509,7 @@ def build_provider_retrieval_summary( provider_name: Optional[ str ] = None ) ->
 	return f'{provider}: selected {backend_name} resource {resource_id}, but it is not a retrieval store.'
 
 # ---------------- TEXT ----------------
-def text_model_options( chat ):
+def text_model_options( chat: object ) -> List[ str ]:
 	"""Text model options.
 	
 	Purpose:
@@ -9517,10 +9517,10 @@ def text_model_options( chat ):
 	    Streamlit session state, provider configuration, and local data processing.
 	
 	Args:
-	    chat: Chat value used by the application workflow.
+	    chat: object Chat value used by the application workflow.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
+	    List[ str ]: Text value produced for the active application workflow.
 	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'model_options', chat.model_options )
@@ -9531,7 +9531,7 @@ def text_model_options( chat ):
 	return chat.model_options
 
 # ---------------- IMAGES ----------------
-def image_model_options( image ):
+def image_model_options( image: Any ) -> Any:
 	"""Image model options.
 	
 	Purpose:
@@ -9542,7 +9542,7 @@ def image_model_options( image ):
 	    image: Image value used by the application workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'image_model_options', image.model_options )
@@ -9552,7 +9552,7 @@ def image_model_options( image ):
 		return _safe( 'grok', 'model_options', image.model_options )
 	return image.model_options
 
-def image_size_or_aspect_options( image ):
+def image_size_or_aspect_options( image: Any ) -> Any:
 	"""Image size or aspect options.
 	
 	Purpose:
@@ -9564,7 +9564,7 @@ def image_size_or_aspect_options( image ):
 	    image: Image value used by the application workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'aspect_options', image.size_options )
@@ -9575,7 +9575,7 @@ def image_size_or_aspect_options( image ):
 	return image.size_options
 
 # ---------------- AUDIO ----------------
-def audio_model_options( transcriber ):
+def audio_model_options( transcriber: Any ) -> Any:
 	"""Audio model options.
 	
 	Purpose:
@@ -9586,7 +9586,7 @@ def audio_model_options( transcriber ):
 	    transcriber: Transcriber value used by the application workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'audio_model_options', transcriber.model_options )
@@ -9594,7 +9594,7 @@ def audio_model_options( transcriber ):
 		return _safe( 'gemini', 'audio_model_options', transcriber.model_options )
 	return transcriber.model_options
 
-def audio_language_options( transcriber ):
+def audio_language_options( transcriber: Any ) -> Any:
 	"""Audio language options.
 	
 	Purpose:
@@ -9605,7 +9605,7 @@ def audio_language_options( transcriber ):
 	    transcriber: Transcriber value used by the application workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'language_options', transcriber.language_options )
@@ -9614,7 +9614,7 @@ def audio_language_options( transcriber ):
 	return transcriber.language_options
 
 # ---------------- EMBEDDINGS ----------------
-def embedding_model_options( embed ):
+def embedding_model_options( embed: Any ) -> Any:
 	"""Embedding model options.
 	
 	Purpose:
@@ -9625,7 +9625,7 @@ def embedding_model_options( embed ):
 	    embed: Embed value used by the application workflow.
 	
 	Returns:
-	    object: Normalized result produced for the active application workflow.
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'embedding_model_options', embed.model_options )
@@ -14169,7 +14169,7 @@ elif mode == 'Prompt Engineering':
 		# ------------------------------------------------------------------
 		# DB helpers
 		# ------------------------------------------------------------------
-		def get_conn( ):
+		def get_conn( ) -> sqlite3.Connection:
 			"""Get conn.
 			
 			Purpose:
