@@ -1,35 +1,58 @@
-
 ###### Buddy
+
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy_Project.png)
 
+<p align="center">
+  <a href="#-demo">Demo</a>
+  &bull;
+  <a href="#core-capabilities">Core Capabilities</a>
+  &bull;
+  <a href="#model-integration">LLM Integration</a>
+  &bull;
+  <a href="#-required-api-keys">API Keys</a>
+  &bull;
+  <a href="#-installation">Installation</a>
+  &bull;
+  <a href="#application-features">Features</a>
+  &bull;
+  <a href="#data-storage--architecture">Architecture</a>
+  &bull;
+  <a href="#-core-runtime-requirements">Runtime</a>
+  &bull;
+  <a href="#-license">License</a>
+</p>
 
-Budget Buddy is an federal financial management AI tool designed to support fderal budget/financial 
+___
+
+
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-0078FC?style=for-the-badge&logo=github)](https://is-leeroy-jenkins.github.io/Buddy/)
+
+Budget Buddy is an federal financial management AI tool designed to support fderal budget/financial
 analysts, managers, and policy professionals. It integrates large language models (LLMs) such as
-OpenAI's ChatGPT 5+, xAI's Grok 3/4, and Googles Gemini 3/4 for retrieval-augmented generation (RAG), 
-semantic searching, and structured prompt engineering to assist with interpretation of financial guidance, 
-budget execution data, and a vectorized data set of financial policy documents. Buddy is integrated 
-with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets 
+OpenAI's ChatGPT 5+, xAI's Grok 3/4, and Googles Gemini 3/4 for retrieval-augmented generation (
+RAG),
+semantic searching, and structured prompt engineering to assist with interpretation of financial
+guidance,
+budget execution data, and a vectorized data set of financial policy documents. Buddy is integrated
+with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets
 on vectorized financial management and policy datasets hosted on Huggingface:
 
+## 🎥 Demo
 
-## 🎥 Demo 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
 
 ## Core Capabilities
 
-
-  | Mode | Description |
+| Mode | Description |
   | ----------------------- | ---------------------------------------------------------------- |
-  | 📝 **Text Generation**  | Structured LLM interaction with full parameter control |
-  | 🖼 **Image Generation** | Prompt-based image synthesis with provider configuration |
-  | 🔊 **Audio Processing** | Text-to-Speech and Speech-to-Text workflows |
-  | 📚 **Document Q&A**     | Context-aware querying of uploaded or embedded documents |
-  | 🧬 **Embeddings**       | Vector creation and similarity-based search |
-  | 🗄 **Vector Stores**    | Persistent semantic storage (SQLite / Chroma / others)           |
-  | 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
-  | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
-
-
+| 📝 **Text Generation**  | Structured LLM interaction with full parameter control |
+| 🖼 **Image Generation** | Prompt-based image synthesis with provider configuration |
+| 🔊 **Audio Processing** | Text-to-Speech and Speech-to-Text workflows |
+| 📚 **Document Q&A**     | Context-aware querying of uploaded or embedded documents |
+| 🧬 **Embeddings**       | Vector creation and similarity-based search |
+| 🗄 **Vector Stores**    | Persistent semantic storage (SQLite / Chroma / others)           |
+| 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
+| 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
 
 ## 🕸️ Streamlit (Web)
 
@@ -37,19 +60,19 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 
 - A Python framework to build dynamic, interactive web applications.
 
--  Execute chat queries against federal financial management documentation
+- Execute chat queries against federal financial management documentation
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 
-
 ## 🧱 Databricks
+
 [![Buddy](https://img.shields.io/badge/Databricks-Buddy-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351)
+
 - A data engineering, analytics, and artificial intelligence collaborative workspace
 
 - Customize the knowledge-base, use computer vision, and text embeddings
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
-
 
 ## Model Integration
 
@@ -80,12 +103,12 @@ These fine-tuned models improve:
 * Terminology alignment (OMB, DoD, Treasury, GAO)
 * Consistency when answering budget and execution questions
 
-
 ## 🔑 Required API Keys
 
 - Buddy’s capabilities are provided by OpenAI, Grok, and Gemini with instructions for each below.
-- Each provider provides language models, embedding models, image generators, or audio systems 
-- Buddy gives users flexibility the ability to improve accuracy by comparing output across model ecosystems.
+- Each provider provides language models, embedding models, image generators, or audio systems
+- Buddy gives users flexibility the ability to improve accuracy by comparing output across model
+  ecosystems.
 
 #### Instructions
 
@@ -93,9 +116,10 @@ These fine-tuned models improve:
 - [Grok API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
 - [Gemini API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
 
+## 🔐 Environment Variables
 
-## 🔐 Environment Variables 
-- After obtaining the api keys, set environment variables following instructions found [here](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/environments.md)
+- After obtaining the api keys, set environment variables following instructions
+  found [here](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/environments.md)
 
 | Variable          | Required For |
 | ----------------- | ------------ |
@@ -103,16 +127,12 @@ These fine-tuned models improve:
 | GOOGLE_API_KEY    | Gemini       |
 | GROK_API_KEY      | Grok         |
 
-
 ## 📦 Installation
-
-```
-
+```python
     python -m venv .venv
     .venv\Scripts\activate  # Windows
     python -m pip install - r requirements.txt
     streamlit run app.py
-
 ```
 
 ## Application Features
@@ -170,8 +190,6 @@ This enables controlled experimentation and governance of AI behavior.
 * Export chat history as Markdown or PDF
 * Designed for briefings, documentation, and archival use
 
-
-
 ## Data Storage & Architecture
 
 * Local SQLite database for:
@@ -183,8 +201,6 @@ This enables controlled experimentation and governance of AI behavior.
     * External vector databases
     * Centralized prompt registries
     * Multi-user or shared analytical environments
-
-
 
 ## Intended Users
 
@@ -204,36 +220,36 @@ This enables controlled experimentation and governance of AI behavior.
 |-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | Balanced Budget and Emergency Deficit Control Act of 1985               | Establishes statutory limits on federal spending and deficit control mechanisms, including sequestration procedures.   |
 | Budget Control Act of 2011                                              | Sets discretionary spending caps and establishes enforcement mechanisms to control federal deficits.                   |
-| Digital Accountability And Transparency Act of 2014                     | Requires standardized federal spending data and improved transparency through government‑wide financial reporting.     |
+| Digital Accountability And Transparency Act of 2014                     | Requires standardized federal spending data and improved transparency through government-wide financial reporting.     |
 | Federal Account Symbols And Titles Book                                 | Defines Treasury account symbols and official titles used for federal budgetary and accounting purposes.               |
 | Federal Acquisition Regulation                                          | Establishes uniform policies and procedures governing the acquisition of goods and services by federal agencies.       |
 | Federal Government Standards For Internal Controls                      | Defines the internal control framework for federal agencies to ensure accountability, integrity, and compliance.       |
 | Federal Managers Financial Integrity Act of 1982                        | Requires agencies to establish internal controls and report annually on their effectiveness.                           |
 | Federal Trust Fund Accounting Guide                                     | Provides accounting guidance for the management and reporting of federal trust funds.                                  |
-| Financial Management Regulations DOD 7000‑14‑R                          | Establishes DoD‑specific financial management policies, procedures, and accounting requirements.                       |
+| Financial Management Regulations DOD 7000-14-R                          | Establishes DoD-specific financial management policies, procedures, and accounting requirements.                       |
 | Fiscal Responsibility Act                                               | Establishes statutory measures intended to improve fiscal discipline and control federal spending.                     |
 | Government Auditing Standards                                           | Sets professional standards for audits of government organizations, programs, activities, and functions.               |
 | Government Invoicing User Guide                                         | Provides guidance on federal invoicing standards and processes for government transactions.                            |
 | Government Performance and Results Act of 1993                          | Requires agencies to engage in strategic planning and performance measurement to improve program effectiveness.        |
-| GPRA Modernization Act of 2010                                          | Updates GPRA by strengthening performance management, cross‑agency goals, and accountability.                          |
+| GPRA Modernization Act of 2010                                          | Updates GPRA by strengthening performance management, cross-agency goals, and accountability.                          |
 | Incident Management Handbook                                            | Provides guidance for managing and coordinating responses to incidents affecting government operations.                |
 | Independent Offices Appropriation Act of 1953                           | Establishes authorities related to user fees and charges for services provided by federal agencies.                    |
 | Inspector General Act of 1978                                           | Establishes Offices of Inspector General to conduct audits and investigations promoting efficiency and integrity.      |
-| OMB Circular A‑11 Preparation Submission And Execution Of The Budget    | Provides comprehensive guidance for preparing, submitting, and executing the President’s Budget.                       |
-| OMB Circular A‑11 Section 120 Apportionment Process                     | Defines the apportionment process used to control the rate of obligation of budgetary resources.                       |
-| OMB Circular A‑19 Legislative Coordination and Clearance                | Establishes procedures for coordinating and clearing agency legislative proposals and testimony.                       |
-| OMB Circular A‑25 User Charges                                          | Establishes federal policy for assessing user charges for government goods and services.                               |
-| OMB Circular A‑45 Rental and Construction of Government Quarters        | Provides guidance on rental rates and construction policies for government‑owned housing.                              |
-| OMB Circular A‑76 Performance of Commercial Activities                  | Establishes policy for determining whether commercial activities should be performed by the government or private sector. |
-| OMB Circular A‑94 Discount Rates for Time‑Distributed Costs and Benefits | Provides discount rates and analytical guidance for benefit‑cost analysis of federal programs.                         |
-| OMB Circular A‑97 Services for State and Local Governments              | Establishes policies for providing federal services to state and local governments.                                    |
-| OMB Circular A‑123 Managements Responsibility for Enterprise Risk Management and Internal Control | Defines management responsibilities for internal control and enterprise risk management across federal agencies.       |
-| OMB Circular A‑136 Financial Reporting Requirements                     | Establishes requirements for federal agency financial statements and reporting.                                        |
+| OMB Circular A-11 Preparation Submission And Execution Of The Budget    | Provides comprehensive guidance for preparing, submitting, and executing the President’s Budget.                       |
+| OMB Circular A-11 Section 120 Apportionment Process                     | Defines the apportionment process used to control the rate of obligation of budgetary resources.                       |
+| OMB Circular A-19 Legislative Coordination and Clearance                | Establishes procedures for coordinating and clearing agency legislative proposals and testimony.                       |
+| OMB Circular A-25 User Charges                                          | Establishes federal policy for assessing user charges for government goods and services.                               |
+| OMB Circular A-45 Rental and Construction of Government Quarters        | Provides guidance on rental rates and construction policies for government-owned housing.                              |
+| OMB Circular A-76 Performance of Commercial Activities                  | Establishes policy for determining whether commercial activities should be performed by the government or private sector. |
+| OMB Circular A-94 Discount Rates for Time-Distributed Costs and Benefits | Provides discount rates and analytical guidance for benefit-cost analysis of federal programs.                         |
+| OMB Circular A-97 Services for State and Local Governments              | Establishes policies for providing federal services to state and local governments.                                    |
+| OMB Circular A-123 Managements Responsibility for Enterprise Risk Management and Internal Control | Defines management responsibilities for internal control and enterprise risk management across federal agencies.       |
+| OMB Circular A-136 Financial Reporting Requirements                     | Establishes requirements for federal agency financial statements and reporting.                                        |
 | Principles Of Federal Appropriations Law Volume One                     | Authoritative GAO guidance on foundational principles governing the use of federal appropriations.                     |
 | Principles Of Federal Appropriations Law Volume Two                     | Expands on appropriations law with detailed case law, interpretations, and applications.                               |
 | Statements of Federal Federal Financial Accounting Concepts and Standards | Establishes accounting concepts and standards for federal financial reporting.                                         |
-| The Anti‑Deficiency Act PL 97‑258                                       | Prohibits federal agencies from obligating or expending funds in excess of appropriations or before enactment.         |
-| The Anti‑Deficiency Reform and Enforcement Act of 2018                  | Strengthens Anti‑Deficiency Act enforcement and reporting requirements to improve fiscal accountability.               |
+| The Anti-Deficiency Act PL 97-258                                       | Prohibits federal agencies from obligating or expending funds in excess of appropriations or before enactment.         |
+| The Anti-Deficiency Reform and Enforcement Act of 2018                  | Strengthens Anti-Deficiency Act enforcement and reporting requirements to improve fiscal accountability.               |
 | The Budget And Accounting Act of 1921                                   | Establishes the federal budget process and created the Bureau of the Budget and the General Accounting Office.         |
 | The Chief Financial Officers Act of 1990                                | Establishes agency Chief Financial Officers and modernizes federal financial management practices.                     |
 | The Congressional Budget and Impoundment Control Act of 1974            | Establishes the congressional budget process and restricts executive impoundment of appropriated funds.                |
@@ -252,57 +268,65 @@ This enables controlled experimentation and governance of AI behavior.
 
 | File Name | Description |
 |----------|-------------|
-| Access Management For DOD Information Systems DOD 8520‑04  | Establishes Department of Defense policy for identity, credential, and access management (ICAM) across DoD information systems. |
-| Acquisition Management Of Contractor‑Prepared Data DOD 5010‑12  | Defines requirements for managing, retaining, and accessing data produced by contractors during DoD acquisitions. |
-| Acquisition Transformation Strategy  | Outlines DoD‑wide strategic objectives for modernizing acquisition processes, governance, and workforce practices. |
+| Access Management For DOD Information Systems DOD 8520-04  | Establishes Department of Defense policy for identity, credential, and access management (ICAM) across DoD information systems. |
+| Acquisition Management Of Contractor-Prepared Data DOD 5010-12  | Defines requirements for managing, retaining, and accessing data produced by contractors during DoD acquisitions. |
+| Acquisition Transformation Strategy  | Outlines DoD-wide strategic objectives for modernizing acquisition processes, governance, and workforce practices. |
 | Administrative Instruction DODAM 28  | Provides administrative procedures and internal management guidance under the DoD Administrative Management framework. |
-| Audit Manual DOD 7600‑07  | Establishes audit policies, responsibilities, and procedures for DoD financial and performance audits. |
-| Civilian Personnel Management System Payroll DOD 1400‑25‑v550  | Governs payroll administration within the DoD Civilian Personnel Management System (CPMS). |
-| Civilian Personnel Management System Performance DOD 1400‑25‑v430  | Defines performance management policies for DoD civilian employees, including evaluation and appraisal standards. |
-| Cybersecurity Reciprocity Playbook DOD 2024‑01‑02  | Provides guidance for reciprocal acceptance of cybersecurity authorizations across DoD components to reduce duplication. |
+| Audit Manual DOD 7600-07  | Establishes audit policies, responsibilities, and procedures for DoD financial and performance audits. |
+| Civilian Personnel Management System Payroll DOD 1400-25-v550  | Governs payroll administration within the DoD Civilian Personnel Management System (CPMS). |
+| Civilian Personnel Management System Performance DOD 1400-25-v430  | Defines performance management policies for DoD civilian employees, including evaluation and appraisal standards. |
+| Cybersecurity Reciprocity Playbook DOD 2024-01-02  | Provides guidance for reciprocal acceptance of cybersecurity authorizations across DoD components to reduce duplication. |
 | DevSecOps Fundamentals v2.5  | Introduces core principles, practices, and terminology for implementing DevSecOps in DoD environments. |
-| DevSecOps OSS Development  | Addresses the development and use of open‑source software within DoD DevSecOps pipelines. |
-| DevSecOps Playbook DODCIO 2021‑10‑19  | Official DoD CIO guidance for planning, implementing, and scaling DevSecOps capabilities. |
-| DevSecOps Reference Design AWS Managed Services DODCIO 2021‑10‑19  | Provides a reference architecture for deploying DevSecOps using AWS managed services in DoD contexts. |
+| DevSecOps OSS Development  | Addresses the development and use of open-source software within DoD DevSecOps pipelines. |
+| DevSecOps Playbook DODCIO 2021-10-19  | Official DoD CIO guidance for planning, implementing, and scaling DevSecOps capabilities. |
+| DevSecOps Reference Design AWS Managed Services DODCIO 2021-10-19  | Provides a reference architecture for deploying DevSecOps using AWS managed services in DoD contexts. |
 | DNS IP Address Use And Approval DOD 8410  | Establishes policy for allocation, registration, and approval of DNS names and IP address usage within DoD networks. |
-| DOD Cloud Reference Design Cloud GitHub Azure  | Reference architecture describing DoD‑approved cloud implementation patterns using Microsoft Azure. |
+| DOD Cloud Reference Design Cloud GitHub Azure  | Reference architecture describing DoD-approved cloud implementation patterns using Microsoft Azure. |
 | DOD AI Strategy  | Defines DoD objectives, priorities, and governance principles for artificial intelligence adoption. |
-| Emergency Management Program DOD 6055‑17  | Establishes policy for preparedness, response, recovery, and mitigation of emergencies affecting DoD operations. |
-| Forms Management Program DOD 7750‑08  | Governs the lifecycle management of DoD forms, including standardization and control. |
-| Information Network Transport DOD 8010‑01  | Provides policy for managing DoD network transport infrastructure and communications pathways. |
-| Information Technology Standards DOD 8310‑01  | Establishes requirements for adopting and enforcing IT standards across the Department of Defense. |
-| Infosec Program and Securing SCI DOD 5200‑01p  | Governs information security programs, including the protection of Sensitive Compartmented Information (SCI). |
-| Management Of DOD IE DOD 8000‑01  | Establishes governance for managing the DoD Information Enterprise (IE). |
+| Emergency Management Program DOD 6055-17  | Establishes policy for preparedness, response, recovery, and mitigation of emergencies affecting DoD operations. |
+| Forms Management Program DOD 7750-08  | Governs the lifecycle management of DoD forms, including standardization and control. |
+| Information Network Transport DOD 8010-01  | Provides policy for managing DoD network transport infrastructure and communications pathways. |
+| Information Technology Standards DOD 8310-01  | Establishes requirements for adopting and enforcing IT standards across the Department of Defense. |
+| Infosec Program and Securing SCI DOD 5200-01p  | Governs information security programs, including the protection of Sensitive Compartmented Information (SCI). |
+| Management Of DOD IE DOD 8000-01  | Establishes governance for managing the DoD Information Enterprise (IE). |
 | Multifactor Authentication DOD Networks  | Defines requirements for implementing MFA across DoD network environments to strengthen access security. |
-| National Defense Strategy 2026  | Sets strategic defense priorities, threats, and force‑planning guidance for the Department of Defense. |
-| Online Information Management And Electronic Messaging DOD 8170‑01  | Establishes policy for managing official DoD online content and electronic communications. |
-| OPSEC Manual DOD 5205‑02  | Provides policy and procedures for Operations Security to protect critical information from adversaries. |
-| Personnel Identity Protection Program DOD 1000‑25  | Establishes policies for identity protection and credentialing of DoD personnel. |
+| National Defense Strategy 2026  | Sets strategic defense priorities, threats, and force-planning guidance for the Department of Defense. |
+| Online Information Management And Electronic Messaging DOD 8170-01  | Establishes policy for managing official DoD online content and electronic communications. |
+| OPSEC Manual DOD 5205-02  | Provides policy and procedures for Operations Security to protect critical information from adversaries. |
+| Personnel Identity Protection Program DOD 1000-25  | Establishes policies for identity protection and credentialing of DoD personnel. |
 | PPBE Reform Activities FY2026  | Describes planned reforms to the Planning, Programming, Budgeting, and Execution (PPBE) process for FY2026. |
-| Records Management Standards DTM 22‑001  | Establishes mandatory standards for managing, retaining, and disposing of DoD records. |
-| Use Of Non‑Government Owned Mobile Devices.  | Provides policy governing the use of personally owned mobile devices for official DoD activities. |
+| Records Management Standards DTM 22-001  | Establishes mandatory standards for managing, retaining, and disposing of DoD records. |
+| Use Of Non-Government Owned Mobile Devices.  | Provides policy governing the use of personally owned mobile devices for official DoD activities. |
 
 ## File A (Account Balances)
 
-- [File A](https://www.usaspending.gov/download_center/custom_account_data) is part of the package of data submitted to [USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
-  by federal agencies, as required by the DATA Act. As part of the monthly submission process, agencies
+- [File A](https://www.usaspending.gov/download_center/custom_account_data) is part of the package
+  of data submitted
+  to [USAspending.gov](https://www.usaspending.gov/download_center/custom_account_data) every month
+  by federal agencies, as required by the DATA Act. As part of the monthly submission process,
+  agencies
   generate File A automatically from data in the [Governmentwide Treasury Account Symbol Adjusted
-  Trial Balance System (GTAS)](https://fiscal.treasury.gov/gtas/), or choose to upload their own custom File A data.
+  Trial Balance System (GTAS)](https://fiscal.treasury.gov/gtas/), or choose to upload their own
+  custom File A data.
 
 - File A contains budgetary resources, obligation, and outlay data for all the relevant Treasury
-  Account Symbols (TAS) in a reporting agency, with additional breakdown by Budget Function. It includes both award and
+  Account Symbols (TAS) in a reporting agency, with additional breakdown by Budget Function. It
+  includes both award and
   non-award spending (grouped together), and crosswalks with the SF 133 report.
 
-## SF 133 
+## SF 133
 
-- The [SF 133 Report on Budget Execution and Budgetary Resources](https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html) fulfills the requirement in 31
-  U.S.C. 1511 - 1514 that the President review Federal expenditures at least four times a year.
+-
+The [SF 133 Report on Budget Execution and Budgetary Resources](https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html)
+fulfills the requirement in 31
+U.S.C. 1511 - 1514 that the President review Federal expenditures at least four times a year.
 
 - SF 133s provide historical reference that can be used to help prepare the President's Budget,
   program operating plans, and spend-out rate estimates.
 
 - Agencies submit the data that appear on these reports to the Department of the Treasury Bureau of
-  Fiscal Service. While OMB publishes these reports as a service to agency budget and finance offices
+  Fiscal Service. While OMB publishes these reports as a service to agency budget and finance
+  offices
   and other interested parties, the underlying data is submitted by the agencies.
 
 ## 🖥 Core Runtime Requirements
