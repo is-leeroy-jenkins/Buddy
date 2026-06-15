@@ -94,3 +94,9 @@ nav:
       - Gemini Provider: api/gemini.md
       - Grok Provider: api/grok.md
   - Development: development.md
+
+extra_css:
+  - assets/css/buddy.css
+
+extra_javascript:
+  - assets/js/buddy.js

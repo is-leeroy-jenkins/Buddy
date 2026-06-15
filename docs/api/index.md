@@ -13,24 +13,24 @@ source material must be reviewed before an answer is produced.
 Document Q&A combines document ingestion, text extraction, chunking, embedding or provider file
 search, prompt construction, and response rendering.
 
-| Stage | Description |
-| --- | --- |
-| Upload | Adds source files to the active session. |
-| Extraction | Reads text from supported document formats. |
-| Chunking | Breaks documents into reusable context segments. |
-| Retrieval | Finds relevant chunks or provider search results. |
+| Stage      | Description                                         |
+|------------|-----------------------------------------------------|
+| Upload     | Adds source files to the active session.            |
+| Extraction | Reads text from supported document formats.         |
+| Chunking   | Breaks documents into reusable context segments.    |
+| Retrieval  | Finds relevant chunks or provider search results.   |
 | Generation | Sends prompt plus context to the selected provider. |
-| Review | Displays answer text and available source material. |
+| Review     | Displays answer text and available source material. |
 
 ## 📄 Supported Use Cases
 
-| Use Case | Example |
-| --- | --- |
-| Guidance interpretation | Ask questions about OMB, Treasury, GAO, or agency policy. |
-| Budget analysis | Query budget execution documents or financial datasets. |
-| Legislative review | Summarize provisions from appropriations or authorization language. |
-| Source comparison | Compare policy requirements across multiple uploaded references. |
-| Briefing support | Extract key points for analyst notes or management summaries. |
+| Use Case                | Example                                                             |
+|-------------------------|---------------------------------------------------------------------|
+| Guidance interpretation | Ask questions about OMB, Treasury, GAO, or agency policy.           |
+| Budget analysis         | Query budget execution documents or financial datasets.             |
+| Legislative review      | Summarize provisions from appropriations or authorization language. |
+| Source comparison       | Compare policy requirements across multiple uploaded references.    |
+| Briefing support        | Extract key points for analyst notes or management summaries.       |
 
 ## 🧪 Example
 
