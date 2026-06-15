@@ -4,11 +4,12 @@
  *  File: docs/assets/js/buddy.js
  *
  *  Purpose:
- *      Provides safe, progressive enhancements for the Buddy MkDocs Material site.
+ *      Provides safe progressive enhancements for the Buddy MkDocs Material site.
  *      This script does not require external libraries and is designed to fail gracefully
  *      when optional page elements are not present.
  *
  *  Features:
+ *      - API tools panel with search, expand all, collapse all, and clear filter
  *      - Scroll-to-top control
  *      - Heading anchor copy buttons
  *      - Large-table filtering
@@ -21,13 +22,13 @@
  *      - Keyboard focus mode
  *      - Copy current page link button
  *      - API reference member badges
- *      - Table of contents progress marker
- *      - Local section reading progress
+ *      - Active table-of-contents highlighting
+ *      - Reading progress bar
  *      - Print helper button
- *      - Mermaid-safe no-op guard
  *
  *  Compatibility:
  *      - MkDocs Material
+ *      - mkdocstrings
  *      - Modern Chromium, Edge, Firefox, Safari
  *
  *  Notes:
@@ -56,7 +57,9 @@
 			navSelector: ".md-nav--primary .md-nav__list",
 			tocSelector: ".md-nav--secondary",
 			tableSelector: ".md-typeset table:not([data-buddy-no-filter])",
-			codeSelector: ".md-typeset pre > code"
+			codeSelector: ".md-typeset pre > code",
+			apiObjectSelector:
+					".doc.doc-object, .doc-class, .doc-function, .doc-method, .doc-attribute, .doc-property"
 		},
 		state: {
 			pageReady: false,
@@ -84,7 +87,9 @@
 			this.restoreNavigationScroll();
 			this.enhanceKeyboardFocus();
 			this.enhanceApiReference();
+			this.addApiTools();
 			this.enhanceTocProgress();
+			this.addMermaidGuard();
 			this.bindLifecycleEvents();
 			this.state.pageReady = true;
 			this.updateReadingProgress();
@@ -181,6 +186,24 @@
 			{
 				event.preventDefault();
 				this.toggleCodeBlock( target.closest( "[data-buddy-toggle-code]" ) );
+				return;
+			}
+			if( target.closest && target.closest( "[data-buddy-api-expand]" ) )
+			{
+				event.preventDefault();
+				this.setApiDetailsState( true );
+				return;
+			}
+			if( target.closest && target.closest( "[data-buddy-api-collapse]" ) )
+			{
+				event.preventDefault();
+				this.setApiDetailsState( false );
+				return;
+			}
+			if( target.closest && target.closest( "[data-buddy-api-clear]" ) )
+			{
+				event.preventDefault();
+				this.clearApiFilter();
 			}
 		},
 		handleKeyboardShortcuts: function( event )
@@ -200,6 +223,15 @@
 			{
 				event.preventDefault();
 				this.copyCurrentPageToClipboard();
+			}
+			if( event.altKey && key === "f" )
+			{
+				const apiSearch = document.getElementById( "buddy-api-search" );
+				if( apiSearch )
+				{
+					event.preventDefault();
+					apiSearch.focus();
+				}
 			}
 		},
 		enhanceExternalLinks: function()
@@ -531,7 +563,7 @@
 			{
 				return "YAML";
 			}
-			if( /^(python|py)\s/i.test( text ) || /def\s+\w+\(|class\s+\w+/.test( text ) )
+			if( /def\s+\w+\(|class\s+\w+/.test( text ) )
 			{
 				return "Python";
 			}
@@ -700,8 +732,7 @@
 		},
 		enhanceApiReference: function()
 		{
-			const apiContainers = document.querySelectorAll(
-					".doc.doc-object, .doc-class, .doc-function, .doc-method, .doc-attribute" );
+			const apiContainers = document.querySelectorAll( this.config.apiObjectSelector );
 			apiContainers.forEach( function( container )
 			{
 				if( container.getAttribute( "data-buddy-api-enhanced" ) === "true" )
@@ -732,12 +763,127 @@
 				{
 					badge.textContent = "attribute";
 				}
+				else if( container.className.indexOf( "doc-property" ) !== -1 )
+				{
+					badge.textContent = "property";
+				}
 				else
 				{
 					badge.textContent = "api";
 				}
 				heading.appendChild( badge );
 			} );
+		},
+		addApiTools: function()
+		{
+			const content = document.querySelector( this.config.contentSelector );
+			if( !content )
+			{
+				return;
+			}
+			if( content.querySelector( ".buddy-api-tools" ) )
+			{
+				return;
+			}
+			const apiObjects = content.querySelectorAll( this.config.apiObjectSelector );
+			const detailsBlocks = content.querySelectorAll( "details" );
+			if( apiObjects.length === 0 && detailsBlocks.length === 0 )
+			{
+				return;
+			}
+			const firstHeading = content.querySelector( "h1" );
+			if( !firstHeading )
+			{
+				return;
+			}
+			const panel = document.createElement( "section" );
+			panel.className = "buddy-api-tools";
+			panel.setAttribute( "aria-label", "API tools" );
+			panel.innerHTML = [
+				"<h2 class=\"buddy-api-tools-title\">API Tools</h2>",
+				"<label class=\"buddy-api-search-label\" for=\"buddy-api-search\">Filter classes, methods, properties, or text</label>",
+				"<input id=\"buddy-api-search\" class=\"buddy-api-search\" type=\"search\" placeholder=\"Filter classes, methods, properties, or text...\" autocomplete=\"off\">",
+				"<div class=\"buddy-api-tool-buttons\">",
+				"<button type=\"button\" class=\"buddy-api-tool-button\" data-buddy-api-expand>Expand all</button>",
+				"<button type=\"button\" class=\"buddy-api-tool-button\" data-buddy-api-collapse>Collapse all</button>",
+				"<button type=\"button\" class=\"buddy-api-tool-button\" data-buddy-api-clear>Clear filter</button>",
+				"</div>",
+				"<p class=\"buddy-api-filter-status\" aria-live=\"polite\"></p>"
+			].join( "" );
+			firstHeading.insertAdjacentElement( "afterend", panel );
+			const input = panel.querySelector( "#buddy-api-search" );
+			const status = panel.querySelector( ".buddy-api-filter-status" );
+			if( input )
+			{
+				input.addEventListener( "input", function()
+				{
+					BuddyDocs.filterApiObjects( input.value, status );
+				} );
+			}
+		},
+		filterApiObjects: function( query, statusElement )
+		{
+			const normalizedQuery = String( query || "" ).trim().toLowerCase();
+			const content = document.querySelector( this.config.contentSelector );
+			if( !content )
+			{
+				return;
+			}
+			const objects = Array.prototype.slice.call(
+					content.querySelectorAll( this.config.apiObjectSelector ) );
+			if( objects.length === 0 )
+			{
+				if( statusElement )
+				{
+					statusElement.textContent = "";
+				}
+				return;
+			}
+			let visibleCount = 0;
+			objects.forEach( function( object )
+			{
+				const text = object.textContent.toLowerCase();
+				if( !normalizedQuery || text.indexOf( normalizedQuery ) !== -1 )
+				{
+					object.classList.remove( "buddy-api-hidden" );
+					visibleCount += 1;
+				}
+				else
+				{
+					object.classList.add( "buddy-api-hidden" );
+				}
+			} );
+			if( statusElement )
+			{
+				if( !normalizedQuery )
+				{
+					statusElement.textContent = "";
+				}
+				else
+				{
+					statusElement.textContent = visibleCount + " matching API sections";
+				}
+			}
+		},
+		setApiDetailsState: function( open )
+		{
+			const detailsBlocks = document.querySelectorAll( ".md-content__inner details" );
+			detailsBlocks.forEach( function( details )
+			{
+				details.open = open;
+			} );
+		},
+		clearApiFilter: function()
+		{
+			const input = document.getElementById( "buddy-api-search" );
+			const status = document.querySelector( ".buddy-api-filter-status" );
+			if( !input )
+			{
+				return;
+			}
+			input.value = "";
+			this.filterApiObjects( "", status );
+			input.focus();
 		},
 		enhanceTocProgress: function()
 		{
