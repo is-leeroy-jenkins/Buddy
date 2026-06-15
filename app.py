@@ -9424,8 +9424,7 @@ def get_active_grok_collection_ids( provider_name: Optional[ str ] = None ) -> L
 	
 	return parse_storage_ids( resource_id )
 
-def get_active_gemini_file_search_store_names( provider_name: Optional[ str ] = None ) -> List[
-	str ]:
+def get_active_gemini_file_search_store_names( provider_name: Optional[ str ] = None ) -> List[ str ]:
 	"""Get active gemini file search store names.
 	
 	Purpose:
