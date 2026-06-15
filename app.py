@@ -42,7 +42,7 @@
   ******************************************************************************************
 '''
 from __future__ import annotations
-from boogr import Error
+from boogr import Error, Logger
 import config as cfg
 import streamlit as st
 import sqlite3
@@ -104,8 +104,7 @@ if 'googlemaps_api_key' not in st.session_state:
 
 if 'geocoding_api_key' not in st.session_state:
 	st.session_state[ 'geocoding_api_key' ] = ''
-	
-	
+
 if st.session_state.openai_api_key == '':
 	default = cfg.OPENAI_API_KEY
 	if default:
@@ -135,7 +134,7 @@ if st.session_state.xai_api_key == '':
 	if default:
 		st.session_state.xai_api_key = default
 		os.environ[ 'XAI_API_KEY' ] = default
-		
+
 if st.session_state.google_cse_id == '':
 	default = cfg.GOOGLE_CSE_ID
 	if default:
@@ -153,7 +152,7 @@ if st.session_state.geocoding_api_key == '':
 	if default:
 		st.session_state.geocoding_api_key = default
 		os.environ[ 'GEOCODING_API_KEY' ] = default
-		
+
 if 'provider' not in st.session_state or st.session_state[ 'provider' ] is None:
 	st.session_state[ 'provider' ] = 'GPT'
 
@@ -249,7 +248,7 @@ if 'store' not in st.session_state:
 
 if 'stream' not in st.session_state:
 	st.session_state[ 'stream' ] = False
-	
+
 if 'execution_mode' not in st.session_state:
 	st.session_state[ 'execution_mode' ] = 'Standard'
 
@@ -370,10 +369,10 @@ if 'text_content' not in st.session_state:
 
 if 'text_messages' not in st.session_state:
 	st.session_state[ 'text_messages' ] = [ ]
-	
+
 if 'text_gemini_history' not in st.session_state:
 	st.session_state[ 'text_gemini_history' ] = [ ]
-	
+
 # --------IMAGE-GENERATION PARAMETERS--------------------
 
 if 'image_max_tokens' not in st.session_state:
@@ -484,7 +483,7 @@ if 'image_grounded' not in st.session_state:
 
 if 'image_image_search' not in st.session_state:
 	st.session_state[ 'image_image_search' ] = False
-	
+
 # --------AUDIO-GENERATION PARAMETERS--------------------
 
 if 'audio_max_tokens' not in st.session_state:
@@ -866,32 +865,27 @@ if 'token_usage' not in st.session_state:
 
 @st.cache_resource
 def load_embedder( ) -> SentenceTransformer:
-	"""
+	"""Load embedder.
 	
-		Purpose:
-		--------
-		Load the sentence-transformers embedder used by the local prompt builder.
+	Purpose:
+	    Retrieves load embedder for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
 	
-		Parameters:
-		-----------
-		None
-	
-		Returns:
-		--------
-		SentenceTransformer
-			Loaded embedding model.
-			
+	Returns:
+	    SentenceTransformer: Normalized result produced for the active application workflow.
 	"""
 	return SentenceTransformer( 'all-MiniLM-L6-v2' )
 
 def resolve_gemini_api_key( ) -> Optional[ str ]:
-	"""
+	"""Resolve gemini api key.
 	
-		Resolve Gemini API key using the following precedence:
-		1) Session override (user-entered)
-		2) config.py default
-		3) Environment variable (optional fallback)
-		
+	Purpose:
+	    Supports the resolve gemini api key application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Returns:
+	    Optional[str]: Text value produced for the active application workflow.
 	"""
 	session_key = st.session_state.get( "gemini_api_key" )
 	if session_key:
@@ -904,12 +898,11 @@ def resolve_gemini_api_key( ) -> Optional[ str ]:
 	return os.environ.get( "GOOGLE_API_KEY" )
 
 def _apply_gemini_runtime_config( ) -> None:
-	"""
-		
-		Ensure Gemini client initializes in API-key mode (not Vertex AI).
+	"""Apply gemini runtime config.
 	
-		This avoids: "Project/location and API key are mutually exclusive in the client initializer."
-		
+	Purpose:
+	    Supports the apply gemini runtime config application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
 	"""
 	key = resolve_gemini_api_key( )
 	if key:
@@ -919,11 +912,21 @@ def _apply_gemini_runtime_config( ) -> None:
 	# gemini.py reads these from the shared config module at runtime.
 	try:
 		setattr( cfg, "GOOGLE_CLOUD_PROJECT", None )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = '_apply_gemini_runtime_config'
+		exception.method = '_apply_gemini_runtime_config( ) -> None'
+		Logger( ).write( exception )
 		pass
 	try:
 		setattr( cfg, "GOOGLE_CLOUD_LOCATION", None )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = '_apply_gemini_runtime_config'
+		exception.method = '_apply_gemini_runtime_config( ) -> None'
+		Logger( ).write( exception )
 		pass
 
 # ==============================================================================
@@ -931,20 +934,17 @@ def _apply_gemini_runtime_config( ) -> None:
 # ==============================================================================
 
 def extract_response_text( response: object ) -> str:
-	"""
-		
-		Purpose:
-		--------
-		Safely extract assistant text from a Responses API object.
+	"""Extract response text.
 	
-		Parameters:
-		-----------
-		response (object): The response returned from the OpenAI client.
+	Purpose:
+	    Transforms extract response text inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
 	
-		Returns:
-		--------
-		str: Concatenated assistant text output. Empty string if none found.
-		
+	Args:
+	    response: Response value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if response is None:
 		return ""
@@ -973,20 +973,17 @@ def extract_response_text( response: object ) -> str:
 	return "".join( text_chunks ).strip( )
 
 def convert_xml( text: str ) -> str:
-	"""
-		
-			Purpose:
-			_________
-			Convert XML-delimited prompt text into Markdown by treating XML-like
-			tags as section delimiters, not as strict XML.
+	"""Convert xml.
 	
-			Parameters:
-			-----------
-			text (str) - Prompt text containing XML-like opening and closing tags.
+	Purpose:
+	    Transforms convert xml inputs into a normalized representation used by provider calls,
+	    document retrieval, data management, or UI rendering.
 	
-			Returns:
-			---------
-			Markdown-formatted text using level-2 headings (##).
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	markdown_blocks: List[ str ] = [ ]
 	for match in cfg.XML_BLOCK_PATTERN.finditer( text ):
@@ -1001,26 +998,17 @@ def convert_xml( text: str ) -> str:
 	return "\n\n".join( markdown_blocks )
 
 def convert_markdown( text: Any ) -> str:
-	"""
-		Purpose:
-		--------
-		Convert between Markdown headings and simple XML-like heading tags.
+	"""Convert markdown.
 	
-		Behavior:
-		---------
-		Auto-detects direction:
-		  - If <h1>...</h1> / <h2>...</h2> ... exist, converts to Markdown (# / ## / ###).
-		  - Otherwise converts Markdown headings (# / ## / ###) to <hN>...</hN> tags.
+	Purpose:
+	    Transforms convert markdown inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
 	
-		Parameters:
-		-----------
-		text : Any
-			Source text. Non-string values return "".
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
 	
-		Returns:
-		--------
-		str
-			Converted text.
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( text, str ) or not text.strip( ):
 		return ""
@@ -1041,6 +1029,18 @@ def convert_markdown( text: Any ) -> str:
 	# ------------------------------------------------------------------
 	if contains_htags:
 		def _htag_to_md( match: re.Match ) -> str:
+			"""Htag to md.
+			
+			Purpose:
+			    Supports the htag to md application workflow by coordinating validated inputs,
+			    Streamlit session state, provider configuration, and local data processing.
+			
+			Args:
+			    match: Match value used by the application workflow.
+			
+			Returns:
+			    str: Text value produced for the active application workflow.
+			"""
 			level = int( match.group( 1 ) )
 			content = match.group( 2 ).strip( )
 			
@@ -1058,6 +1058,18 @@ def convert_markdown( text: Any ) -> str:
 	# Markdown headings -> XML-like heading tags
 	# ------------------------------------------------------------------
 	def _md_to_htag( match: re.Match ) -> str:
+		"""Md to htag.
+		
+		Purpose:
+		    Supports the md to htag application workflow by coordinating validated inputs,
+		    Streamlit session state, provider configuration, and local data processing.
+		
+		Args:
+		    match: Match value used by the application workflow.
+		
+		Returns:
+		    str: Text value produced for the active application workflow.
+		"""
 		hashes = match.group( 1 )
 		content = match.group( 2 ).strip( )
 		level = len( hashes )
@@ -1067,42 +1079,33 @@ def convert_markdown( text: Any ) -> str:
 	return out.strip( )
 
 def encode_image_base64( path: str ) -> str:
-	"""
+	"""Encode image base64.
 	
-		Purpose:
-		_________
-		
-		Parametes:
-		----------
-		
-		
-		Returns:
-		--------
-		
-		
+	Purpose:
+	    Supports the encode image base64 application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    path: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	data = Path( path ).read_bytes( )
 	return base64.b64encode( data ).decode( "utf-8" )
 
 def normalize_text( text: str ) -> str:
-	"""
-		
-		Purpose
-		-------
-		Normalize text by:
-			• Converting to lowercase
-			• Removing punctuation except sentence delimiters (. ! ?)
-			• Ensuring clean sentence boundary spacing
-			• Collapsing whitespace
+	"""Normalize text.
 	
-		Parameters
-		----------
-		text: str
+	Purpose:
+	    Transforms normalize text inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
 	
-		Returns
-		-------
-		str
-		
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not text:
 		return ""
@@ -1122,23 +1125,18 @@ def normalize_text( text: str ) -> str:
 	return text
 
 def chunk_text( text: str, max_tokens: int = 400 ) -> list[ str ]:
-	"""
-		
-		Purpose
-		-------
-		Segment normalized text into chunks by:
-			1. Sentence boundaries
-			2. Fallback to token windowing if needed
+	"""Chunk text.
 	
-		Parameters
-		----------
-		text: str
-		max_tokens: int
+	Purpose:
+	    Supports the chunk text application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
 	
-		Returns
-		-------
-		list[str]
-		
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	    max_tokens: Numeric control value that constrains the operation.
+	
+	Returns:
+	    list[str]: List of normalized values used by the application workflow.
 	"""
 	if not text:
 		return [ ]
@@ -1171,16 +1169,34 @@ def chunk_text( text: str, max_tokens: int = 400 ) -> list[ str ]:
 	return chunks
 
 def cosine_sim( a: np.ndarray, b: np.ndarray ) -> float:
+	"""Cosine sim.
+	
+	Purpose:
+	    Supports the cosine sim application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    a: A value used by the application workflow.
+	    b: B value used by the application workflow.
+	
+	Returns:
+	    float: Normalized result produced for the active application workflow.
+	"""
 	denom = np.linalg.norm( a ) * np.linalg.norm( b )
 	return float( np.dot( a, b ) / denom ) if denom else 0.0
 
 def sanitize_markdown( text: str ) -> str:
-	"""
+	"""Sanitize markdown.
 	
-		Purpose:
-		_________
-		
-		
+	Purpose:
+	    Transforms sanitize markdown inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	# Remove bold markers
 	text = re.sub( r"\*\*(.*?)\*\*", r"\1", text )
@@ -1189,12 +1205,11 @@ def sanitize_markdown( text: str ) -> str:
 	return text
 
 def inject_response_css( ) -> None:
-	"""
+	"""Inject response css.
 	
-		Purpose:
-		_________
-		Set the the format via css.
-		
+	Purpose:
+	    Renders inject response css in the Streamlit interface while preserving the active
+	    session state and provider workflow context.
 	"""
 	st.markdown(
 		"""
@@ -1235,12 +1250,11 @@ def inject_response_css( ) -> None:
 		""", unsafe_allow_html=True )
 
 def style_subheaders( ) -> None:
-	"""
+	"""Style subheaders.
 	
-		Purpose:
-		_________
-		Sets the style of subheaders in the main UI
-		
+	Purpose:
+	    Renders style subheaders in the Streamlit interface while preserving the active session
+	    state and provider workflow context.
 	"""
 	st.markdown(
 		"""
@@ -1255,38 +1269,35 @@ def style_subheaders( ) -> None:
 		""",
 		unsafe_allow_html=True,
 	)
-	
+
 def init_state( ) -> None:
-	"""
+	"""Init state.
 	
-		Purpose:
-		_________
-		Initializes all session state variables.
-		
-		
+	Purpose:
+	    Maintains application runtime state for init state by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
 	"""
 	if 'chat_history' not in st.session_state:
 		st.session_state.chat_history = [ ]
 	
 	if 'chat_messages' not in st.session_state:
 		st.session_state.chat_messages = [ ]
-		
+	
 	if 'execution_mode' not in st.session_state:
 		st.session_state.execution_mode = 'Standard'
-		
-	for k in ( 'audio_system_instructions',
-				'image_system_instructions',
-				'docqna_system_instructions',
-				'text_system_instructions' ):
+	
+	for k in ('audio_system_instructions',
+	          'image_system_instructions',
+	          'docqna_system_instructions',
+	          'text_system_instructions'):
 		st.session_state.setdefault( k, "" )
 
 def reset_state( ) -> None:
-	"""
+	"""Reset state.
 	
-		Purpose:
-		_________
-		Resets the session state to default values
-		
+	Purpose:
+	    Maintains application runtime state for reset state by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state.chat_history = [ ]
 	st.session_state.last_answer = ""
@@ -1298,6 +1309,18 @@ def reset_state( ) -> None:
 	}
 
 def normalize( obj ):
+	"""Normalize.
+	
+	Purpose:
+	    Supports the normalize application workflow by coordinating validated inputs, Streamlit
+	    session state, provider configuration, and local data processing.
+	
+	Args:
+	    obj: Obj value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	if obj is None or isinstance( obj, (str, int, float, bool) ):
 		return obj
 	
@@ -1309,27 +1332,27 @@ def normalize( obj ):
 	if hasattr( obj, "model_dump" ):
 		try:
 			return obj.model_dump( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize'
+			exception.method = 'normalize( obj ) -> object'
+			Logger( ).write( exception )
 			return str( obj )
 	return str( obj )
 
 def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Extract sources.
 	
-		Purpose:
-		_________
-		Parses-out sources from structured response object.
-		
-		Parameters:
-		------------
-		response: Any
-			Structured API response.
-		
-		Returns:
-		---------
-		List[ Dict[ str, Any ] ]
-			List of normalized source dictionaries.
+	Purpose:
+	    Transforms extract sources inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
 	
+	Args:
+	    response: Response value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	sources: List[ Dict[ str, Any ] ] = [ ]
 	
@@ -1362,7 +1385,7 @@ def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 					continue
 				
 				sources.append( { 'title': s.get( 'title' ), 'snippet': s.get( 'snippet' ),
-						'url': s.get( 'url' ), 'files_id': None, } )
+				                  'url': s.get( 'url' ), 'files_id': None, } )
 		
 		# ------------------------------------------------
 		# File search (vector store)
@@ -1379,26 +1402,23 @@ def extract_sources( response: Any ) -> List[ Dict[ str, Any ] ]:
 					continue
 				
 				sources.append( { 'title': s.get( 'file_name' ) or s.get( 'title' ),
-						'snippet': s.get( 'text' ), 'url': None, 'files_id': s.get( 'files_id' ), } )
+				                  'snippet': s.get( 'text' ), 'url': None,
+				                  'files_id': s.get( 'files_id' ), } )
 	
 	return sources
 
-def save_temp( upload ) ->  str | None:
-	"""
-		Purpose:
-		--------
-		Save a Streamlit UploadedFile object to a temporary file on disk
-		and return the filesystem path.
+def save_temp( upload ) -> str | None:
+	"""Save temp.
 	
-		Parameters:
-		-----------
-		upload : streamlit.runtime.uploaded_file_manager.UploadedFile
-			Uploaded file object from st.file_uploader.
+	Purpose:
+	    Applies the save temp operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
 	
-		Returns:
-		--------
-		str | None
-			Path to the temporary file, or None if invalid input.
+	Args:
+	    upload: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if upload is None:
 		return None
@@ -1411,18 +1431,26 @@ def save_temp( upload ) ->  str | None:
 			tmp_path = tmp.name
 		
 		return tmp_path
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'save_temp'
+		exception.method = 'save_temp( upload ) -> str | None'
+		Logger( ).write( exception )
 		return None
 
 def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
-	"""
+	"""Extract usage from response.
 	
-		Purpose:
-		_________
-		Extract token usage from a response object/dict.
-		Returns dict with prompt_tokens, completion_tokens, total_tokens.
-		Defensive: returns zeros if not present.
-		
+	Purpose:
+	    Supports the extract usage from response application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    resp: Resp value used by the application workflow.
+	
+	Returns:
+	    Dict[str, int]: Dictionary containing normalized workflow configuration or results.
 	"""
 	usage = { 'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0, }
 	if not resp:
@@ -1431,7 +1459,12 @@ def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 	raw = None
 	try:
 		raw = getattr( resp, "usage", None )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = '_extract_usage_from_response'
+		exception.method = '_extract_usage_from_response( resp ) -> Dict[str, int]'
+		Logger( ).write( exception )
 		raw = None
 	
 	if not raw and isinstance( resp, dict ):
@@ -1459,18 +1492,25 @@ def _extract_usage_from_response( resp: Any ) -> Dict[ str, int ]:
 			usage[ "total_tokens" ] = int(
 				getattr( raw, "total_tokens",
 					usage[ "prompt_tokens" ] + usage[ "completion_tokens" ], ) )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = '_extract_usage_from_response'
+		exception.method = '_extract_usage_from_response( resp ) -> Dict[str, int]'
+		Logger( ).write( exception )
 		usage[ "total_tokens" ] = (usage[ "prompt_tokens" ] + usage[ "completion_tokens" ])
 	
 	return usage
 
 def update_token_counters( resp: Any ) -> None:
-	"""
+	"""Update token counters.
 	
-		Purpose:
-		_________
-		Update session_state.last_call_usage and accumulate into session_state.token_usage.
-		
+	Purpose:
+	    Applies the update token counters operation to application-managed data, files,
+	    prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    resp: Resp value used by the application workflow.
 	"""
 	usage = _extract_usage_from_response( resp )
 	st.session_state.last_call_usage = usage
@@ -1479,18 +1519,43 @@ def update_token_counters( resp: Any ) -> None:
 	st.session_state.token_usage[ "total_tokens" ] += usage.get( "total_tokens", 0 )
 
 def _display_value( val: Any ) -> str:
-	"""
-		Render a friendly display string for header values.
-		None -> em dash; otherwise str(value).
+	"""Display value.
+	
+	Purpose:
+	    Supports the display value application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    val: Val value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if val is None:
 		return "—"
 	try:
 		return str( val )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = '_display_value'
+		exception.method = '_display_value( val ) -> str'
+		Logger( ).write( exception )
 		return "—"
 
 def build_intent_prefix( mode: str ) -> str:
+	"""Build intent prefix.
+	
+	Purpose:
+	    Builds build intent prefix from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    mode: Mode value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
 	if mode == 'Guidance Only':
 		return (
 				'[ANALYST INTENT]\n'
@@ -1506,18 +1571,57 @@ def build_intent_prefix( mode: str ) -> str:
 	return ''
 
 def save_message( role: str, content: str ) -> None:
+	"""Save message.
+	
+	Purpose:
+	    Applies the save message operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    role: Role value used by the application workflow.
+	    content: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "INSERT INTO chat_history (role, content) VALUES (?, ?)", (role, content) )
 
 def load_history( ) -> List[ Tuple[ str, str ] ]:
+	"""Load history.
+	
+	Purpose:
+	    Retrieves load history for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Returns:
+	    List[Tuple[str, str]]: List of normalized values used by the application workflow.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		return conn.execute( "SELECT role, content FROM chat_history ORDER BY id" ).fetchall( )
 
 def clear_history( ) -> None:
+	"""Clear history.
+	
+	Purpose:
+	    Maintains application runtime state for clear history by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM chat_history" )
 
 def format_results( results ):
+	"""Format results.
+	
+	Purpose:
+	    Supports the format results application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    results: Results value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	formatted_results = ''
 	for result in results.data:
 		formatted_result = f"<li> '{result.name}'"
@@ -1525,21 +1629,17 @@ def format_results( results ):
 	return f"<p>{formatted_results}</p>"
 
 def count_tokens( text: str ) -> int:
-	"""
-		
-		Purpose
-		----------
-		Returns the number of tokens in a text string.
-		
-		Parmeters
-		-----------
-		string : str
-		encoding_name : str
-		
-		Return
-		------------
-		int
-		
+	"""Count tokens.
+	
+	Purpose:
+	    Transforms count tokens inputs into a normalized representation used by provider calls,
+	    document retrieval, data management, or UI rendering.
+	
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    int: Normalized result produced for the active application workflow.
 	"""
 	encoding = tiktoken.get_encoding( 'cl100k_base' )
 	num_tokens = len( encoding.encode( text ) )
@@ -1550,20 +1650,18 @@ def count_tokens( text: str ) -> int:
 # ==============================================================================
 
 def fetch_prompt_names( db_path: str ) -> list[ str ]:
-	"""
-		Purpose:
-		--------
-		Retrieve template names from Prompts table.
+	"""Fetch prompt names.
 	
-		Parameters:
-		-----------
-		db_path : str
-			SQLite database path.
+	Purpose:
+	    Retrieves fetch prompt names for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
 	
-		Returns:
-		--------
-		list[str]
-			Sorted prompt names.
+	Args:
+	    db_path: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    list[str]: List of normalized values used by the application workflow.
 	"""
 	try:
 		conn = sqlite3.connect( db_path )
@@ -1572,26 +1670,28 @@ def fetch_prompt_names( db_path: str ) -> list[ str ]:
 		rows = cur.fetchall( )
 		conn.close( )
 		return [ r[ 0 ] for r in rows if r and r[ 0 ] is not None ]
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'fetch_prompt_names'
+		exception.method = 'fetch_prompt_names( db_path ) -> list[str]'
+		Logger( ).write( exception )
 		return [ ]
 
 def fetch_prompt_text( db_path: str, name: str ) -> str | None:
-	"""
-		Purpose:
-		--------
-		Retrieve template text by name.
+	"""Fetch prompt text.
 	
-		Parameters:
-		-----------
-		db_path : str
-			SQLite database path.
-		name : str
-			Template name.
+	Purpose:
+	    Retrieves fetch prompt text for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
 	
-		Returns:
-		--------
-		str | None
-			Prompt text if found.
+	Args:
+	    db_path: File, upload, or path value used by the document or storage workflow.
+	    name: Name value used by the application workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	try:
 		conn = sqlite3.connect( db_path )
@@ -1600,10 +1700,26 @@ def fetch_prompt_text( db_path: str, name: str ) -> str | None:
 		row = cur.fetchone( )
 		conn.close( )
 		return str( row[ 0 ] ) if row and row[ 0 ] is not None else None
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'fetch_prompt_text'
+		exception.method = 'fetch_prompt_text( db_path, name ) -> str | None'
+		Logger( ).write( exception )
 		return None
 
 def fetch_prompts_df( ) -> pd.DataFrame:
+	"""Fetch prompts df.
+	
+	Purpose:
+	    Retrieves fetch prompts df for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Returns:
+	    pd.DataFrame: DataFrame produced for application display, profiling, retrieval, or
+	        export.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		df = pd.read_sql_query(
 			"SELECT PromptsId, Caption,  Name, Version, ID FROM Prompts ORDER BY PromptsId DESC",
@@ -1612,6 +1728,20 @@ def fetch_prompts_df( ) -> pd.DataFrame:
 	return df
 
 def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
+	"""Fetch prompt by id.
+	
+	Purpose:
+	    Retrieves fetch prompt by id for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    pid: Pid value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any] | None: Dictionary containing normalized workflow configuration or
+	        results.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
 			"SELECT PromptsId, Caption, Name, Text, Version, ID FROM Prompts WHERE PromptsId=?",
@@ -1621,6 +1751,20 @@ def fetch_prompt_by_id( pid: int ) -> Dict[ str, Any ] | None:
 		return dict( zip( [ c[ 0 ] for c in cur.description ], row ) ) if row else None
 
 def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
+	"""Fetch prompt by name.
+	
+	Purpose:
+	    Retrieves fetch prompt by name for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    name: Name value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any] | None: Dictionary containing normalized workflow configuration or
+	        results.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		cur = conn.execute(
 			"SELECT PromptsId, Caption, Name, Text, Version, ID FROM Prompts WHERE Caption=?",
@@ -1630,37 +1774,63 @@ def fetch_prompt_by_name( name: str ) -> Dict[ str, Any ] | None:
 		return dict( zip( [ c[ 0 ] for c in cur.description ], row ) ) if row else None
 
 def insert_prompt( data: Dict[ str, Any ] ) -> None:
+	"""Insert prompt.
+	
+	Purpose:
+	    Applies the insert prompt operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    data: Data value used by the application workflow.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( 'INSERT INTO Prompts (Caption, Name, Text, Version, ID) VALUES (?, ?, ?, ?)',
 			(data[ 'Caption' ], data[ 'Name' ], data[ 'Text' ], data[ 'Version' ], data[ 'ID' ]) )
 
 def update_prompt( pid: int, data: Dict[ str, Any ] ) -> None:
+	"""Update prompt.
+	
+	Purpose:
+	    Applies the update prompt operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    pid: Pid value used by the application workflow.
+	    data: Data value used by the application workflow.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute(
 			"UPDATE Prompts SET Caption=?, Name=?, Text=?, Version=?, ID=? WHERE PromptsId=?",
-			(data[ "Caption" ], data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ], pid)
+			(data[ "Caption" ], data[ "Name" ], data[ "Text" ], data[ "Version" ], data[ "ID" ],
+			 pid)
 		)
 
 def delete_prompt( pid: int ) -> None:
+	"""Delete prompt.
+	
+	Purpose:
+	    Applies the delete prompt operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    pid: Pid value used by the application workflow.
+	"""
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( "DELETE FROM Prompts WHERE PromptsId=?", (pid,) )
 
 def build_prompt( user_input: str ) -> str:
-	"""
-		Purpose:
-		--------
-		Build a llama.cpp-compatible prompt using the application's system instructions, optional
-		retrieval context (semantic + basic RAG), and the current in-memory chat history.
-
-		Parameters:
-		-----------
-		user_input : str
-			The current user turn to append to the prompt.
-
-		Returns:
-		--------
-		str
-			A fully constructed prompt in chat template format.
+	"""Build prompt.
+	
+	Purpose:
+	    Builds build prompt from validated runtime inputs and prepares the resulting object,
+	    payload, table, or display structure for later application processing.
+	
+	Args:
+	    user_input: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	system_instructions = st.session_state.get( 'system_instructions', '' )
 	use_semantic = bool( st.session_state.get( 'use_semantic', False ) )
@@ -1713,6 +1883,12 @@ os.makedirs( os.path.dirname( DM_DB_PATH ), exist_ok=True )
 # ==============================================================================
 
 def initialize_database( ) -> None:
+	"""Initialize database.
+	
+	Purpose:
+	    Maintains application runtime state for initialize database by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
+	"""
 	Path( "stores/sqlite" ).mkdir( parents=True, exist_ok=True )
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
 		conn.execute( """
@@ -1774,19 +1950,64 @@ def initialize_database( ) -> None:
 		              """ )
 
 def create_connection( ) -> sqlite3.Connection:
+	"""Create connection.
+	
+	Purpose:
+	    Builds create connection from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Returns:
+	    sqlite3.Connection: SQLite connection used by the local data-management workflow.
+	"""
 	return sqlite3.connect( DM_DB_PATH )
 
 def list_tables( ) -> List[ str ]:
+	"""List tables.
+	
+	Purpose:
+	    Retrieves list tables for the Streamlit application workflow and returns the normalized
+	    value used by downstream UI, provider, database, or document-processing steps.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
+	"""
 	with create_connection( ) as conn:
 		_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
 		rows = conn.execute( _query ).fetchall( )
 		return [ r[ 0 ] for r in rows ]
 
 def create_schema( table: str ) -> List[ Tuple ]:
+	"""Create schema.
+	
+	Purpose:
+	    Builds create schema from validated runtime inputs and prepares the resulting object,
+	    payload, table, or display structure for later application processing.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	
+	Returns:
+	    List[Tuple]: List of normalized values used by the application workflow.
+	"""
 	with create_connection( ) as conn:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
-def read_table( table: str, limit: int = None, offset: int=0 ) -> pd.DataFrame:
+def read_table( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
+	"""Read table.
+	
+	Purpose:
+	    Retrieves read table for the Streamlit application workflow and returns the normalized
+	    value used by downstream UI, provider, database, or document-processing steps.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	    limit: Numeric control value that constrains the operation.
+	    offset: Numeric control value that constrains the operation.
+	
+	Returns:
+	    pd.DataFrame: DataFrame produced for application display, profiling, retrieval, or
+	        export.
+	"""
 	query = f'SELECT rowid, * FROM "{table}"'
 	if limit:
 		query += f" LIMIT {limit} OFFSET {offset}"
@@ -1794,15 +2015,14 @@ def read_table( table: str, limit: int = None, offset: int=0 ) -> pd.DataFrame:
 		return pd.read_sql_query( query, conn )
 
 def drop_table( table: str ) -> None:
-	"""
-		Purpose:
-		--------
-		Safely drop a table if it exists.
+	"""Drop table.
 	
-		Parameters:
-		-----------
-		table : str
-			Table name.
+	Purpose:
+	    Applies the drop table operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
 	"""
 	if not table:
 		return
@@ -1812,24 +2032,19 @@ def drop_table( table: str ) -> None:
 		conn.commit( )
 
 def create_index( table: str, column: str ) -> None:
-	"""
-		Purpose:
-		--------
-		Create a safe SQLite index on a specified table column.
+	"""Create index.
 	
-		Handles:
-			- Spaces in column names
-			- Special characters
-			- Reserved words
-			- Duplicate index names
-			- Validation against actual table schema
+	Purpose:
+	    Builds create index from validated runtime inputs and prepares the resulting object,
+	    payload, table, or display structure for later application processing.
 	
-		Parameters:
-		-----------
-		table : str
-			Table name.
-		column : str
-			Column name to index.
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	    column: Column name used for filtering, schema, indexing, or profiling operations.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not table or not column:
 		return
@@ -1865,11 +2080,24 @@ def create_index( table: str, column: str ) -> None:
 		conn.commit( )
 
 def apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
+	"""Apply filters.
+	
+	Purpose:
+	    Supports the apply filters application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    df: DataFrame supplied to the application data-management or display workflow.
+	
+	Returns:
+	    pd.DataFrame: DataFrame produced for application display, profiling, retrieval, or
+	        export.
+	"""
 	st.subheader( 'Advanced Filters' )
 	conditions = [ ]
 	col1, col2, col3 = st.columns( 3 )
 	column = col1.selectbox( 'Column', df.columns )
-	operator = col2.selectbox( 'Operator', [ '=', '!=', '>', '<', '>=',  '<=', 'contains' ] )
+	operator = col2.selectbox( 'Operator', [ '=', '!=', '>', '<', '>=', '<=', 'contains' ] )
 	value = col3.text_input( 'Value' )
 	if value:
 		if operator == '=':
@@ -1890,6 +2118,15 @@ def apply_filters( df: pd.DataFrame ) -> pd.DataFrame:
 	return df
 
 def create_aggregation( df: pd.DataFrame ):
+	"""Create aggregation.
+	
+	Purpose:
+	    Builds create aggregation from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    df: DataFrame supplied to the application data-management or display workflow.
+	"""
 	st.subheader( 'Aggregation Engine' )
 	
 	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
@@ -1917,13 +2154,22 @@ def create_aggregation( df: pd.DataFrame ):
 	st.metric( 'Result', result )
 
 def create_visualization( df: pd.DataFrame ):
+	"""Create visualization.
+	
+	Purpose:
+	    Builds create visualization from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    df: DataFrame supplied to the application data-management or display workflow.
+	"""
 	st.subheader( 'Visualization Engine' )
 	
 	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 	categorical_cols = df.select_dtypes( include=[ 'object' ] ).columns.tolist( )
 	
 	chart = st.selectbox( 'Chart Type', [ 'Histogram', 'Bar', 'Line',
-			'Scatter', 'Box', 'Pie', 'Correlation' ] )
+	                                      'Scatter', 'Box', 'Pie', 'Correlation' ] )
 	
 	if chart == 'Histogram' and numeric_cols:
 		col = st.selectbox( 'Column', numeric_cols )
@@ -1964,11 +2210,21 @@ def create_visualization( df: pd.DataFrame ):
 		st.plotly_chart( fig, use_container_width=True )
 
 def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
+	"""Dm create table from df.
+	
+	Purpose:
+	    Supports the dm create table from df application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    table_name: SQLite table name used by the data-management workflow.
+	    df: DataFrame supplied to the application data-management or display workflow.
+	"""
 	columns = [ ]
 	for col in df.columns:
 		sql_type = get_sqlite_type( df[ col ].dtype )
 		safe_col = col.replace( ' ', '_' )
-		columns.append( f'{safe_col} {sql_type}')
+		columns.append( f'{safe_col} {sql_type}' )
 	
 	create_stmt = f'CREATE TABLE IF NOT EXISTS {table_name} ({", ".join( columns )});'
 	
@@ -1977,6 +2233,16 @@ def dm_create_table_from_df( table_name: str, df: pd.DataFrame ):
 		conn.commit( )
 
 def insert_data( table_name: str, df: pd.DataFrame ):
+	"""Insert data.
+	
+	Purpose:
+	    Applies the insert data operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    table_name: SQLite table name used by the data-management workflow.
+	    df: DataFrame supplied to the application data-management or display workflow.
+	"""
 	df = df.copy( )
 	df.columns = [ c.replace( ' ', '_' ) for c in df.columns ]
 	
@@ -1988,20 +2254,18 @@ def insert_data( table_name: str, df: pd.DataFrame ):
 		conn.commit( )
 
 def get_sqlite_type( dtype ) -> str:
-	"""
-		Purpose:
-		--------
-		Map a pandas dtype to an appropriate SQLite column type.
+	"""Get sqlite type.
 	
-		Parameters:
-		-----------
-		dtype : pandas dtype
-			The dtype of a pandas Series.
+	Purpose:
+	    Retrieves get sqlite type for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
 	
-		Returns:
-		--------
-		str
-			SQLite column type.
+	Args:
+	    dtype: Dtype value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	dtype_str = str( dtype ).lower( )
 	
@@ -2041,26 +2305,19 @@ def get_sqlite_type( dtype ) -> str:
 	return "TEXT"
 
 def create_custom_table( table_name: str, columns: list ) -> None:
-	"""
-		Purpose:
-		--------
-		Create a custom SQLite table from column definitions.
+	"""Create custom table.
 	
-		Parameters:
-		-----------
-		table_name : str
-			Name of table.
+	Purpose:
+	    Builds create custom table from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
 	
-		columns : list of dict
-			[
-				{
-					"name": str,
-					"type": str,
-					"not_null": bool,
-					"primary_key": bool,
-					"auto_increment": bool
-				}
-			]
+	Args:
+	    table_name: SQLite table name used by the data-management workflow.
+	    columns: Column name used for filtering, schema, indexing, or profiling operations.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not table_name:
 		raise ValueError( "Table name required." )
@@ -2097,23 +2354,18 @@ def create_custom_table( table_name: str, columns: list ) -> None:
 		conn.commit( )
 
 def is_safe_query( query: str ) -> bool:
+	"""Is safe query.
+	
+	Purpose:
+	    Evaluates whether is safe query is enabled or safe for the current provider, model,
+	    table, query, or workflow context.
+	
+	Args:
+	    query: Query string used by the database, retrieval, or provider workflow.
+	
+	Returns:
+	    bool: True when the requested condition is satisfied; otherwise, False.
 	"""
-	
-		Purpose:
-		--------
-		Determine whether a SQL query is read-only and safe to execute.
-	
-		Allows:
-			SELECT
-			WITH (CTE returning SELECT)
-			EXPLAIN SELECT
-			PRAGMA (read-only)
-	
-		Blocks:
-			INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, ATTACH,
-			DETACH, VACUUM, REPLACE, TRIGGER, and multiple statements.
-			
-	"""	
 	if not query or not isinstance( query, str ):
 		return False
 	
@@ -2142,8 +2394,8 @@ def is_safe_query( query: str ) -> bool:
 	# ------------------------------------------------------------------
 	# Block dangerous keywords anywhere
 	# ------------------------------------------------------------------
-	blocked_keywords = ( 'insert ', 'update ', 'delete ', 'drop ', 'alter ',
-			'create ', 'attach ', 'detach ', 'vacuum ', 'replace ', 'trigger ' )
+	blocked_keywords = ('insert ', 'update ', 'delete ', 'drop ', 'alter ',
+	                    'create ', 'attach ', 'detach ', 'vacuum ', 'replace ', 'trigger ')
 	
 	for keyword in blocked_keywords:
 		if keyword in q:
@@ -2152,57 +2404,98 @@ def is_safe_query( query: str ) -> bool:
 	return True
 
 def create_identifier( name: str ) -> str:
-	"""
+	"""Create identifier.
 	
-		Purpose:
-		--------
-		Sanitize a string into a safe SQLite identifier.
+	Purpose:
+	    Builds create identifier from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
 	
-		- Replaces invalid characters with underscores
-		- Ensures it starts with a letter or underscore
-		- Prevents empty names
-		
+	Args:
+	    name: Name value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not name or not isinstance( name, str ):
 		raise ValueError( 'Invalid Identifier.' )
-
+	
 	safe = re.sub( r'[^0-9a-zA-Z_]', '_', name.strip( ) )
 	if not re.match( r'^[A-Za-z_]', safe ):
 		safe = f'_{safe}'
-
+	
 	if not safe:
 		raise ValueError( 'Invalid identifier after sanitization.' )
 	
 	return safe
 
 def get_indexes( table: str ):
+	"""Get indexes.
+	
+	Purpose:
+	    Retrieves get indexes for the Streamlit application workflow and returns the normalized
+	    value used by downstream UI, provider, database, or document-processing steps.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	with create_connection( ) as conn:
-		rows = conn.execute(f'PRAGMA index_list("{table}");').fetchall( )
+		rows = conn.execute( f'PRAGMA index_list("{table}");' ).fetchall( )
 		return rows
 
 def add_column( table: str, column: str, col_type: str ):
+	"""Add column.
+	
+	Purpose:
+	    Applies the add column operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	    column: Column name used for filtering, schema, indexing, or profiling operations.
+	    col_type: Col Type value used by the application workflow.
+	"""
 	column = create_identifier( column )
 	col_type = col_type.upper( )
 	
 	with create_connection( ) as conn:
 		conn.execute(
-			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};')
+			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};' )
 		conn.commit( )
 
 def create_profile_table( table: str ):
+	"""Create profile table.
+	
+	Purpose:
+	    Builds create profile table from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	df = read_table( table )
 	profile_rows = [ ]
 	total_rows = len( df )
 	for col in df.columns:
-		series = df[ col ]		
+		series = df[ col ]
 		null_count = series.isna( ).sum( )
-		distinct_count = series.nunique( dropna=True )		
+		distinct_count = series.nunique( dropna=True )
 		row = \
-		{ 
-				'column': col, 'dtype': str( series.dtype ),
-				'null_%': round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
-				'distinct_%': round( (distinct_count / total_rows) * 100, 2 ) if total_rows else 0,
-		}
+			{
+					'column': col, 'dtype': str( series.dtype ),
+					'null_%': round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
+					'distinct_%': round( (distinct_count / total_rows) * 100,
+						2 ) if total_rows else 0,
+			}
 		
 		if pd.api.types.is_numeric_dtype( series ):
 			row[ "min" ] = series.min( )
@@ -2218,6 +2511,20 @@ def create_profile_table( table: str ):
 	return pd.DataFrame( profile_rows )
 
 def drop_column( table: str, column: str ):
+	"""Drop column.
+	
+	Purpose:
+	    Applies the drop column operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    table: SQLite table name used by the data-management workflow.
+	    column: Column name used for filtering, schema, indexing, or profiling operations.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
+	"""
 	if not table or not column:
 		raise ValueError( "Table and column required." )
 	
@@ -2316,24 +2623,19 @@ def drop_column( table: str, column: str ):
 		conn.commit( )
 
 def rename_table( old_name: str, new_name: str ) -> None:
-	"""
-		Purpose:
-		--------
-		Rename an existing SQLite table. Attempts native ALTER TABLE rename first; if it fails,
-		falls back to a schema-safe rebuild using the original CREATE TABLE statement and
-		preserves indexes.
-
-		Parameters:
-		-----------
-		old_name : str
-			Existing table name.
-
-		new_name : str
-			New table name.
-
-		Returns:
-		--------
-		None
+	"""Rename table.
+	
+	Purpose:
+	    Applies the rename table operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    old_name: Old Name value used by the application workflow.
+	    new_name: New Name value used by the application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not old_name or not new_name:
 		return
@@ -2343,7 +2645,12 @@ def rename_table( old_name: str, new_name: str ) -> None:
 			conn.execute( f'ALTER TABLE "{old_name}" RENAME TO "{new_name}";' )
 			conn.commit( )
 			return
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'rename_table'
+			exception.method = 'rename_table( old_name, new_name ) -> None'
+			Logger( ).write( exception )
 			pass
 		
 		row = conn.execute(
@@ -2397,27 +2704,20 @@ def rename_table( old_name: str, new_name: str ) -> None:
 		conn.commit( )
 
 def rename_column( table_name: str, old_name: str, new_name: str ) -> None:
-	"""
-		Purpose:
-		--------
-		Rename a column within an existing SQLite table. Attempts native ALTER TABLE rename
-		first; if it fails, falls back to a schema-safe rebuild preserving column order, data,
-		and indexes.
-
-		Parameters:
-		-----------
-		table_name : str
-			Table containing the column.
-
-		old_name : str
-			Existing column name.
-
-		new_name : str
-			New column name.
-
-		Returns:
-		--------
-		None
+	"""Rename column.
+	
+	Purpose:
+	    Applies the rename column operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    table_name: SQLite table name used by the data-management workflow.
+	    old_name: Old Name value used by the application workflow.
+	    new_name: New Name value used by the application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not table_name or not old_name or not new_name:
 		return
@@ -2429,7 +2729,12 @@ def rename_column( table_name: str, old_name: str, new_name: str ) -> None:
 			)
 			conn.commit( )
 			return
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'rename_column'
+			exception.method = 'rename_column( table_name, old_name, new_name ) -> None'
+			Logger( ).write( exception )
 			pass
 		
 		row = conn.execute(
@@ -2522,47 +2827,32 @@ PROVIDER_MODULES: Dict[ str, Any ] = {
 }
 
 def ensure_session_key( key: str, default: Any ) -> None:
-	"""
+	"""Ensure session key.
 	
-		Purpose:
-		--------
-		Ensure a Streamlit session-state key exists before any widget with the same key
-		is instantiated.
-		
-		Parameters:
-		-----------
-		key: str
-			Session-state key to initialize.
-		
-		default: Any
-			Default value assigned only when the key is missing.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure session key by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
+	
+	Args:
+	    key: Session-state key or state value used by the Streamlit workflow.
+	    default: Default value used by the application workflow.
 	"""
 	if key not in st.session_state:
 		st.session_state[ key ] = default
 
 def get_provider_name( provider_name: Optional[ str ] = None ) -> str:
-	"""
+	"""Get provider name.
 	
-		Purpose:
-		--------
-		Return a safe provider name for Buddy's provider-routed application modes.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name. When omitted, the function reads
-			st.session_state['provider'].
-		
-		Returns:
-		--------
-		str
-			Provider name constrained to GPT, Gemini, or Grok.
-		
+	Purpose:
+	    Retrieves get provider name for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	selected = provider_name
 	
@@ -2575,45 +2865,34 @@ def get_provider_name( provider_name: Optional[ str ] = None ) -> str:
 	return selected.strip( )
 
 def get_provider_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get provider module.
 	
-		Purpose:
-		--------
-		Return the provider module associated with the selected provider name.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name. When omitted, the active session provider is used.
-		
-		Returns:
-		--------
-		Any
-			Imported provider module.
-		
+	Purpose:
+	    Retrieves get provider module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return PROVIDER_MODULES[ get_provider_name( provider_name ) ]
 
 def provider_supports( capability_name: str, provider_name: Optional[ str ] = None ) -> bool:
-	"""
+	"""Provider supports.
 	
-		Purpose:
-		--------
-		Determine whether a provider module exposes a named capability class.
-		
-		Parameters:
-		-----------
-		capability_name: str
-			Class or capability name to test.
-		
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		bool
-			True when the selected provider exposes the capability; otherwise False.
-		
+	Purpose:
+	    Evaluates whether provider supports is enabled or safe for the current provider, model,
+	    table, query, or workflow context.
+	
+	Args:
+	    capability_name: Capability Name value used by the application workflow.
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    bool: True when the requested condition is satisfied; otherwise, False.
 	"""
 	if not isinstance( capability_name, str ) or not capability_name.strip( ):
 		return False
@@ -2622,26 +2901,23 @@ def provider_supports( capability_name: str, provider_name: Optional[ str ] = No
 	return hasattr( provider_module, capability_name.strip( ) )
 
 def get_provider_capability( capability_name: str, provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get provider capability.
 	
-		Purpose:
-		--------
-		Return a provider capability class from the selected provider module.
-		
-		Parameters:
-		-----------
-		capability_name: str
-			Provider capability class name, such as Chat, Files, VectorStores, FileSearch,
-			or CloudBuckets.
-		
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider capability class.
-		
+	Purpose:
+	    Retrieves get provider capability for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    capability_name: Capability Name value used by the application workflow.
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	provider = get_provider_name( provider_name )
 	provider_module = get_provider_module( provider )
@@ -2655,26 +2931,21 @@ def get_provider_capability( capability_name: str, provider_name: Optional[ str 
 	
 	return getattr( provider_module, name )
 
-def create_provider_capability( capability_name: str, provider_name: Optional[ str ]=None ) -> Any:
-	"""
+def create_provider_capability( capability_name: str,
+		provider_name: Optional[ str ] = None ) -> Any:
+	"""Create provider capability.
 	
-		Purpose:
-		--------
-		Instantiate a provider capability class from the selected provider module.
-		
-		Parameters:
-		-----------
-		capability_name: str
-			Provider capability class name.
-		
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Initialized provider wrapper instance.
-		
+	Purpose:
+	    Builds create provider capability from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    capability_name: Capability Name value used by the application workflow.
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	capability = get_provider_capability( capability_name=capability_name,
 		provider_name=provider_name )
@@ -2682,162 +2953,134 @@ def create_provider_capability( capability_name: str, provider_name: Optional[ s
 	return capability( )
 
 def get_chat_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get chat module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Chat wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider Chat wrapper instance.
-		
+	Purpose:
+	    Retrieves get chat module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'Chat', provider_name )
 
 def get_images_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get images module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Images wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider Images wrapper instance.
-		
+	Purpose:
+	    Retrieves get images module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'Images', provider_name )
 
 def get_embeddings_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get embeddings module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Embeddings wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider Embeddings wrapper instance.
-		
+	Purpose:
+	    Retrieves get embeddings module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'Embeddings', provider_name )
 
 def get_tts_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get tts module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Text-to-Speech wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider TTS wrapper instance.
-		
+	Purpose:
+	    Retrieves get tts module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'TTS', provider_name )
 
 def get_transcription_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get transcription module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Transcription wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider Transcription wrapper instance.
-		
+	Purpose:
+	    Retrieves get transcription module for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'Transcription', provider_name )
 
 def get_translation_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get translation module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Translation wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider Translation wrapper instance.
-		
+	Purpose:
+	    Retrieves get translation module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'Translation', provider_name )
 
 def get_files_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get files module.
 	
-		Purpose:
-		--------
-		Return a provider-specific Files wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Provider Files wrapper instance.
-		
+	Purpose:
+	    Retrieves get files module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return create_provider_capability( 'Files', provider_name )
 
 def get_file_search_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get file search module.
 	
-		Purpose:
-		--------
-		Return a Gemini FileSearch wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name. This must resolve to Gemini.
-		
-		Returns:
-		--------
-		Any
-			Gemini FileSearch wrapper instance.
-		
+	Purpose:
+	    Retrieves get file search module for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -2847,22 +3090,22 @@ def get_file_search_module( provider_name: Optional[ str ] = None ) -> Any:
 	return create_provider_capability( 'FileSearch', provider )
 
 def get_cloudbuckets_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get cloudbuckets module.
 	
-		Purpose:
-		--------
-		Return a Gemini CloudBuckets wrapper instance.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name. This must resolve to Gemini.
-		
-		Returns:
-		--------
-		Any
-			Gemini CloudBuckets wrapper instance.
-		
+	Purpose:
+	    Retrieves get cloudbuckets module for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -2872,41 +3115,31 @@ def get_cloudbuckets_module( provider_name: Optional[ str ] = None ) -> Any:
 	return create_provider_capability( 'CloudBuckets', provider )
 
 def get_cloud_buckets_module( provider_name: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get cloud buckets module.
 	
-		Purpose:
-		--------
-		Backward-compatible alias for get_cloudbuckets_module().
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Any
-			Gemini CloudBuckets wrapper instance.
-		
+	Purpose:
+	    Retrieves get cloud buckets module for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	return get_cloudbuckets_module( provider_name )
 
 def get_gemini_vector_backend( ) -> str:
-	"""
+	"""Get gemini vector backend.
 	
-		Purpose:
-		--------
-		Return the selected Gemini backend used under Buddy's visible Vector Stores alias.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		str
-			Either File Search Stores or Cloud Buckets.
-		
+	Purpose:
+	    Retrieves get gemini vector backend for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	backend = st.session_state.get( 'stores_backend', 'File Search Stores' )
 	
@@ -2917,31 +3150,23 @@ def get_gemini_vector_backend( ) -> str:
 
 def get_vectorstores_module( provider_name: Optional[ str ] = None,
 		backend: Optional[ str ] = None ) -> Any:
-	"""
+	"""Get vectorstores module.
 	
-		Purpose:
-		--------
-		Return the storage wrapper used by Buddy's visible Vector Stores mode.
-		
-		Provider routing:
-			GPT     -> gpt.VectorStores()
-			Grok    -> grok.VectorStores()
-			Gemini  -> gemini.FileSearch() or gemini.CloudBuckets()
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		backend: Optional[str]
-			Optional Gemini backend override. Valid values are File Search Stores and
-			Cloud Buckets.
-		
-		Returns:
-		--------
-		Any
-			Provider storage wrapper instance.
-		
+	Purpose:
+	    Retrieves get vectorstores module for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	    backend: Backend value used by the application workflow.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -2960,25 +3185,19 @@ def get_vectorstores_module( provider_name: Optional[ str ] = None,
 
 def get_vectorstores_backend_name( provider_name: Optional[ str ] = None,
 		backend: Optional[ str ] = None ) -> str:
-	"""
+	"""Get vectorstores backend name.
 	
-		Purpose:
-		--------
-		Return the concrete backend label used by the visible Vector Stores mode.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		backend: Optional[str]
-			Optional Gemini backend override.
-		
-		Returns:
-		--------
-		str
-			Concrete backend label.
-		
+	Purpose:
+	    Retrieves get vectorstores backend name for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	    backend: Backend value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -2995,47 +3214,31 @@ def get_vectorstores_backend_name( provider_name: Optional[ str ] = None,
 	return 'Unsupported Storage Backend'
 
 def _provider( ) -> str:
-	"""
+	"""Provider.
 	
-		Purpose:
-		--------
-		Return the active provider name for legacy option helper functions.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		str
-			Active provider name.
-		
+	Purpose:
+	    Supports the provider application workflow by coordinating validated inputs, Streamlit
+	    session state, provider configuration, and local data processing.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	return get_provider_name( )
 
 def _safe( module_name: str, attr_name: str, fallback: Any ) -> Any:
-	"""
+	"""Safe.
 	
-		Purpose:
-		--------
-		Safely retrieve an attribute from a provider module while preserving a fallback.
-		
-		Parameters:
-		-----------
-		module_name: str
-			Provider module name: gpt, gemini, or grok.
-		
-		attr_name: str
-			Attribute name to retrieve.
-		
-		fallback: Any
-			Fallback value returned when the provider attribute does not exist.
-		
-		Returns:
-		--------
-		Any
-			Resolved attribute value or fallback.
-		
+	Purpose:
+	    Supports the safe application workflow by coordinating validated inputs, Streamlit
+	    session state, provider configuration, and local data processing.
+	
+	Args:
+	    module_name: Module Name value used by the application workflow.
+	    attr_name: Attr Name value used by the application workflow.
+	    fallback: Fallback value used by the application workflow.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	provider_modules = {
 			'gpt': gpt_provider,
@@ -3055,25 +3258,11 @@ def _safe( module_name: str, attr_name: str, fallback: Any ) -> Any:
 # ======================================================================================
 
 def ensure_vectorstores_mode_state( ) -> None:
-	"""
+	"""Ensure vectorstores mode state.
 	
-		Purpose:
-		--------
-		Ensure all non-widget Vector Stores session-state keys exist before Buddy's
-		Vector Stores mode instantiates controls.
-		
-		Important:
-		----------
-		This function intentionally does not initialize any st.file_uploader widget keys.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure vectorstores mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	# ------------------------------------------------------------------
 	# Shared Vector Stores alias keys
@@ -3183,20 +3372,11 @@ def ensure_vectorstores_mode_state( ) -> None:
 		st.session_state[ 'stores_backend' ] = 'File Search Stores'
 
 def ensure_storage_mode_state( ) -> None:
-	"""
+	"""Ensure storage mode state.
 	
-		Purpose:
-		--------
-		Backward-compatible alias for ensure_vectorstores_mode_state().
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure storage mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_vectorstores_mode_state( )
 
@@ -3205,23 +3385,17 @@ def ensure_storage_mode_state( ) -> None:
 # ======================================================================================
 
 def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
-	"""
+	"""Normalize storage object.
 	
-		Purpose:
-		--------
-		Normalize a provider storage, collection, bucket, file, or operation response into
-		a serializable dictionary that can be displayed safely in Streamlit.
-		
-		Parameters:
-		-----------
-		value: Any
-			Provider object, dictionary, model object, scalar, or None.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized metadata dictionary.
-		
+	Purpose:
+	    Transforms normalize storage object inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	if value is None:
 		return { }
@@ -3232,7 +3406,12 @@ def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
 	if hasattr( value, 'model_dump' ):
 		try:
 			return value.model_dump( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	if hasattr( value, 'to_dict' ):
@@ -3240,7 +3419,12 @@ def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
 			result = value.to_dict( )
 			if isinstance( result, dict ):
 				return result
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	if hasattr( value, '__dict__' ):
@@ -3266,28 +3450,28 @@ def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
 				row[ key ] = str( item )
 			
 			return row
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	return { 'value': str( value ) }
 
 def normalize_storage_rows( value: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Normalize storage rows.
 	
-		Purpose:
-		--------
-		Normalize provider list responses into display-ready metadata rows.
-		
-		Parameters:
-		-----------
-		value: Any
-			Provider list response, pager, list, dictionary, or scalar object.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized metadata rows.
-		
+	Purpose:
+	    Transforms normalize storage rows inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	if value is None:
 		return [ ]
@@ -3313,32 +3497,36 @@ def normalize_storage_rows( value: Any ) -> List[ Dict[ str, Any ] ]:
 			items = getattr( value, attr_name, None )
 			if isinstance( items, list ):
 				return [ normalize_storage_object( item ) for item in items ]
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_rows'
+			exception.method = 'normalize_storage_rows( value ) -> List[Dict[str, Any]]'
+			Logger( ).write( exception )
 			continue
 	
 	try:
 		return [ normalize_storage_object( item ) for item in value ]
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'normalize_storage_rows'
+		exception.method = 'normalize_storage_rows( value ) -> List[Dict[str, Any]]'
+		Logger( ).write( exception )
 		return [ normalize_storage_object( value ) ]
 
 def parse_storage_ids( value: Any ) -> List[ str ]:
-	"""
+	"""Parse storage ids.
 	
-		Purpose:
-		--------
-		Parse comma-, semicolon-, newline-, or list-delimited storage IDs into a clean
-		string list.
-		
-		Parameters:
-		-----------
-		value: Any
-			Raw text, list, tuple, set, or None.
-		
-		Returns:
-		--------
-		List[str]
-			Clean storage IDs.
-		
+	Purpose:
+	    Transforms parse storage ids inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if value is None:
 		return [ ]
@@ -3366,22 +3554,21 @@ def parse_storage_ids( value: Any ) -> List[ str ]:
 	]
 
 def parse_storage_json( value: Any ) -> Dict[ str, Any ]:
-	"""
+	"""Parse storage json.
 	
-		Purpose:
-		--------
-		Parse optional JSON metadata or configuration text into a dictionary.
-		
-		Parameters:
-		-----------
-		value: Any
-			Raw JSON string, dictionary, or None.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Parsed dictionary, or an empty dictionary when omitted.
-		
+	Purpose:
+	    Transforms parse storage json inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if value is None:
 		return { }
@@ -3396,25 +3583,26 @@ def parse_storage_json( value: Any ) -> Dict[ str, Any ]:
 		result = json.loads( value.strip( ) )
 		return result if isinstance( result, dict ) else { 'value': result }
 	except Exception as exc:
+		exception = Error( exc )
+		exception.module = 'app'
+		exception.cause = 'parse_storage_json'
+		exception.method = 'parse_storage_json( value ) -> Dict[str, Any]'
+		Logger( ).write( exception )
 		raise ValueError( f'Invalid JSON metadata: {exc}' ) from exc
 
 def get_storage_identifier( row: Dict[ str, Any ] ) -> str:
-	"""
+	"""Get storage identifier.
 	
-		Purpose:
-		--------
-		Return the most likely identifier from a normalized storage metadata row.
-		
-		Parameters:
-		-----------
-		row: Dict[str, Any]
-			Normalized storage metadata row.
-		
-		Returns:
-		--------
-		str
-			Storage identifier or empty string.
-		
+	Purpose:
+	    Retrieves get storage identifier for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    row: Row value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( row, dict ):
 		return ''
@@ -3440,22 +3628,18 @@ def get_storage_identifier( row: Dict[ str, Any ] ) -> str:
 	return ''
 
 def get_storage_display_name( row: Dict[ str, Any ] ) -> str:
-	"""
+	"""Get storage display name.
 	
-		Purpose:
-		--------
-		Return the most useful display name from a normalized storage metadata row.
-		
-		Parameters:
-		-----------
-		row: Dict[str, Any]
-			Normalized storage metadata row.
-		
-		Returns:
-		--------
-		str
-			Human-readable display name.
-		
+	Purpose:
+	    Retrieves get storage display name for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    row: Row value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( row, dict ):
 		return 'resource'
@@ -3479,22 +3663,17 @@ def get_storage_display_name( row: Dict[ str, Any ] ) -> str:
 	return 'resource'
 
 def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
-	"""
+	"""Build storage selectors.
 	
-		Purpose:
-		--------
-		Build user-facing selection labels from normalized storage metadata rows.
-		
-		Parameters:
-		-----------
-		rows: List[Dict[str, Any]]
-			Normalized metadata rows.
-		
-		Returns:
-		--------
-		List[str]
-			Selection labels in the form display name — identifier.
-		
+	Purpose:
+	    Builds build storage selectors from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    rows: Rows value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if not isinstance( rows, list ):
 		return [ ]
@@ -3514,22 +3693,18 @@ def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 	return options
 
 def get_storage_id_from_option( option: Optional[ str ] ) -> str:
-	"""
+	"""Get storage id from option.
 	
-		Purpose:
-		--------
-		Extract a storage resource identifier from a selection label.
-		
-		Parameters:
-		-----------
-		option: Optional[str]
-			UI selection label.
-		
-		Returns:
-		--------
-		str
-			Extracted identifier or empty string.
-		
+	Purpose:
+	    Retrieves get storage id from option for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    option: Option value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( option, str ) or not option.strip( ):
 		return ''
@@ -3540,31 +3715,22 @@ def get_storage_id_from_option( option: Optional[ str ] ) -> str:
 	
 	return text
 
-def get_selected_store_id( manual_key: str='stores_manual_id',
-		selected_key: str='stores_selected_id', fallback_key: str='stores_id' ) -> str:
-	"""
+def get_selected_store_id( manual_key: str = 'stores_manual_id',
+		selected_key: str = 'stores_selected_id', fallback_key: str = 'stores_id' ) -> str:
+	"""Get selected store id.
 	
-		Purpose:
-		--------
-		Return the active storage identifier using manual input first, selected row second,
-		and fallback state third.
-		
-		Parameters:
-		-----------
-		manual_key: str
-			Session key for a manual identifier input.
-		
-		selected_key: str
-			Session key for a selected resource identifier.
-		
-		fallback_key: str
-			Session key for a fallback identifier.
-		
-		Returns:
-		--------
-		str
-			Selected storage identifier or empty string.
-		
+	Purpose:
+	    Retrieves get selected store id for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    manual_key: Session-state key or state value used by the Streamlit workflow.
+	    selected_key: Session-state key or state value used by the Streamlit workflow.
+	    fallback_key: Session-state key or state value used by the Streamlit workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	for key in [ manual_key, selected_key, fallback_key ]:
 		value = st.session_state.get( key, '' )
@@ -3574,22 +3740,15 @@ def get_selected_store_id( manual_key: str='stores_manual_id',
 	return ''
 
 def get_vectorstores_selected_id( ) -> str:
-	"""
+	"""Get vectorstores selected id.
 	
-		Purpose:
-		--------
-		Return the selected provider-specific storage identifier for the visible Vector
-		Stores mode.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		str
-			Selected vector store, collection, File Search Store, or bucket identifier.
-		
+	Purpose:
+	    Retrieves get vectorstores selected id for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -3613,32 +3772,24 @@ def get_vectorstores_selected_id( ) -> str:
 		fallback_key='stores_id' )
 
 def call_storage_method( target: Any, method_names: List[ str ], *args: Any, **kwargs: Any ) -> Any:
-	"""
+	"""Call storage method.
 	
-		Purpose:
-		--------
-		Call the first compatible method exposed by a provider storage wrapper. This
-		absorbs wrapper method-name differences across GPT, Grok, and Gemini.
-		
-		Parameters:
-		-----------
-		target: Any
-			Provider storage wrapper instance.
-		
-		method_names: List[str]
-			Ordered method names to attempt.
-		
-		*args: Any
-			Positional arguments forwarded to the provider method.
-		
-		**kwargs: Any
-			Keyword arguments forwarded to the provider method.
-		
-		Returns:
-		--------
-		Any
-			Provider method result.
-		
+	Purpose:
+	    Executes the call storage method workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Args:
+	    target: Target value used by the application workflow.
+	    method_names: Method Names value used by the application workflow.
+	    args: Args value used by the application workflow.
+	    kwargs: Kwargs value used by the application workflow.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if target is None:
 		raise ValueError( 'Storage target cannot be None.' )
@@ -3679,7 +3830,12 @@ def call_storage_method( target: Any, method_names: List[ str ], *args: Any, **k
 					last_error = inner_exc
 			
 			continue
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'call_storage_method'
+			exception.method = 'call_storage_method( *args ) -> Any'
+			Logger( ).write( exception )
 			raise
 	
 	if last_error is not None:
@@ -3690,22 +3846,21 @@ def call_storage_method( target: Any, method_names: List[ str ], *args: Any, **k
 		f'Target does not expose any of these methods: {", ".join( method_names )}' )
 
 def save_uploaded_storage_file( uploaded_file: Any ) -> str:
-	"""
+	"""Save uploaded storage file.
 	
-		Purpose:
-		--------
-		Save a Streamlit uploaded file to a temporary path for provider upload calls.
-		
-		Parameters:
-		-----------
-		uploaded_file: Any
-			Streamlit UploadedFile object.
-		
-		Returns:
-		--------
-		str
-			Temporary file path.
-		
+	Purpose:
+	    Applies the save uploaded storage file operation to application-managed data, files,
+	    prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    uploaded_file: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if uploaded_file is None:
 		raise ValueError( 'An uploaded file is required.' )
@@ -3725,27 +3880,20 @@ def save_uploaded_storage_file( uploaded_file: Any ) -> str:
 		
 		return tmp.name
 
-def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List[ Dict[ str, Any ] ]:
-	"""
+def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List[
+	Dict[ str, Any ] ]:
+	"""Set storage rows.
 	
-		Purpose:
-		--------
-		Normalize storage rows and write them to shared and optional provider-specific
-		session-state table keys.
-		
-		Parameters:
-		-----------
-		rows: Any
-			Provider list response.
-		
-		table_key: str
-			Session-state table key to update.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized rows.
-		
+	Purpose:
+	    Supports the set storage rows application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    rows: Rows value used by the application workflow.
+	    table_key: SQLite table name used by the data-management workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	normalized_rows = normalize_storage_rows( rows )
 	st.session_state[ 'storage_table_data' ] = normalized_rows
@@ -3755,29 +3903,19 @@ def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List
 
 def set_storage_result( result: Any, operation: str,
 		result_key: str = 'storage_operation_result' ) -> Dict[ str, Any ]:
-	"""
+	"""Set storage result.
 	
-		Purpose:
-		--------
-		Normalize a provider operation result and store it in shared and provider-specific
-		session-state result keys.
-		
-		Parameters:
-		-----------
-		result: Any
-			Provider operation result.
-		
-		operation: str
-			Operation name stored for diagnostics and display.
-		
-		result_key: str
-			Provider-specific session-state result key.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized operation result.
-		
+	Purpose:
+	    Supports the set storage result application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    result: Result value used by the application workflow.
+	    operation: Operation value used by the application workflow.
+	    result_key: Session-state key or state value used by the Streamlit workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	normalized = normalize_storage_object( result )
 	st.session_state[ 'storage_operation_result' ] = normalized
@@ -3788,30 +3926,20 @@ def set_storage_result( result: Any, operation: str,
 	return normalized
 
 def sync_storage_selection( selected_option: Optional[ str ], provider_name: Optional[ str ] = None,
-		backend: Optional[ str ]=None ) -> str:
-	"""
+		backend: Optional[ str ] = None ) -> str:
+	"""Sync storage selection.
 	
-		Purpose:
-		--------
-		Synchronize a selected storage option into the correct provider-specific session
-		keys without modifying the widget-owned storage_selected_option key.
-		
-		Parameters:
-		-----------
-		selected_option: Optional[str]
-			Selected resource label from the storage selector widget.
-		
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		backend: Optional[str]
-			Optional Gemini backend name.
-		
-		Returns:
-		--------
-		str
-			Selected identifier.
-		
+	Purpose:
+	    Supports the sync storage selection application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    selected_option: Selected Option value used by the application workflow.
+	    provider_name: Provider name used to route the operation.
+	    backend: Backend value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	selected_id = get_storage_id_from_option( selected_option )
 	
@@ -3841,20 +3969,11 @@ def sync_storage_selection( selected_option: Optional[ str ], provider_name: Opt
 	return selected_id
 
 def clear_vectorstore_outputs( ) -> None:
-	"""
+	"""Clear vectorstore outputs.
 	
-		Purpose:
-		--------
-		Clear Vector Stores output state while preserving provider and control values.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear vectorstore outputs by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'stores_table' ] = [ ]
 	st.session_state[ 'stores_files_table' ] = [ ]
@@ -3889,20 +4008,11 @@ def clear_vectorstore_outputs( ) -> None:
 	st.session_state[ 'storage_last_answer' ] = ''
 
 def reset_vectorstore_controls( ) -> None:
-	"""
+	"""Reset vectorstore controls.
 	
-		Purpose:
-		--------
-		Reset Vector Stores non-uploader controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset vectorstore controls by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [
 			'stores_backend',
@@ -3934,45 +4044,33 @@ def reset_vectorstore_controls( ) -> None:
 			del st.session_state[ key ]
 
 def reset_vectorstore_all( ) -> None:
-	"""
+	"""Reset vectorstore all.
 	
-		Purpose:
-		--------
-		Reset Vector Stores controls and output state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset vectorstore all by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	reset_vectorstore_controls( )
 	clear_vectorstore_outputs( )
 	ensure_vectorstores_mode_state( )
 
 def require_storage_value( name: str, value: Any ) -> str:
-	"""
+	"""Require storage value.
 	
-		Purpose:
-		--------
-		Validate and return a required storage value.
-		
-		Parameters:
-		-----------
-		name: str
-			User-facing value name.
-		
-		value: Any
-			Value to validate.
-		
-		Returns:
-		--------
-		str
-			Clean value string.
-		
+	Purpose:
+	    Supports the require storage value application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    name: Name value used by the application workflow.
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if value is None:
 		raise ValueError( f'{name} is required.' )
@@ -3985,59 +4083,54 @@ def require_storage_value( name: str, value: Any ) -> str:
 	return text
 
 def get_grok_collections( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Get grok collections.
 	
-		Purpose:
-		--------
-		Return configured xAI collection rows from the Grok VectorStores wrapper.
-		
-		Parameters:
-		-----------
-		vectorstores: Any
-			Grok VectorStores wrapper instance.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Configured collection rows.
-		
+	Purpose:
+	    Retrieves get grok collections for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
-	for method_names in [ [ 'list_collections', 'list_stores', 'list' ], [ 'survey_collections', 'survey' ], ]:
+	for method_names in [ [ 'list_collections', 'list_stores', 'list' ],
+	                      [ 'survey_collections', 'survey' ], ]:
 		try:
 			result = call_storage_method( vectorstores, method_names )
 			rows = normalize_storage_rows( result )
 			if len( rows ) > 0:
 				return rows
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'get_grok_collections'
+			exception.method = 'get_grok_collections( vectorstores ) -> List[Dict[str, Any]]'
+			Logger( ).write( exception )
 			continue
 	
 	collections = getattr( vectorstores, 'collections', None )
 	if isinstance( collections, dict ):
 		return [ {
-						'name': name,
-						'id': collection_id,
-						'type': 'xAI Collection',
-				} for name, collection_id in collections.items( ) ]
+				'name': name,
+				'id': collection_id,
+				'type': 'xAI Collection',
+		} for name, collection_id in collections.items( ) ]
 	
 	return [ ]
 
 def warn_grok_unsupported_operation( operation_name: str ) -> None:
-	"""
+	"""Warn grok unsupported operation.
 	
-		Purpose:
-		--------
-		Display a clear warning for Grok Vector Stores operations that require remote
-		collection-management capability.
-		
-		Parameters:
-		-----------
-		operation_name: str
-			Operation name.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Supports the warn grok unsupported operation application workflow by coordinating
+	    validated inputs, Streamlit session state, provider configuration, and local data
+	    processing.
+	
+	Args:
+	    operation_name: Operation Name value used by the application workflow.
 	"""
 	st.warning(
 		f'Grok {operation_name} requires xAI collection-management capability. '
@@ -4046,30 +4139,25 @@ def warn_grok_unsupported_operation( operation_name: str ) -> None:
 
 def get_storage_backend_summary( provider_name: Optional[ str ] = None,
 		backend: Optional[ str ] = None ) -> Dict[ str, Any ]:
-	"""
+	"""Get storage backend summary.
 	
-		Purpose:
-		--------
-		Return a backend summary for diagnostics and UI display.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		backend: Optional[str]
-			Optional Gemini backend name.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Backend summary.
-		
+	Purpose:
+	    Retrieves get storage backend summary for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	    backend: Backend value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	provider = get_provider_name( provider_name )
 	backend_name = get_vectorstores_backend_name( provider, backend )
 	supports_create = provider == 'GPT' or (
-			provider == 'Gemini' and get_gemini_vector_backend( ) in [ 'File Search Stores', 'Cloud Buckets', ] )
+			provider == 'Gemini' and get_gemini_vector_backend( ) in [ 'File Search Stores',
+			                                                           'Cloud Buckets', ])
 	
 	supports_upload = provider == 'GPT' or provider == 'Gemini'
 	supports_delete = provider == 'GPT' or provider == 'Gemini'
@@ -4089,44 +4177,25 @@ def get_storage_backend_summary( provider_name: Optional[ str ] = None,
 # ======================================================================================
 
 def ensure_key( key: str, default: Any ) -> None:
-	"""
+	"""Ensure key.
 	
-		Purpose:
-		--------
-		Ensure a Streamlit session-state key exists before widget instantiation.
-		
-		Parameters:
-		-----------
-		key: str
-			The session-state key to initialize.
-		
-		default: Any
-			The default value assigned only when the key does not already exist.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure key by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
+	
+	Args:
+	    key: Session-state key or state value used by the Streamlit workflow.
+	    default: Default value used by the application workflow.
 	"""
 	if key not in st.session_state:
 		st.session_state[ key ] = default
 
 def ensure_common_mode_state( ) -> None:
-	"""
+	"""Ensure common mode state.
 	
-		Purpose:
-		--------
-		Ensure common provider, mode, message, usage, file, instruction, and API-key
-		session-state values exist before provider-specific mode sections execute.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure common mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_key( 'api_keys', { 'GPT': None, 'Grok': None, 'Gemini': None } )
 	ensure_key( 'provider', 'GPT' )
@@ -4142,21 +4211,21 @@ def ensure_common_mode_state( ) -> None:
 	ensure_key( 'last_answer', '' )
 	ensure_key( 'last_sources', [ ] )
 	ensure_key( 'last_call_usage', {
-				'prompt_tokens': 0,
-				'completion_tokens': 0,
-				'total_tokens': 0,
-		} )
+			'prompt_tokens': 0,
+			'completion_tokens': 0,
+			'total_tokens': 0,
+	} )
 	ensure_key( 'token_usage', {
-				'prompt_tokens': 0,
-				'completion_tokens': 0,
-				'total_tokens': 0,
-		} )
+			'prompt_tokens': 0,
+			'completion_tokens': 0,
+			'total_tokens': 0,
+	} )
 	ensure_key( 'last_analysis', {
-				'tables': [ ],
-				'docqna_files': [ ],
-				'files': [ ],
-				'text': [ ],
-		} )
+			'tables': [ ],
+			'docqna_files': [ ],
+			'files': [ ],
+			'text': [ ],
+	} )
 	
 	# ------------------------------------------------------------------
 	# API Keys
@@ -4224,21 +4293,11 @@ def ensure_common_mode_state( ) -> None:
 	ensure_key( 'tools', [ ] )
 
 def ensure_text_mode_state( ) -> None:
-	"""
+	"""Ensure text mode state.
 	
-		Purpose:
-		--------
-		Ensure Text mode session-state keys from Buddy, Gipity, and Jeni exist before
-		Text mode widgets or provider execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure text mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4289,21 +4348,11 @@ def ensure_text_mode_state( ) -> None:
 	ensure_key( 'text_json_schema_strict', True )
 
 def ensure_image_mode_state( ) -> None:
-	"""
+	"""Ensure image mode state.
 	
-		Purpose:
-		--------
-		Ensure Image mode session-state keys from Buddy, Gipity, and Jeni exist before
-		Image mode widgets or provider execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure image mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4347,21 +4396,11 @@ def ensure_image_mode_state( ) -> None:
 	ensure_key( 'image_image_search', False )
 
 def ensure_audio_mode_state( ) -> None:
-	"""
+	"""Ensure audio mode state.
 	
-		Purpose:
-		--------
-		Ensure Audio mode session-state keys from Buddy, Gipity, and Jeni exist before
-		Audio mode widgets or provider execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure audio mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4405,21 +4444,11 @@ def ensure_audio_mode_state( ) -> None:
 	ensure_key( 'audio_output', '' )
 
 def ensure_embeddings_mode_state( ) -> None:
-	"""
+	"""Ensure embeddings mode state.
 	
-		Purpose:
-		--------
-		Ensure Embeddings mode session-state keys from Buddy, Gipity, and Jeni exist
-		before Embeddings widgets or provider execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure embeddings mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4438,22 +4467,11 @@ def ensure_embeddings_mode_state( ) -> None:
 	ensure_key( 'embedding_usage', { } )
 
 def ensure_docqna_mode_state( ) -> None:
-	"""
+	"""Ensure docqna mode state.
 	
-		Purpose:
-		--------
-		Ensure Document Q&A mode session-state keys from Buddy, Gipity, and Jeni exist
-		before Document Q&A widgets, local retrieval, Files API, or Vector Store paths read
-		them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure docqna mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4519,21 +4537,11 @@ def ensure_docqna_mode_state( ) -> None:
 	ensure_key( 'docqna_chunk_overlap', 150 )
 
 def ensure_files_mode_state( ) -> None:
-	"""
+	"""Ensure files mode state.
 	
-		Purpose:
-		--------
-		Ensure Files mode session-state keys from Buddy, Gipity, and Jeni exist before
-		Files mode widgets or provider execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure files mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4570,21 +4578,11 @@ def ensure_files_mode_state( ) -> None:
 	ensure_key( 'files_operation', '' )
 
 def ensure_vectorstores_mode_state( ) -> None:
-	"""
+	"""Ensure vectorstores mode state.
 	
-		Purpose:
-		--------
-		Ensure Vector Stores mode session-state keys from Buddy, Gipity, and Jeni exist
-		before storage widgets or provider execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure vectorstores mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4623,21 +4621,11 @@ def ensure_vectorstores_mode_state( ) -> None:
 	ensure_key( 'stores_collection', '' )
 
 def ensure_file_search_mode_state( ) -> None:
-	"""
+	"""Ensure file search mode state.
 	
-		Purpose:
-		--------
-		Ensure Gemini File Search Store session-state keys exist before File Search Store
-		widgets or Gemini execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure file search mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4665,21 +4653,11 @@ def ensure_file_search_mode_state( ) -> None:
 	ensure_key( 'filestore_selected_label', '' )
 
 def ensure_cloudbuckets_mode_state( ) -> None:
-	"""
+	"""Ensure cloudbuckets mode state.
 	
-		Purpose:
-		--------
-		Ensure Google Cloud Buckets mode session-state keys from Jeni exist before Cloud
-		Bucket widgets or Gemini CloudBuckets execution paths read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure cloudbuckets mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4720,20 +4698,11 @@ def ensure_cloudbuckets_mode_state( ) -> None:
 	ensure_key( 'selected_bucket_label', '' )
 
 def ensure_export_mode_state( ) -> None:
-	"""
+	"""Ensure export mode state.
 	
-		Purpose:
-		--------
-		Ensure Export mode session-state keys exist before Export mode widgets read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure export mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4743,21 +4712,12 @@ def ensure_export_mode_state( ) -> None:
 	ensure_key( 'export_content', '' )
 
 def ensure_data_management_mode_state( ) -> None:
-	"""
+	"""Ensure data management mode state.
 	
-		Purpose:
-		--------
-		Ensure Data Management mode session-state keys exist before database widgets,
-		table editors, chart controls, or export controls read them.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure data management mode state by
+	    initializing, clearing, or restoring the session values used by the active Streamlit
+	    workflow.
 	"""
 	ensure_common_mode_state( )
 	
@@ -4775,22 +4735,14 @@ def ensure_data_management_mode_state( ) -> None:
 	ensure_key( 'df_current', pd.DataFrame( ) )
 
 def ensure_mode_state( mode_name: str | None = None ) -> None:
-	"""
+	"""Ensure mode state.
 	
-		Purpose:
-		--------
-		Dispatch to the correct mode-state initializer based on the active Buddy mode.
-		This should be called before each mode section creates widgets.
-		
-		Parameters:
-		-----------
-		mode_name: str | None
-			Optional mode name. When None, reads st.session_state[ 'mode' ].
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure mode state by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
+	
+	Args:
+	    mode_name: Mode Name value used by the application workflow.
 	"""
 	current_mode = mode_name if isinstance( mode_name, str ) and mode_name.strip( ) else \
 		st.session_state.get( 'mode', 'Chat' )
@@ -4825,22 +4777,18 @@ def ensure_mode_state( mode_name: str | None = None ) -> None:
 # ======================================================================================
 
 def get_text_avatar( provider_name: str ) -> str:
-	"""
+	"""Get text avatar.
 	
-		Purpose:
-		--------
-		Return the configured assistant avatar for the active text provider.
-		
-		Parameters:
-		-----------
-		provider_name: str
-			Selected provider name.
-		
-		Returns:
-		--------
-		str
-			Avatar string or configured avatar path.
-		
+	Purpose:
+	    Retrieves get text avatar for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if provider_name == 'GPT':
 		return getattr( cfg, 'GPT_AVATAR', getattr( cfg, 'BUDDY', '🧠' ) )
@@ -4854,54 +4802,41 @@ def get_text_avatar( provider_name: str ) -> str:
 	return getattr( cfg, 'BUDDY', '🧠' )
 
 def get_text_option_list( source: Any, attr_name: str, fallback: List[ str ] ) -> List[ str ]:
-	"""
+	"""Get text option list.
 	
-		Purpose:
-		--------
-		Return a list-valued option attribute from a provider wrapper, preserving a safe
-		fallback when the wrapper does not expose the requested option collection.
-		
-		Parameters:
-		-----------
-		source: Any
-			Provider wrapper instance.
-		
-		attr_name: str
-			Attribute or property name to read.
-		
-		fallback: List[str]
-			Fallback options.
-		
-		Returns:
-		--------
-		List[str]
-			Resolved option list.
-		
+	Purpose:
+	    Retrieves get text option list for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    source: Source value used by the application workflow.
+	    attr_name: Attr Name value used by the application workflow.
+	    fallback: Fallback value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	try:
 		options = getattr( source, attr_name, None )
 		if isinstance( options, list ) and len( options ) > 0:
 			return options
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_text_option_list'
+		exception.method = 'get_text_option_list( source, attr_name, fallback ) -> List[str]'
+		Logger( ).write( exception )
 		pass
 	
 	return fallback
 
 def clear_text_messages( ) -> None:
-	"""
+	"""Clear text messages.
 	
-		Purpose:
-		--------
-		Clear Text mode message and answer state without modifying model controls.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear text messages by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'text_messages' ] = [ ]
 	st.session_state[ 'text_context' ] = [ ]
@@ -4910,39 +4845,22 @@ def clear_text_messages( ) -> None:
 	st.session_state[ 'last_sources' ] = [ ]
 
 def clear_text_instructions( ) -> None:
-	"""
+	"""Clear text instructions.
 	
-		Purpose:
-		--------
-		Clear Text mode system instructions and selected prompt template.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear text instructions by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'text_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
 def load_text_instruction_template( ) -> None:
-	"""
+	"""Load text instruction template.
 	
-		Purpose:
-		--------
-		Load the selected prompt template into Text mode system instructions.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Retrieves load text instruction template for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
 	"""
 	name = st.session_state.get( 'instructions' )
 	if name and name != 'No Templates Found':
@@ -4951,21 +4869,11 @@ def load_text_instruction_template( ) -> None:
 			st.session_state[ 'text_system_instructions' ] = prompt_text
 
 def convert_text_system_instructions( ) -> None:
-	"""
+	"""Convert text system instructions.
 	
-		Purpose:
-		--------
-		Convert Text mode system instructions between XML-like delimiters and Markdown
-		headings.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Transforms convert text system instructions inputs into a normalized representation
+	    used by provider calls, document retrieval, data management, or UI rendering.
 	"""
 	text_value = st.session_state.get( 'text_system_instructions', '' )
 	if not isinstance( text_value, str ) or not text_value.strip( ):
@@ -4980,20 +4888,11 @@ def convert_text_system_instructions( ) -> None:
 	st.session_state[ 'text_system_instructions' ] = converted
 
 def reset_text_model_settings( ) -> None:
-	"""
+	"""Reset text model settings.
 	
-		Purpose:
-		--------
-		Reset Text mode model controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset text model settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'text_model', 'text_reasoning', 'text_modalities',
 	             'text_media_resolution', 'text_number' ]:
@@ -5001,20 +4900,11 @@ def reset_text_model_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_text_inference_settings( ) -> None:
-	"""
+	"""Reset text inference settings.
 	
-		Purpose:
-		--------
-		Reset Text mode inference controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset text inference settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'text_temperature', 'text_top_percent', 'text_top_k',
 	             'text_frequency_penalty', 'text_presence_penalty',
@@ -5023,20 +4913,11 @@ def reset_text_inference_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_text_tool_settings( ) -> None:
-	"""
+	"""Reset text tool settings.
 	
-		Purpose:
-		--------
-		Reset Text mode tool and grounding controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset text tool settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'text_max_calls', 'text_tool_choice', 'text_include',
 	             'text_includes', 'text_tools', 'text_domains_input',
@@ -5049,20 +4930,11 @@ def reset_text_tool_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_text_response_settings( ) -> None:
-	"""
+	"""Reset text response settings.
 	
-		Purpose:
-		--------
-		Reset Text mode response controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset text response settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'text_stream', 'text_store', 'text_max_tokens',
 	             'text_background', 'text_response_format', 'text_input',
@@ -5073,26 +4945,19 @@ def reset_text_response_settings( ) -> None:
 		if key in st.session_state:
 			del st.session_state[ key ]
 
-def split_text_values( value: Any, delimiter: str=',' ) -> List[ str ]:
-	"""
+def split_text_values( value: Any, delimiter: str = ',' ) -> List[ str ]:
+	"""Split text values.
 	
-		Purpose:
-		--------
-		Split delimited UI text into clean string values.
-		
-		Parameters:
-		-----------
-		value: Any
-			Raw UI value.
-		
-		delimiter: str
-			Delimiter used to split the text.
-		
-		Returns:
-		--------
-		List[str]
-			Clean string values.
-		
+	Purpose:
+	    Transforms split text values inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	    delimiter: Numeric control value that constrains the operation.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if value is None:
 		return [ ]
@@ -5106,53 +4971,39 @@ def split_text_values( value: Any, delimiter: str=',' ) -> List[ str ]:
 	return [ item.strip( ) for item in value.split( delimiter ) if item.strip( ) ]
 
 def parse_text_vector_store_ids( value: str | List[ str ] | None ) -> List[ str ]:
-	"""
+	"""Parse text vector store ids.
 	
-		Purpose:
-		--------
-		Parse comma-delimited or list-based vector store identifiers for OpenAI file_search.
-		
-		Parameters:
-		-----------
-		value: str | List[str] | None
-			Comma-delimited vector store IDs or existing list of IDs.
-		
-		Returns:
-		--------
-		List[str]
-			Clean vector store IDs.
-		
+	Purpose:
+	    Transforms parse text vector store ids inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	return split_text_values( value=value, delimiter=',' )
 
-def build_text_response_format( response_format: str | None, schema_name: str | None=None,
-		schema_text: str | None=None, strict: bool=True ) -> Dict[ str, Any ] | None:
-	"""
+def build_text_response_format( response_format: str | None, schema_name: str | None = None,
+		schema_text: str | None = None, strict: bool = True ) -> Dict[ str, Any ] | None:
+	"""Build text response format.
 	
-		Purpose:
-		--------
-		Build the OpenAI Responses API text.format object from Text mode response-format
-		controls.
-		
-		Parameters:
-		-----------
-		response_format: str | None
-			Selected response format.
-		
-		schema_name: str | None
-			Schema name for json_schema output.
-		
-		schema_text: str | None
-			JSON Schema text.
-		
-		strict: bool
-			Strict schema flag.
-		
-		Returns:
-		--------
-		Dict[str, Any] | None
-			Responses API text-format object or None.
-		
+	Purpose:
+	    Builds build text response format from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    response_format: Response Format value used by the application workflow.
+	    schema_name: Schema Name value used by the application workflow.
+	    schema_text: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	    strict: Strict value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any] | None: Dictionary containing normalized workflow configuration or
+	        results.
 	"""
 	if not isinstance( response_format, str ) or not response_format.strip( ):
 		return None
@@ -5173,6 +5024,11 @@ def build_text_response_format( response_format: str | None, schema_name: str | 
 		try:
 			schema = json.loads( schema_text )
 		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'app'
+			exception.cause = 'build_text_response_format'
+			exception.method = 'build_text_response_format( *args ) -> Dict[str, Any] | None'
+			Logger( ).write( exception )
 			st.warning( f'JSON Schema could not be parsed. Falling back to plain text: {exc}' )
 			return { 'format': { 'type': 'text' } }
 		
@@ -5180,35 +5036,28 @@ def build_text_response_format( response_format: str | None, schema_name: str | 
 			'structured_response'
 		
 		return { 'format': {
-						'type': 'json_schema',
-						'name': name.strip( ),
-						'schema': schema,
-						'strict': bool( strict ),
-				} }
+				'type': 'json_schema',
+				'name': name.strip( ),
+				'schema': schema,
+				'strict': bool( strict ),
+		} }
 	
 	return None
 
 def build_text_tools( selected_tools: List[ str ] | None,
-		vector_store_ids: List[ str ] | None=None ) -> List[ Dict[ str, Any ] ]:
-	"""
+		vector_store_ids: List[ str ] | None = None ) -> List[ Dict[ str, Any ] ]:
+	"""Build text tools.
 	
-		Purpose:
-		--------
-		Build safe OpenAI Responses API tool dictionaries for Text mode.
-		
-		Parameters:
-		-----------
-		selected_tools: List[str] | None
-			Selected tool names.
-		
-		vector_store_ids: List[str] | None
-			Vector store IDs used by file_search.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			OpenAI-compatible tool definitions.
-		
+	Purpose:
+	    Builds build text tools from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    selected_tools: Selected Tools value used by the application workflow.
+	    vector_store_ids: Vector Store Ids value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	tools: List[ Dict[ str, Any ] ] = [ ]
 	vector_ids = vector_store_ids if isinstance( vector_store_ids, list ) else [ ]
@@ -5231,35 +5080,27 @@ def build_text_tools( selected_tools: List[ str ] | None,
 				continue
 			
 			tools.append( {
-						'type': 'file_search',
-						'vector_store_ids': vector_ids,
-				} )
+					'type': 'file_search',
+					'vector_store_ids': vector_ids,
+			} )
 			continue
 	
 	return tools
 
 def build_text_include( selected_include: List[ str ] | None,
-		selected_tools: List[ Dict[ str, Any ] ] | None=None ) -> List[ str ]:
-	"""
+		selected_tools: List[ Dict[ str, Any ] ] | None = None ) -> List[ str ]:
+	"""Build text include.
 	
-		Purpose:
-		--------
-		Filter Text mode include fields so they correspond to the selected OpenAI tool
-		context.
-		
-		Parameters:
-		-----------
-		selected_include: List[str] | None
-			UI-selected include values.
-		
-		selected_tools: List[Dict[str, Any]] | None
-			Final tool dictionaries.
-		
-		Returns:
-		--------
-		List[str]
-			Filtered include values.
-		
+	Purpose:
+	    Builds build text include from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    selected_include: Selected Include value used by the application workflow.
+	    selected_tools: Selected Tools value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if not isinstance( selected_include, list ) or len( selected_include ) == 0:
 		return [ ]
@@ -5292,25 +5133,18 @@ def build_text_include( selected_include: List[ str ] | None,
 
 def build_text_tool_choice( tool_choice: str | None,
 		selected_tools: List[ Dict[ str, Any ] ] | None = None ) -> str | None:
-	"""
+	"""Build text tool choice.
 	
-		Purpose:
-		--------
-		Return a tool-choice value only when compatible with the final tool list.
-		
-		Parameters:
-		-----------
-		tool_choice: str | None
-			UI-selected tool-choice value.
-		
-		selected_tools: List[Dict[str, Any]] | None
-			Final tool dictionaries.
-		
-		Returns:
-		--------
-		str | None
-			Tool-choice value or None.
-		
+	Purpose:
+	    Builds build text tool choice from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    tool_choice: Tool Choice value used by the application workflow.
+	    selected_tools: Selected Tools value used by the application workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if not isinstance( tool_choice, str ) or not tool_choice.strip( ):
 		return None
@@ -5328,26 +5162,19 @@ def build_text_tool_choice( tool_choice: str | None,
 	return choice
 
 def build_text_context( messages: List[ Dict[ str, Any ] ] | None,
-		include_last_message: bool=False ) -> List[ Dict[ str, str ] ]:
-	"""
+		include_last_message: bool = False ) -> List[ Dict[ str, str ] ]:
+	"""Build text context.
 	
-		Purpose:
-		--------
-		Build clean Text mode conversation context from Streamlit message state.
-		
-		Parameters:
-		-----------
-		messages: List[Dict[str, Any]] | None
-			Text mode messages.
-		
-		include_last_message: bool
-			Whether the final message should be included.
-		
-		Returns:
-		--------
-		List[Dict[str, str]]
-			Clean conversation context.
-		
+	Purpose:
+	    Builds build text context from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    messages: Messages value used by the application workflow.
+	    include_last_message: Include Last Message value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, str]]: List of normalized values used by the application workflow.
 	"""
 	if not isinstance( messages, list ):
 		return [ ]
@@ -5368,33 +5195,27 @@ def build_text_context( messages: List[ Dict[ str, Any ] ] | None,
 			continue
 		
 		context.append( {
-					'role': role,
-					'content': content.strip( ),
-			} )
+				'role': role,
+				'content': content.strip( ),
+		} )
 	
 	return context
 
 def get_text_conversation_id( input_mode: str | None, conversation_id: str | None ) -> str | None:
-	"""
+	"""Get text conversation id.
 	
-		Purpose:
-		--------
-		Return a conversation identifier only when Text mode explicitly selects API
-		conversation state.
-		
-		Parameters:
-		-----------
-		input_mode: str | None
-			Input mode selection.
-		
-		conversation_id: str | None
-			Conversation identifier.
-		
-		Returns:
-		--------
-		str | None
-			Conversation identifier or None.
-		
+	Purpose:
+	    Retrieves get text conversation id for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    input_mode: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	    conversation_id: Conversation Id value used by the application workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if input_mode != 'conversation':
 		return None
@@ -5405,25 +5226,20 @@ def get_text_conversation_id( input_mode: str | None, conversation_id: str | Non
 	return conversation_id.strip( )
 
 def get_text_previous_response_id( input_mode: str | None, previous_id: str | None ) -> str | None:
-	"""
+	"""Get text previous response id.
 	
-		Purpose:
-		--------
-		Return previous_response_id only when response chaining is selected.
-		
-		Parameters:
-		-----------
-		input_mode: str | None
-			Input mode selection.
-		
-		previous_id: str | None
-			Previous response identifier.
-		
-		Returns:
-		--------
-		str | None
-			Previous response identifier or None.
-		
+	Purpose:
+	    Retrieves get text previous response id for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    input_mode: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	    previous_id: Previous Id value used by the application workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if input_mode in [ 'single_turn', 'conversation' ]:
 		return None
@@ -5434,28 +5250,18 @@ def get_text_previous_response_id( input_mode: str | None, previous_id: str | No
 	return previous_id.strip( )
 
 def apply_gemini_runtime_config( ) -> None:
-	"""
+	"""Apply gemini runtime config.
 	
-		Purpose:
-		--------
-		Ensure Gemini initializes in API-key mode and does not accidentally route through
-		Vertex AI runtime variables unless later explicitly configured.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Supports the apply gemini runtime config application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
 	"""
-	key = ( st.session_state.get( 'gemini_api_key' )
-			or st.session_state.get( 'google_api_key' )
-			or getattr( cfg, 'GEMINI_API_KEY', None )
-			or getattr( cfg, 'GOOGLE_API_KEY', None )
-			or os.environ.get( 'GEMINI_API_KEY' )
-			or os.environ.get( 'GOOGLE_API_KEY' ) )
+	key = (st.session_state.get( 'gemini_api_key' )
+	       or st.session_state.get( 'google_api_key' )
+	       or getattr( cfg, 'GEMINI_API_KEY', None )
+	       or getattr( cfg, 'GOOGLE_API_KEY', None )
+	       or os.environ.get( 'GEMINI_API_KEY' )
+	       or os.environ.get( 'GOOGLE_API_KEY' ))
 	
 	if key:
 		os.environ[ 'GEMINI_API_KEY' ] = key
@@ -5469,7 +5275,12 @@ def apply_gemini_runtime_config( ) -> None:
 	                   'GOOGLE_CLOUD_PROJECT_ID', 'GOOGLE_CLOUD_LOCATION' ]:
 		try:
 			setattr( cfg, attr_name, None )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'apply_gemini_runtime_config'
+			exception.method = 'apply_gemini_runtime_config( ) -> None'
+			Logger( ).write( exception )
 			pass
 
 # ======================================================================================
@@ -5477,20 +5288,11 @@ def apply_gemini_runtime_config( ) -> None:
 # ======================================================================================
 
 def clear_image_messages( ) -> None:
-	"""
+	"""Clear image messages.
 	
-		Purpose:
-		--------
-		Clear Image Mode message and output state without modifying image controls.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear image messages by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'image_input' ] = [ ]
 	st.session_state[ 'image_messages' ] = [ ]
@@ -5499,43 +5301,26 @@ def clear_image_messages( ) -> None:
 	st.session_state[ 'last_answer' ] = ''
 
 def clear_image_instructions( ) -> None:
-	"""
+	"""Clear image instructions.
 	
-		Purpose:
-		--------
-		Clear Image Mode system instructions and selected prompt template.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear image instructions by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'image_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
 def append_image_message( role: str, content: str ) -> None:
-	"""
+	"""Append image message.
 	
-		Purpose:
-		--------
-		Append a message to Image Mode state.
-		
-		Parameters:
-		-----------
-		role: str
-			Message role.
-		
-		content: str
-			Message content.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Supports the append image message application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    role: Role value used by the application workflow.
+	    content: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
 	"""
 	if 'image_input' not in st.session_state or not isinstance(
 			st.session_state[ 'image_input' ], list ):
@@ -5554,20 +5339,12 @@ def append_image_message( role: str, content: str ) -> None:
 	st.session_state[ 'image_messages' ].append( message )
 
 def load_image_instruction_template( ) -> None:
-	"""
+	"""Load image instruction template.
 	
-		Purpose:
-		--------
-		Load the selected prompt template into Image Mode system instructions.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Retrieves load image instruction template for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
 	"""
 	name = st.session_state.get( 'instructions' )
 	if name and name != 'No Templates Found':
@@ -5576,21 +5353,11 @@ def load_image_instruction_template( ) -> None:
 			st.session_state[ 'image_system_instructions' ] = prompt_text
 
 def convert_image_system_instructions( ) -> None:
-	"""
+	"""Convert image system instructions.
 	
-		Purpose:
-		--------
-		Convert Image Mode system instructions between XML-like delimiters and Markdown
-		headings.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Transforms convert image system instructions inputs into a normalized representation
+	    used by provider calls, document retrieval, data management, or UI rendering.
 	"""
 	text_value = st.session_state.get( 'image_system_instructions', '' )
 	if not isinstance( text_value, str ) or not text_value.strip( ):
@@ -5605,20 +5372,11 @@ def convert_image_system_instructions( ) -> None:
 	st.session_state[ 'image_system_instructions' ] = converted
 
 def reset_image_llm_settings( ) -> None:
-	"""
+	"""Reset image llm settings.
 	
-		Purpose:
-		--------
-		Reset Image Mode model-selection controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset image llm settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'image_mode', 'image_model', 'image_analysis_model', 'image_number',
 	             'image_modality' ]:
@@ -5626,20 +5384,11 @@ def reset_image_llm_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_image_visual_settings( ) -> None:
-	"""
+	"""Reset image visual settings.
 	
-		Purpose:
-		--------
-		Reset Image Mode visual controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset image visual settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'image_mime_type', 'image_size', 'image_quality', 'image_backcolor',
 	             'image_compression', 'image_aspect_ratio', 'image_detail' ]:
@@ -5647,20 +5396,11 @@ def reset_image_visual_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_image_tool_settings( ) -> None:
-	"""
+	"""Reset image tool settings.
 	
-		Purpose:
-		--------
-		Reset Image Mode tool and grounding controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset image tool settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'image_include', 'image_tools', 'image_domains_input', 'image_domains',
 	             'image_tool_choice', 'image_grounded', 'image_image_search',
@@ -5669,20 +5409,11 @@ def reset_image_tool_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_image_response_settings( ) -> None:
-	"""
+	"""Reset image response settings.
 	
-		Purpose:
-		--------
-		Reset Image Mode response controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset image response settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'image_temperature', 'image_top_percent', 'image_frequency_penalty',
 	             'image_presence_penalty', 'image_max_tokens', 'image_store',
@@ -5692,22 +5423,18 @@ def reset_image_response_settings( ) -> None:
 			del st.session_state[ key ]
 
 def get_image_models( image: Any ) -> List[ str ]:
-	"""
+	"""Get image models.
 	
-		Purpose:
-		--------
-		Return provider image model options for generation and editing.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image model options.
-		
+	Purpose:
+	    Retrieves get image models for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'model_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5729,22 +5456,18 @@ def get_image_models( image: Any ) -> List[ str ]:
 	return [ '' ]
 
 def get_image_analysis_models( image: Any = None ) -> List[ str ]:
-	"""
+	"""Get image analysis models.
 	
-		Purpose:
-		--------
-		Return provider vision-capable image analysis model options.
-		
-		Parameters:
-		-----------
-		image: Any
-			Optional Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image analysis model options.
-		
+	Purpose:
+	    Retrieves get image analysis models for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if image is not None:
 		options = getattr( image, 'analysis_model_options', None )
@@ -5767,22 +5490,18 @@ def get_image_analysis_models( image: Any = None ) -> List[ str ]:
 	return [ '' ]
 
 def get_image_editing_models( image: Any = None ) -> List[ str ]:
-	"""
+	"""Get image editing models.
 	
-		Purpose:
-		--------
-		Return provider image editing model options.
-		
-		Parameters:
-		-----------
-		image: Any
-			Optional Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image editing model options.
-		
+	Purpose:
+	    Retrieves get image editing models for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -5802,22 +5521,18 @@ def get_image_editing_models( image: Any = None ) -> List[ str ]:
 	return [ '' ]
 
 def get_image_size_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image size options.
 	
-		Purpose:
-		--------
-		Return image size options from the wrapper when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image size options.
-		
+	Purpose:
+	    Retrieves get image size options for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'size_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5826,22 +5541,18 @@ def get_image_size_options( image: Any ) -> List[ str ]:
 	return [ '', 'auto', '1024x1024', '1024x1536', '1536x1024' ]
 
 def get_image_quality_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image quality options.
 	
-		Purpose:
-		--------
-		Return image quality options from the wrapper when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image quality options.
-		
+	Purpose:
+	    Retrieves get image quality options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'quality_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5850,22 +5561,18 @@ def get_image_quality_options( image: Any ) -> List[ str ]:
 	return [ '', 'auto', 'low', 'medium', 'high' ]
 
 def get_image_mime_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image mime options.
 	
-		Purpose:
-		--------
-		Return image output format options from the wrapper when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image output format options.
-		
+	Purpose:
+	    Retrieves get image mime options for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'mime_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5874,22 +5581,18 @@ def get_image_mime_options( image: Any ) -> List[ str ]:
 	return [ '', 'png', 'jpeg', 'webp' ]
 
 def get_image_background_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image background options.
 	
-		Purpose:
-		--------
-		Return image background options from the wrapper when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image background options.
-		
+	Purpose:
+	    Retrieves get image background options for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'backcolor_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5898,22 +5601,18 @@ def get_image_background_options( image: Any ) -> List[ str ]:
 	return [ '', 'auto', 'transparent', 'opaque' ]
 
 def get_image_detail_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image detail options.
 	
-		Purpose:
-		--------
-		Return image-analysis detail options from the wrapper when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Image-analysis detail options.
-		
+	Purpose:
+	    Retrieves get image detail options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'detail_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5922,22 +5621,18 @@ def get_image_detail_options( image: Any ) -> List[ str ]:
 	return [ '', 'auto', 'low', 'high', 'original' ]
 
 def get_image_aspect_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image aspect options.
 	
-		Purpose:
-		--------
-		Return Gemini image aspect-ratio options when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Aspect-ratio options.
-		
+	Purpose:
+	    Retrieves get image aspect options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'aspect_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5946,22 +5641,18 @@ def get_image_aspect_options( image: Any ) -> List[ str ]:
 	return [ '', '1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9' ]
 
 def get_image_modality_options( image: Any ) -> List[ str ]:
-	"""
+	"""Get image modality options.
 	
-		Purpose:
-		--------
-		Return Gemini image response modality options when available.
-		
-		Parameters:
-		-----------
-		image: Any
-			Provider Images wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Response modality options.
-		
+	Purpose:
+	    Retrieves get image modality options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( image, 'modality_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -5970,27 +5661,19 @@ def get_image_modality_options( image: Any ) -> List[ str ]:
 	return [ '', 'text', 'image', 'auto' ]
 
 def render_image_output( image_result: str | bytes | List[ str | bytes ] | Any | None,
-		caption: str='Image output' ) -> bool:
-	"""
+		caption: str = 'Image output' ) -> bool:
+	"""Render image output.
 	
-		Purpose:
-		--------
-		Render image output returned from an Images wrapper, including PIL images,
-		single bytes, URLs, strings, and list outputs.
-		
-		Parameters:
-		-----------
-		image_result: str | bytes | List[str | bytes] | Any | None
-			Image result returned by the provider wrapper.
-		
-		caption: str
-			Display caption.
-		
-		Returns:
-		--------
-		bool
-			True when output was rendered; otherwise False.
-		
+	Purpose:
+	    Renders render image output in the Streamlit interface while preserving the active
+	    session state and provider workflow context.
+	
+	Args:
+	    image_result: Image Result value used by the application workflow.
+	    caption: Caption value used by the application workflow.
+	
+	Returns:
+	    bool: True when the requested condition is satisfied; otherwise, False.
 	"""
 	if image_result is None:
 		return False
@@ -6022,29 +5705,30 @@ def render_image_output( image_result: str | bytes | List[ str | bytes ] | Any |
 		try:
 			st.image( item, caption=output_caption, use_column_width=True )
 			rendered = True
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'render_image_output'
+			exception.method = 'render_image_output( image_result, caption ) -> bool'
+			Logger( ).write( exception )
 			st.write( item )
 			rendered = True
 	
 	return rendered
 
 def get_image_prompt( prompt: str | None ) -> str:
-	"""
+	"""Get image prompt.
 	
-		Purpose:
-		--------
-		Normalize a chat-input prompt for Image Mode execution.
-		
-		Parameters:
-		-----------
-		prompt: str | None
-			Raw prompt value.
-		
-		Returns:
-		--------
-		str
-			Clean prompt text.
-		
+	Purpose:
+	    Retrieves get image prompt for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( prompt, str ) or not prompt.strip( ):
 		return ''
@@ -6056,22 +5740,11 @@ def get_image_prompt( prompt: str | None ) -> str:
 # ======================================================================================
 
 def ensure_audio_runtime_state( ) -> None:
-	"""
+	"""Ensure audio runtime state.
 	
-		Purpose:
-		--------
-		Ensure Audio mode runtime keys exist before Audio mode widgets or execution paths
-		read them. File uploader widget keys are intentionally excluded because Streamlit
-		does not permit file uploader values to be assigned through session_state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure audio runtime state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_audio_mode_state( )
 	ensure_key( 'audio_tts_input', '' )
@@ -6080,21 +5753,15 @@ def ensure_audio_runtime_state( ) -> None:
 	ensure_key( 'audio_last_usage', { } )
 
 def get_audio_task_options( ) -> List[ str ]:
-	"""
+	"""Get audio task options.
 	
-		Purpose:
-		--------
-		Return supported Audio mode tasks for the currently selected provider.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		List[str]
-			Supported audio task names.
-		
+	Purpose:
+	    Retrieves get audio task options for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options: List[ str ] = [ ]
 	
@@ -6110,66 +5777,53 @@ def get_audio_task_options( ) -> List[ str ]:
 	return options
 
 def get_audio_option_list( source: Any, attr_name: str, fallback: List[ str ] ) -> List[ str ]:
-	"""
+	"""Get audio option list.
 	
-		Purpose:
-		--------
-		Return a list-valued option attribute from an audio wrapper, preserving a fallback
-		when the provider does not expose the requested option collection.
-		
-		Parameters:
-		-----------
-		source: Any
-			Audio provider wrapper instance.
-		
-		attr_name: str
-			Attribute name to read.
-		
-		fallback: List[str]
-			Fallback option list.
-		
-		Returns:
-		--------
-		List[str]
-			Resolved option list.
-		
+	Purpose:
+	    Retrieves get audio option list for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    source: Source value used by the application workflow.
+	    attr_name: Attr Name value used by the application workflow.
+	    fallback: Fallback value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if source is not None:
 		try:
 			options = getattr( source, attr_name, None )
 			if isinstance( options, list ) and len( options ) > 0:
 				return options
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'get_audio_option_list'
+			exception.method = 'get_audio_option_list( source, attr_name, fallback ) -> List[str]'
+			Logger( ).write( exception )
 			pass
 	
 	return fallback
 
-def get_audio_model_options( task: str | None, transcriber: Any, translator: Any, tts: Any ) -> List[ str ]:
-	"""
+def get_audio_model_options( task: str | None, transcriber: Any, translator: Any, tts: Any ) -> \
+List[ str ]:
+	"""Get audio model options.
 	
-		Purpose:
-		--------
-		Return task-specific audio model options for the selected provider.
-		
-		Parameters:
-		-----------
-		task: str | None
-			Selected audio task.
-		
-		transcriber: Any
-			Provider transcription wrapper.
-		
-		translator: Any
-			Provider translation wrapper.
-		
-		tts: Any
-			Provider text-to-speech wrapper.
-		
-		Returns:
-		--------
-		List[str]
-			Model option list.
-		
+	Purpose:
+	    Retrieves get audio model options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    task: Task value used by the application workflow.
+	    transcriber: Transcriber value used by the application workflow.
+	    translator: Translator value used by the application workflow.
+	    tts: Tts value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -6190,29 +5844,22 @@ def get_audio_model_options( task: str | None, transcriber: Any, translator: Any
 	
 	return [ '' ]
 
-def get_audio_language_options( task: str | None, transcriber: Any, translator: Any ) -> List[ str ]:
-	"""
+def get_audio_language_options( task: str | None, transcriber: Any, translator: Any ) -> List[
+	str ]:
+	"""Get audio language options.
 	
-		Purpose:
-		--------
-		Return task-specific language options for transcription or translation.
-		
-		Parameters:
-		-----------
-		task: str | None
-			Selected audio task.
-		
-		transcriber: Any
-			Provider transcription wrapper.
-		
-		translator: Any
-			Provider translation wrapper.
-		
-		Returns:
-		--------
-		List[str]
-			Language option list.
-		
+	Purpose:
+	    Retrieves get audio language options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    task: Task value used by the application workflow.
+	    transcriber: Transcriber value used by the application workflow.
+	    translator: Translator value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if task == 'Transcribe':
 		return [ '' ] + get_audio_option_list( transcriber, 'language_options',
@@ -6225,56 +5872,40 @@ def get_audio_language_options( task: str | None, transcriber: Any, translator: 
 	return [ '' ]
 
 def get_audio_voice_options( tts: Any ) -> List[ str ]:
-	"""
+	"""Get audio voice options.
 	
-		Purpose:
-		--------
-		Return text-to-speech voice options for the selected provider.
-		
-		Parameters:
-		-----------
-		tts: Any
-			Provider text-to-speech wrapper.
-		
-		Returns:
-		--------
-		List[str]
-			Voice option list.
-		
+	Purpose:
+	    Retrieves get audio voice options for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    tts: Tts value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	return [ '' ] + get_audio_option_list( tts, 'voice_options',
 		[ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer' ] )
 
 def get_audio_response_format_options( task: str | None, model: str | None,
 		transcriber: Any, translator: Any, tts: Any ) -> List[ str ]:
-	"""
+	"""Get audio response format options.
 	
-		Purpose:
-		--------
-		Return task-specific response/output format options for Audio mode.
-		
-		Parameters:
-		-----------
-		task: str | None
-			Selected audio task.
-		
-		model: str | None
-			Selected audio model.
-		
-		transcriber: Any
-			Provider transcription wrapper.
-		
-		translator: Any
-			Provider translation wrapper.
-		
-		tts: Any
-			Provider text-to-speech wrapper.
-		
-		Returns:
-		--------
-		List[str]
-			Format option list.
-		
+	Purpose:
+	    Retrieves get audio response format options for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    task: Task value used by the application workflow.
+	    model: Provider model identifier selected for the active workflow.
+	    transcriber: Transcriber value used by the application workflow.
+	    translator: Translator value used by the application workflow.
+	    tts: Tts value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if task == 'Transcribe':
 		return [ '' ] + get_audio_option_list( transcriber, 'format_options',
@@ -6291,25 +5922,19 @@ def get_audio_response_format_options( task: str | None, model: str | None,
 	return [ '' ]
 
 def get_audio_prompt_value( task: str | None, prompt: str | None ) -> str | None:
-	"""
+	"""Get audio prompt value.
 	
-		Purpose:
-		--------
-		Return task-specific audio instructions or prompt value.
-		
-		Parameters:
-		-----------
-		task: str | None
-			Selected audio task.
-		
-		prompt: str | None
-			Audio system instruction text.
-		
-		Returns:
-		--------
-		str | None
-			Clean prompt text or None.
-		
+	Purpose:
+	    Retrieves get audio prompt value for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    task: Task value used by the application workflow.
+	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if not isinstance( prompt, str ) or not prompt.strip( ):
 		return None
@@ -6318,28 +5943,20 @@ def get_audio_prompt_value( task: str | None, prompt: str | None ) -> str | None
 
 def get_audio_response_format_value( task: str | None, selected_format: str | None,
 		selected_mime_type: str | None = None ) -> str | None:
-	"""
+	"""Get audio response format value.
 	
-		Purpose:
-		--------
-		Normalize selected audio format values before calling provider wrappers.
-		
-		Parameters:
-		-----------
-		task: str | None
-			Selected audio task.
-		
-		selected_format: str | None
-			UI-selected response format.
-		
-		selected_mime_type: str | None
-			UI-selected MIME type.
-		
-		Returns:
-		--------
-		str | None
-			Normalized format value or None.
-		
+	Purpose:
+	    Retrieves get audio response format value for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    task: Task value used by the application workflow.
+	    selected_format: Selected Format value used by the application workflow.
+	    selected_mime_type: Selected Mime Type value used by the application workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if isinstance( selected_format, str ) and selected_format.strip( ):
 		value = selected_format.strip( )
@@ -6358,43 +5975,34 @@ def get_audio_response_format_value( task: str | None, selected_format: str | No
 	return None
 
 def extract_audio_usage( response: Any ) -> Dict[ str, Any ]:
-	"""
+	"""Extract audio usage.
 	
-		Purpose:
-		--------
-		Extract audio response usage metadata using the shared usage extractor.
-		
-		Parameters:
-		-----------
-		response: Any
-			Provider response object.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Usage dictionary.
-		
+	Purpose:
+	    Transforms extract audio usage inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    response: Response value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	try:
 		return _extract_usage_from_response( response )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'extract_audio_usage'
+		exception.method = 'extract_audio_usage( response ) -> Dict[str, Any]'
+		Logger( ).write( exception )
 		return { }
 
 def clear_audio_outputs( ) -> None:
-	"""
+	"""Clear audio outputs.
 	
-		Purpose:
-		--------
-		Clear Audio mode output state while preserving controls and messages.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear audio outputs by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'audio_output' ] = ''
 	st.session_state[ 'audio_output_bytes' ] = None
@@ -6402,58 +6010,32 @@ def clear_audio_outputs( ) -> None:
 	st.session_state[ 'audio_last_usage' ] = { }
 
 def clear_audio_messages( ) -> None:
-	"""
+	"""Clear audio messages.
 	
-		Purpose:
-		--------
-		Clear Audio mode messages and output state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear audio messages by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'audio_messages' ] = [ ]
 	clear_audio_outputs( )
 
 def clear_audio_instructions( ) -> None:
-	"""
+	"""Clear audio instructions.
 	
-		Purpose:
-		--------
-		Clear Audio mode system instructions and selected prompt template.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear audio instructions by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'audio_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
 def load_audio_instruction_template( ) -> None:
-	"""
+	"""Load audio instruction template.
 	
-		Purpose:
-		--------
-		Load the selected prompt template into Audio mode system instructions.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Retrieves load audio instruction template for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
 	"""
 	name = st.session_state.get( 'instructions' )
 	if name and name != 'No Templates Found':
@@ -6462,21 +6044,11 @@ def load_audio_instruction_template( ) -> None:
 			st.session_state[ 'audio_system_instructions' ] = prompt_text
 
 def convert_audio_system_instructions( ) -> None:
-	"""
+	"""Convert audio system instructions.
 	
-		Purpose:
-		--------
-		Convert Audio mode system instructions between XML-like delimiters and Markdown
-		headings.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Transforms convert audio system instructions inputs into a normalized representation
+	    used by provider calls, document retrieval, data management, or UI rendering.
 	"""
 	text_value = st.session_state.get( 'audio_system_instructions', '' )
 	if not isinstance( text_value, str ) or not text_value.strip( ):
@@ -6491,20 +6063,11 @@ def convert_audio_system_instructions( ) -> None:
 	st.session_state[ 'audio_system_instructions' ] = converted
 
 def reset_audio_llm_settings( ) -> None:
-	"""
+	"""Reset audio llm settings.
 	
-		Purpose:
-		--------
-		Reset Audio mode LLM controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset audio llm settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'audio_task', 'audio_model', 'audio_language', 'audio_voice',
 	             'audio_response_format', 'audio_mime_type' ]:
@@ -6512,20 +6075,11 @@ def reset_audio_llm_settings( ) -> None:
 			del st.session_state[ key ]
 
 def reset_audio_response_settings( ) -> None:
-	"""
+	"""Reset audio response settings.
 	
-		Purpose:
-		--------
-		Reset Audio mode response controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset audio response settings by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'audio_temperature', 'audio_top_percent', 'audio_frequency_penalty',
 	             'audio_presence_penalty', 'audio_max_tokens', 'audio_speed',
@@ -6536,22 +6090,17 @@ def reset_audio_response_settings( ) -> None:
 			del st.session_state[ key ]
 
 def save_audio_upload( upload: Any ) -> str | None:
-	"""
+	"""Save audio upload.
 	
-		Purpose:
-		--------
-		Save an uploaded or recorded audio object to a temporary file and return its path.
-		
-		Parameters:
-		-----------
-		upload: Any
-			Streamlit uploaded or recorded audio object.
-		
-		Returns:
-		--------
-		str | None
-			Temporary file path or None.
-		
+	Purpose:
+	    Applies the save audio upload operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    upload: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if upload is None:
 		return None
@@ -6570,37 +6119,30 @@ def save_audio_upload( upload: Any ) -> str | None:
 				return None
 			
 			return tmp.name
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'save_audio_upload'
+		exception.method = 'save_audio_upload( upload ) -> str | None'
+		Logger( ).write( exception )
 		return None
 
 def run_audio_file_task( task: str | None, file_path: str | None,
 		transcriber: Any, translator: Any ) -> str | None:
-	"""
+	"""Run audio file task.
 	
-		Purpose:
-		--------
-		Run transcription or translation against an audio file and store normalized output
-		state.
-		
-		Parameters:
-		-----------
-		task: str | None
-			Selected Audio mode task.
-		
-		file_path: str | None
-			Temporary audio file path.
-		
-		transcriber: Any
-			Provider transcription wrapper.
-		
-		translator: Any
-			Provider translation wrapper.
-		
-		Returns:
-		--------
-		str | None
-			Text output from transcription or translation.
-		
+	Purpose:
+	    Executes the run audio file task workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Args:
+	    task: Task value used by the application workflow.
+	    file_path: File, upload, or path value used by the document or storage workflow.
+	    transcriber: Transcriber value used by the application workflow.
+	    translator: Translator value used by the application workflow.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
 	"""
 	if not isinstance( task, str ) or not task.strip( ):
 		st.warning( 'Select an audio task before processing audio.' )
@@ -6628,8 +6170,8 @@ def run_audio_file_task( task: str | None, file_path: str | None,
 		
 		if file_suffix not in valid_extensions:
 			st.warning( 'OpenAI audio transcription and translation support flac, mp3, mp4, '
-				'mpeg, mpga, m4a, ogg, wav, and webm files. Convert the file before '
-				'processing it with GPT.' )
+			            'mpeg, mpga, m4a, ogg, wav, and webm files. Convert the file before '
+			            'processing it with GPT.' )
 			return None
 	
 	prompt_value = get_audio_prompt_value(
@@ -6703,25 +6245,18 @@ def run_audio_file_task( task: str | None, file_path: str | None,
 	return None
 
 def run_audio_tts_task( text: str | None, tts: Any ) -> bytes | None:
-	"""
+	"""Run audio tts task.
 	
-		Purpose:
-		--------
-		Run text-to-speech and store generated audio bytes.
-		
-		Parameters:
-		-----------
-		text: str | None
-			Text to synthesize.
-		
-		tts: Any
-			Provider text-to-speech wrapper.
-		
-		Returns:
-		--------
-		bytes | None
-			Generated audio bytes.
-		
+	Purpose:
+	    Executes the run audio tts task workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	    tts: Tts value used by the application workflow.
+	
+	Returns:
+	    bytes | None: Normalized result produced for the active application workflow.
 	"""
 	if not isinstance( text, str ) or not text.strip( ):
 		st.warning( 'Enter text before generating speech.' )
@@ -6761,24 +6296,16 @@ def run_audio_tts_task( text: str | None, tts: Any ) -> bytes | None:
 	return audio_bytes
 
 def render_audio_text_result( title: str, result_text: str | None ) -> None:
-	"""
+	"""Render audio text result.
 	
-		Purpose:
-		--------
-		Render transcription or translation text output.
-		
-		Parameters:
-		-----------
-		title: str
-			Result title.
-		
-		result_text: str | None
-			Result text.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Renders render audio text result in the Streamlit interface while preserving the active
+	    session state and provider workflow context.
+	
+	Args:
+	    title: Title value used by the application workflow.
+	    result_text: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
 	"""
 	if isinstance( result_text, str ) and result_text.strip( ):
 		st.text_area( title, value=result_text.strip( ), height=300, width='stretch' )
@@ -6786,24 +6313,15 @@ def render_audio_text_result( title: str, result_text: str | None ) -> None:
 		st.warning( 'No text output was returned.' )
 
 def render_audio_bytes( audio_bytes: bytes | None, response_format: str | None = None ) -> None:
-	"""
+	"""Render audio bytes.
 	
-		Purpose:
-		--------
-		Render generated audio bytes.
-		
-		Parameters:
-		-----------
-		audio_bytes: bytes | None
-			Generated audio bytes.
-		
-		response_format: str | None
-			Audio format value.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Renders render audio bytes in the Streamlit interface while preserving the active
+	    session state and provider workflow context.
+	
+	Args:
+	    audio_bytes: Audio Bytes value used by the application workflow.
+	    response_format: Response Format value used by the application workflow.
 	"""
 	if not audio_bytes:
 		st.warning( 'No audio output was returned.' )
@@ -6822,22 +6340,18 @@ def render_audio_bytes( audio_bytes: bytes | None, response_format: str | None =
 # ======================================================================================
 
 def get_embedding_model_options( embedding: Any ) -> List[ str ]:
-	"""
+	"""Get embedding model options.
 	
-		Purpose:
-		--------
-		Return embedding model options from the selected provider wrapper.
-		
-		Parameters:
-		-----------
-		embedding: Any
-			Provider Embeddings wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Embedding model options.
-		
+	Purpose:
+	    Retrieves get embedding model options for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    embedding: Embedding value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( embedding, 'model_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -6863,22 +6377,18 @@ def get_embedding_model_options( embedding: Any ) -> List[ str ]:
 	return [ '' ]
 
 def get_embedding_encoding_options( embedding: Any ) -> List[ str ]:
-	"""
+	"""Get embedding encoding options.
 	
-		Purpose:
-		--------
-		Return embedding encoding format options from the selected provider wrapper.
-		
-		Parameters:
-		-----------
-		embedding: Any
-			Provider Embeddings wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Encoding format options.
-		
+	Purpose:
+	    Retrieves get embedding encoding options for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    embedding: Embedding value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( embedding, 'encoding_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -6895,32 +6405,31 @@ def get_embedding_encoding_options( embedding: Any ) -> List[ str ]:
 	return [ 'float' ]
 
 def get_embedding_max_dimensions( model: str | None, embedding: Any ) -> int:
-	"""
+	"""Get embedding max dimensions.
 	
-		Purpose:
-		--------
-		Return the maximum supported dimensions for the selected embedding model.
-		
-		Parameters:
-		-----------
-		model: str | None
-			Selected embedding model.
-		
-		embedding: Any
-			Provider Embeddings wrapper instance.
-		
-		Returns:
-		--------
-		int
-			Maximum supported dimensions.
-		
+	Purpose:
+	    Retrieves get embedding max dimensions for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    model: Provider model identifier selected for the active workflow.
+	    embedding: Embedding value used by the application workflow.
+	
+	Returns:
+	    int: Normalized result produced for the active application workflow.
 	"""
 	if not isinstance( model, str ) or not model.strip( ):
 		return 1536
 	
 	try:
 		return int( embedding.get_max_dimensions( model.strip( ) ) )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_embedding_max_dimensions'
+		exception.method = 'get_embedding_max_dimensions( model, embedding ) -> int'
+		Logger( ).write( exception )
 		pass
 	
 	if model == 'text-embedding-3-large':
@@ -6932,25 +6441,18 @@ def get_embedding_max_dimensions( model: str | None, embedding: Any ) -> int:
 	return 1536
 
 def embedding_model_supports_dimensions( model: str | None, embedding: Any ) -> bool:
-	"""
+	"""Embedding model supports dimensions.
 	
-		Purpose:
-		--------
-		Determine whether the selected embedding model supports a dimensions parameter.
-		
-		Parameters:
-		-----------
-		model: str | None
-			Selected embedding model.
-		
-		embedding: Any
-			Provider Embeddings wrapper instance.
-		
-		Returns:
-		--------
-		bool
-			True when dimensions may be sent; otherwise False.
-		
+	Purpose:
+	    Evaluates whether embedding model supports dimensions is enabled or safe for the
+	    current provider, model, table, query, or workflow context.
+	
+	Args:
+	    model: Provider model identifier selected for the active workflow.
+	    embedding: Embedding value used by the application workflow.
+	
+	Returns:
+	    bool: True when the requested condition is satisfied; otherwise, False.
 	"""
 	if not isinstance( model, str ) or not model.strip( ):
 		return False
@@ -6960,38 +6462,35 @@ def embedding_model_supports_dimensions( model: str | None, embedding: Any ) -> 
 		return bool( support.get( model.strip( ), False ) )
 	
 	return model.strip( ) in [ 'text-embedding-3-small', 'text-embedding-3-large',
-			'gemini-embedding-001', ]
+	                           'gemini-embedding-001', ]
 
-def normalize_embedding_dimensions( model: str | None, dimensions: int | None, embedding: Any ) -> int | None:
-	"""
+def normalize_embedding_dimensions( model: str | None, dimensions: int | None,
+		embedding: Any ) -> int | None:
+	"""Normalize embedding dimensions.
 	
-		Purpose:
-		--------
-		Normalize dimensions before calling a provider Embeddings API.
-		
-		Parameters:
-		-----------
-		model: str | None
-			Selected embedding model.
-		
-		dimensions: int | None
-			Requested embedding dimensions.
-		
-		embedding: Any
-			Provider Embeddings wrapper instance.
-		
-		Returns:
-		--------
-		int | None
-			Valid dimensions value or None when omitted.
-		
+	Purpose:
+	    Transforms normalize embedding dimensions inputs into a normalized representation used
+	    by provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    model: Provider model identifier selected for the active workflow.
+	    dimensions: Dimensions value used by the application workflow.
+	    embedding: Embedding value used by the application workflow.
+	
+	Returns:
+	    int | None: Normalized result produced for the active application workflow.
 	"""
 	if not isinstance( model, str ) or not model.strip( ):
 		return None
 	
 	try:
 		value = int( dimensions or 0 )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'normalize_embedding_dimensions'
+		exception.method = 'normalize_embedding_dimensions( model, dimensions, embedding ) -> int | None'
+		Logger( ).write( exception )
 		return None
 	
 	if value <= 0:
@@ -7006,35 +6505,39 @@ def normalize_embedding_dimensions( model: str | None, dimensions: int | None, e
 	
 	return value
 
-def normalize_embedding_chunk_settings( chunk_size: int | None, overlap_amount: int | None ) -> Tuple[ int, int ]:
-	"""
+def normalize_embedding_chunk_settings( chunk_size: int | None, overlap_amount: int | None ) -> \
+Tuple[ int, int ]:
+	"""Normalize embedding chunk settings.
 	
-		Purpose:
-		--------
-		Normalize chunk size and overlap settings for tokenizer-aware chunking.
-		
-		Parameters:
-		-----------
-		chunk_size: int | None
-			Requested chunk size in tokens.
-		
-		overlap_amount: int | None
-			Token overlap between adjacent chunks.
-		
-		Returns:
-		--------
-		Tuple[int, int]
-			Normalized chunk size and overlap amount.
-		
+	Purpose:
+	    Transforms normalize embedding chunk settings inputs into a normalized representation
+	    used by provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    chunk_size: Chunk Size value used by the application workflow.
+	    overlap_amount: Overlap Amount value used by the application workflow.
+	
+	Returns:
+	    Tuple[int, int]: Normalized result produced for the active application workflow.
 	"""
 	try:
 		chunk_value = int( chunk_size or 800 )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'normalize_embedding_chunk_settings'
+		exception.method = 'normalize_embedding_chunk_settings( chunk_size, overlap_amount ) -> Tuple[int, int]'
+		Logger( ).write( exception )
 		chunk_value = 800
 	
 	try:
 		overlap_value = int( overlap_amount or 0 )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'normalize_embedding_chunk_settings'
+		exception.method = 'normalize_embedding_chunk_settings( chunk_size, overlap_amount ) -> Tuple[int, int]'
+		Logger( ).write( exception )
 		overlap_value = 0
 	
 	if chunk_value <= 0:
@@ -7051,33 +6554,22 @@ def normalize_embedding_chunk_settings( chunk_size: int | None, overlap_amount: 
 	
 	return chunk_value, overlap_value
 
-def chunk_text_for_embeddings( text: str, chunk_size: int=800,
-		overlap_amount: int=0, encoding_name: str='cl100k_base' ) -> List[ str ]:
-	"""
+def chunk_text_for_embeddings( text: str, chunk_size: int = 800,
+		overlap_amount: int = 0, encoding_name: str = 'cl100k_base' ) -> List[ str ]:
+	"""Chunk text for embeddings.
 	
-		Purpose:
-		--------
-		Split text into tokenizer-aware chunks for embedding APIs.
-		
-		Parameters:
-		-----------
-		text: str
-			Input text to chunk.
-		
-		chunk_size: int
-			Maximum chunk size in tokens.
-		
-		overlap_amount: int
-			Token overlap between adjacent chunks.
-		
-		encoding_name: str
-			Tiktoken encoding name.
-		
-		Returns:
-		--------
-		List[str]
-			Text chunks.
-		
+	Purpose:
+	    Supports the chunk text for embeddings application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	    chunk_size: Chunk Size value used by the application workflow.
+	    overlap_amount: Overlap Amount value used by the application workflow.
+	    encoding_name: Encoding Name value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if not isinstance( text, str ) or not text.strip( ):
 		return [ ]
@@ -7112,22 +6604,17 @@ def chunk_text_for_embeddings( text: str, chunk_size: int=800,
 	return chunks
 
 def normalize_embedding_vectors( vectors: Any ) -> List[ Any ]:
-	"""
+	"""Normalize embedding vectors.
 	
-		Purpose:
-		--------
-		Normalize provider embedding output into a list of vectors or encoded strings.
-		
-		Parameters:
-		-----------
-		vectors: Any
-			Embedding output returned by the provider wrapper.
-		
-		Returns:
-		--------
-		List[Any]
-			Normalized embedding outputs.
-		
+	Purpose:
+	    Transforms normalize embedding vectors inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    vectors: Vectors value used by the application workflow.
+	
+	Returns:
+	    List[Any]: List of normalized values used by the application workflow.
 	"""
 	if vectors is None:
 		return [ ]
@@ -7146,29 +6633,23 @@ def normalize_embedding_vectors( vectors: Any ) -> List[ Any ]:
 	
 	return [ vectors ]
 
-def build_embeddings_dataframe( chunks: List[ str ], vectors: Any, encoding_format: str='float' ) -> pd.DataFrame:
-	"""
+def build_embeddings_dataframe( chunks: List[ str ], vectors: Any,
+		encoding_format: str = 'float' ) -> pd.DataFrame:
+	"""Build embeddings dataframe.
 	
-		Purpose:
-		--------
-		Build a display dataframe from embedding chunks and embedding vectors.
-		
-		Parameters:
-		-----------
-		chunks: List[str]
-			Text chunks submitted to the embedding API.
-		
-		vectors: Any
-			Embedding vectors or encoded strings returned by the wrapper.
-		
-		encoding_format: str
-			Embedding encoding format.
-		
-		Returns:
-		--------
-		pd.DataFrame
-			Display-ready embeddings dataframe.
-		
+	Purpose:
+	    Builds build embeddings dataframe from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    chunks: Chunks value used by the application workflow.
+	    vectors: Vectors value used by the application workflow.
+	    encoding_format: Encoding Format value used by the application workflow.
+	
+	Returns:
+	    pd.DataFrame: DataFrame produced for application display, profiling, retrieval, or
+	        export.
 	"""
 	outputs = normalize_embedding_vectors( vectors )
 	if len( outputs ) == 0:
@@ -7180,10 +6661,10 @@ def build_embeddings_dataframe( chunks: List[ str ], vectors: Any, encoding_form
 		for index, item in enumerate( outputs ):
 			chunk = chunks[ index ] if index < len( chunks ) else ''
 			rows.append( {
-						'ChunkIndex': index + 1,
-						'Chunk': chunk,
-						'EmbeddingBase64': item if isinstance( item, str ) else str( item ),
-				} )
+					'ChunkIndex': index + 1,
+					'Chunk': chunk,
+					'EmbeddingBase64': item if isinstance( item, str ) else str( item ),
+			} )
 		
 		return pd.DataFrame( rows )
 	
@@ -7192,10 +6673,10 @@ def build_embeddings_dataframe( chunks: List[ str ], vectors: Any, encoding_form
 		
 		if not isinstance( vector, list ):
 			rows.append( {
-						'ChunkIndex': index + 1,
-						'Chunk': chunk,
-						'Embedding': str( vector ),
-				} )
+					'ChunkIndex': index + 1,
+					'Chunk': chunk,
+					'Embedding': str( vector ),
+			} )
 			continue
 		
 		row: Dict[ str, Any ] = {
@@ -7211,22 +6692,18 @@ def build_embeddings_dataframe( chunks: List[ str ], vectors: Any, encoding_form
 	return pd.DataFrame( rows )
 
 def get_embedding_vector_dimension( vectors: Any ) -> int:
-	"""
+	"""Get embedding vector dimension.
 	
-		Purpose:
-		--------
-		Return the numeric embedding vector dimension when available.
-		
-		Parameters:
-		-----------
-		vectors: Any
-			Embedding output returned by the provider wrapper.
-		
-		Returns:
-		--------
-		int
-			Vector dimension count, or zero for non-numeric output.
-		
+	Purpose:
+	    Retrieves get embedding vector dimension for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    vectors: Vectors value used by the application workflow.
+	
+	Returns:
+	    int: Normalized result produced for the active application workflow.
 	"""
 	outputs = normalize_embedding_vectors( vectors )
 	if len( outputs ) == 0:
@@ -7239,35 +6716,40 @@ def get_embedding_vector_dimension( vectors: Any ) -> int:
 	return 0
 
 def extract_embedding_usage( response: Any ) -> Dict[ str, Any ]:
-	"""
+	"""Extract embedding usage.
 	
-		Purpose:
-		--------
-		Extract usage metadata from an embedding API response object.
-		
-		Parameters:
-		-----------
-		response: Any
-			Embedding API response object.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized usage metadata.
-		
+	Purpose:
+	    Transforms extract embedding usage inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    response: Response value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	if response is None:
 		return { }
 	
 	try:
 		raw = getattr( response, 'usage', None )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'extract_embedding_usage'
+		exception.method = 'extract_embedding_usage( response ) -> Dict[str, Any]'
+		Logger( ).write( exception )
 		raw = None
 	
 	if raw is None:
 		try:
 			raw = getattr( response, 'usage_metadata', None )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'extract_embedding_usage'
+			exception.method = 'extract_embedding_usage( response ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			raw = None
 	
 	if raw is None:
@@ -7279,41 +6761,35 @@ def extract_embedding_usage( response: Any ) -> Dict[ str, Any ]:
 	if hasattr( raw, 'model_dump' ):
 		try:
 			return raw.model_dump( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'extract_embedding_usage'
+			exception.method = 'extract_embedding_usage( response ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			return { 'raw': str( raw ) }
 	
 	return { 'raw': str( raw ) }
 
 def build_embedding_metrics( source_text: str, normalized_text: str, chunks: List[ str ],
-		vectors: Any, usage: Dict[ str, Any ] | None=None ) -> Dict[ str, Any ]:
-	"""
+		vectors: Any, usage: Dict[ str, Any ] | None = None ) -> Dict[ str, Any ]:
+	"""Build embedding metrics.
 	
-		Purpose:
-		--------
-		Build Embeddings mode metrics for display and session-state storage.
-		
-		Parameters:
-		-----------
-		source_text: str
-			Original input text.
-		
-		normalized_text: str
-			Normalized text submitted to chunking.
-		
-		chunks: List[str]
-			Embedding chunks.
-		
-		vectors: Any
-			Embedding output returned by the wrapper.
-		
-		usage: Dict[str, Any] | None
-			Optional usage metadata from the API.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Embedding metrics.
-		
+	Purpose:
+	    Builds build embedding metrics from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    source_text: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	    normalized_text: Text value supplied to the prompt, conversion, retrieval, or provider
+	        workflow.
+	    chunks: Chunks value used by the application workflow.
+	    vectors: Vectors value used by the application workflow.
+	    usage: Usage value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	source_value = source_text if isinstance( source_text, str ) else ''
 	normalized_value = normalized_text if isinstance( normalized_text, str ) else ''
@@ -7339,21 +6815,14 @@ def build_embedding_metrics( source_text: str, normalized_text: str, chunks: Lis
 	}
 
 def render_embedding_metrics( metrics: Dict[ str, Any ] | None ) -> None:
-	"""
+	"""Render embedding metrics.
 	
-		Purpose:
-		--------
-		Render Embeddings mode metrics using Streamlit metric controls.
-		
-		Parameters:
-		-----------
-		metrics: Dict[str, Any] | None
-			Embedding metrics dictionary.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Renders render embedding metrics in the Streamlit interface while preserving the active
+	    session state and provider workflow context.
+	
+	Args:
+	    metrics: Metrics value used by the application workflow.
 	"""
 	if not isinstance( metrics, dict ) or len( metrics ) == 0:
 		return
@@ -7377,21 +6846,15 @@ def render_embedding_metrics( metrics: Dict[ str, Any ] | None ) -> None:
 		st.metric( 'Words', metrics.get( 'words', 0 ) )
 
 def render_embeddings_dataframe( df_embeddings: pd.DataFrame ) -> None:
-	"""
+	"""Render embeddings dataframe.
 	
-		Purpose:
-		--------
-		Render Embeddings mode output dataframe safely.
-		
-		Parameters:
-		-----------
-		df_embeddings: pd.DataFrame
-			Embeddings output dataframe.
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Renders render embeddings dataframe in the Streamlit interface while preserving the
+	    active session state and provider workflow context.
+	
+	Args:
+	    df_embeddings: DataFrame supplied to the application data-management or display
+	        workflow.
 	"""
 	if df_embeddings is None or df_embeddings.empty:
 		st.info( 'No embeddings available.' )
@@ -7400,20 +6863,11 @@ def render_embeddings_dataframe( df_embeddings: pd.DataFrame ) -> None:
 	st.data_editor( df_embeddings, use_container_width=True, hide_index=True )
 
 def reset_embeddings_controls( ) -> None:
-	"""
+	"""Reset embeddings controls.
 	
-		Purpose:
-		--------
-		Reset Embeddings mode configuration controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset embeddings controls by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'embedding_model', 'embeddings_dimensions',
 	             'embeddings_chunk_size', 'embeddings_overlap_amount',
@@ -7422,20 +6876,11 @@ def reset_embeddings_controls( ) -> None:
 			del st.session_state[ key ]
 
 def clear_embeddings_output( ) -> None:
-	"""
+	"""Clear embeddings output.
 	
-		Purpose:
-		--------
-		Clear Embeddings mode outputs while preserving configuration controls.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear embeddings output by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'embeddings' ] = [ ]
 	st.session_state[ 'embeddings_chunks' ] = [ ]
@@ -7444,20 +6889,11 @@ def clear_embeddings_output( ) -> None:
 	st.session_state[ 'embedding_usage' ] = { }
 
 def reset_embeddings_all( ) -> None:
-	"""
+	"""Reset embeddings all.
 	
-		Purpose:
-		--------
-		Reset Embeddings mode configuration, input, and output state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset embeddings all by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	reset_embeddings_controls( )
 	clear_embeddings_output( )
@@ -7467,37 +6903,23 @@ def reset_embeddings_all( ) -> None:
 
 def create_provider_embeddings( embedding: Any, chunks: List[ str ], model: str,
 		encoding_format: str, dimensions: int | None, user_value: str | None ) -> Any:
-	"""
+	"""Create provider embeddings.
 	
-		Purpose:
-		--------
-		Create embeddings using the correct provider-specific wrapper call.
-		
-		Parameters:
-		-----------
-		embedding: Any
-			Provider Embeddings wrapper instance.
-		
-		chunks: List[str]
-			Text chunks to embed.
-		
-		model: str
-			Embedding model name.
-		
-		encoding_format: str
-			Requested embedding encoding format.
-		
-		dimensions: int | None
-			Optional embedding dimension value.
-		
-		user_value: str | None
-			Optional user identifier for providers that support it.
-		
-		Returns:
-		--------
-		Any
-			Provider embedding vectors.
-		
+	Purpose:
+	    Builds create provider embeddings from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    embedding: Embedding value used by the application workflow.
+	    chunks: Chunks value used by the application workflow.
+	    model: Provider model identifier selected for the active workflow.
+	    encoding_format: Encoding Format value used by the application workflow.
+	    dimensions: Dimensions value used by the application workflow.
+	    user_value: User Value value used by the application workflow.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -7527,22 +6949,18 @@ def create_provider_embeddings( embedding: Any, chunks: List[ str ], model: str,
 # ======================================================================================
 
 def get_docqna_avatar( provider_name: str ) -> str:
-	"""
+	"""Get docqna avatar.
 	
-		Purpose:
-		--------
-		Return the configured assistant avatar for the active Document Q&A provider.
-		
-		Parameters:
-		-----------
-		provider_name: str
-			Selected provider name.
-		
-		Returns:
-		--------
-		str
-			Avatar string or configured avatar path.
-		
+	Purpose:
+	    Retrieves get docqna avatar for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if provider_name == 'GPT':
 		return getattr( cfg, 'GPT_AVATAR', getattr( cfg, 'BUDDY', '🧠' ) )
@@ -7556,39 +6974,20 @@ def get_docqna_avatar( provider_name: str ) -> str:
 	return getattr( cfg, 'BUDDY', '🧠' )
 
 def clear_docqna_messages( ) -> None:
-	"""
+	"""Clear docqna messages.
 	
-		Purpose:
-		--------
-		Clear Document Q&A chat messages without clearing loaded documents or retrieval
-		state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear docqna messages by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'docqna_messages' ] = [ ]
 
 def clear_docqna_outputs( ) -> None:
-	"""
+	"""Clear docqna outputs.
 	
-		Purpose:
-		--------
-		Clear Document Q&A answer, context, source, and retrieval output state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear docqna outputs by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'docqna_last_answer' ] = ''
 	st.session_state[ 'docqna_last_hits' ] = [ ]
@@ -7598,21 +6997,11 @@ def clear_docqna_outputs( ) -> None:
 	st.session_state[ 'last_sources' ] = [ ]
 
 def unload_docqna_documents( ) -> None:
-	"""
+	"""Unload docqna documents.
 	
-		Purpose:
-		--------
-		Unload active Document Q&A files, extracted text, chunks, and local retrieval
-		state. File uploader widget keys are intentionally not assigned or cleared.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Supports the unload docqna documents application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
 	"""
 	st.session_state[ 'docqna_uploaded' ] = None
 	st.session_state[ 'docqna_files' ] = [ ]
@@ -7629,20 +7018,11 @@ def unload_docqna_documents( ) -> None:
 	clear_docqna_outputs( )
 
 def reset_docqna_controls( ) -> None:
-	"""
+	"""Reset docqna controls.
 	
-		Purpose:
-		--------
-		Reset Document Q&A controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset docqna controls by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'docqna_model', 'docqna_source', 'docqna_file_id',
 	             'docqna_vector_store_id', 'docqna_multi_mode', 'docqna_top_k',
@@ -7656,58 +7036,33 @@ def reset_docqna_controls( ) -> None:
 			del st.session_state[ key ]
 
 def reset_docqna_all( ) -> None:
-	"""
+	"""Reset docqna all.
 	
-		Purpose:
-		--------
-		Reset Document Q&A controls, loaded documents, index state, outputs, and messages.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset docqna all by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
 	"""
 	reset_docqna_controls( )
 	unload_docqna_documents( )
 	clear_docqna_messages( )
 
 def clear_docqna_instructions( ) -> None:
-	"""
+	"""Clear docqna instructions.
 	
-		Purpose:
-		--------
-		Clear Document Q&A system instructions and selected prompt template.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear docqna instructions by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'docqna_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
 def load_docqna_instruction( ) -> None:
-	"""
+	"""Load docqna instruction.
 	
-		Purpose:
-		--------
-		Load the selected prompt template into Document Q&A system instructions.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Retrieves load docqna instruction for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
 	"""
 	name = st.session_state.get( 'instructions' )
 	if name and name != 'No Templates Found':
@@ -7716,21 +7071,11 @@ def load_docqna_instruction( ) -> None:
 			st.session_state[ 'docqna_system_instructions' ] = prompt_text
 
 def convert_docqna_instructions( ) -> None:
-	"""
+	"""Convert docqna instructions.
 	
-		Purpose:
-		--------
-		Convert Document Q&A system instructions between XML-like delimiters and Markdown
-		headings.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Transforms convert docqna instructions inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
 	"""
 	text_value = st.session_state.get( 'docqna_system_instructions', '' )
 	if not isinstance( text_value, str ) or not text_value.strip( ):
@@ -7745,21 +7090,15 @@ def convert_docqna_instructions( ) -> None:
 	st.session_state[ 'docqna_system_instructions' ] = converted
 
 def get_docqna_sources( ) -> List[ str ]:
-	"""
+	"""Get docqna sources.
 	
-		Purpose:
-		--------
-		Return supported Document Q&A source options for Buddy's provider-aware workflow.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		List[str]
-			Document Q&A source option names.
-		
+	Purpose:
+	    Retrieves get docqna sources for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -7777,22 +7116,18 @@ def get_docqna_sources( ) -> List[ str ]:
 	return options
 
 def get_docqna_extension( filename: str | None ) -> str:
-	"""
+	"""Get docqna extension.
 	
-		Purpose:
-		--------
-		Return a lowercase file extension for Document Q&A extraction and preview routing.
-		
-		Parameters:
-		-----------
-		filename: str | None
-			File name to inspect.
-		
-		Returns:
-		--------
-		str
-			Lowercase file extension including the leading period.
-		
+	Purpose:
+	    Retrieves get docqna extension for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    filename: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( filename, str ) or not filename.strip( ):
 		return ''
@@ -7800,22 +7135,17 @@ def get_docqna_extension( filename: str | None ) -> str:
 	return Path( filename ).suffix.lower( )
 
 def compute_fingerprint( documents: List[ Dict[ str, Any ] ] ) -> str:
-	"""
+	"""Compute fingerprint.
 	
-		Purpose:
-		--------
-		Compute a stable fingerprint for active Document Q&A files.
-		
-		Parameters:
-		-----------
-		documents: List[Dict[str, Any]]
-			Active document metadata and byte payloads.
-		
-		Returns:
-		--------
-		str
-			SHA-256 fingerprint for the active document set.
-		
+	Purpose:
+	    Transforms compute fingerprint inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    documents: Documents value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	hasher = hashlib.sha256( )
 	
@@ -7836,22 +7166,17 @@ def compute_fingerprint( documents: List[ Dict[ str, Any ] ] ) -> str:
 	return hasher.hexdigest( )
 
 def extract_pdf_text( file_bytes: bytes ) -> str:
-	"""
+	"""Extract pdf text.
 	
-		Purpose:
-		--------
-		Extract text from PDF bytes using PyMuPDF when available.
-		
-		Parameters:
-		-----------
-		file_bytes: bytes
-			PDF byte payload.
-		
-		Returns:
-		--------
-		str
-			Extracted PDF text.
-		
+	Purpose:
+	    Transforms extract pdf text inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    file_bytes: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( file_bytes, bytes ) or len( file_bytes ) == 0:
 		return ''
@@ -7865,26 +7190,26 @@ def extract_pdf_text( file_bytes: bytes ) -> str:
 				pages.append( page.get_text( 'text' ) or '' )
 		
 		return '\n\n'.join( pages ).strip( )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'extract_pdf_text'
+		exception.method = 'extract_pdf_text( file_bytes ) -> str'
+		Logger( ).write( exception )
 		return extract_text_bytes( file_bytes )
 
 def extract_text_bytes( file_bytes: bytes ) -> str:
-	"""
+	"""Extract text bytes.
 	
-		Purpose:
-		--------
-		Decode plain-text-like document bytes.
-		
-		Parameters:
-		-----------
-		file_bytes: bytes
-			Text byte payload.
-		
-		Returns:
-		--------
-		str
-			Decoded text.
-		
+	Purpose:
+	    Transforms extract text bytes inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    file_bytes: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( file_bytes, bytes ) or len( file_bytes ) == 0:
 		return ''
@@ -7892,28 +7217,28 @@ def extract_text_bytes( file_bytes: bytes ) -> str:
 	for encoding in [ 'utf-8', 'utf-8-sig', 'cp1252', 'latin-1' ]:
 		try:
 			return file_bytes.decode( encoding ).strip( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'extract_text_bytes'
+			exception.method = 'extract_text_bytes( file_bytes ) -> str'
+			Logger( ).write( exception )
 			continue
 	
 	return ''
 
 def extract_docx_text( file_bytes: bytes ) -> str:
-	"""
+	"""Extract docx text.
 	
-		Purpose:
-		--------
-		Extract text from DOCX bytes using the zipped WordprocessingML document body.
-		
-		Parameters:
-		-----------
-		file_bytes: bytes
-			DOCX byte payload.
-		
-		Returns:
-		--------
-		str
-			Extracted DOCX text.
-		
+	Purpose:
+	    Transforms extract docx text inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    file_bytes: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( file_bytes, bytes ) or len( file_bytes ) == 0:
 		return ''
@@ -7938,29 +7263,27 @@ def extract_docx_text( file_bytes: bytes ) -> str:
 				paragraphs.append( text )
 		
 		return '\n\n'.join( paragraphs ).strip( )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'extract_docx_text'
+		exception.method = 'extract_docx_text( file_bytes ) -> str'
+		Logger( ).write( exception )
 		return ''
 
 def extract_docqna_text( filename: str, file_bytes: bytes ) -> str:
-	"""
+	"""Extract docqna text.
 	
-		Purpose:
-		--------
-		Extract document text from supported Document Q&A file types.
-		
-		Parameters:
-		-----------
-		filename: str
-			Uploaded file name.
-		
-		file_bytes: bytes
-			Uploaded file bytes.
-		
-		Returns:
-		--------
-		str
-			Extracted text.
-		
+	Purpose:
+	    Transforms extract docqna text inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    filename: File, upload, or path value used by the document or storage workflow.
+	    file_bytes: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	extension = get_docqna_extension( filename )
 	
@@ -7977,22 +7300,17 @@ def extract_docqna_text( filename: str, file_bytes: bytes ) -> str:
 	return extract_text_bytes( file_bytes )
 
 def normalize_docqna_text( text: str ) -> str:
-	"""
+	"""Normalize docqna text.
 	
-		Purpose:
-		--------
-		Normalize extracted document text for local Document Q&A retrieval.
-		
-		Parameters:
-		-----------
-		text: str
-			Extracted document text.
-		
-		Returns:
-		--------
-		str
-			Normalized document text.
-		
+	Purpose:
+	    Transforms normalize docqna text inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( text, str ):
 		return ''
@@ -8003,40 +7321,41 @@ def normalize_docqna_text( text: str ) -> str:
 	return value.strip( )
 
 def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int = 150 ) -> List[ str ]:
-	"""
+	"""Chunk docqna text.
 	
-		Purpose:
-		--------
-		Split document text into overlapping word-based chunks for local retrieval.
-		
-		Parameters:
-		-----------
-		text: str
-			Document text.
-		
-		chunk_size: int
-			Maximum words per chunk.
-		
-		chunk_overlap: int
-			Words overlapping between adjacent chunks.
-		
-		Returns:
-		--------
-		List[str]
-			Document text chunks.
-		
+	Purpose:
+	    Supports the chunk docqna text application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	    chunk_size: Chunk Size value used by the application workflow.
+	    chunk_overlap: Chunk Overlap value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	if not isinstance( text, str ) or not text.strip( ):
 		return [ ]
 	
 	try:
 		size = int( chunk_size )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'chunk_docqna_text'
+		exception.method = 'chunk_docqna_text( text, chunk_size, chunk_overlap ) -> List[str]'
+		Logger( ).write( exception )
 		size = 900
 	
 	try:
 		overlap = int( chunk_overlap )
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'chunk_docqna_text'
+		exception.method = 'chunk_docqna_text( text, chunk_size, chunk_overlap ) -> List[str]'
+		Logger( ).write( exception )
 		overlap = 150
 	
 	if size <= 0:
@@ -8071,23 +7390,18 @@ def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int = 15
 	return chunks
 
 def load_docqna_file( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Load docqna file.
 	
-		Purpose:
-		--------
-		Load one or more Streamlit uploaded files into Document Q&A state. The file
-		uploader widget key itself is never initialized or assigned manually.
-		
-		Parameters:
-		-----------
-		uploaded: Any
-			Streamlit uploaded file object or list of uploaded file objects.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Loaded active document records.
-		
+	Purpose:
+	    Retrieves load docqna file for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    uploaded: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	if uploaded is None:
 		return [ ]
@@ -8105,7 +7419,12 @@ def load_docqna_file( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
 		
 		try:
 			content = item.getvalue( ) if hasattr( item, 'getvalue' ) else item.read( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'load_docqna_file'
+			exception.method = 'load_docqna_file( uploaded ) -> List[Dict[str, Any]]'
+			Logger( ).write( exception )
 			content = None
 		
 		if not isinstance( content, bytes ) or len( content ) == 0:
@@ -8146,44 +7465,30 @@ def load_docqna_file( uploaded: Any ) -> List[ Dict[ str, Any ] ]:
 	return active_docs
 
 def get_document_names( ) -> List[ str ]:
-	"""
+	"""Get document names.
 	
-		Purpose:
-		--------
-		Return active Document Q&A document names.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		List[str]
-			Active document names.
-		
+	Purpose:
+	    Retrieves get document names for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	docs = st.session_state.get( 'docqna_active_docs', [ ] )
 	
 	if not isinstance( docs, list ):
 		return [ ]
 	
-	return [ doc.get( 'name', '' ) for doc in docs if isinstance( doc, dict ) and doc.get( 'name' ) ]
+	return [ doc.get( 'name', '' ) for doc in docs if
+	         isinstance( doc, dict ) and doc.get( 'name' ) ]
 
 def render_document_preview( ) -> None:
-	"""
+	"""Render document preview.
 	
-		Purpose:
-		--------
-		Render active Document Q&A document previews by file extension.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Renders render document preview in the Streamlit interface while preserving the active
+	    session state and provider workflow context.
 	"""
 	docs = st.session_state.get( 'docqna_active_docs', [ ] )
 	
@@ -8208,7 +7513,12 @@ def render_document_preview( ) -> None:
 			if extension == '.pdf' and isinstance( content, bytes ):
 				try:
 					st.pdf( content, height=420 )
-				except Exception:
+				except Exception as e:
+					exception = Error( e )
+					exception.module = 'app'
+					exception.cause = 'render_document_preview'
+					exception.method = 'render_document_preview( ) -> None'
+					Logger( ).write( exception )
 					st.text_area( label='Extracted Text Preview',
 						value=text[ :12000 ] if isinstance( text, str ) else '',
 						height=300, width='stretch', disabled=True )
@@ -8222,21 +7532,14 @@ def render_document_preview( ) -> None:
 				st.warning( 'No readable text preview is available for this file.' )
 
 def rebuild_docqna_index( ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Rebuild docqna index.
 	
-		Purpose:
-		--------
-		Rebuild the local Document Q&A retrieval index from active documents.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Indexed chunk records.
-		
+	Purpose:
+	    Supports the rebuild docqna index application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	docs = st.session_state.get( 'docqna_active_docs', [ ] )
 	
@@ -8279,25 +7582,18 @@ def rebuild_docqna_index( ) -> List[ Dict[ str, Any ] ]:
 	return chunk_records
 
 def score_chunk( query: str, chunk: str ) -> float:
-	"""
+	"""Score chunk.
 	
-		Purpose:
-		--------
-		Compute a simple lexical score for local Document Q&A retrieval.
-		
-		Parameters:
-		-----------
-		query: str
-			User query.
-		
-		chunk: str
-			Document chunk text.
-		
-		Returns:
-		--------
-		float
-			Relevance score.
-		
+	Purpose:
+	    Transforms score chunk inputs into a normalized representation used by provider calls,
+	    document retrieval, data management, or UI rendering.
+	
+	Args:
+	    query: Query string used by the database, retrieval, or provider workflow.
+	    chunk: Chunk value used by the application workflow.
+	
+	Returns:
+	    float: Normalized result produced for the active application workflow.
 	"""
 	if not isinstance( query, str ) or not isinstance( chunk, str ):
 		return 0.0
@@ -8322,25 +7618,19 @@ def score_chunk( query: str, chunk: str ) -> float:
 	return float( density )
 
 def retrieve_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Retrieve chunks.
 	
-		Purpose:
-		--------
-		Retrieve top local Document Q&A chunks using indexed chunk records.
-		
-		Parameters:
-		-----------
-		query: str
-			User query.
-		
-		top_k: int
-			Maximum chunks to return.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Ranked retrieval hits.
-		
+	Purpose:
+	    Retrieves retrieve chunks for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    query: Query string used by the database, retrieval, or provider workflow.
+	    top_k: Numeric control value that constrains the operation.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	chunks = st.session_state.get( 'docqna_chunks', [ ] )
 	
@@ -8378,25 +7668,19 @@ def retrieve_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any ] ]:
 	return results[ : int( top_k ) ]
 
 def build_docqna_local_prompt( query: str, hits: List[ Dict[ str, Any ] ] ) -> str:
-	"""
+	"""Build docqna local prompt.
 	
-		Purpose:
-		--------
-		Build a grounded prompt from local Document Q&A retrieval hits.
-		
-		Parameters:
-		-----------
-		query: str
-			User question.
-		
-		hits: List[Dict[str, Any]]
-			Retrieved document chunks.
-		
-		Returns:
-		--------
-		str
-			Prompt with retrieved context.
-		
+	Purpose:
+	    Builds build docqna local prompt from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    query: Query string used by the database, retrieval, or provider workflow.
+	    hits: Hits value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	system = str( st.session_state.get( 'docqna_system_instructions', '' ) or '' ).strip( )
 	context_blocks: List[ str ] = [ ]
@@ -8434,23 +7718,17 @@ def build_docqna_local_prompt( query: str, hits: List[ Dict[ str, Any ] ] ) -> s
 	return '\n\n'.join( prompt_parts ).strip( )
 
 def run_docqna_query( query: str ) -> str:
-	"""
-
-		Purpose:
-		--------
-		Run a local-upload Document Q&A query using retrieved document chunks and the
-		selected provider chat wrapper.
-
-		Parameters:
-		-----------
-		query: str
-			User question.
-
-		Returns:
-		--------
-		str
-			Generated answer.
-
+	"""Run docqna query.
+	
+	Purpose:
+	    Executes the run docqna query workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Args:
+	    query: Query string used by the database, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	provider_name = get_provider_name( )
 	chat = get_chat_module( )
@@ -8526,23 +7804,17 @@ def run_docqna_query( query: str ) -> str:
 	return ''
 
 def run_remote_query( query: str ) -> str:
-	"""
+	"""Run remote query.
 	
-		Purpose:
-		--------
-		Run a provider-native remote Document Q&A query using the selected Vector Stores
-		resource from Buddy's Vector Stores mode, with manual source fields as fallback.
-		
-		Parameters:
-		-----------
-		query: str
-			User question.
-		
-		Returns:
-		--------
-		str
-			Generated answer.
-		
+	Purpose:
+	    Executes the run remote query workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Args:
+	    query: Query string used by the database, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	provider_name = get_provider_name( )
 	chat = get_chat_module( )
@@ -8662,22 +7934,17 @@ def run_remote_query( query: str ) -> str:
 	return run_docqna_query( query )
 
 def route_document_query( prompt: str ) -> str:
-	"""
+	"""Route document query.
 	
-		Purpose:
-		--------
-		Route a document question through the active Document Q&A source.
-		
-		Parameters:
-		-----------
-		prompt: str
-			User question.
-		
-		Returns:
-		--------
-		str
-			Assistant answer text.
-		
+	Purpose:
+	    Executes the route document query workflow using the current provider, document,
+	    prompt, and session-state configuration.
+	
+	Args:
+	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	query = str( prompt or '' ).strip( )
 	if not query:
@@ -8691,21 +7958,14 @@ def route_document_query( prompt: str ) -> str:
 	return run_remote_query( query )
 
 def summarize_document( ) -> str:
-	"""
+	"""Summarize document.
 	
-		Purpose:
-		--------
-		Summarize the currently active document source through Document Q&A routing.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		str
-			Document summary.
-		
+	Purpose:
+	    Executes the summarize document workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	summary_prompt = """
 		Provide a clear, structured summary of the active document source.
@@ -8722,20 +7982,11 @@ def summarize_document( ) -> str:
 	return route_document_query( summary_prompt.strip( ) )
 
 def render_hits( ) -> None:
-	"""
+	"""Render hits.
 	
-		Purpose:
-		--------
-		Render Document Q&A retrieval hits and sources.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Renders render hits in the Streamlit interface while preserving the active session
+	    state and provider workflow context.
 	"""
 	hits = st.session_state.get( 'docqna_last_hits', [ ] )
 	sources = st.session_state.get( 'docqna_last_sources', [ ] )
@@ -8753,22 +8004,18 @@ def render_hits( ) -> None:
 			st.data_editor( df_sources, use_container_width=True, hide_index=True )
 
 def get_docqna_avatar( provider_name: str ) -> str:
-	"""
+	"""Get docqna avatar.
 	
-		Purpose:
-		--------
-		Return the configured assistant avatar for the active Document Q&A provider.
-		
-		Parameters:
-		-----------
-		provider_name: str
-			Selected provider name.
-		
-		Returns:
-		--------
-		str
-			Avatar string or configured avatar path.
-		
+	Purpose:
+	    Retrieves get docqna avatar for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if provider_name == 'GPT':
 		return getattr( cfg, 'GPT_AVATAR', getattr( cfg, 'BUDDY', '🧠' ) )
@@ -8786,22 +8033,11 @@ def get_docqna_avatar( provider_name: str ) -> str:
 # ======================================================================================
 
 def ensure_runtime_state( ) -> None:
-	"""
+	"""Ensure runtime state.
 	
-		Purpose:
-		--------
-		Ensure Files mode runtime keys exist before Files mode widgets or execution paths
-		read them. File uploader widget keys are intentionally excluded because Streamlit
-		does not permit file uploader values to be assigned through session_state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure runtime state by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_files_mode_state( )
 	ensure_key( 'files_filter_purpose', '' )
@@ -8816,38 +8052,20 @@ def ensure_runtime_state( ) -> None:
 	ensure_key( 'files_system_instructions', '' )
 
 def clear_files_messages( ) -> None:
-	"""
+	"""Clear files messages.
 	
-		Purpose:
-		--------
-		Clear Files mode chat messages without clearing loaded metadata or outputs.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear files messages by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'files_messages' ] = [ ]
 
 def clear_files_outputs( ) -> None:
-	"""
+	"""Clear files outputs.
 	
-		Purpose:
-		--------
-		Clear Files mode output state while preserving configuration controls.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear files outputs by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'files_table_data' ] = [ ]
 	st.session_state[ 'files_metadata' ] = { }
@@ -8860,20 +8078,11 @@ def clear_files_outputs( ) -> None:
 	st.session_state[ 'last_answer' ] = ''
 
 def reset_files_controls( ) -> None:
-	"""
+	"""Reset files controls.
 	
-		Purpose:
-		--------
-		Reset Files mode controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset files controls by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'files_model', 'files_purpose', 'files_filter_purpose',
 	             'files_id', 'files_url', 'files_type', 'files_table',
@@ -8884,59 +8093,33 @@ def reset_files_controls( ) -> None:
 			del st.session_state[ key ]
 
 def reset_files_all( ) -> None:
-	"""
+	"""Reset files all.
 	
-		Purpose:
-		--------
-		Reset Files mode controls, messages, and output state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset files all by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
 	"""
 	reset_files_controls( )
 	clear_files_outputs( )
 	clear_files_messages( )
 
 def clear_files_instructions( ) -> None:
-	"""
+	"""Clear files instructions.
 	
-		Purpose:
-		--------
-		Clear Files mode system instructions and selected prompt template.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear files instructions by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'files_system_instructions' ] = ''
 	st.session_state[ 'instructions' ] = ''
 
 def load_files_instruction( ) -> None:
-	"""
+	"""Load files instruction.
 	
-		Purpose:
-		--------
-		Load the selected prompt template into Files mode system instructions.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Retrieves load files instruction for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
 	"""
 	name = st.session_state.get( 'instructions' )
 	if name and name != 'No Templates Found':
@@ -8945,21 +8128,11 @@ def load_files_instruction( ) -> None:
 			st.session_state[ 'files_system_instructions' ] = prompt_text
 
 def convert_files_instructions( ) -> None:
-	"""
+	"""Convert files instructions.
 	
-		Purpose:
-		--------
-		Convert Files mode system instructions between XML-like delimiters and Markdown
-		headings.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Transforms convert files instructions inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
 	"""
 	text_value = st.session_state.get( 'files_system_instructions', '' )
 	if not isinstance( text_value, str ) or not text_value.strip( ):
@@ -8974,22 +8147,18 @@ def convert_files_instructions( ) -> None:
 	st.session_state[ 'files_system_instructions' ] = converted
 
 def get_purpose_options( files: Any ) -> List[ str ]:
-	"""
+	"""Get purpose options.
 	
-		Purpose:
-		--------
-		Return provider upload-purpose options for Files mode.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Upload purpose options.
-		
+	Purpose:
+	    Retrieves get purpose options for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( files, 'upload_purpose_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -9006,22 +8175,18 @@ def get_purpose_options( files: Any ) -> List[ str ]:
 	return [ 'user_data' ]
 
 def get_filter_options( files: Any ) -> List[ str ]:
-	"""
+	"""Get filter options.
 	
-		Purpose:
-		--------
-		Return provider purpose-filter options for Files mode list operations.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		Returns:
-		--------
-		List[str]
-			Filter purpose options.
-		
+	Purpose:
+	    Retrieves get filter options for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options = getattr( files, 'file_purpose_options', None )
 	if isinstance( options, list ) and len( options ) > 0:
@@ -9035,22 +8200,17 @@ def get_filter_options( files: Any ) -> List[ str ]:
 	return [ '' ]
 
 def normalize_files_object( value: Any ) -> Dict[ str, Any ]:
-	"""
+	"""Normalize files object.
 	
-		Purpose:
-		--------
-		Normalize a provider file object into a serializable dictionary for display.
-		
-		Parameters:
-		-----------
-		value: Any
-			Provider file object, dictionary, or scalar.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized metadata dictionary.
-		
+	Purpose:
+	    Transforms normalize files object inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	if value is None:
 		return { }
@@ -9061,7 +8221,12 @@ def normalize_files_object( value: Any ) -> Dict[ str, Any ]:
 	if hasattr( value, 'model_dump' ):
 		try:
 			return value.model_dump( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_files_object'
+			exception.method = 'normalize_files_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	if hasattr( value, '__dict__' ):
@@ -9077,28 +8242,28 @@ def normalize_files_object( value: Any ) -> Dict[ str, Any ]:
 					data[ key ] = str( item )
 			
 			return data
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_files_object'
+			exception.method = 'normalize_files_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	return { 'value': str( value ) }
 
 def normalize_files_list( value: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Normalize files list.
 	
-		Purpose:
-		--------
-		Normalize a provider file list response into display-ready dictionaries.
-		
-		Parameters:
-		-----------
-		value: Any
-			Provider list response.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized file metadata rows.
-		
+	Purpose:
+	    Transforms normalize files list inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	if value is None:
 		return [ ]
@@ -9120,23 +8285,19 @@ def normalize_files_list( value: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	return [ normalize_files_object( value ) ]
 
-def get_files_id ( row: Dict[ str, Any ] ) -> str:
-	"""
+def get_files_id( row: Dict[ str, Any ] ) -> str:
+	"""Get files id.
 	
-		Purpose:
-		--------
-		Return a file identifier from a normalized file metadata row.
-		
-		Parameters:
-		-----------
-		row: Dict[str, Any]
-			Normalized file metadata row.
-		
-		Returns:
-		--------
-		str
-			File identifier or empty string.
-		
+	Purpose:
+	    Retrieves get files id for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    row: Row value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( row, dict ):
 		return ''
@@ -9149,22 +8310,17 @@ def get_files_id ( row: Dict[ str, Any ] ) -> str:
 	return ''
 
 def build_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
-	"""
+	"""Build selector options.
 	
-		Purpose:
-		--------
-		Build display labels for selecting files from listed metadata rows.
-		
-		Parameters:
-		-----------
-		rows: List[Dict[str, Any]]
-			Normalized file metadata rows.
-		
-		Returns:
-		--------
-		List[str]
-			Display labels.
-		
+	Purpose:
+	    Builds build selector options from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    rows: Rows value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options: List[ str ] = [ ]
 	
@@ -9172,12 +8328,12 @@ def build_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 		if not isinstance( row, dict ):
 			continue
 		
-		file_id = get_files_id ( row )
-		name = ( row.get( 'filename' )
-				or row.get( 'display_name' )
-				or row.get( 'name' )
-				or row.get( 'id' )
-				or 'file' )
+		file_id = get_files_id( row )
+		name = (row.get( 'filename' )
+		        or row.get( 'display_name' )
+		        or row.get( 'name' )
+		        or row.get( 'id' )
+		        or 'file')
 		
 		if file_id:
 			options.append( f'{name} — {file_id}' )
@@ -9185,22 +8341,18 @@ def build_selector_options( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 	return options
 
 def get_option_id( option: str | None ) -> str:
-	"""
+	"""Get option id.
 	
-		Purpose:
-		--------
-		Extract a file identifier from a UI selection label.
-		
-		Parameters:
-		-----------
-		option: str | None
-			Selected label.
-		
-		Returns:
-		--------
-		str
-			File identifier or empty string.
-		
+	Purpose:
+	    Retrieves get option id for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    option: Option value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( option, str ) or not option.strip( ):
 		return ''
@@ -9211,28 +8363,19 @@ def get_option_id( option: str | None ) -> str:
 	return option.strip( )
 
 def upload_provider_file( files: Any, path: str, purpose: str | None = None ) -> Any:
-	"""
+	"""Upload provider file.
 	
-		Purpose:
-		--------
-		Upload a file using the selected provider Files wrapper.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		path: str
-			Temporary path to upload.
-		
-		purpose: str | None
-			Optional provider upload purpose.
-		
-		Returns:
-		--------
-		Any
-			Provider upload result.
-		
+	Purpose:
+	    Applies the upload provider file operation to application-managed data, files, prompts,
+	    or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	    path: File, upload, or path value used by the document or storage workflow.
+	    purpose: Purpose value used by the application workflow.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -9256,25 +8399,19 @@ def upload_provider_file( files: Any, path: str, purpose: str | None = None ) ->
 			return files.upload( path, purpose or 'user_data' )
 
 def list_provider_files( files: Any, purpose: str | None = None ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""List provider files.
 	
-		Purpose:
-		--------
-		List files using the selected provider Files wrapper.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		purpose: str | None
-			Optional provider purpose filter.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized file metadata rows.
-		
+	Purpose:
+	    Retrieves list provider files for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	    purpose: Purpose value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	provider_name = get_provider_name( )
 	
@@ -9296,25 +8433,19 @@ def list_provider_files( files: Any, purpose: str | None = None ) -> List[ Dict[
 	return normalize_files_list( result )
 
 def retrieve_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Retrieve provider file.
 	
-		Purpose:
-		--------
-		Retrieve file metadata using the selected provider Files wrapper.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		file_id: str
-			Provider file identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized metadata.
-		
+	Purpose:
+	    Retrieves retrieve provider file for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	    file_id: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	if not isinstance( file_id, str ) or not file_id.strip( ):
 		return { }
@@ -9342,25 +8473,18 @@ def retrieve_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
 	return normalize_files_object( result )
 
 def extract_file_content( files: Any, file_id: str ) -> str:
-	"""
+	"""Extract file content.
 	
-		Purpose:
-		--------
-		Extract file content using the selected provider Files wrapper when supported.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		file_id: str
-			Provider file identifier.
-		
-		Returns:
-		--------
-		str
-			Extracted or normalized file content.
-		
+	Purpose:
+	    Transforms extract file content inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	    file_id: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( file_id, str ) or not file_id.strip( ):
 		return ''
@@ -9379,7 +8503,12 @@ def extract_file_content( files: Any, file_id: str ) -> str:
 	if isinstance( result, bytes ):
 		try:
 			return result.decode( 'utf-8' )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'extract_file_content'
+			exception.method = 'extract_file_content( files, file_id ) -> str'
+			Logger( ).write( exception )
 			return str( result )
 	
 	if isinstance( result, str ):
@@ -9391,25 +8520,18 @@ def extract_file_content( files: Any, file_id: str ) -> str:
 	return str( result )
 
 def delete_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Delete provider file.
 	
-		Purpose:
-		--------
-		Delete a file using the selected provider Files wrapper.
-		
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-		
-		file_id: str
-			Provider file identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized delete result.
-		
+	Purpose:
+	    Applies the delete provider file operation to application-managed data, files, prompts,
+	    or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	    file_id: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	if not isinstance( file_id, str ) or not file_id.strip( ):
 		return { }
@@ -9431,32 +8553,20 @@ def delete_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
 
 def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 		model: str | None = None ) -> str:
-	"""
-
-		Purpose:
-		--------
-		Analyze, summarize, search, or survey file content through provider-supported Files
-		wrapper helpers.
-
-		Parameters:
-		-----------
-		files: Any
-			Provider Files wrapper instance.
-
-		prompt: str
-			User question or analysis instruction.
-
-		file_id: str | None
-			Optional provider file identifier.
-
-		model: str | None
-			Optional model name.
-
-		Returns:
-		--------
-		str
-			Provider analysis answer.
-
+	"""Analyze provider file.
+	
+	Purpose:
+	    Executes the analyze provider file workflow using the current provider, document,
+	    prompt, and session-state configuration.
+	
+	Args:
+	    files: File, upload, or path value used by the document or storage workflow.
+	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	    file_id: File, upload, or path value used by the document or storage workflow.
+	    model: Provider model identifier selected for the active workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( prompt, str ) or not prompt.strip( ):
 		return ''
@@ -9493,7 +8603,12 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 		try:
 			result = files.survey( id=clean_file_id )
 			return json.dumps( result, indent=2, default=str )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'analyze_provider_file'
+			exception.method = 'analyze_provider_file( *args ) -> str'
+			Logger( ).write( exception )
 			pass
 	
 	if clean_file_id:
@@ -9517,7 +8632,12 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 					max_tokens=st.session_state.get( 'files_max_tokens' ),
 					instruct=st.session_state.get( 'files_system_instructions' ) )
 				return str( answer or '' ).strip( )
-			except Exception:
+			except Exception as e:
+				exception = Error( e )
+				exception.module = 'app'
+				exception.cause = 'analyze_provider_file'
+				exception.method = 'analyze_provider_file( *args ) -> str'
+				Logger( ).write( exception )
 				return content[ :12000 ]
 	
 	return ''
@@ -9527,23 +8647,11 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 # ======================================================================================
 
 def ensure_storage_state( ) -> None:
-	"""
+	"""Ensure storage state.
 	
-		Purpose:
-		--------
-		Ensure storage mode runtime keys exist before Vector Stores, File Search Stores,
-		or Cloud Buckets widgets and execution paths read them. File uploader widget keys
-		are intentionally excluded because Streamlit does not permit file uploader values
-		to be assigned through session_state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for ensure storage state by initializing, clearing,
+	    or restoring the session values used by the active Streamlit workflow.
 	"""
 	ensure_vectorstores_mode_state( )
 	ensure_file_search_mode_state( )
@@ -9555,20 +8663,11 @@ def ensure_storage_state( ) -> None:
 	ensure_key( 'storage_last_answer', '' )
 
 def clear_storage_outputs( ) -> None:
-	"""
+	"""Clear storage outputs.
 	
-		Purpose:
-		--------
-		Clear storage mode output state while preserving controls.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for clear storage outputs by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	st.session_state[ 'storage_operation_result' ] = { }
 	st.session_state[ 'storage_table_data' ] = [ ]
@@ -9577,20 +8676,11 @@ def clear_storage_outputs( ) -> None:
 	st.session_state[ 'storage_last_answer' ] = ''
 
 def reset_storage_controls( ) -> None:
-	"""
+	"""Reset storage controls.
 	
-		Purpose:
-		--------
-		Reset storage mode controls through a widget-safe callback.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset storage controls by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
 	"""
 	for key in [ 'stores_id', 'stores_name', 'stores_file_id', 'stores_file_ids',
 	             'stores_path', 'stores_operation', 'filestore_id', 'filestore_name',
@@ -9601,41 +8691,27 @@ def reset_storage_controls( ) -> None:
 			del st.session_state[ key ]
 
 def reset_storage_all( ) -> None:
-	"""
+	"""Reset storage all.
 	
-		Purpose:
-		--------
-		Reset storage controls and output state.
-		
-		Parameters:
-		-----------
-		None
-		
-		Returns:
-		--------
-		None
-		
+	Purpose:
+	    Maintains application runtime state for reset storage all by initializing, clearing, or
+	    restoring the session values used by the active Streamlit workflow.
 	"""
 	reset_storage_controls( )
 	clear_storage_outputs( )
 
 def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
-	"""
+	"""Normalize storage object.
 	
-		Purpose:
-		--------
-		Normalize a provider storage object into a serializable dictionary for display.
-		
-		Parameters:
-		-----------
-		value: Any
-			Provider object, dictionary, or scalar value.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized metadata dictionary.
-		
+	Purpose:
+	    Transforms normalize storage object inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	if value is None:
 		return { }
@@ -9646,7 +8722,12 @@ def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
 	if hasattr( value, 'model_dump' ):
 		try:
 			return value.model_dump( )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	if hasattr( value, '__dict__' ):
@@ -9663,28 +8744,28 @@ def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
 					data[ key ] = str( item )
 			
 			return data
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
 			pass
 	
 	return { 'value': str( value ) }
 
 def normalize_storage_list( value: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""Normalize storage list.
 	
-		Purpose:
-		--------
-		Normalize provider list responses into display-ready dictionaries.
-		
-		Parameters:
-		-----------
-		value: Any
-			Provider list response.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized metadata rows.
-		
+	Purpose:
+	    Transforms normalize storage list inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	if value is None:
 		return [ ]
@@ -9711,22 +8792,18 @@ def normalize_storage_list( value: Any ) -> List[ Dict[ str, Any ] ]:
 	return [ normalize_storage_object( value ) ]
 
 def get_storage_rowid( row: Dict[ str, Any ] ) -> str:
-	"""
+	"""Get storage rowid.
 	
-		Purpose:
-		--------
-		Return a storage identifier from a normalized metadata row.
-		
-		Parameters:
-		-----------
-		row: Dict[str, Any]
-			Normalized metadata row.
-		
-		Returns:
-		--------
-		str
-			Storage identifier or empty string.
-		
+	Purpose:
+	    Retrieves get storage rowid for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    row: Row value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( row, dict ):
 		return ''
@@ -9739,22 +8816,17 @@ def get_storage_rowid( row: Dict[ str, Any ] ) -> str:
 	return ''
 
 def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
-	"""
+	"""Build storage selectors.
 	
-		Purpose:
-		--------
-		Build display labels for selecting storage resources from metadata rows.
-		
-		Parameters:
-		-----------
-		rows: List[Dict[str, Any]]
-			Normalized metadata rows.
-		
-		Returns:
-		--------
-		List[str]
-			Display labels.
-		
+	Purpose:
+	    Builds build storage selectors from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    rows: Rows value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	options: List[ str ] = [ ]
 	for row in rows:
@@ -9762,11 +8834,11 @@ def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 			continue
 		
 		resource_id = get_storage_rowid( row )
-		name = ( row.get( 'display_name' )
-				or row.get( 'name' )
-				or row.get( 'id' )
-				or row.get( 'bucket_name' )
-				or 'resource' )
+		name = (row.get( 'display_name' )
+		        or row.get( 'name' )
+		        or row.get( 'id' )
+		        or row.get( 'bucket_name' )
+		        or 'resource')
 		
 		if resource_id:
 			options.append( f'{name} — {resource_id}' )
@@ -9774,22 +8846,18 @@ def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
 	return options
 
 def get_storage_id_from_option( option: str | None ) -> str:
-	"""
+	"""Get storage id from option.
 	
-		Purpose:
-		--------
-		Extract a storage resource identifier from a UI selection label.
-		
-		Parameters:
-		-----------
-		option: str | None
-			Selected option label.
-		
-		Returns:
-		--------
-		str
-			Storage resource identifier or empty string.
-		
+	Purpose:
+	    Retrieves get storage id from option for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    option: Option value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	if not isinstance( option, str ) or not option.strip( ):
 		return ''
@@ -9800,25 +8868,23 @@ def get_storage_id_from_option( option: str | None ) -> str:
 	return option.strip( )
 
 def create_openai_vector_store( vectorstores: Any, name: str ) -> Dict[ str, Any ]:
-	"""
+	"""Create openai vector store.
 	
-		Purpose:
-		--------
-		Create an OpenAI vector store through the GPT VectorStores wrapper.
-		
-		Parameters:
-		-----------
-		vectorstores: Any
-			GPT VectorStores wrapper instance.
-		
-		name: str
-			Vector store name.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized vector store metadata.
-		
+	Purpose:
+	    Builds create openai vector store from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	    name: Name value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( name, str ) or not name.strip( ):
 		raise ValueError( 'Vector store name is required.' )
@@ -9831,22 +8897,18 @@ def create_openai_vector_store( vectorstores: Any, name: str ) -> Dict[ str, Any
 	return normalize_storage_object( result )
 
 def list_openai_vector_stores( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""List openai vector stores.
 	
-		Purpose:
-		--------
-		List OpenAI vector stores through the GPT VectorStores wrapper.
-		
-		Parameters:
-		-----------
-		vectorstores: Any
-			GPT VectorStores wrapper instance.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized vector store rows.
-		
+	Purpose:
+	    Retrieves list openai vector stores for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
 	"""
 	if hasattr( vectorstores, 'list' ):
 		result = vectorstores.list( )
@@ -9856,25 +8918,23 @@ def list_openai_vector_stores( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
 	return normalize_storage_list( result )
 
 def retrieve_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Retrieve openai vector store.
 	
-		Purpose:
-		--------
-		Retrieve OpenAI vector store metadata.
-		
-		Parameters:
-		-----------
-		vectorstores: Any
-			GPT VectorStores wrapper instance.
-		
-		store_id: str
-			Vector store identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized vector store metadata.
-		
+	Purpose:
+	    Retrieves retrieve openai vector store for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	    store_id: Store Id value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( store_id, str ) or not store_id.strip( ):
 		raise ValueError( 'Vector store ID is required.' )
@@ -9890,25 +8950,22 @@ def retrieve_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ st
 	return normalize_storage_object( result )
 
 def delete_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Delete openai vector store.
 	
-		Purpose:
-		--------
-		Delete an OpenAI vector store.
-		
-		Parameters:
-		-----------
-		vectorstores: Any
-			GPT VectorStores wrapper instance.
-		
-		store_id: str
-			Vector store identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized delete result.
-		
+	Purpose:
+	    Applies the delete openai vector store operation to application-managed data, files,
+	    prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	    store_id: Store Id value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( store_id, str ) or not store_id.strip( ):
 		raise ValueError( 'Vector store ID is required.' )
@@ -9925,28 +8982,23 @@ def delete_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ str,
 
 def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str,
 		file_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Attach file to openai vector store.
 	
-		Purpose:
-		--------
-		Attach an existing OpenAI file to an OpenAI vector store.
-		
-		Parameters:
-		-----------
-		vectorstores: Any
-			GPT VectorStores wrapper instance.
-		
-		store_id: str
-			Vector store identifier.
-		
-		file_id: str
-			OpenAI file identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized attachment metadata.
-		
+	Purpose:
+	    Applies the attach file to openai vector store operation to application-managed data,
+	    files, prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	    store_id: Store Id value used by the application workflow.
+	    file_id: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( store_id, str ) or not store_id.strip( ):
 		raise ValueError( 'Vector store ID is required.' )
@@ -9970,25 +9022,23 @@ def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str,
 	raise AttributeError( 'VectorStores wrapper does not expose a file attachment method.' )
 
 def create_gemini_file_search_store( filestore: Any, name: str ) -> Dict[ str, Any ]:
-	"""
+	"""Create gemini file search store.
 	
-		Purpose:
-		--------
-		Create a Gemini File Search Store.
-		
-		Parameters:
-		-----------
-		filestore: Any
-			Gemini FileSearch wrapper instance.
-		
-		name: str
-			File Search Store display name.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized store metadata.
-		
+	Purpose:
+	    Builds create gemini file search store from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    filestore: File, upload, or path value used by the document or storage workflow.
+	    name: Name value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( name, str ) or not name.strip( ):
 		raise ValueError( 'File Search Store name is required.' )
@@ -10007,22 +9057,22 @@ def create_gemini_file_search_store( filestore: Any, name: str ) -> Dict[ str, A
 	raise AttributeError( 'Gemini FileSearch wrapper does not expose a create method.' )
 
 def list_gemini_file_search_stores( filestore: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""List gemini file search stores.
 	
-		Purpose:
-		--------
-		List Gemini File Search Stores.
-		
-		Parameters:
-		-----------
-		filestore: Any
-			Gemini FileSearch wrapper instance.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized store rows.
-		
+	Purpose:
+	    Retrieves list gemini file search stores for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    filestore: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	apply_gemini_runtime_config( )
 	for method_name in [ 'list', 'list_stores', 'list_file_search_stores' ]:
@@ -10033,25 +9083,23 @@ def list_gemini_file_search_stores( filestore: Any ) -> List[ Dict[ str, Any ] ]
 	raise AttributeError( 'Gemini FileSearch wrapper does not expose a list method.' )
 
 def retrieve_gemini_file_search_store( filestore: Any, store_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Retrieve gemini file search store.
 	
-		Purpose:
-		--------
-		Retrieve Gemini File Search Store metadata.
-		
-		Parameters:
-		-----------
-		filestore: Any
-			Gemini FileSearch wrapper instance.
-		
-		store_id: str
-			File Search Store resource name or identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized store metadata.
-		
+	Purpose:
+	    Retrieves retrieve gemini file search store for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    filestore: File, upload, or path value used by the document or storage workflow.
+	    store_id: Store Id value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( store_id, str ) or not store_id.strip( ):
 		raise ValueError( 'File Search Store ID or resource name is required.' )
@@ -10073,25 +9121,22 @@ def retrieve_gemini_file_search_store( filestore: Any, store_id: str ) -> Dict[ 
 	raise AttributeError( 'Gemini FileSearch wrapper does not expose a retrieve method.' )
 
 def delete_gemini_file_search_store( filestore: Any, store_id: str ) -> Dict[ str, Any ]:
-	"""
+	"""Delete gemini file search store.
 	
-		Purpose:
-		--------
-		Delete a Gemini File Search Store.
-		
-		Parameters:
-		-----------
-		filestore: Any
-			Gemini FileSearch wrapper instance.
-		
-		store_id: str
-			File Search Store resource name or identifier.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized delete result.
-		
+	Purpose:
+	    Applies the delete gemini file search store operation to application-managed data,
+	    files, prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    filestore: File, upload, or path value used by the document or storage workflow.
+	    store_id: Store Id value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( store_id, str ) or not store_id.strip( ):
 		raise ValueError( 'File Search Store ID or resource name is required.' )
@@ -10113,25 +9158,23 @@ def delete_gemini_file_search_store( filestore: Any, store_id: str ) -> Dict[ st
 	raise AttributeError( 'Gemini FileSearch wrapper does not expose a delete method.' )
 
 def create_google_cloud_bucket( buckets: Any, bucket_name: str ) -> Dict[ str, Any ]:
-	"""
+	"""Create google cloud bucket.
 	
-		Purpose:
-		--------
-		Create a Google Cloud Storage bucket through the Gemini CloudBuckets wrapper.
-		
-		Parameters:
-		-----------
-		buckets: Any
-			Gemini CloudBuckets wrapper instance.
-		
-		bucket_name: str
-			Cloud bucket name.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized bucket metadata.
-		
+	Purpose:
+	    Builds create google cloud bucket from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    buckets: Buckets value used by the application workflow.
+	    bucket_name: Bucket Name value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( bucket_name, str ) or not bucket_name.strip( ):
 		raise ValueError( 'Bucket name is required.' )
@@ -10153,22 +9196,22 @@ def create_google_cloud_bucket( buckets: Any, bucket_name: str ) -> Dict[ str, A
 	raise AttributeError( 'CloudBuckets wrapper does not expose a create method.' )
 
 def list_google_cloud_buckets( buckets: Any ) -> List[ Dict[ str, Any ] ]:
-	"""
+	"""List google cloud buckets.
 	
-		Purpose:
-		--------
-		List Google Cloud Storage buckets through the Gemini CloudBuckets wrapper.
-		
-		Parameters:
-		-----------
-		buckets: Any
-			Gemini CloudBuckets wrapper instance.
-		
-		Returns:
-		--------
-		List[Dict[str, Any]]
-			Normalized bucket rows.
-		
+	Purpose:
+	    Retrieves list google cloud buckets for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    buckets: Buckets value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	apply_gemini_runtime_config( )
 	for method_name in [ 'list', 'list_buckets' ]:
@@ -10180,31 +9223,24 @@ def list_google_cloud_buckets( buckets: Any ) -> List[ Dict[ str, Any ] ]:
 
 def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
 		object_name: str, path: str ) -> Dict[ str, Any ]:
-	"""
+	"""Upload to google cloud bucket.
 	
-		Purpose:
-		--------
-		Upload a local file to a Google Cloud Storage bucket.
-		
-		Parameters:
-		-----------
-		buckets: Any
-			Gemini CloudBuckets wrapper instance.
-		
-		bucket_name: str
-			Bucket name.
-		
-		object_name: str
-			Object name to create in the bucket.
-		
-		path: str
-			Local file path.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized upload metadata.
-		
+	Purpose:
+	    Applies the upload to google cloud bucket operation to application-managed data, files,
+	    prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    buckets: Buckets value used by the application workflow.
+	    bucket_name: Bucket Name value used by the application workflow.
+	    object_name: Object Name value used by the application workflow.
+	    path: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( bucket_name, str ) or not bucket_name.strip( ):
 		raise ValueError( 'Bucket name is required.' )
@@ -10236,28 +9272,23 @@ def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
 
 def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str,
 		object_name: str ) -> Dict[ str, Any ]:
-	"""
+	"""Delete google cloud bucket object.
 	
-		Purpose:
-		--------
-		Delete an object from a Google Cloud Storage bucket.
-		
-		Parameters:
-		-----------
-		buckets: Any
-			Gemini CloudBuckets wrapper instance.
-		
-		bucket_name: str
-			Bucket name.
-		
-		object_name: str
-			Object name.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Normalized delete result.
-		
+	Purpose:
+	    Applies the delete google cloud bucket object operation to application-managed data,
+	    files, prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    buckets: Buckets value used by the application workflow.
+	    bucket_name: Bucket Name value used by the application workflow.
+	    object_name: Object Name value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
 	"""
 	if not isinstance( bucket_name, str ) or not bucket_name.strip( ):
 		raise ValueError( 'Bucket name is required.' )
@@ -10285,22 +9316,18 @@ def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str,
 # ======================================================================================
 
 def get_retrieval_backend( provider_name: Optional[ str ] = None ) -> Dict[ str, Any ]:
-	"""
+	"""Get retrieval backend.
 	
-		Purpose:
-		--------
-		Return the active retrieval backend selected in Buddy's visible Vector Stores mode.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		Dict[str, Any]
-			Provider-safe backend metadata used by Text and Document Q&A modes.
-		
+	Purpose:
+	    Retrieves get retrieval backend for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
 	"""
 	provider = get_provider_name( provider_name )
 	backend = ''
@@ -10350,22 +9377,18 @@ def get_retrieval_backend( provider_name: Optional[ str ] = None ) -> Dict[ str,
 	}
 
 def get_store_ids( provider_name: Optional[ str ] = None ) -> List[ str ]:
-	"""
+	"""Get store ids.
 	
-		Purpose:
-		--------
-		Return active OpenAI Vector Store IDs selected through Buddy's Vector Stores mode.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		List[str]
-			OpenAI vector store IDs. Empty for non-GPT providers.
-		
+	Purpose:
+	    Retrieves get store ids for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -10378,22 +9401,18 @@ def get_store_ids( provider_name: Optional[ str ] = None ) -> List[ str ]:
 	return parse_storage_ids( resource_id )
 
 def get_active_grok_collection_ids( provider_name: Optional[ str ] = None ) -> List[ str ]:
-	"""
+	"""Get active grok collection ids.
 	
-		Purpose:
-		--------
-		Return active xAI Collection IDs selected through Buddy's Vector Stores mode.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		List[str]
-			xAI collection IDs. Empty for non-Grok providers.
-		
+	Purpose:
+	    Retrieves get active grok collection ids for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -10405,29 +9424,20 @@ def get_active_grok_collection_ids( provider_name: Optional[ str ] = None ) -> L
 	
 	return parse_storage_ids( resource_id )
 
-def get_active_gemini_file_search_store_names( provider_name: Optional[ str ]=None ) -> List[ str ]:
-	"""
+def get_active_gemini_file_search_store_names( provider_name: Optional[ str ] = None ) -> List[
+	str ]:
+	"""Get active gemini file search store names.
 	
-		Purpose:
-		--------
-		Return active Gemini File Search Store resource names selected through Buddy's
-		Vector Stores mode.
-		
-		Important:
-		----------
-		Gemini Cloud Bucket names are not returned here because Cloud Buckets are storage
-		objects, not File Search Store resources.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		List[str]
-			Gemini File Search Store resource names.
-		
+	Purpose:
+	    Retrieves get active gemini file search store names for the Streamlit application
+	    workflow and returns the normalized value used by downstream UI, provider, database, or
+	    document-processing steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	provider = get_provider_name( provider_name )
 	
@@ -10443,25 +9453,18 @@ def get_active_gemini_file_search_store_names( provider_name: Optional[ str ]=No
 	return parse_storage_ids( resource_id )
 
 def merge_unique_strings( primary: List[ str ], secondary: List[ str ] ) -> List[ str ]:
-	"""
+	"""Merge unique strings.
 	
-		Purpose:
-		--------
-		Merge two string lists while preserving order and removing duplicates.
-		
-		Parameters:
-		-----------
-		primary: List[str]
-			Primary string list.
-		
-		secondary: List[str]
-			Secondary string list.
-		
-		Returns:
-		--------
-		List[str]
-			Merged unique string list.
-		
+	Purpose:
+	    Transforms merge unique strings inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    primary: Primary value used by the application workflow.
+	    secondary: Secondary value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
 	"""
 	merged: List[ str ] = [ ]
 	
@@ -10478,22 +9481,18 @@ def merge_unique_strings( primary: List[ str ], secondary: List[ str ] ) -> List
 	return merged
 
 def build_provider_retrieval_summary( provider_name: Optional[ str ] = None ) -> str:
-	"""
+	"""Build provider retrieval summary.
 	
-		Purpose:
-		--------
-		Build a compact retrieval summary for Text and Document Q&A diagnostics.
-		
-		Parameters:
-		-----------
-		provider_name: Optional[str]
-			Optional explicit provider name.
-		
-		Returns:
-		--------
-		str
-			User-facing retrieval summary.
-		
+	Purpose:
+	    Builds build provider retrieval summary from validated runtime inputs and prepares the
+	    resulting object, payload, table, or display structure for later application
+	    processing.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	backend = get_retrieval_backend( provider_name )
 	provider = backend.get( 'provider', '' )
@@ -10511,6 +9510,18 @@ def build_provider_retrieval_summary( provider_name: Optional[ str ] = None ) ->
 
 # ---------------- TEXT ----------------
 def text_model_options( chat ):
+	"""Text model options.
+	
+	Purpose:
+	    Supports the text model options application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    chat: Chat value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'model_options', chat.model_options )
 	if _provider( ) == 'Gemini':
@@ -10521,6 +9532,18 @@ def text_model_options( chat ):
 
 # ---------------- IMAGES ----------------
 def image_model_options( image ):
+	"""Image model options.
+	
+	Purpose:
+	    Supports the image model options application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'image_model_options', image.model_options )
 	if _provider( ) == 'Gemini':
@@ -10530,6 +9553,19 @@ def image_model_options( image ):
 	return image.model_options
 
 def image_size_or_aspect_options( image ):
+	"""Image size or aspect options.
+	
+	Purpose:
+	    Supports the image size or aspect options application workflow by coordinating
+	    validated inputs, Streamlit session state, provider configuration, and local data
+	    processing.
+	
+	Args:
+	    image: Image value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'aspect_options', image.size_options )
 	if _provider( ) == 'Gemini':
@@ -10540,6 +9576,18 @@ def image_size_or_aspect_options( image ):
 
 # ---------------- AUDIO ----------------
 def audio_model_options( transcriber ):
+	"""Audio model options.
+	
+	Purpose:
+	    Supports the audio model options application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    transcriber: Transcriber value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'audio_model_options', transcriber.model_options )
 	if _provider( ) == 'Gemini':
@@ -10547,6 +9595,18 @@ def audio_model_options( transcriber ):
 	return transcriber.model_options
 
 def audio_language_options( transcriber ):
+	"""Audio language options.
+	
+	Purpose:
+	    Supports the audio language options application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    transcriber: Transcriber value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'language_options', transcriber.language_options )
 	if _provider( ) == 'Gemini':
@@ -10555,6 +9615,18 @@ def audio_language_options( transcriber ):
 
 # ---------------- EMBEDDINGS ----------------
 def embedding_model_options( embed ):
+	"""Embedding model options.
+	
+	Purpose:
+	    Supports the embedding model options application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    embed: Embed value used by the application workflow.
+	
+	Returns:
+	    object: Normalized result produced for the active application workflow.
+	"""
 	if _provider( ) == 'GPT':
 		return _safe( 'gpt', 'embedding_model_options', embed.model_options )
 	if _provider( ) == 'Gemini':
@@ -10563,6 +9635,18 @@ def embedding_model_options( embed ):
 
 # -------------DOC Q&A ----------------------
 def route_document_query( prompt: str ) -> str:
+	"""Route document query.
+	
+	Purpose:
+	    Executes the route document query workflow using the current provider, document,
+	    prompt, and session-state configuration.
+	
+	Args:
+	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
 	source = st.session_state.get( 'doc_source' )
 	active_docs = st.session_state.get( 'docqna_active_docs', [ ] )
 	doc_bytes = st.session_state.get( 'doc_bytes', { } )
@@ -10675,26 +9759,52 @@ def route_document_query( prompt: str ) -> str:
 	return 'Unsupported document source.'
 
 def extract_text_from_bytes( file_bytes: bytes ) -> str:
-	"""
-		Extracts text from PDF or text-based documents.
+	"""Extract text from bytes.
+	
+	Purpose:
+	    Transforms extract text from bytes inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    file_bytes: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	try:
-		import fitz  # PyMuPDF		
+		import fitz  # PyMuPDF
+		
 		doc = fitz.open( stream=file_bytes, filetype="pdf" )
 		text = ""
 		for page in doc:
 			text += page.get_text( )
 		return text.strip( )
 	
-	except Exception:
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'extract_text_from_bytes'
+		exception.method = 'extract_text_from_bytes( file_bytes ) -> str'
+		Logger( ).write( exception )
 		try:
 			return file_bytes.decode( errors="ignore" )
-		except Exception:
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'extract_text_from_bytes'
+			exception.method = 'extract_text_from_bytes( file_bytes ) -> str'
+			Logger( ).write( exception )
 			return ""
 
 def summarize_document( ) -> str:
-	"""
-		Uses the routing layer to summarize the currently active document.
+	"""Summarize document.
+	
+	Purpose:
+	    Executes the summarize document workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
 	"""
 	doc_instructions = st.session_state.get( "doc_instructions", "" )
 	summary_prompt = """
@@ -10720,7 +9830,7 @@ def summarize_document( ) -> str:
 initialize_database( )
 embedder = load_embedder( )
 AVATARS = { 'user': cfg.ANALYST, 'assistant': cfg.BUDDY, }
-st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON, 
+st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON,
 	initial_sidebar_state='collapsed' )
 
 st.caption( cfg.APP_SUBTITLE )
@@ -10731,7 +9841,7 @@ init_state( )
 # Sidebar
 # ======================================================================================
 with st.sidebar:
-	provider = st.session_state.get( 'provider'  )
+	provider = st.session_state.get( 'provider' )
 	style_subheaders( )
 	st.subheader( '' )
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
@@ -10744,7 +9854,7 @@ with st.sidebar:
 		logo_path = cfg.LOGO_MAP.get( provider )
 		st.logo( logo_path, size='large', link=cfg.CRS )
 	
-	#-----API KEY Expander------------------------------
+	# -----API KEY Expander------------------------------
 	with st.expander( label='Keys:', icon='🔑', expanded=False ):
 		openai_key = st.text_input( 'OpenAI API Key', type='password',
 			value=st.session_state.get( 'openai_api_key', cfg.OPENAI_API_KEY ),
@@ -10820,11 +9930,11 @@ with st.sidebar:
 	
 	if 'last_call_usage' not in st.session_state:
 		st.session_state.last_call_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
-				'total_tokens': 0, }
+		                                     'total_tokens': 0, }
 	
 	if 'token_usage' not in st.session_state:
 		st.session_state.token_usage = { 'prompt_tokens': 0, 'completion_tokens': 0,
-				'total_tokens': 0, }
+		                                 'total_tokens': 0, }
 	
 	if 'files' not in st.session_state:
 		st.session_state.files: List[ str ] = [ ]
@@ -10832,7 +9942,7 @@ with st.sidebar:
 		if st.button( 'Clear Chat' ):
 			reset_state( )
 			st.rerun( )
-		
+	
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 	
 	if provider == 'Gemini':
@@ -10917,7 +10027,8 @@ if mode == 'Chat':
 								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
 								store=chat_store,
 								stream=chat_stream,
-								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								instruct=st.session_state.get( 'chat_system_instructions',
+									'' ) or None,
 								background=chat_background,
 								reasoning=chat_reasoning or None,
 								include=[
@@ -10938,18 +10049,22 @@ if mode == 'Chat':
 										},
 										{
 												'type': 'code_interpreter',
-												'container': { 'type': 'auto', 'file_ids': cfg.GPT_FILES, },
+												'container': { 'type': 'auto',
+												               'file_ids': cfg.GPT_FILES, },
 										},
 								],
 								tool_choice=chat_choice or None,
 								is_parallel=chat_parallel,
-								previous_id=st.session_state.get( 'chat_previous_response_id', '' ) or None,
+								previous_id=st.session_state.get( 'chat_previous_response_id',
+									'' ) or None,
 							)
-							st.session_state.chat_previous_response_id = getattr( response, 'id', '' ) or ''
+							st.session_state.chat_previous_response_id = getattr( response, 'id',
+								'' ) or ''
 							output_text = getattr( response, 'output_text', None ) or ''
 						elif provider_name == 'Gemini':
 							apply_gemini_runtime_config( )
-							gemini_context = chat_history if isinstance( chat_history, list ) else [ ]
+							gemini_context = chat_history if isinstance( chat_history,
+								list ) else [ ]
 							
 							output_text = chat.generate_text(
 								prompt=effective_input,
@@ -10960,8 +10075,10 @@ if mode == 'Chat':
 								frequency=chat_freq,
 								presence=chat_presense,
 								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
-								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
-								response_format=chat_format if isinstance( chat_format, str ) else None,
+								instruct=st.session_state.get( 'chat_system_instructions',
+									'' ) or None,
+								response_format=chat_format if isinstance( chat_format,
+									str ) else None,
 								tool_choice=chat_choice or None,
 								reasoning=chat_reasoning or None,
 								context=gemini_context,
@@ -10982,18 +10099,21 @@ if mode == 'Chat':
 								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
 								store=chat_store,
 								stream=False,
-								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								instruct=st.session_state.get( 'chat_system_instructions',
+									'' ) or None,
 								background=False,
 								reasoning=chat_reasoning or None,
 								include=[ 'inline_citations' ],
 								tools=[ { 'type': 'web_search' } ],
 								tool_choice=chat_choice or None,
 								is_parallel=chat_parallel,
-								previous_id=st.session_state.get( 'chat_previous_response_id', '' ) or None,
+								previous_id=st.session_state.get( 'chat_previous_response_id',
+									'' ) or None,
 								context=chat_history if isinstance( chat_history, list ) else [ ] )
 							
 							response = getattr( chat, 'response', None )
-							st.session_state.chat_previous_response_id = getattr( response, 'id', '' ) or ''
+							st.session_state.chat_previous_response_id = getattr( response, 'id',
+								'' ) or ''
 						else:
 							output_text = chat.generate_text(
 								prompt=effective_input,
@@ -11006,7 +10126,8 @@ if mode == 'Chat':
 								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
 								store=chat_store,
 								stream=chat_stream,
-								instruct=st.session_state.get( 'chat_system_instructions', '' ) or None,
+								instruct=st.session_state.get( 'chat_system_instructions',
+									'' ) or None,
 								background=chat_background,
 								reasoning=chat_reasoning or None,
 								tool_choice=chat_choice or None,
@@ -11045,11 +10166,15 @@ if mode == 'Chat':
 												{
 														'type': 'file',
 														'url': None,
-														'title': getattr( result, 'file_name', None )
-														         or getattr( result, 'title', None ),
-														'file_id': getattr( result, 'file_id', None )
+														'title': getattr( result, 'file_name',
+															None )
+														         or getattr( result, 'title',
+															None ),
+														'file_id': getattr( result, 'file_id',
+															None )
 														           or getattr( result, 'id', None ),
-														'file_name': getattr( result, 'file_name', None ),
+														'file_name': getattr( result, 'file_name',
+															None ),
 														'snippet': getattr( result, 'text', None ),
 												}
 											)
@@ -11067,7 +10192,12 @@ if mode == 'Chat':
 												text = getattr( out, 'text', None )
 												if isinstance( text, str ) and text.strip( ):
 													analysis[ 'text' ].append( text )
-						except Exception:
+						except Exception as e:
+							exception = Error( e )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							sources = [ ]
 							analysis = { 'tables': [ ], 'files': [ ], 'text': [ ] }
 					
@@ -11119,9 +10249,19 @@ if mode == 'Chat':
 					if response is not None:
 						try:
 							update_token_counters( response )
-						except Exception:
+						except Exception as e:
+							exception = Error( e )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							pass
 				except Exception as e:
+					exception = Error( e )
+					exception.module = 'app'
+					exception.cause = 'app'
+					exception.method = 'module initialization'
+					Logger( ).write( exception )
 					st.error( 'An error occurred while running the prompt.' )
 					st.exception( e )
 
@@ -11328,8 +10468,8 @@ elif mode == 'Text':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
-				
+			with st.expander( label='Response Settings', icon='↔️', expanded=False,
+					width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
 					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True,
 					gap='xxsmall' )
@@ -11395,7 +10535,6 @@ elif mode == 'Text':
 		# System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
-			
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
 				prompt_names = [ 'No Templates Found' ]
@@ -11434,9 +10573,9 @@ elif mode == 'Text':
 		if prompt is not None and str( prompt ).strip( ):
 			prompt = str( prompt ).strip( )
 			st.session_state.text_messages.append( {
-						'role': 'user',
-						'content': prompt,
-				} )
+					'role': 'user',
+					'content': prompt,
+			} )
 			
 			with st.chat_message( 'assistant', avatar=text_avatar ):
 				with st.spinner( 'Thinking…' ):
@@ -11446,21 +10585,15 @@ elif mode == 'Text':
 					stream_placeholder = st.empty( )
 					
 					def on_stream_chunk( chunk: str ) -> None:
-						"""
+						"""On stream chunk.
 						
-							Purpose:
-							--------
-							Render streamed Gemini chunks into a placeholder.
-							
-							Parameters:
-							-----------
-							chunk: str
-								Chunk text from the provider stream.
-							
-							Returns:
-							--------
-							None
-							
+						Purpose:
+						    Supports the on stream chunk application workflow by coordinating validated
+						    inputs, Streamlit session state, provider configuration, and local data
+						    processing.
+						
+						Args:
+						    chunk: Chunk value used by the application workflow.
 						"""
 						if chunk is None:
 							return
@@ -11477,7 +10610,7 @@ elif mode == 'Text':
 						if provider_name == 'GPT':
 							manual_vector_store_ids = parse_text_vector_store_ids(
 								st.session_state.get( 'text_vector_store_ids', '' ) )
-
+							
 							selected_vector_store_ids = get_store_ids( 'GPT' )
 							
 							vector_store_ids = merge_unique_strings(
@@ -11530,7 +10663,8 @@ elif mode == 'Text':
 								store=st.session_state.get( 'text_store' ), stream=False,
 								instruct=st.session_state.get( 'text_system_instructions' ),
 								background=False,
-								reasoning=st.session_state.get( 'text_reasoning' ), include=text_include,
+								reasoning=st.session_state.get( 'text_reasoning' ),
+								include=text_include,
 								tools=text_tools,
 								allowed_domains=st.session_state.get( 'text_domains', [ ] ),
 								previous_id=text_previous_id,
@@ -11546,17 +10680,17 @@ elif mode == 'Text':
 							apply_gemini_runtime_config( )
 							
 							structured_context = st.session_state.get( 'text_gemini_history', [ ] )
-							if not isinstance( structured_context, list ) or len( 
+							if not isinstance( structured_context, list ) or len(
 									structured_context ) == 0:
-								structured_context = st.session_state.get( 
+								structured_context = st.session_state.get(
 									'text_messages', [ ] )[ :-1 ]
 							
 							grounding_enabled = bool(
 								st.session_state.get( 'text_google_grounding', False ) )
 							
 							selected_tools = [ str( item ).strip( )
-									for item in st.session_state.get( 'text_tools', [ ] )
-									if str( item ).strip( ) ]
+							                   for item in st.session_state.get( 'text_tools', [ ] )
+							                   if str( item ).strip( ) ]
 							
 							if grounding_enabled and 'google_search' not in selected_tools:
 								selected_tools.append( 'google_search' )
@@ -11567,10 +10701,12 @@ elif mode == 'Text':
 							manual_file_search_store_names = split_text_values(
 								st.session_state.get( 'text_file_search_store_names_input', '' ),
 								delimiter=',' )
-
-							selected_file_search_store_names = get_active_gemini_file_search_store_names( 'Gemini' )
 							
-							st.session_state[ 'text_file_search_store_names' ] = merge_unique_strings(
+							selected_file_search_store_names = get_active_gemini_file_search_store_names(
+								'Gemini' )
+							
+							st.session_state[
+								'text_file_search_store_names' ] = merge_unique_strings(
 								primary=manual_file_search_store_names,
 								secondary=selected_file_search_store_names )
 							
@@ -11631,6 +10767,11 @@ elif mode == 'Text':
 												f'User Question:\n{prompt}'
 										)
 								except Exception as exc:
+									exception = Error( exc )
+									exception.module = 'app'
+									exception.cause = 'app'
+									exception.method = 'module initialization'
+									Logger( ).write( exception )
 									st.warning( f'Grok collection search was skipped: {exc}' )
 							
 							if hasattr( text, 'user' ):
@@ -11699,6 +10840,11 @@ elif mode == 'Text':
 							response_obj = None
 					
 					except Exception as exc:
+						exception = Error( exc )
+						exception.module = 'app'
+						exception.cause = 'app'
+						exception.method = 'module initialization'
+						Logger( ).write( exception )
 						err = Error( exc )
 						st.error( f'Generation Failed: {err.info}' )
 						response_text = ''
@@ -11714,15 +10860,20 @@ elif mode == 'Text':
 							st.markdown( final_text )
 						
 						st.session_state.text_messages.append( {
-									'role': 'assistant',
-									'content': final_text,
-							} )
+								'role': 'assistant',
+								'content': final_text,
+						} )
 						st.session_state[ 'last_answer' ] = final_text
 						st.session_state[ 'last_sources' ] = extract_sources( response_obj )
 						
 						try:
 							update_token_counters( response_obj )
-						except Exception:
+						except Exception as e:
+							exception = Error( e )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							pass
 					else:
 						st.error( 'Generation Failed!.' )
@@ -11923,8 +11074,8 @@ elif mode == 'Images':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
-				
+			with st.expander( label='Response Settings', icon='↔️', expanded=False,
+					width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -11957,7 +11108,6 @@ elif mode == 'Images':
 		# System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
-			
 			prompt_names = fetch_prompt_names( cfg.DB_PATH )
 			if not prompt_names:
 				prompt_names = [ 'No Templates Found' ]
@@ -12042,8 +11192,10 @@ elif mode == 'Images':
 											fmt=st.session_state.get( 'image_mime_type' ),
 											compression=st.session_state.get( 'image_compression' ),
 											background=st.session_state.get( 'image_backcolor' ),
-											aspect_ratio=st.session_state.get( 'image_aspect_ratio' ),
-											response_modalities=st.session_state.get( 'image_modality' ))
+											aspect_ratio=st.session_state.get(
+												'image_aspect_ratio' ),
+											response_modalities=st.session_state.get(
+												'image_modality' ) )
 									else:
 										image_result = image.generate( prompt=prompt_value,
 											number=st.session_state.get( 'image_number' ) or 1,
@@ -12072,10 +11224,20 @@ elif mode == 'Images':
 										getattr( image, 'response', None )
 										or getattr( image, 'content_response', None )
 										or getattr( image, 'image_response', None ) )
-								except Exception:
+								except Exception as e:
+									exception = Error( e )
+									exception.module = 'app'
+									exception.cause = 'app'
+									exception.method = 'module initialization'
+									Logger( ).write( exception )
 									pass
 							
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Generation Failed: {exc}' )
 			
 			with gen_c2:
@@ -12140,28 +11302,36 @@ elif mode == 'Images':
 											'image_image_search', False ) )
 								else:
 									if provider_name == 'Grok':
-										analysis_model = ( st.session_state.get( 'image_analysis_model' )
-												or st.session_state.get( 'image_model' )
-												or 'grok-4.20-reasoning' )
+										analysis_model = (
+													st.session_state.get( 'image_analysis_model' )
+													or st.session_state.get( 'image_model' )
+													or 'grok-4.20-reasoning')
 										
 										analysis_result = image.analyze( prompt=prompt_value,
 											path=tmp_path,
-											instruct=st.session_state.get( 'image_system_instructions' ),
+											instruct=st.session_state.get(
+												'image_system_instructions' ),
 											model=analysis_model,
-											max_output_tokens=st.session_state.get( 'image_max_tokens' ),
+											max_output_tokens=st.session_state.get(
+												'image_max_tokens' ),
 											temperature=st.session_state.get( 'image_temperature' ),
 											top_p=st.session_state.get( 'image_top_percent' ),
 											store=st.session_state.get( 'image_store' ),
-											detail=st.session_state.get( 'image_analysis_detail' ) or 'high' )
+											detail=st.session_state.get(
+												'image_analysis_detail' ) or 'high' )
 									else:
-										analysis_model = ( st.session_state.get( 'image_analysis_model' )
-												or st.session_state.get( 'image_model' ) or 'gpt-4o-mini' )
+										analysis_model = (
+													st.session_state.get( 'image_analysis_model' )
+													or st.session_state.get(
+												'image_model' ) or 'gpt-4o-mini')
 										
-										analysis_result = image.analyze( text=prompt_value, path=tmp_path,
-											instruct=st.session_state.get( 'image_system_instructions' ),
+										analysis_result = image.analyze( text=prompt_value,
+											path=tmp_path,
+											instruct=st.session_state.get(
+												'image_system_instructions' ),
 											model=analysis_model,
-											max_tokens=st.session_state.get('image_max_tokens' ),
-											temperature=st.session_state.get('image_temperature' ),
+											max_tokens=st.session_state.get( 'image_max_tokens' ),
+											temperature=st.session_state.get( 'image_temperature' ),
 											include=st.session_state.get( 'image_include', [ ] ),
 											store=st.session_state.get( 'image_store' ),
 											stream=False,
@@ -12169,6 +11339,11 @@ elif mode == 'Images':
 											       or 'auto' )
 							
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Analysis Failed: {exc}' )
 			
 			with ana_c2:
@@ -12235,19 +11410,22 @@ elif mode == 'Images':
 											'image_image_search', False ) )
 								else:
 									if provider_name == 'Grok':
-										edit_result = image.edit( prompt=prompt_value, path=tmp_path,
+										edit_result = image.edit( prompt=prompt_value,
+											path=tmp_path,
 											model=st.session_state.get( 'image_model' )
 											      or 'grok-imagine-image',
 											size=st.session_state.get( 'image_size' ) or None,
-											quality=st.session_state.get( 'image_quality' )  or None,
+											quality=st.session_state.get( 'image_quality' ) or None,
 											fmt=st.session_state.get( 'image_mime_type' ) or None,
 											compression=st.session_state.get( 'image_compression' ),
-											background=st.session_state.get( 'image_backcolor' ) or None,
+											background=st.session_state.get(
+												'image_backcolor' ) or None,
 											number=st.session_state.get( 'image_number' ),
 											aspect_ratio=st.session_state.get(
 												'image_aspect_ratio' ) or None )
 									else:
-										edit_result = image.edit( prompt=prompt_value, path=tmp_path,
+										edit_result = image.edit( prompt=prompt_value,
+											path=tmp_path,
 											model=st.session_state.get( 'image_model' )
 											      or 'gpt-image-1-mini',
 											size=st.session_state.get( 'image_size' )
@@ -12271,12 +11449,24 @@ elif mode == 'Images':
 								
 								try:
 									update_token_counters( getattr( image, 'response', None )
-										or getattr( image, 'content_response', None )
-										or getattr( image, 'image_response', None ) )
-								except Exception:
+									                       or getattr( image, 'content_response',
+										None )
+									                       or getattr( image, 'image_response',
+										None ) )
+								except Exception as e:
+									exception = Error( e )
+									exception.module = 'app'
+									exception.cause = 'app'
+									exception.method = 'module initialization'
+									Logger( ).write( exception )
 									pass
 							
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Edit Failed: {exc}' )
 			
 			with edit_c2:
@@ -12370,8 +11560,8 @@ elif mode == 'Audio':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
-				
+			with st.expander( label='Response Settings', icon='↔️', expanded=False,
+					width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
 					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
 				
@@ -12500,9 +11690,9 @@ elif mode == 'Audio':
 							
 							if result_text:
 								st.session_state[ 'audio_messages' ].append( {
-											'role': 'assistant',
-											'content': result_text,
-									} )
+										'role': 'assistant',
+										'content': result_text,
+								} )
 								st.session_state[ 'last_answer' ] = result_text
 							
 							response_obj = None
@@ -12513,10 +11703,20 @@ elif mode == 'Audio':
 							
 							try:
 								update_token_counters( response_obj )
-							except Exception:
+							except Exception as e:
+								exception = Error( e )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								pass
 						
 						except Exception as exc:
+							exception = Error( exc )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							st.error( f'{audio_task} failed: {exc}' )
 			
 			elif audio_task == 'Text-to-Speech':
@@ -12555,12 +11755,17 @@ elif mode == 'Audio':
 								
 								if result_text:
 									st.session_state[ 'audio_messages' ].append( {
-												'role': 'assistant',
-												'content': result_text,
-										} )
+											'role': 'assistant',
+											'content': result_text,
+									} )
 									st.session_state[ 'last_answer' ] = result_text
 							
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'{audio_task} failed: {exc}' )
 		
 		# ------------------------------------------------------------------
@@ -12617,10 +11822,20 @@ elif mode == 'Audio':
 							
 							try:
 								update_token_counters( getattr( tts, 'response', None ) )
-							except Exception:
+							except Exception as e:
+								exception = Error( e )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								pass
 						
 						except Exception as exc:
+							exception = Error( exc )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							st.error( f'Text-to-speech failed: {exc}' )
 			
 			with tts_c2:
@@ -12653,9 +11868,9 @@ elif mode == 'Audio':
 		audio_chat = st.chat_input( 'Enter audio note …', key='audio_messages_input' )
 		if audio_chat is not None and isinstance( audio_chat, str ) and audio_chat.strip( ):
 			st.session_state.audio_messages.append( {
-						'role': 'user',
-						'content': audio_chat.strip( ),
-				} )
+					'role': 'user',
+					'content': audio_chat.strip( ),
+			} )
 		
 		st.button( 'Clear Messages', key='audio_clear_messages',
 			width='stretch', on_click=clear_audio_messages )
@@ -12722,7 +11937,12 @@ elif mode == 'Embeddings':
 			try:
 				current_dimensions = int(
 					st.session_state.get( 'embeddings_dimensions', 0 ) or 0 )
-			except Exception:
+			except Exception as e:
+				exception = Error( e )
+				exception.module = 'app'
+				exception.cause = 'app'
+				exception.method = 'module initialization'
+				Logger( ).write( exception )
 				current_dimensions = 0
 			
 			if not supports_dimensions:
@@ -12739,7 +11959,7 @@ elif mode == 'Embeddings':
 					st.session_state[ 'embeddings_encoding_format' ] = 'float'
 				
 				st.selectbox( label='Encoding Format', options=encoding_options,
-					key='embeddings_encoding_format',index=None, placeholder='Options' )
+					key='embeddings_encoding_format', index=None, placeholder='Options' )
 				
 				embeddings_encoding_format = st.session_state.get(
 					'embeddings_encoding_format', 'float' )
@@ -12759,7 +11979,12 @@ elif mode == 'Embeddings':
 				try:
 					current_chunk_size = int(
 						st.session_state.get( 'embeddings_chunk_size', 800 ) or 800 )
-				except Exception:
+				except Exception as e:
+					exception = Error( e )
+					exception.module = 'app'
+					exception.cause = 'app'
+					exception.method = 'module initialization'
+					Logger( ).write( exception )
 					current_chunk_size = 800
 				
 				if current_chunk_size <= 0:
@@ -12779,7 +12004,12 @@ elif mode == 'Embeddings':
 				try:
 					current_overlap = int(
 						st.session_state.get( 'embeddings_overlap_amount', 0 ) or 0 )
-				except Exception:
+				except Exception as e:
+					exception = Error( e )
+					exception.module = 'app'
+					exception.cause = 'app'
+					exception.method = 'module initialization'
+					Logger( ).write( exception )
 					current_overlap = 0
 				
 				if current_overlap < 0:
@@ -12916,12 +12146,22 @@ elif mode == 'Embeddings':
 								
 								try:
 									update_token_counters( response_obj )
-								except Exception:
+								except Exception as e:
+									exception = Error( e )
+									exception.module = 'app'
+									exception.cause = 'app'
+									exception.method = 'module initialization'
+									Logger( ).write( exception )
 									pass
 								
 								st.success( 'Embeddings created successfully.' )
 					
 					except Exception as exc:
+						exception = Error( exc )
+						exception.module = 'app'
+						exception.cause = 'app'
+						exception.method = 'module initialization'
+						Logger( ).write( exception )
 						err = Error( exc )
 						st.error( f'Embedding creation failed: {err.info}' )
 		
@@ -13356,19 +12596,24 @@ elif mode == 'Document Q&A':
 						if isinstance( answer, str ) and answer.strip( ):
 							st.markdown( answer )
 							st.session_state[ 'docqna_messages' ].append( {
-										'role': 'assistant',
-										'content': answer.strip( ),
-								} )
+									'role': 'assistant',
+									'content': answer.strip( ),
+							} )
 							st.session_state[ 'docqna_last_answer' ] = answer.strip( )
 							st.session_state[ 'last_answer' ] = answer.strip( )
 						else:
 							message = 'No Document Q&A answer was returned.'
 							st.warning( message )
 							st.session_state[ 'docqna_messages' ].append( {
-										'role': 'assistant',
-										'content': message,
-								} )
+									'role': 'assistant',
+									'content': message,
+							} )
 					except Exception as exc:
+						exception = Error( exc )
+						exception.module = 'app'
+						exception.cause = 'app'
+						exception.method = 'module initialization'
+						Logger( ).write( exception )
 						st.error( f'Document Q&A failed: {exc}' )
 		
 		# ------------------------------------------------------------------
@@ -13384,7 +12629,6 @@ elif mode == 'Document Q&A':
 		if isinstance( last_sources, list ) and len( last_sources ) > 0:
 			with st.expander( label='Last Document Sources', icon='📌', expanded=False,
 					width='stretch' ):
-				
 				df_sources = pd.DataFrame( last_sources )
 				st.data_editor( df_sources, use_container_width=True, hide_index=True )
 		
@@ -13447,7 +12691,6 @@ elif mode == 'Files':
 			# ------------------------------------------------------------------
 			with st.expander( label='File Management', icon='📂', expanded=False,
 					width='stretch' ):
-				
 				mgmt_c1, mgmt_c2, mgmt_c3, mgmt_c4 = st.columns(
 					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 				
@@ -13494,7 +12737,6 @@ elif mode == 'Files':
 			# ------------------------------------------------------------------
 			with st.expander( label='Analysis Controls', icon='🧊', expanded=False,
 					width='stretch' ):
-				
 				analysis_c1, analysis_c2, analysis_c3, analysis_c4, analysis_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -13599,12 +12841,17 @@ elif mode == 'Files':
 								st.session_state[ 'files_metadata' ] = metadata
 								st.session_state[ 'files_last_operation' ] = 'upload'
 								
-								file_id = get_files_id ( metadata )
+								file_id = get_files_id( metadata )
 								if file_id:
 									st.session_state[ 'files_id' ] = file_id
 								
 								st.success( f'Uploaded file: {file_id or uploaded_file.name}' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Upload failed: {exc}' )
 			
 			st.caption( 'Operations' )
@@ -13623,9 +12870,15 @@ elif mode == 'Files':
 							
 							st.success( f'Found {len( rows )} file(s).' )
 						except Exception as exc:
+							exception = Error( exc )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							st.error( f'List failed: {exc}' )
 				
-				if st.button( label='Retrieve Metadata', key='files_retrieve_button', width='stretch' ):
+				if st.button( label='Retrieve Metadata', key='files_retrieve_button',
+						width='stretch' ):
 					file_id = st.session_state.get( 'files_id', '' )
 					if not isinstance( file_id, str ) or not file_id.strip( ):
 						st.warning( 'Enter or select a file ID before retrieving metadata.' )
@@ -13639,6 +12892,11 @@ elif mode == 'Files':
 								st.session_state[ 'files_metadata' ] = metadata
 								st.session_state[ 'files_last_operation' ] = 'retrieve'
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 			
 			with op_c2:
@@ -13662,6 +12920,11 @@ elif mode == 'Files':
 								if not content:
 									st.warning( 'No extractable content was returned.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Extract failed: {exc}' )
 				
 				if st.button( label='Delete File',
@@ -13682,6 +12945,11 @@ elif mode == 'Files':
 								st.session_state[ 'files_last_operation' ] = 'delete'
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
 		
 		with ops_right:
@@ -13740,9 +13008,9 @@ elif mode == 'Files':
 		if prompt is not None and str( prompt ).strip( ):
 			prompt = str( prompt ).strip( )
 			st.session_state[ 'files_messages' ].append( {
-						'role': 'user',
-						'content': prompt,
-				} )
+					'role': 'user',
+					'content': prompt,
+			} )
 			
 			with st.chat_message( 'assistant' ):
 				with st.spinner( 'Analyzing selected file…' ):
@@ -13754,24 +13022,34 @@ elif mode == 'Files':
 						if isinstance( answer, str ) and answer.strip( ):
 							st.markdown( answer )
 							st.session_state[ 'files_messages' ].append( {
-										'role': 'assistant',
-										'content': answer.strip( ),
-								} )
+									'role': 'assistant',
+									'content': answer.strip( ),
+							} )
 							st.session_state[ 'files_last_answer' ] = answer.strip( )
 							st.session_state[ 'last_answer' ] = answer.strip( )
 							
 							try:
 								update_token_counters( getattr( files, 'response', None ) )
-							except Exception:
+							except Exception as e:
+								exception = Error( e )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								pass
 						else:
 							message = 'No file analysis response was returned.'
 							st.warning( message )
 							st.session_state[ 'files_messages' ].append( {
-										'role': 'assistant',
-										'content': message,
-								} )
+									'role': 'assistant',
+									'content': message,
+							} )
 					except Exception as exc:
+						exception = Error( exc )
+						exception.module = 'app'
+						exception.cause = 'app'
+						exception.method = 'module initialization'
+						Logger( ).write( exception )
 						st.error( f'File analysis failed: {exc}' )
 		
 		last_answer = st.session_state.get( 'files_last_answer', '' )
@@ -13780,7 +13058,8 @@ elif mode == 'Files':
 					expanded=False, width='stretch' ):
 				st.markdown( last_answer )
 		
-		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ], border=True, gap='xxsmall' )
+		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ], border=True,
+			gap='xxsmall' )
 		with reset_c1:
 			st.button( label='Clear Messages', key='clear_files_messages', width='stretch',
 				on_click=clear_files_messages )
@@ -13944,6 +13223,11 @@ elif mode == 'Vector Stores':
 								
 								st.success( f'Created vector store: {identifier or name}' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Create failed: {exc}' )
 					
 					if st.button(
@@ -13969,6 +13253,11 @@ elif mode == 'Vector Stores':
 									result_key='stores_store_metadata'
 								)
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 					
 					if st.button(
@@ -14008,6 +13297,11 @@ elif mode == 'Vector Stores':
 								)
 								st.success( 'File batch request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Batch failed: {exc}' )
 				
 				with action_c2:
@@ -14022,6 +13316,11 @@ elif mode == 'Vector Stores':
 								rows = set_storage_rows( result, table_key='stores_table' )
 								st.success( f'Found {len( rows )} vector store(s).' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'List failed: {exc}' )
 					
 					if st.button(
@@ -14048,6 +13347,11 @@ elif mode == 'Vector Stores':
 								)
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
 					
 					if st.button(
@@ -14084,6 +13388,11 @@ elif mode == 'Vector Stores':
 								)
 								st.success( 'File attachment request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Attach failed: {exc}' )
 				
 				if st.button(
@@ -14117,6 +13426,11 @@ elif mode == 'Vector Stores':
 							)
 							st.success( 'Upload and attach request completed.' )
 						except Exception as exc:
+							exception = Error( exc )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							st.error( f'Upload and attach failed: {exc}' )
 			
 			with ops_right:
@@ -14194,6 +13508,11 @@ elif mode == 'Vector Stores':
 								set_storage_rows( rows, table_key='stores_table' )
 								st.success( f'Found {len( rows )} configured collection(s).' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'List failed: {exc}' )
 					
 					if st.button(
@@ -14224,6 +13543,11 @@ elif mode == 'Vector Stores':
 									result_key='stores_store_metadata'
 								)
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 					
 					if st.button(
@@ -14271,6 +13595,11 @@ elif mode == 'Vector Stores':
 								
 								st.success( 'Search request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Search failed: {exc}' )
 					
 					if st.button(
@@ -14327,6 +13656,11 @@ elif mode == 'Vector Stores':
 								
 								st.success( 'Survey completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Survey failed: {exc}' )
 					
 					if st.button(
@@ -14445,6 +13779,11 @@ elif mode == 'Vector Stores':
 								
 								st.success( f'Created File Search Store: {identifier or name}' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Create failed: {exc}' )
 					
 					if st.button(
@@ -14475,6 +13814,11 @@ elif mode == 'Vector Stores':
 									result_key='filestore_metadata'
 								)
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 				
 				with fs_c2:
@@ -14496,6 +13840,11 @@ elif mode == 'Vector Stores':
 								rows = set_storage_rows( result, table_key='filestore_table' )
 								st.success( f'Found {len( rows )} File Search Store(s).' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'List failed: {exc}' )
 					
 					if st.button(
@@ -14526,6 +13875,11 @@ elif mode == 'Vector Stores':
 								)
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
 			
 			with ops_right:
@@ -14625,6 +13979,11 @@ elif mode == 'Vector Stores':
 								rows = set_storage_rows( result, table_key='bucket_table' )
 								st.success( f'Found {len( rows )} object(s).' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'List objects failed: {exc}' )
 					
 					if st.button(
@@ -14661,6 +14020,11 @@ elif mode == 'Vector Stores':
 									result_key='bucket_metadata'
 								)
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 				
 				with bucket_c2:
@@ -14686,6 +14050,11 @@ elif mode == 'Vector Stores':
 								
 								st.success( 'Object upload completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Upload failed: {exc}' )
 					
 					if st.button( label='Delete Object', key='gemini_bucket_delete_object',
@@ -14712,6 +14081,11 @@ elif mode == 'Vector Stores':
 								
 								st.success( 'Object delete request completed.' )
 							except Exception as exc:
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = 'app'
+								exception.method = 'module initialization'
+								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
 			
 			with ops_right:
@@ -14796,9 +14170,24 @@ elif mode == 'Prompt Engineering':
 		# DB helpers
 		# ------------------------------------------------------------------
 		def get_conn( ):
+			"""Get conn.
+			
+			Purpose:
+			    Retrieves get conn for the Streamlit application workflow and returns the normalized
+			    value used by downstream UI, provider, database, or document-processing steps.
+			
+			Returns:
+			    sqlite3.Connection: SQLite connection used by the local data-management workflow.
+			"""
 			return sqlite3.connect( cfg.DB_PATH )
 		
 		def reset_selection( ):
+			"""Reset selection.
+			
+			Purpose:
+			    Maintains application runtime state for reset selection by initializing, clearing, or
+			    restoring the session values used by the active Streamlit workflow.
+			"""
 			st.session_state.pe_selected_id = None
 			st.session_state.pe_caption = ''
 			st.session_state.pe_name = ''
@@ -14807,6 +14196,16 @@ elif mode == 'Prompt Engineering':
 			st.session_state.pe_id = 0
 		
 		def load_prompt( pid: int ) -> None:
+			"""Load prompt.
+			
+			Purpose:
+			    Retrieves load prompt for the Streamlit application workflow and returns the
+			    normalized value used by downstream UI, provider, database, or document-processing
+			    steps.
+			
+			Args:
+			    pid: Pid value used by the application workflow.
+			"""
 			with get_conn( ) as conn:
 				_select = f"SELECT Caption, Name, Text, Version, ID FROM {TABLE} WHERE PromptsId=?"
 				cur = conn.execute( _select, (pid,), )
@@ -14886,15 +14285,15 @@ elif mode == 'Prompt Engineering':
 		table_rows = [ ]
 		for r in rows:
 			table_rows.append(
-			{
-					'Selected': r[ 0 ] == st.session_state.pe_selected_id,
-					'PromptsId': r[ 0 ],
-					'Caption': r[ 1 ],
-					'Name': r[ 2 ],
-					'Text': r[ 3 ],
-					'Version': r[ 4 ],
-					'ID': r[ 5 ],
-			} )
+				{
+						'Selected': r[ 0 ] == st.session_state.pe_selected_id,
+						'PromptsId': r[ 0 ],
+						'Caption': r[ 1 ],
+						'Name': r[ 2 ],
+						'Text': r[ 3 ],
+						'Version': r[ 4 ],
+						'ID': r[ 5 ],
+				} )
 		
 		edited = st.data_editor( table_rows, hide_index=True, use_container_width=True,
 			key="prompt_table", )
@@ -14931,7 +14330,6 @@ elif mode == 'Prompt Engineering':
 				st.session_state.pe_page += 1
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-
 		
 		# ------------------------------------------------------------------
 		# Edit Prompt
@@ -14940,7 +14338,7 @@ elif mode == 'Prompt Engineering':
 			st.text_input( "PromptsId", value=st.session_state.pe_selected_id or "",
 				disabled=True, )
 			st.text_input( 'Name', key='pe_name' )
-	
+			
 			st.text_area( 'Text', key='pe_text', height=260 )
 			st.text_input( 'Version', key='pe_version' )
 			c1, c2, c3 = st.columns( 3 )
@@ -14996,7 +14394,7 @@ elif mode == 'Prompt Engineering':
 			
 			with c3:
 				st.button( '🧹 Clear Selection', on_click=reset_selection )
-				
+
 # ==============================================================================
 # EXPORT MODE
 # ==============================================================================
@@ -15017,6 +14415,11 @@ elif mode == 'Data Export':
 				export_text: str = convert_xml( prompt_text )
 				export_filename: str = 'Buddy_Instructions.md'
 			except Exception as exc:
+				exception = Error( exc )
+				exception.module = 'app'
+				exception.cause = 'app'
+				exception.method = 'module initialization'
+				Logger( ).write( exception )
 				st.error( f'Markdown conversion failed: {exc}' )
 				export_text = ''
 				export_filename = ''
@@ -15025,7 +14428,8 @@ elif mode == 'Data Export':
 			export_filename = 'Buddy_System_Instructions.xml'
 		
 		st.download_button( label='Download System Instructions', data=export_text,
-			file_name=export_filename, mime='text/plain', disabled=not bool( export_text.strip( ) ) )
+			file_name=export_filename, mime='text/plain',
+			disabled=not bool( export_text.strip( ) ) )
 		
 		# -----------------------------
 		# Existing chat history export
@@ -15065,7 +14469,7 @@ elif mode == 'Data Management':
 		st.subheader( '🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
 		st.divider( )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
-				'🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
+		                  '🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 		
 		tables = list_tables( )
 		if not tables:
@@ -15122,12 +14526,17 @@ elif mode == 'Data Management':
 					st.rerun( )
 				
 				except Exception as e:
+					exception = Error( e )
+					exception.module = 'app'
+					exception.cause = 'app'
+					exception.method = 'module initialization'
+					Logger( ).write( exception )
 					try:
 						conn.rollback( )
 					except:
 						pass
 					st.error( f'Import failed — transaction rolled back.\n\n{e}' )
-			
+		
 		# ------------------------------------------------------------------------------
 		# BROWSE TAB
 		# ------------------------------------------------------------------------------
@@ -15139,7 +14548,7 @@ elif mode == 'Data Management':
 				st.dataframe( df, use_container_width=True )
 			else:
 				st.info( 'No tables available.' )
-	
+		
 		# ------------------------------------------------------------------------------
 		# CRUD (Schema-Aware)
 		# ------------------------------------------------------------------------------
@@ -15162,14 +14571,16 @@ elif mode == 'Data Management':
 				insert_data = { }
 				for column, col_type in type_map.items( ):
 					if 'INT' in col_type:
-						insert_data[ column ] = st.number_input( column, step=1, key=f'ins_{column}' )
+						insert_data[ column ] = st.number_input( column, step=1,
+							key=f'ins_{column}' )
 					
 					elif 'REAL' in col_type:
 						insert_data[
 							column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
 					
 					elif 'BOOL' in col_type:
-						insert_data[ column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
+						insert_data[ column ] = 1 if st.checkbox( column,
+							key=f'ins_{column}' ) else 0
 					
 					else:
 						insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
@@ -15245,7 +14656,7 @@ elif mode == 'Data Management':
 				offset = (page - 1) * page_size
 				df_page = read_table( table, page_size, offset )
 				st.dataframe( df_page, use_container_width=True )
-			
+		
 		# ------------------------------------------------------------------------------
 		# FILTER
 		# ------------------------------------------------------------------------------
@@ -15259,7 +14670,7 @@ elif mode == 'Data Management':
 				if value:
 					df = df[ df[ column ].astype( str ).str.contains( value ) ]
 				st.dataframe( df, use_container_width=True )
-			
+		
 		# ------------------------------------------------------------------------------
 		# AGGREGATE
 		# ------------------------------------------------------------------------------
@@ -15271,14 +14682,14 @@ elif mode == 'Data Management':
 				numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
 				if numeric_cols:
 					col = st.selectbox( 'Column', numeric_cols )
-					agg = st.selectbox( 'Function', [ 'SUM',  'AVG', 'COUNT' ] )
+					agg = st.selectbox( 'Function', [ 'SUM', 'AVG', 'COUNT' ] )
 					if agg == 'SUM':
 						st.metric( 'Result', df[ col ].sum( ) )
 					elif agg == 'AVG':
 						st.metric( 'Result', df[ col ].mean( ) )
 					elif agg == 'COUNT':
 						st.metric( 'Result', df[ col ].count( ) )
-			
+		
 		# ------------------------------------------------------------------------------
 		# VISUALIZE
 		# ------------------------------------------------------------------------------
@@ -15292,7 +14703,7 @@ elif mode == 'Data Management':
 					col = st.selectbox( 'Column', numeric_cols )
 					fig = px.histogram( df, x=col )
 					st.plotly_chart( fig, use_container_width=True )
-			
+		
 		# ------------------------------------------------------------------------------
 		# ADMIN
 		# ------------------------------------------------------------------------------
@@ -15310,9 +14721,9 @@ elif mode == 'Data Management':
 				if st.button( 'Generate Profile' ):
 					profile_df = create_profile_table( table )
 					st.dataframe( profile_df, use_container_width=True )
-					
+			
 			st.subheader( 'Drop Table' )
-	
+			
 			tables = list_tables( )
 			if tables:
 				table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
@@ -15328,7 +14739,7 @@ elif mode == 'Data Management':
 				# Step 2: Confirmation UI
 				if st.session_state.dm_confirm_drop:
 					st.warning( f'You are about to permanently delete table {table}. '
-						'This action cannot be undone.' )
+					            'This action cannot be undone.' )
 					
 					col1, col2 = st.columns( 2 )
 					
@@ -15337,6 +14748,11 @@ elif mode == 'Data Management':
 							drop_table( table )
 							st.success( f'Table {table} dropped successfully.' )
 						except Exception as e:
+							exception = Error( e )
+							exception.module = 'app'
+							exception.cause = 'app'
+							exception.method = 'module initialization'
+							Logger( ).write( exception )
 							st.error( f'Drop failed: {e}' )
 						
 						st.session_state.dm_confirm_drop = False
@@ -15352,12 +14768,13 @@ elif mode == 'Data Management':
 				if st.button( 'Create Index' ):
 					create_index( table, col )
 					st.success( 'Index created.' )
-					
+			
 			st.divider( )
 			
 			st.subheader( 'Create Custom Table' )
 			new_table_name = st.text_input( 'Table Name' )
-			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
+			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20,
+				value=1 )
 			columns = [ ]
 			for i in range( column_count ):
 				st.markdown( f'### Column {i + 1}' )
@@ -15383,6 +14800,11 @@ elif mode == 'Data Management':
 					st.rerun( )
 				
 				except Exception as e:
+					exception = Error( e )
+					exception.module = 'app'
+					exception.cause = 'app'
+					exception.method = 'module initialization'
+					Logger( ).write( exception )
 					st.error( f'Error: {e}' )
 			
 			st.divider( )
@@ -15411,7 +14833,7 @@ elif mode == 'Data Management':
 				indexes = get_indexes( table )
 				if indexes:
 					idx_df = pd.DataFrame( indexes,
-						columns=[ 'seq', 'name',  'unique',  'origin', 'partial' ] )
+						columns=[ 'seq', 'name', 'unique', 'origin', 'partial' ] )
 					st.markdown( "### Indexes" )
 					st.dataframe( idx_df, use_container_width=True )
 				else:
@@ -15428,7 +14850,7 @@ elif mode == 'Data Management':
 				
 				if operation == 'Add Column':
 					new_col = st.text_input( 'Column Name' )
-					col_type = st.selectbox( 'Column Type', [ 'INTEGER',  'REAL',  'TEXT' ] )
+					col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ] )
 					
 					if st.button( 'Add Column' ):
 						add_column( table, new_col, col_type )
@@ -15465,7 +14887,7 @@ elif mode == 'Data Management':
 						drop_column( table, drop_col )
 						st.success( 'Column dropped.' )
 						st.rerun( )
-						
+		
 		# ------------------------------------------------------------------------------
 		# SQL
 		# ------------------------------------------------------------------------------
@@ -15510,6 +14932,11 @@ elif mode == 'Data Management':
 								'query_results.csv', 'text/csv' )
 					
 					except Exception as e:
+						exception = Error( e )
+						exception.module = 'app'
+						exception.cause = 'app'
+						exception.method = 'module initialization'
+						Logger( ).write( exception )
 						st.error( f'Execution failed: {e}' )
 
 # ======================================================================================
@@ -15524,7 +14951,7 @@ st.markdown( """
 	""", unsafe_allow_html=True, )
 
 # ---- Fixed Container
-st.markdown("""
+st.markdown( """
 	<style>
 	.boo-status-bar {
 		position: fixed;
@@ -15551,20 +14978,20 @@ st.markdown("""
 # FOOTER RENDERING
 # ======================================================================================
 _mode_to_model_key = \
-{
-	'Chat': 'chat_model',
-	'Text': 'text_model',
-	'Images': 'image_model',
-	'Audio': 'audio_model',
-	'TTS': 'tts_model',
-	'Translation': 'translation_model',
-	'Transcription': 'transcription_model',
-	'Embeddings': 'embedding_model',
-	'Document Q&A': 'docqna_model',
-	'Files': 'files_model',
-	'Vector Stores': 'stores_model',
-	'Data Management': 'text_model'
-}
+	{
+			'Chat': 'chat_model',
+			'Text': 'text_model',
+			'Images': 'image_model',
+			'Audio': 'audio_model',
+			'TTS': 'tts_model',
+			'Translation': 'translation_model',
+			'Transcription': 'transcription_model',
+			'Embeddings': 'embedding_model',
+			'Document Q&A': 'docqna_model',
+			'Files': 'files_model',
+			'Vector Stores': 'stores_model',
+			'Data Management': 'text_model'
+	}
 
 provider_val = st.session_state.get( 'provider', '—' )
 mode_val = mode or '—'
@@ -15675,7 +15102,7 @@ elif mode == 'Images':
 	if image_max_calls is not None:
 		right_parts.append( f'Max Calls: {image_max_calls}' )
 	if image_tools:
-		right_parts.append( f'Tools: {len(image_tools)}' )
+		right_parts.append( f'Tools: {len( image_tools )}' )
 	if image_include:
 		right_parts.append( 'Include: On' )
 	if image_stream:
@@ -15701,11 +15128,11 @@ elif mode == 'Audio':
 	audio_messages = st.session_state.get( 'audio_messages' )
 	audio_background = st.session_state.get( 'audio_background' )
 	audio_file = st.session_state.get( 'audio_file' )
-	audio_rate = st.session_state.get( 'audio_rate'  )
+	audio_rate = st.session_state.get( 'audio_rate' )
 	audio_start = st.session_state.get( 'audio_start' )
-	audio_end = st.session_state.get( 'audio_end'  )
-	audio_loop = st.session_state.get( 'audio_loop'  )
-	audio_play = st.session_state.get( 'auto_play'  )
+	audio_end = st.session_state.get( 'audio_end' )
+	audio_loop = st.session_state.get( 'audio_loop' )
+	audio_play = st.session_state.get( 'auto_play' )
 	audio_voice = st.session_state.get( 'voice', None )
 	
 	if audio_task is not None:
