@@ -13,7 +13,6 @@ The architecture separates the Streamlit user interface from provider wrappers s
 ecosystem can expose its own capabilities without forcing the application into a single
 provider-specific design.
 
-![Buddy Architecture](images/buddy_architecture_system_diagram.png)
 
 ## 🧭 Purpose
 
@@ -103,7 +102,7 @@ Buddy uses three primary provider wrapper modules:
 This boundary is important because each provider exposes different model names, request formats,
 response structures, tool options, and file or retrieval concepts.
 
-### GPT Wrapper
+### GPT API
 
 The `gpt.py` module provides OpenAI-oriented wrapper classes.
 
@@ -119,7 +118,7 @@ The `gpt.py` module provides OpenAI-oriented wrapper classes.
 | `Files`         | File upload, retrieval, extraction, deletion, summarization, search, and survey workflows.        |
 | `VectorStores`  | Vector-store creation, file attachment, search, retrieval, batch handling, and answer generation. |
 
-### Gemini Wrapper
+### Gemini API
 
 The `gemini.py` module provides Google Gemini-oriented wrapper classes.
 
@@ -136,7 +135,7 @@ The `gemini.py` module provides Google Gemini-oriented wrapper classes.
 | `FileSearch`    | File-search store creation, listing, retrieval, deletion, upload, and import workflows.                              |
 | `CloudBuckets`  | Cloud bucket object upload, retrieval, listing, deletion, web search, and maps search support.                       |
 
-### Grok Wrapper
+### Grok API
 
 The `grok.py` module provides xAI Grok-oriented wrapper classes.
 
