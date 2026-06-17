@@ -1,4 +1,4 @@
-name: Build and Push Boopy Image
+name: Build and Push Buddy Image
 
 on:
   workflow_dispatch:
@@ -7,15 +7,15 @@ on:
       - main
 
 env:
-  IMAGE_NAME: boopy
+  IMAGE_NAME: buddy
 
 jobs:
   build-and-push:
-    name: Build and push Boopy image
+    name: Build and push Buddy image to Azure Container Registry
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Buddy repository
         uses: actions/checkout@v4
 
       - name: Log in to Azure Container Registry
@@ -25,7 +25,7 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push Boopy image
+      - name: Build and push Buddy image
         uses: docker/build-push-action@v6
         with:
           context: .
