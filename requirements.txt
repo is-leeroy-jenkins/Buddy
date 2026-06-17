@@ -8,7 +8,12 @@ typing_extensions>=4.11,<5
 pymupdf
 httpx>=0.28.1
 reportlab>=4.0.8
-
+streamlit
+streamlit-extras
+streamlit-pdf
+pandas
+python-dotenv
+tabulate>=0.9.0
 sentence-transformers==2.7.0
 transformers==4.41.2
 huggingface_hub==0.23.5
