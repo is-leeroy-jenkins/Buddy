@@ -58,6 +58,8 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 
 [![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io)
 
+- Containerized application prototype
+
 ## 🔥 Streamlit 
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
