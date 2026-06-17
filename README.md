@@ -54,7 +54,11 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 | 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
 | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
 
-## 🕸️ Streamlit (Web)
+## 🧊 Azure
+
+[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io)
+
+## 🔥 Streamlit 
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://budget-buddy-py.streamlit.app/)
 
