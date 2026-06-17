@@ -48,7 +48,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
 from google.genai.types import ListFilesResponse
 import config as cfg
-from boogr import ErrorDialog, Error, Logger
+from boogr import Error, Logger
 import config as cfg
 from openai import OpenAI
 from xai_sdk.aio.image import ImageResponse
