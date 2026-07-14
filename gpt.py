@@ -299,8 +299,7 @@ class Chat( GPT ):
 		self.stream_requested = False
 		self.background_requested = False
 		self.prompt_template = None
-		self.vector_stores = { 'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK',
-			'Appropriations': 'vs_8fEoYp1zVvk5D8atfWLbEupN', }
+		self.vector_stores = cfg.GPT_VECTOR_STORES
 		self.files = { 'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
 			'SF133.csv': 'file-WT2h2F5SNxqK2CxyAMSDg6',
 			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
@@ -421,8 +420,7 @@ class Chat( GPT ):
 		"""
 		return [ 'text', ]
 	
-	def build_reasoning( self, reasoning: str | Dict[ str, str ]=None ) -> Dict[
-		                                                                         str, str ] | None:
+	def build_reasoning( self, reasoning: str | Dict[ str, str ]=None ) -> Dict[ str, str ] | None:
 		"""Build reasoning.
 		
 		
@@ -496,7 +494,6 @@ class Chat( GPT ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.messages = [ ]
-			
 			if input_data is not None and len( input_data ) > 0:
 				self.messages.extend( input_data )
 			elif context is not None and len( context ) > 0:
@@ -516,8 +513,8 @@ class Chat( GPT ):
 					self.messages.append( { 'role': role,
 						'content': [ { 'type': 'input_text', 'text': content.strip( ), }, ], } )
 			
-			self.messages.append(
-				{ 'role': 'user', 'content': [ { 'type': 'input_text', 'text': prompt, }, ], } )
+			self.messages.append( { 'role': 'user',
+				'content': [ { 'type': 'input_text', 'text': prompt, }, ], } )
 			
 			return self.messages
 		except Exception as e:
@@ -569,7 +566,6 @@ class Chat( GPT ):
 				
 				if tool_type == 'web_search':
 					built_tool = { 'type': 'web_search' }
-					
 					filters = tool.get( 'filters' )
 					if isinstance( filters, dict ) and len( filters ) > 0:
 						built_tool[ 'filters' ]=filters
