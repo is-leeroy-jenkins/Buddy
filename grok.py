@@ -3858,87 +3858,27 @@ class Image( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Images workflow while preserving provider request and response state.
+		    Provides dir behavior for the Images workflow while preserving provider request and
+		    response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
 		"""
-		return [
-				'api_key',
-				'base_url',
-				'client',
-				'model',
-				'prompt',
-				'number',
-				'aspect_ratio',
-				'resolution',
-				'size',
-				'quality',
-				'style',
-				'detail',
-				'response_format',
-				'mime_type',
-				'compression',
-				'background',
-				'response_modalities',
-				'max_output_tokens',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'tools',
-				'tool_choice',
-				'include',
-				'allowed_domains',
-				'store',
-				'stream',
-				'is_parallel',
-				'max_tools',
-				'max_searches',
-				'image_path',
-				'image_url',
-				'mask_path',
-				'request',
-				'response',
-				'output',
-				'extra_body',
-				'extra_kwargs',
-				'model_options',
-				'analysis_model_options',
-				'tool_options',
-				'include_options',
-				'choice_options',
-				'aspect_options',
-				'size_options',
-				'quality_options',
-				'style_options',
-				'backcolor_options',
-				'detail_options',
-				'format_options',
-				'mime_options',
-				'output_options',
-				'initialize_client',
-				'normalize_resolution',
-				'normalize_response_format',
-				'encode_image_data_uri',
-				'get_output_text',
-				'normalize_image_result',
-				'build_generation_request',
-				'build_edit_request',
-				'build_analysis_request',
-				'generate',
-				'generate_image',
-				'create',
-				'create_image',
-				'edit',
-				'edit_image',
-				'modify',
-				'generate_edit',
-				'analyze',
-				'analyze_image',
-				'vision',
-				'describe',
-		]
+		return [ 'api_key', 'base_url', 'client', 'model', 'prompt', 'number', 'aspect_ratio',
+			'resolution', 'size', 'quality', 'style', 'detail', 'response_format', 'mime_type',
+			'compression', 'background', 'response_modalities', 'max_output_tokens', 'temperature',
+			'top_percent', 'frequency_penalty', 'presence_penalty', 'tools', 'tool_choice',
+			'include', 'allowed_domains', 'store', 'stream', 'is_parallel', 'max_tools',
+			'max_searches', 'image_path', 'image_url', 'mask_path', 'request', 'response',
+			'output', 'extra_body', 'extra_kwargs', 'model_options', 'analysis_model_options',
+			'tool_options', 'include_options', 'choice_options', 'aspect_options', 'size_options',
+			'quality_options', 'style_options', 'backcolor_options', 'detail_options',
+			'format_options', 'mime_options', 'output_options', 'initialize_client',
+			'normalize_resolution', 'normalize_response_format', 'encode_image_data_uri',
+			'get_output_text', 'normalize_image_result', 'build_generation_request',
+			'build_edit_request', 'build_analysis_request', 'generate', 'generate_image', 'create',
+			'create_image', 'edit', 'edit_image', 'modify', 'generate_edit', 'analyze',
+			'analyze_image', 'vision', 'describe', ]
 
 class Files( Grok ):
 	"""Files workflow wrapper.
@@ -4040,41 +3980,28 @@ class Files( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without
+		    mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'grok-4.20-reasoning',
-				'grok-4.20',
-				'grok-4',
-				'grok-4-latest',
-				'grok-4-fast-reasoning',
-				'grok-4-fast-non-reasoning',
-				'grok-code-fast-1',
-				'grok-3',
-				'grok-3-mini',
-				'grok-3-fast',
-				'grok-3-mini-fast',
-		]
+		return [ 'grok-4.20-reasoning', 'grok-4.20', 'grok-4', 'grok-4-latest',
+			'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-code-fast-1', 'grok-3',
+			'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
 	
 	@property
 	def purpose_options( self ) -> List[ str ]:
 		"""Purpose options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Files workflow selector without
+		    mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'assistants',
-				'batch',
-				'fine-tune',
-				'user_data',
-		]
+		return [ 'assistants', 'batch', 'fine-tune', 'user_data', ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:
@@ -4101,9 +4028,7 @@ class Files( Grok ):
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'code_interpreter',
-		]
+		return [ 'code_interpreter', ]
 	
 	@property
 	def include_options( self ) -> List[ str ]:
@@ -4147,9 +4072,7 @@ class Files( Grok ):
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
-			return {
-					'Authorization': f'Bearer {self.api_key}',
-			}
+			return { 'Authorization': f'Bearer {self.api_key}', }
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -4191,7 +4114,6 @@ class Files( Grok ):
 		"""
 		try:
 			value = response if response is not None else self.response
-			
 			if value is None:
 				return None
 			
@@ -4265,17 +4187,13 @@ class Files( Grok ):
 		try:
 			throw_if( 'file_path', self.file_path )
 			path = Path( self.file_path )
-			
 			if not path.exists( ):
 				raise FileNotFoundError( f'File was not found: {self.file_path}' )
 			
 			self.file_name = self.file_name or path.name
 			throw_if( 'file_name', self.file_name )
-			self.request = {
-					'file_path': str( path ),
-					'file_name': self.file_name,
-					'purpose': self.purpose,
-			}
+			self.request = { 'file_path': str( path ), 'file_name': self.file_name,
+					'purpose': self.purpose, }
 			return self.request
 		except Exception as e:
 			ex = Error( e )
