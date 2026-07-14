@@ -2915,7 +2915,7 @@ class Translation( Grok ):
 				'translate',
 		]
 
-class Images( Grok ):
+class Image( Grok ):
 	"""Images workflow wrapper.
 	
 	Purpose:
