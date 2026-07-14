@@ -1013,17 +1013,18 @@ class Chat( Grok ):
 			instruct: str=None, background: bool = False, reasoning: str=None,
 			include: List[ str ]=None, tools: List[ Any ]=None,
 			allowed_domains: List[ str ]=None, previous_id: str=None,
-			tool_choice: str=None, is_parallel: bool = None,
+			tool_choice: str=None, is_parallel: bool=None,
 			context: List[ Dict[ str, str ] ]=None, input_data: List[ Dict[ str, Any ] ]=None,
 			vector_store_ids: List[ str ]=None, conversation_id: str=None,
-			response_format: Dict[ str, Any ] | str = None, response_schema: Any = None,
+			response_format: Dict[ str, Any ] | str = None, response_schema: Any=None,
 			number: int=None, modalities: List[ str ]=None, media_resolution: str=None,
 			content: str=None, urls: List[ str ]=None, max_urls: int=None,
 			safety_profile: str=None, **kwargs: Any ) -> str | None:
 		"""Generate text.
 		
 		Purpose:
-		    Executes an xAI generation workflow using validated request settings, captures the provider response, and returns displayable output.
+		    Executes an xAI generation workflow using validated request settings,
+		    captures the provider response, and returns displayable output.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -1109,7 +1110,8 @@ class Chat( Grok ):
 		"""Get grounding sources.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or
+		    downstream request construction.
 		
 		Returns:
 		    List[Dict[str, Any]]: Result produced by the xAI workflow.
@@ -1166,14 +1168,15 @@ class Chat( Grok ):
 	def answer_document( self, prompt: str, document_text: str, model: str,
 			instructions: str=None, temperature: float=None, top_p: float=None,
 			frequency: float=None, presence: float=None, max_tokens: int=None,
-			store: bool = None, include: List[ str ]=None, tools: List[ str ]=None,
+			store: bool=None, include: List[ str ]=None, tools: List[ str ]=None,
 			tool_choice: str=None, reasoning: str=None,
 			context: List[ Dict[ str, str ] ]=None,
 			vector_store_ids: List[ str ]=None ) -> str | None:
 		"""Answer document.
 		
 		Purpose:
-		    Provides answer document behavior for the Chat workflow while preserving provider request and response state.
+		    Provides answer document behavior for the Chat workflow while preserving provider
+		    request and response state.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -1203,7 +1206,6 @@ class Chat( Grok ):
 			throw_if( 'prompt', prompt )
 			throw_if( 'document_text', document_text )
 			throw_if( 'model', model )
-			
 			self.prompt = prompt
 			self.content = document_text
 			self.model = model
@@ -1219,7 +1221,6 @@ class Chat( Grok ):
 			self.reasoning = reasoning
 			self.context = context if context is not None else [ ]
 			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-			
 			selected_tools = [ ]
 			if tools is not None:
 				for item in tools:
@@ -1231,33 +1232,20 @@ class Chat( Grok ):
 						selected_tools.append( { 'type': item.strip( ) } )
 			
 			self.tools = selected_tools
-			
 			if isinstance( self.tool_choice, list ):
 				self.tool_choice = self.tool_choice[ 0 ] if len( self.tool_choice ) > 0 else None
 			
-			document_prompt = (
-					f'Document Context:\n'
+			document_prompt = ( f'Document Context:\n'
 					f'{self.content}\n\n'
 					f'User Question:\n'
-					f'{self.prompt}'
-			)
+					f'{self.prompt}' )
 			
-			self.output_text = self.generate_text(
-				prompt=document_prompt,
-				model=self.model,
-				temperature=self.temperature,
-				top_p=self.top_percent,
-				frequency=self.frequency_penalty,
-				presence=self.presence_penalty,
-				max_tokens=self.max_output_tokens,
-				store=self.store_messages,
-				stream=False,
-				instruct=self.instructions,
-				reasoning=self.reasoning,
-				include=self.include,
-				tools=self.tools,
-				tool_choice=self.tool_choice,
-				context=self.context,
+			self.output_text = self.generate_text( prompt=document_prompt, model=self.model,
+				temperature=self.temperature, top_p=self.top_percent,
+				frequency=self.frequency_penalty, presence=self.presence_penalty,
+				max_tokens=self.max_output_tokens, store=self.store_messages, stream=False,
+				instruct=self.instructions, reasoning=self.reasoning, include=self.include,
+				tools=self.tools, tool_choice=self.tool_choice, context=self.context,
 				vector_store_ids=self.vector_store_ids )
 			
 			return self.output_text
@@ -1265,7 +1253,8 @@ class Chat( Grok ):
 			exception = Error( e )
 			exception.module = 'grok'
 			exception.cause = 'Chat'
-			exception.method = 'answer_document( self, prompt: str, document_text: str, model: str ) -> str | None'
+			exception.method = ('answer_document( self, prompt: str, document_text: str, model: str '
+			                    ') -> str | None')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -1273,68 +1262,24 @@ class Chat( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Chat workflow while preserving provider request and response state.
+		    Provides dir behavior for the Chat workflow while preserving provider request and
+		    response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
 		"""
-		return [
-				'api_key',
-				'base_url',
-				'client',
-				'model',
-				'prompt',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'max_output_tokens',
-				'stops',
-				'store_messages',
-				'stream',
-				'background',
-				'number',
-				'response_format',
-				'context',
-				'instructions',
-				'include',
-				'tool_choice',
-				'previous_id',
-				'previous_response_id',
-				'conversation_id',
-				'parallel_tools',
-				'max_tools',
-				'input',
-				'tools',
-				'reasoning',
-				'allowed_domains',
-				'max_search_results',
-				'output_text',
-				'vector_store_ids',
-				'file_ids',
-				'response',
-				'file_path',
-				'model_options',
-				'include_options',
-				'tool_options',
-				'choice_options',
-				'format_options',
-				'reasoning_options',
-				'modality_options',
-				'media_options',
-				'build_reasoning',
-				'build_input',
-				'build_tools',
-				'build_tool_choice',
-				'build_include',
-				'build_text_format',
-				'build_request',
-				'get_output_text',
-				'get_usage',
-				'generate_text',
-				'get_grounding_sources',
-				'answer_documents'
-		]
+		return [ 'api_key', 'base_url', 'client', 'model', 'prompt', 'temperature', 'top_percent',
+			'frequency_penalty', 'presence_penalty', 'max_output_tokens', 'stops',
+			'store_messages',
+			'stream', 'background', 'number', 'response_format', 'context', 'instructions',
+			'include', 'tool_choice', 'previous_id', 'previous_response_id', 'conversation_id',
+			'parallel_tools', 'max_tools', 'input', 'tools', 'reasoning', 'allowed_domains',
+			'max_search_results', 'output_text', 'vector_store_ids', 'file_ids', 'response',
+			'file_path', 'model_options', 'include_options', 'tool_options', 'choice_options',
+			'format_options', 'reasoning_options', 'modality_options', 'media_options',
+			'build_reasoning', 'build_input', 'build_tools', 'build_tool_choice', 'build_include',
+			'build_text_format', 'build_request', 'get_output_text', 'get_usage', 'generate_text',
+			'get_grounding_sources', 'answer_documents' ]
 
 class TTS( Grok ):
 	"""TTS workflow wrapper.
@@ -1441,8 +1386,7 @@ class TTS( Grok ):
 				'ara',
 				'rex',
 				'sal',
-				'leo',
-		]
+				'leo', ]
 	
 	@property
 	def language_options( self ) -> List[ str ] | None:
@@ -1619,7 +1563,6 @@ class TTS( Grok ):
 		try:
 			value = str( language or 'auto' ).strip( )
 			valid_values = self.language_options
-			
 			if value not in valid_values:
 				return 'auto'
 			
@@ -1635,7 +1578,8 @@ class TTS( Grok ):
 		"""Validate format.
 		
 		Purpose:
-		    Provides validate format behavior for the TTS workflow while preserving provider request and response state.
+		    Provides validate format behavior for the TTS workflow while preserving provider
+		    request and response state.
 		
 		Args:
 		    format (str): Format supplied to the xAI workflow.
@@ -1667,7 +1611,8 @@ class TTS( Grok ):
 		"""Validate sample rate.
 		
 		Purpose:
-		    Provides validate sample rate behavior for the TTS workflow while preserving provider request and response state.
+		    Provides validate sample rate behavior for the TTS workflow while preserving provider
+		    request and response state.
 		
 		Args:
 		    sample_rate (int): Sample rate supplied to the xAI workflow.
@@ -1695,7 +1640,8 @@ class TTS( Grok ):
 		"""Validate bit rate.
 		
 		Purpose:
-		    Provides validate bit rate behavior for the TTS workflow while preserving provider request and response state.
+		    Provides validate bit rate behavior for the TTS workflow while preserving provider
+		    request and response state.
 		
 		Args:
 		    bit_rate (int): Bit rate supplied to the xAI workflow.
@@ -1723,7 +1669,8 @@ class TTS( Grok ):
 		"""Validate speed.
 		
 		Purpose:
-		    Provides validate speed behavior for the TTS workflow while preserving provider request and response state.
+		    Provides validate speed behavior for the TTS workflow while preserving provider
+		    request and response state.
 		
 		Args:
 		    speed (float): Speed supplied to the xAI workflow.
@@ -1752,7 +1699,8 @@ class TTS( Grok ):
 		"""Build output format.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any] | None: Result produced by the xAI workflow.
@@ -1760,7 +1708,6 @@ class TTS( Grok ):
 		try:
 			throw_if( 'response_format', self.response_format )
 			self.output_format = { 'codec': self.response_format, }
-			
 			if self.sample_rate is not None:
 				self.output_format[ 'sample_rate' ]=self.sample_rate
 			
@@ -1779,7 +1726,8 @@ class TTS( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -1794,7 +1742,6 @@ class TTS( Grok ):
 					'language': self.language,
 			}
 			self.output_format = self.build_output_format( )
-			
 			if self.output_format:
 				self.request[ 'output_format' ]=self.output_format
 			
@@ -1816,7 +1763,8 @@ class TTS( Grok ):
 		"""Execute request.
 		
 		Purpose:
-		    Provides execute request behavior for the TTS workflow while preserving provider request and response state.
+		    Provides execute request behavior for the TTS workflow while preserving provider
+		    request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -1825,8 +1773,7 @@ class TTS( Grok ):
 			throw_if( 'api_key', self.api_key )
 			throw_if( 'base_url', self.base_url )
 			throw_if( 'request', self.request )
-			self.response = requests.post(
-				url=f'{self.base_url.rstrip( "/" )}/tts',
+			self.response = requests.post( url=f'{self.base_url.rstrip( "/" )}/tts',
 				headers={ 'Authorization': f'Bearer {self.api_key}',
 				          'Content-Type': 'application/json', },
 				json=self.request, timeout=self.timeout or 3600, )
@@ -1843,7 +1790,8 @@ class TTS( Grok ):
 		"""Extract audio.
 		
 		Purpose:
-		    Provides extract audio behavior for the TTS workflow while preserving provider request and response state.
+		    Provides extract audio behavior for the TTS workflow while preserving provider
+		    request and response state.
 		
 		Returns:
 		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
@@ -1947,8 +1895,7 @@ class TTS( Grok ):
 		"""
 		try:
 			return self.create_speech( text=text, model=model, format=format, speed=speed,
-				voice=voice, instruct=instruct, file_path=file_path, language=language,
-				**kwargs )
+				voice=voice, instruct=instruct, file_path=file_path, language=language, **kwargs )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -1996,65 +1943,23 @@ class TTS( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the TTS workflow while preserving provider request and response state.
+		    Provides dir behavior for the TTS workflow while preserving provider request and
+		    response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
 		"""
-		return [
-				'api_key',
-				'base_url',
-				'client',
-				'model',
-				'number',
-				'input_text',
-				'prompt',
-				'language',
-				'voice',
-				'response_format',
-				'sample_rate',
-				'bit_rate',
-				'speed',
-				'instructions',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'max_completion_tokens',
-				'store',
-				'stream',
-				'audio_path',
-				'file_path',
-				'request',
-				'response',
-				'audio_bytes',
-				'output_format',
-				'optimize_streaming_latency',
-				'text_normalization',
-				'extra_kwargs',
-				'model_options',
-				'voice_options',
-				'language_options',
-				'format_options',
-				'response_format_options',
-				'output_format_options',
-				'speed_options',
-				'sample_rate_options',
-				'bit_rate_options',
-				'validate_voice',
-				'validate_language',
-				'validate_format',
-				'validate_sample_rate',
-				'validate_bit_rate',
-				'validate_speed',
-				'build_output_format',
-				'build_request',
-				'execute_request',
-				'extract_audio',
-				'create_speech',
-				'synthesize',
-				'generate',
-		]
+		return [ 'api_key', 'base_url', 'client', 'model', 'number', 'input_text', 'prompt',
+			'language', 'voice', 'response_format', 'sample_rate', 'bit_rate', 'speed',
+			'instructions', 'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
+			'max_completion_tokens', 'store', 'stream', 'audio_path', 'file_path', 'request',
+			'response', 'audio_bytes', 'output_format', 'optimize_streaming_latency',
+			'text_normalization', 'extra_kwargs', 'model_options', 'voice_options',
+			'language_options', 'format_options', 'response_format_options',
+			'output_format_options', 'speed_options', 'sample_rate_options', 'bit_rate_options',
+			'validate_voice', 'validate_language', 'validate_format', 'validate_sample_rate',
+			'validate_bit_rate', 'validate_speed', 'build_output_format', 'build_request',
+			'execute_request', 'extract_audio', 'create_speech', 'synthesize', 'generate', ]
 
 class Transcription( Grok ):
 	"""Transcription workflow wrapper.
@@ -2092,7 +1997,8 @@ class Transcription( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Transcription state with default configuration values and runtime attributes used by later xAI provider calls.
+		    Initializes Transcription state with default configuration values and runtime
+		    attributes used by later xAI provider calls.
 		
 		Args:
 		    number (int): Number supplied to the xAI workflow.
@@ -2140,7 +2046,8 @@ class Transcription( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2162,7 +2069,8 @@ class Transcription( Grok ):
 		"""Language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2191,7 +2099,8 @@ class Transcription( Grok ):
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2212,22 +2121,21 @@ class Transcription( Grok ):
 		"""Response format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'text',
-				'json',
-		]
+		return [ 'text', 'json', ]
 	
 	@property
 	def include_options( self ) -> List[ str ]:
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Transcription workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2238,7 +2146,8 @@ class Transcription( Grok ):
 		"""Build prompt.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2248,11 +2157,9 @@ class Transcription( Grok ):
 				return self.prompt.strip( )
 			
 			language = self.language or 'auto'
-			return (
-					'Transcribe the attached audio file accurately. '
+			return ( 'Transcribe the attached audio file accurately. '
 					f'Use the language hint "{language}" when helpful. '
-					'Return only the transcript unless additional instructions require otherwise.'
-			)
+					'Return only the transcript unless additional instructions require otherwise.' )
 		except Exception as e:
 			ex = Error( e )
 			ex.module = 'grok'
@@ -2264,7 +2171,8 @@ class Transcription( Grok ):
 		"""Build messages.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    List[Any]: Result produced by the xAI workflow.
@@ -2288,7 +2196,8 @@ class Transcription( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -2297,10 +2206,7 @@ class Transcription( Grok ):
 			throw_if( 'model', self.model )
 			throw_if( 'file_path', self.file_path )
 			self.build_messages( )
-			self.request = {
-					'model': self.model,
-					'messages': self.messages,
-			}
+			self.request = { 'model': self.model, 'messages': self.messages, }
 			return self.request
 		except Exception as e:
 			ex = Error( e )
@@ -2313,7 +2219,8 @@ class Transcription( Grok ):
 		"""Execute request.
 		
 		Purpose:
-		    Provides execute request behavior for the Transcription workflow while preserving provider request and response state.
+		    Provides execute request behavior for the Transcription workflow while preserving
+		    provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -2338,7 +2245,8 @@ class Transcription( Grok ):
 		"""Extract transcript.
 		
 		Purpose:
-		    Provides extract transcript behavior for the Transcription workflow while preserving provider request and response state.
+		    Provides extract transcript behavior for the Transcription workflow while preserving
+		    provider request and response state.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2374,7 +2282,7 @@ class Transcription( Grok ):
 	def transcribe( self, path: str, model: str='grok-3-mini-fast', language: str='en',
 			prompt: str=None, temperature: float=None, top_p: float=None,
 			frequency: float=None, presence: float=None, max_tokens: int=None,
-			store: bool = None, stream: bool = None, instruct: str=None,
+			store: bool=None, stream: bool = None, instruct: str=None,
 			response_format: str=None, include: List[ str ]=None, mime_type: str=None,
 			start_time: float=None, end_time: float=None, **kwargs: Any ) -> str:
 		"""Transcribe.
@@ -2441,50 +2349,19 @@ class Transcription( Grok ):
 		"""Dir.
 		
 		Purpose:
-		    Provides dir behavior for the Transcription workflow while preserving provider request and response state.
+		    Provides dir behavior for the Transcription workflow while preserving provider
+		    request and response state.
 		
 		Returns:
 		    List[str] | None: Result produced by the xAI workflow.
 		"""
-		return [
-				'api_key',
-				'base_url',
-				'client',
-				'number',
-				'model',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'max_output_tokens',
-				'max_completion_tokens',
-				'store',
-				'stream',
-				'language',
-				'instructions',
-				'prompt',
-				'file_path',
-				'audio_file',
-				'messages',
-				'request',
-				'response',
-				'chat',
-				'transcript',
-				'response_format',
-				'include',
-				'extra_kwargs',
-				'model_options',
-				'language_options',
-				'format_options',
-				'response_format_options',
-				'include_options',
-				'build_prompt',
-				'build_messages',
-				'build_request',
-				'execute_request',
-				'extract_transcript',
-				'transcribe',
-		]
+		return [ 'api_key', 'base_url', 'client', 'number', 'model', 'temperature', 'top_percent',
+			'frequency_penalty', 'presence_penalty', 'max_output_tokens', 'max_completion_tokens',
+			'store', 'stream', 'language', 'instructions', 'prompt', 'file_path', 'audio_file',
+			'messages', 'request', 'response', 'chat', 'transcript', 'response_format', 'include',
+			'extra_kwargs', 'model_options', 'language_options', 'format_options',
+			'response_format_options', 'include_options', 'build_prompt', 'build_messages',
+			'build_request', 'execute_request', 'extract_transcript', 'transcribe', ]
 
 class Translation( Grok ):
 	"""Translation workflow wrapper.
@@ -2524,7 +2401,8 @@ class Translation( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Translation state with default configuration values and runtime attributes used by later xAI provider calls.
+		    Initializes Translation state with default configuration values and runtime attributes
+		    used by later xAI provider calls.
 		
 		Args:
 		    model (str): Model supplied to the xAI workflow.
@@ -2571,88 +2449,63 @@ class Translation( Grok ):
 		"""Model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'grok-4',
-				'grok-4-latest',
-				'grok-4-fast-reasoning',
-				'grok-4-fast-non-reasoning',
-				'grok-3',
-				'grok-3-latest',
-				'grok-3-mini',
-				'grok-3-fast',
-				'grok-3-mini-fast',
-		]
+		return [ 'grok-4', 'grok-4-latest', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning',
+			'grok-3', 'grok-3-latest', 'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
 	
 	@property
 	def language_options( self ) -> List[ str ]:
 		"""Language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'English',
-				'Spanish',
-				'French',
-				'German',
-				'Italian',
-				'Japanese',
-				'Korean',
-				'Portuguese',
-				'Chinese',
-				'Tagalog',
-		]
+		return [ 'English', 'Spanish', 'French', 'German', 'Italian', 'Japanese', 'Korean',
+			'Portuguese', 'Chinese', 'Tagalog', ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:
 		"""Format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'audio/wav',
-				'audio/mp3',
-				'audio/mpeg',
-				'audio/mp4',
-				'audio/m4a',
-				'audio/webm',
-				'audio/ogg',
-				'audio/flac',
-		]
+		return [ 'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/webm',
+			'audio/ogg', 'audio/flac', ]
 	
 	@property
 	def response_format_options( self ) -> List[ str ]:
 		"""Response format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'text',
-				'json',
-		]
+		return [ 'text', 'json', ]
 	
 	@property
 	def include_options( self ) -> List[ str ]:
 		"""Include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Translation workflow selector
+		    without mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
@@ -2663,7 +2516,8 @@ class Translation( Grok ):
 		"""Build prompt.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2698,7 +2552,8 @@ class Translation( Grok ):
 		"""Build messages.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    List[Any]: Result produced by the xAI workflow.
@@ -2722,7 +2577,8 @@ class Translation( Grok ):
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the
+		    resulting state on the instance for provider execution.
 		
 		Returns:
 		    Dict[str, Any]: Result produced by the xAI workflow.
@@ -2748,7 +2604,8 @@ class Translation( Grok ):
 		"""Execute request.
 		
 		Purpose:
-		    Provides execute request behavior for the Translation workflow while preserving provider request and response state.
+		    Provides execute request behavior for the Translation workflow while preserving
+		    provider request and response state.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -2773,7 +2630,8 @@ class Translation( Grok ):
 		"""Extract translation.
 		
 		Purpose:
-		    Provides extract translation behavior for the Translation workflow while preserving provider request and response state.
+		    Provides extract translation behavior for the Translation workflow while preserving
+		    provider request and response state.
 		
 		Returns:
 		    str: Result produced by the xAI workflow.
@@ -2925,7 +2783,8 @@ class Image( Grok ):
 	"""Images workflow wrapper.
 	
 	Purpose:
-	    Builds and executes xAI image-generation and image-analysis workflows while preserving prompt, model, and response state.
+	    Builds and executes xAI image-generation and image-analysis workflows while preserving
+	    prompt, model, and response state.
 	
 	Attributes:
 	    model: Runtime attribute used by the Images workflow.
@@ -2958,7 +2817,8 @@ class Image( Grok ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Images state with default configuration values and runtime attributes used by later xAI provider calls.
+		    Initializes Images state with default configuration values and runtime attributes
+		    used by later xAI provider calls.
 		"""
 		super( ).__init__( )
 		self.api_key = os.getenv( 'XAI_API_KEY' ) or cfg.XAI_API_KEY
@@ -3018,19 +2878,14 @@ class Image( Grok ):
 		"""Analysis model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without
+		    mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'grok-4.20-reasoning',
-				'grok-4.20',
-				'grok-4',
-				'grok-4-latest',
-				'grok-4-fast-reasoning',
-				'grok-4-fast-non-reasoning',
-		]
+		return [ 'grok-4.20-reasoning', 'grok-4.20', 'grok-4', 'grok-4-latest',
+			'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', ]
 	
 	@property
 	def tool_options( self ) -> List[ str ] | None:
@@ -3073,27 +2928,14 @@ class Image( Grok ):
 		"""Aspect options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
+		    Returns the configured option values exposed by the Images workflow selector without
+		    mutating provider state.
 		
 		Returns:
 		    List[str]: Result produced by the xAI workflow.
 		"""
-		return [
-				'auto',
-				'1:1',
-				'3:4',
-				'4:3',
-				'9:16',
-				'16:9',
-				'2:3',
-				'3:2',
-				'9:19.5',
-				'19.5:9',
-				'9:20',
-				'20:9',
-				'1:2',
-				'2:1',
-		]
+		return [ 'auto', '1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9',
+			'9:20', '20:9', '1:2', '2:1', ]
 	
 	@property
 	def size_options( self ) -> List[ str ]:
@@ -3412,10 +3254,7 @@ class Image( Grok ):
 		try:
 			throw_if( 'prompt', self.prompt )
 			throw_if( 'model', self.model )
-			self.request = {
-					'model': self.model,
-					'prompt': self.prompt,
-			}
+			self.request = { 'model': self.model, 'prompt': self.prompt, }
 			self.extra_body = { }
 			
 			if isinstance( self.number, int ) and self.number > 0:
@@ -3541,12 +3380,10 @@ class Image( Grok ):
 			aspect_ratio: str=None, response_modalities: str=None, temperature: float=None,
 			top_p: float=None, top_k: int=None, frequency: float=None, presence: float=None,
 			max_tokens: int=None, instruct: str=None, tools: List[ Any ]=None,
-			tool_choice: str=None, include: List[ str ]=None,
-			allowed_domains: List[ str ]=None,
+			tool_choice: str=None, include: List[ str ]=None, allowed_domains: List[ str ]=None,
 			store: bool = None, stream: bool = None, is_parallel: bool = None,
-			max_tools: int=None,
-			max_searches: int=None, grounded: bool = False, image_search: bool = False,
-			response_format: str=None, **kwargs: Any ) -> Any:
+			max_tools: int=None, max_searches: int=None, grounded: bool = False,
+			image_search: bool=False, response_format: str=None, **kwargs: Any ) -> Any:
 		"""Generate.
 		
 		Purpose:
@@ -3776,7 +3613,6 @@ class Image( Grok ):
 				response_format or fmt or mime_type )
 			self.mask_path = mask_path or mask
 			self.extra_kwargs = kwargs or { }
-			
 			if str( self.image_path ).startswith( 'http://' ) or str(
 					self.image_path ).startswith( 'https://' ):
 				self.image_url = str( self.image_path )
@@ -3786,15 +3622,12 @@ class Image( Grok ):
 				self.image_url = self.encode_image_data_uri( self.image_path )
 			
 			self.build_edit_request( )
-			self.response = requests.post(
-				url=f'{self.base_url.rstrip( "/" )}/images/edits',
+			self.response = requests.post( url=f'{self.base_url.rstrip( "/" )}/images/edits',
 				headers={
 						'Authorization': f'Bearer {self.api_key}',
 						'Content-Type': 'application/json',
 				},
-				json=self.request,
-				timeout=self.timeout or 3600,
-			)
+				json=self.request, timeout=self.timeout or 3600, )
 			self.response.raise_for_status( )
 			self.output = self.response.json( )
 			return self.output
