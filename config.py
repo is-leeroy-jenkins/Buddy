@@ -304,11 +304,17 @@ GROK_MODES = [ 'Text',
                'Data Management',
                'Export' ]
 
-GROK_COLLECTIONS = [ { 'DOD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6'},
-                     { 'DOA Regulations': 'collection_dbf8919e-5f56-435b-806b-642cd57c355e'},
-                     { 'Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2'},
-                     { 'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93' },
-                     { 'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee' }, ]
+GROK_COLLECTIONS = { 'DoD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6',
+                     'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
+                     'Army Techniques Publications': 'collection_bbcf0fe6-7568-4a76-bb2a-1ff100ecd585',
+                     'Army Style Guides': 'collection_fcf99d97-2512-42ed-bd18-d85bfb8e1cba',
+                     'Army Field Manuals': 'collection_6e334f5c-2557-42ef-9719-545f23049106',
+                     'DoD Data': 'collection_137a5ed3-2f20-4082-bf44-73df43a356a4',
+                     'DoD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6',
+                     'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
+                     'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
+                     'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
+                     'Governance': 'collection_a01f0ed0-37a9-4323-8691-9a9de9d7053a' }
 
 
 # ---------------- GEMINI CONFIG ------------------

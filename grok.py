@@ -208,20 +208,20 @@ class Chat( Grok ):
 	response: Optional[ Any ]
 	file_path: Optional[ str ]
 	
-	def __init__( self, model: str = 'grok-4.20', prompt: str = None, temperature: float = None,
-			top_p: float = None, presense: float = None, presence: float = None, store: bool = None,
-			stream: bool = None, stops: List[ str ] = None,
-			response_format: Dict[ str, Any ] = None,
-			number: int = None, instruct: str = None, context: List[ Dict[ str, str ] ] = None,
-			allowed_domains: List[ str ] = None, include: List[ str ] = None,
-			tools: List[ Dict[ str, Any ] ] = None, max_tools: int = None,
-			tool_choice: str = None, file_path: str = None, background: bool = None,
-			is_parallel: bool = None, max_tokens: int = None, frequency: float = None,
-			input: List[ Dict[ str, Any ] ] = None, file_ids: List[ str ] = None,
-			previous_id: str = None, conversation_id: str = None,
-			reasoning: Dict[ str, str ] | str = None, output_text: str = None,
-			max_search_results: int = None, content: str = None,
-			vector_store_ids: List[ str ] = None ):
+	def __init__( self, model: str='grok-4.20', prompt: str=None, temperature: float=None,
+			top_p: float=None, presense: float=None, presence: float=None, store: bool = None,
+			stream: bool = None, stops: List[ str ]=None,
+			response_format: Dict[ str, Any ]=None,
+			number: int=None, instruct: str=None, context: List[ Dict[ str, str ] ]=None,
+			allowed_domains: List[ str ]=None, include: List[ str ]=None,
+			tools: List[ Dict[ str, Any ] ]=None, max_tools: int=None,
+			tool_choice: str=None, file_path: str=None, background: bool = None,
+			is_parallel: bool = None, max_tokens: int=None, frequency: float=None,
+			input: List[ Dict[ str, Any ] ]=None, file_ids: List[ str ]=None,
+			previous_id: str=None, conversation_id: str=None,
+			reasoning: Dict[ str, str ] | str = None, output_text: str=None,
+			max_search_results: int=None, content: str=None,
+			vector_store_ids: List[ str ]=None ):
 		"""Initialize instance.
 		
 		Purpose:
@@ -447,7 +447,7 @@ class Chat( Grok ):
 		"""
 		return [ 'auto', ]
 	
-	def build_reasoning( self, reasoning: str | Dict[ str, str ] = None ) -> Dict[
+	def build_reasoning( self, reasoning: str | Dict[ str, str ]=None ) -> Dict[
 		                                                                         str, str ] | None:
 		"""Build reasoning.
 		
@@ -494,8 +494,8 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_input( self, prompt: str, context: List[ Dict[ str, str ] ] = None,
-			input_data: List[ Dict[ str, Any ] ] = None ) -> List[ Dict[ str, Any ] ]:
+	def build_input( self, prompt: str, context: List[ Dict[ str, str ] ]=None,
+			input_data: List[ Dict[ str, Any ] ]=None ) -> List[ Dict[ str, Any ] ]:
 		"""Build input.
 		
 		Purpose:
@@ -563,12 +563,13 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_tools( self, tools: List[ Any ] = None, allowed_domains: List[ str ] = None,
-			vector_store_ids: List[ str ] = None ) -> List[ Dict[ str, Any ] ] | None:
+	def build_tools( self, tools: List[ Any ]=None, allowed_domains: List[ str ]=None,
+			vector_store_ids: List[ str ]=None ) -> List[ Dict[ str, Any ] ] | None:
 		"""Build tools.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the 
+		    resulting state on the instance for provider execution.
 		
 		Args:
 		    tools (List[Any]): Tools supplied to the xAI workflow.
@@ -600,7 +601,7 @@ class Chat( Grok ):
 				if tool_type == 'web_search':
 					built_tool = { 'type': 'web_search' }
 					if len( self.allowed_domains ) > 0:
-						built_tool[ 'allowed_domains' ] = self.allowed_domains
+						built_tool[ 'allowed_domains' ]=self.allowed_domains
 					
 					self.built_tools.append( built_tool )
 					continue
@@ -613,8 +614,7 @@ class Chat( Grok ):
 					if len( self.vector_store_ids ) == 0:
 						continue
 					
-					self.built_tools.append(
-						{
+					self.built_tools.append( {
 								'type': 'collections_search',
 								'collection_ids': self.vector_store_ids,
 						} )
@@ -633,12 +633,13 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_tool_choice( self, tool_choice: str = None,
-			tools: List[ Dict[ str, Any ] ] = None ) -> str | None:
+	def build_tool_choice( self, tool_choice: str=None,
+			tools: List[ Dict[ str, Any ] ]=None ) -> str | None:
 		"""Build tool choice.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the 
+		    resulting state on the instance for provider execution.
 		
 		Args:
 		    tool_choice (str): Tool choice supplied to the xAI workflow.
@@ -673,12 +674,13 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_include( self, include: List[ str ] = None,
-			tools: List[ Dict[ str, Any ] ] = None ) -> List[ str ] | None:
+	def build_include( self, include: List[ str ]=None,
+			tools: List[ Dict[ str, Any ] ]=None ) -> List[ str ] | None:
 		"""Build include.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores 
+		    the resulting state on the instance for provider execution.
 		
 		Args:
 		    include (List[str]): Include supplied to the xAI workflow.
@@ -739,12 +741,13 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_text_format( self, format: Dict[ str, Any ] | str = None,
-			response_schema: Any = None ) -> Dict[ str, Any ] | None:
+	def build_text_format( self, format: Dict[ str, Any ] | str=None,
+			response_schema: Any=None ) -> Dict[ str, Any ] | None:
 		"""Build text format.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the 
+		    resulting state on the instance for provider execution.
 		
 		Args:
 		    format (Dict[str, Any] | str): Format supplied to the xAI workflow.
@@ -789,20 +792,21 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_request( self, prompt: str, model: str, temperature: float = None,
-			format: Dict[ str, Any ] = None, top_p: float = None, frequency: float = None,
-			max_tools: int = None, presence: float = None, max_tokens: int = None,
-			store: bool = None, stream: bool = None, instruct: str = None,
-			background: bool = False, reasoning: str = None, include: List[ str ] = None,
-			tools: List[ Any ] = None, allowed_domains: List[ str ] = None,
-			previous_id: str = None, tool_choice: str = None, is_parallel: bool = None,
-			context: List[ Dict[ str, str ] ] = None, input_data: List[ Dict[ str, Any ] ] = None,
-			vector_store_ids: List[ str ] = None, conversation_id: str = None,
-			response_schema: Any = None ) -> Dict[ str, Any ]:
+	def build_request( self, prompt: str, model: str, temperature: float=None,
+			format: Dict[ str, Any ]=None, top_p: float=None, frequency: float=None,
+			max_tools: int=None, presence: float=None, max_tokens: int=None,
+			store: bool = None, stream: bool = None, instruct: str=None,
+			background: bool = False, reasoning: str=None, include: List[ str ]=None,
+			tools: List[ Any ]=None, allowed_domains: List[ str ]=None,
+			previous_id: str=None, tool_choice: str=None, is_parallel: bool = None,
+			context: List[ Dict[ str, str ] ]=None, input_data: List[ Dict[ str, Any ] ]=None,
+			vector_store_ids: List[ str ]=None, conversation_id: str=None,
+			response_schema: Any=None ) -> Dict[ str, Any ]:
 		"""Build request.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+		    Builds normalized xAI request configuration from validated inputs and stores the 
+		    resulting state on the instance for provider execution.
 		
 		Args:
 		    prompt (str): Prompt supplied to the xAI workflow.
@@ -870,53 +874,53 @@ class Chat( Grok ):
 			}
 			
 			if self.instructions:
-				self.request[ 'instructions' ] = self.instructions
+				self.request[ 'instructions' ]=self.instructions
 			
 			if self.reasoning is not None and self.model == 'grok-4.20-multi-agent':
-				self.request[ 'reasoning' ] = self.reasoning
+				self.request[ 'reasoning' ]=self.reasoning
 			
 			if isinstance( self.max_output_tokens, int ) and self.max_output_tokens > 0:
-				self.request[ 'max_output_tokens' ] = self.max_output_tokens
+				self.request[ 'max_output_tokens' ]=self.max_output_tokens
 			
 			if self.temperature is not None:
-				self.request[ 'temperature' ] = self.temperature
+				self.request[ 'temperature' ]=self.temperature
 			
 			if self.top_percent is not None:
-				self.request[ 'top_p' ] = self.top_percent
+				self.request[ 'top_p' ]=self.top_percent
 			
 			if self.frequency_penalty is not None:
-				self.request[ 'frequency_penalty' ] = self.frequency_penalty
+				self.request[ 'frequency_penalty' ]=self.frequency_penalty
 			
 			if self.presence_penalty is not None:
-				self.request[ 'presence_penalty' ] = self.presence_penalty
+				self.request[ 'presence_penalty' ]=self.presence_penalty
 			
 			if self.store_messages is not None:
-				self.request[ 'store' ] = self.store_messages
+				self.request[ 'store' ]=self.store_messages
 			
 			# Stream and background are retained on self for layout/UI parity. This path returns final text.
 			if self.include is not None and len( self.include ) > 0:
-				self.request[ 'include' ] = self.include
+				self.request[ 'include' ]=self.include
 			
 			if self.tools is not None and len( self.tools ) > 0:
-				self.request[ 'tools' ] = self.tools
+				self.request[ 'tools' ]=self.tools
 			
 			if self.tool_choice:
-				self.request[ 'tool_choice' ] = self.tool_choice
+				self.request[ 'tool_choice' ]=self.tool_choice
 			
 			if self.parallel_tools is not None and self.tools is not None:
-				self.request[ 'parallel_tool_calls' ] = self.parallel_tools
+				self.request[ 'parallel_tool_calls' ]=self.parallel_tools
 			
 			if self.previous_id and self.previous_id.strip( ):
-				self.request[ 'previous_response_id' ] = self.previous_id.strip( )
+				self.request[ 'previous_response_id' ]=self.previous_id.strip( )
 			
 			if self.conversation_id and self.conversation_id.strip( ):
-				self.request[ 'conversation' ] = self.conversation_id.strip( )
+				self.request[ 'conversation' ]=self.conversation_id.strip( )
 			
 			if isinstance( self.max_tools, int ) and self.max_tools > 0 and self.tools is not None:
-				self.request[ 'max_tool_calls' ] = self.max_tools
+				self.request[ 'max_tool_calls' ]=self.max_tools
 			
 			if self.response_format is not None and len( self.response_format ) > 0:
-				self.request[ 'text' ] = self.response_format
+				self.request[ 'text' ]=self.response_format
 			
 			return self.request
 		except Exception as e:
@@ -931,7 +935,8 @@ class Chat( Grok ):
 		"""Get output text.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, or 
+		    downstream request construction.
 		
 		Returns:
 		    str | None: Result produced by the xAI workflow.
@@ -979,7 +984,8 @@ class Chat( Grok ):
 		"""Get usage.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+		    Retrieves normalized xAI provider state or response data for display, reuse, 
+		    or downstream request construction.
 		
 		Returns:
 		    Any: Result produced by the xAI workflow.
@@ -1000,20 +1006,20 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str, temperature: float = None,
-			format: Dict[ str, Any ] = None, top_p: float = None, top_k: int = None,
-			frequency: float = None, max_tools: int = None, presence: float = None,
-			max_tokens: int = None, store: bool = None, stream: bool = None,
-			instruct: str = None, background: bool = False, reasoning: str = None,
-			include: List[ str ] = None, tools: List[ Any ] = None,
-			allowed_domains: List[ str ] = None, previous_id: str = None,
-			tool_choice: str = None, is_parallel: bool = None,
-			context: List[ Dict[ str, str ] ] = None, input_data: List[ Dict[ str, Any ] ] = None,
-			vector_store_ids: List[ str ] = None, conversation_id: str = None,
+	def generate_text( self, prompt: str, model: str, temperature: float=None,
+			format: Dict[ str, Any ]=None, top_p: float=None, top_k: int=None,
+			frequency: float=None, max_tools: int=None, presence: float=None,
+			max_tokens: int=None, store: bool = None, stream: bool = None,
+			instruct: str=None, background: bool = False, reasoning: str=None,
+			include: List[ str ]=None, tools: List[ Any ]=None,
+			allowed_domains: List[ str ]=None, previous_id: str=None,
+			tool_choice: str=None, is_parallel: bool = None,
+			context: List[ Dict[ str, str ] ]=None, input_data: List[ Dict[ str, Any ] ]=None,
+			vector_store_ids: List[ str ]=None, conversation_id: str=None,
 			response_format: Dict[ str, Any ] | str = None, response_schema: Any = None,
-			number: int = None, modalities: List[ str ] = None, media_resolution: str = None,
-			content: str = None, urls: List[ str ] = None, max_urls: int = None,
-			safety_profile: str = None, **kwargs: Any ) -> str | None:
+			number: int=None, modalities: List[ str ]=None, media_resolution: str=None,
+			content: str=None, urls: List[ str ]=None, max_urls: int=None,
+			safety_profile: str=None, **kwargs: Any ) -> str | None:
 		"""Generate text.
 		
 		Purpose:
@@ -1158,12 +1164,12 @@ class Chat( Grok ):
 			raise exception
 	
 	def answer_document( self, prompt: str, document_text: str, model: str,
-			instructions: str = None, temperature: float = None, top_p: float = None,
-			frequency: float = None, presence: float = None, max_tokens: int = None,
-			store: bool = None, include: List[ str ] = None, tools: List[ str ] = None,
-			tool_choice: str = None, reasoning: str = None,
-			context: List[ Dict[ str, str ] ] = None,
-			vector_store_ids: List[ str ] = None ) -> str | None:
+			instructions: str=None, temperature: float=None, top_p: float=None,
+			frequency: float=None, presence: float=None, max_tokens: int=None,
+			store: bool = None, include: List[ str ]=None, tools: List[ str ]=None,
+			tool_choice: str=None, reasoning: str=None,
+			context: List[ Dict[ str, str ] ]=None,
+			vector_store_ids: List[ str ]=None ) -> str | None:
 		"""Answer document.
 		
 		Purpose:
@@ -1365,7 +1371,7 @@ class TTS( Grok ):
 	request: Optional[ Dict[ str, Any ] ]
 	response: Optional[ Any ]
 	
-	def __init__( self, model: str = 'xai-tts' ):
+	def __init__( self, model: str='xai-tts' ):
 		"""Initialize instance.
 		
 		Purpose:
@@ -1573,7 +1579,7 @@ class TTS( Grok ):
 				192000,
 		]
 	
-	def validate_voice( self, voice: str = None ) -> str:
+	def validate_voice( self, voice: str=None ) -> str:
 		"""Validate voice.
 		
 		Purpose:
@@ -1598,7 +1604,7 @@ class TTS( Grok ):
 			ex.method = 'validate_voice( self, voice: str=None ) -> str'
 			raise ex
 	
-	def validate_language( self, language: str = None ) -> str:
+	def validate_language( self, language: str=None ) -> str:
 		"""Validate language.
 		
 		Purpose:
@@ -1625,7 +1631,7 @@ class TTS( Grok ):
 			ex.method = 'validate_language( self, language: str=None ) -> str'
 			raise ex
 	
-	def validate_format( self, format: str = None ) -> str:
+	def validate_format( self, format: str=None ) -> str:
 		"""Validate format.
 		
 		Purpose:
@@ -1657,7 +1663,7 @@ class TTS( Grok ):
 			ex.method = 'validate_format( self, format: str=None ) -> str'
 			raise ex
 	
-	def validate_sample_rate( self, sample_rate: int = None ) -> int | None:
+	def validate_sample_rate( self, sample_rate: int=None ) -> int | None:
 		"""Validate sample rate.
 		
 		Purpose:
@@ -1685,7 +1691,7 @@ class TTS( Grok ):
 			ex.method = 'validate_sample_rate( self, sample_rate: int=None ) -> int | None'
 			raise ex
 	
-	def validate_bit_rate( self, bit_rate: int = None ) -> int | None:
+	def validate_bit_rate( self, bit_rate: int=None ) -> int | None:
 		"""Validate bit rate.
 		
 		Purpose:
@@ -1713,7 +1719,7 @@ class TTS( Grok ):
 			ex.method = 'validate_bit_rate( self, bit_rate: int=None ) -> int | None'
 			raise ex
 	
-	def validate_speed( self, speed: float = None ) -> float:
+	def validate_speed( self, speed: float=None ) -> float:
 		"""Validate speed.
 		
 		Purpose:
@@ -1756,10 +1762,10 @@ class TTS( Grok ):
 			self.output_format = { 'codec': self.response_format, }
 			
 			if self.sample_rate is not None:
-				self.output_format[ 'sample_rate' ] = self.sample_rate
+				self.output_format[ 'sample_rate' ]=self.sample_rate
 			
 			if self.response_format == 'mp3' and self.bit_rate is not None:
-				self.output_format[ 'bit_rate' ] = self.bit_rate
+				self.output_format[ 'bit_rate' ]=self.bit_rate
 			
 			return self.output_format
 		except Exception as e:
@@ -1790,13 +1796,13 @@ class TTS( Grok ):
 			self.output_format = self.build_output_format( )
 			
 			if self.output_format:
-				self.request[ 'output_format' ] = self.output_format
+				self.request[ 'output_format' ]=self.output_format
 			
 			if self.optimize_streaming_latency is not None:
-				self.request[ 'optimize_streaming_latency' ] = self.optimize_streaming_latency
+				self.request[ 'optimize_streaming_latency' ]=self.optimize_streaming_latency
 			
 			if self.text_normalization is not None:
-				self.request[ 'text_normalization' ] = self.text_normalization
+				self.request[ 'text_normalization' ]=self.text_normalization
 			
 			return self.request
 		except Exception as e:
@@ -1862,10 +1868,10 @@ class TTS( Grok ):
 			ex.method = 'extract_audio( self ) -> bytes | None'
 			raise ex
 	
-	def create_speech( self, text: str, model: str = 'xai-tts', format: str = 'mp3',
-			speed: float = 1.0, voice: str = 'eve', instruct: str = None, file_path: str = None,
-			language: str = 'auto', sample_rate: int = None, bit_rate: int = None,
-			optimize_streaming_latency: int = None, text_normalization: bool = None,
+	def create_speech( self, text: str, model: str='xai-tts', format: str='mp3',
+			speed: float=1.0, voice: str='eve', instruct: str=None, file_path: str=None,
+			language: str='auto', sample_rate: int=None, bit_rate: int=None,
+			optimize_streaming_latency: int=None, text_normalization: bool = None,
 			**kwargs: Any ) -> bytes | None:
 		"""Create speech.
 		
@@ -1917,9 +1923,9 @@ class TTS( Grok ):
 			ex.method = 'create_speech( self, text: str ) -> bytes | None'
 			raise ex
 	
-	def synthesize( self, text: str, model: str = 'xai-tts', format: str = 'mp3',
-			speed: float = 1.0, voice: str = 'eve', instruct: str = None, file_path: str = None,
-			language: str = 'auto', **kwargs: Any ) -> bytes | None:
+	def synthesize( self, text: str, model: str='xai-tts', format: str='mp3',
+			speed: float=1.0, voice: str='eve', instruct: str=None, file_path: str=None,
+			language: str='auto', **kwargs: Any ) -> bytes | None:
 		"""Synthesize.
 		
 		Purpose:
@@ -1950,9 +1956,9 @@ class TTS( Grok ):
 			ex.method = 'synthesize( self, text: str ) -> bytes | None'
 			raise ex
 	
-	def generate( self, text: str = None, prompt: str = None, model: str = 'xai-tts',
-			format: str = 'mp3', speed: float = 1.0, voice: str = 'eve', instruct: str = None,
-			file_path: str = None, language: str = 'auto', **kwargs: Any ) -> bytes | None:
+	def generate( self, text: str=None, prompt: str=None, model: str='xai-tts',
+			format: str='mp3', speed: float=1.0, voice: str='eve', instruct: str=None,
+			file_path: str=None, language: str='auto', **kwargs: Any ) -> bytes | None:
 		"""Generate.
 		
 		Purpose:
@@ -2079,10 +2085,10 @@ class Transcription( Grok ):
 	transcript: Optional[ str ]
 	request: Optional[ Dict[ str, Any ] ]
 	
-	def __init__( self, number: int = 1, model: str = 'grok-3-mini-fast',
-			temperature: float = 0.8, top_p: float = 0.9, frequency: float = 0.0,
-			presence: float = 0.0, max_tokens: int = 10000, store: bool = True,
-			stream: bool = False, language: str = 'en', instruct: str = None ):
+	def __init__( self, number: int=1, model: str='grok-3-mini-fast',
+			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
+			presence: float=0.0, max_tokens: int=10000, store: bool = True,
+			stream: bool = False, language: str='en', instruct: str=None ):
 		"""Initialize instance.
 		
 		Purpose:
@@ -2365,12 +2371,12 @@ class Transcription( Grok ):
 			ex.method = 'extract_transcript( self )'
 			raise ex
 	
-	def transcribe( self, path: str, model: str = 'grok-3-mini-fast', language: str = 'en',
-			prompt: str = None, temperature: float = None, top_p: float = None,
-			frequency: float = None, presence: float = None, max_tokens: int = None,
-			store: bool = None, stream: bool = None, instruct: str = None,
-			response_format: str = None, include: List[ str ] = None, mime_type: str = None,
-			start_time: float = None, end_time: float = None, **kwargs: Any ) -> str:
+	def transcribe( self, path: str, model: str='grok-3-mini-fast', language: str='en',
+			prompt: str=None, temperature: float=None, top_p: float=None,
+			frequency: float=None, presence: float=None, max_tokens: int=None,
+			store: bool = None, stream: bool = None, instruct: str=None,
+			response_format: str=None, include: List[ str ]=None, mime_type: str=None,
+			start_time: float=None, end_time: float=None, **kwargs: Any ) -> str:
 		"""Transcribe.
 		
 		Purpose:
@@ -2511,10 +2517,10 @@ class Translation( Grok ):
 	translation: Optional[ str ]
 	request: Optional[ Dict[ str, Any ] ]
 	
-	def __init__( self, model: str = 'grok-3-fast', temperature: float = 0.8,
-			top_p: float = 0.9, frequency: float = 0.0, presence: float = 0.0,
-			max_tokens: int = 10000, store: bool = True, stream: bool = False,
-			instruct: str = None ):
+	def __init__( self, model: str='grok-3-fast', temperature: float=0.8,
+			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
+			max_tokens: int=10000, store: bool = True, stream: bool = False,
+			instruct: str=None ):
 		"""Initialize instance.
 		
 		Purpose:
@@ -2800,12 +2806,12 @@ class Translation( Grok ):
 			ex.method = 'extract_translation( self )'
 			raise ex
 	
-	def translate( self, path: str, model: str = 'grok-3-fast', language: str = 'English',
-			prompt: str = None, source_language: str = None, temperature: float = None,
-			top_p: float = None, frequency: float = None, presence: float = None,
-			max_tokens: int = None, store: bool = None, stream: bool = None,
-			instruct: str = None, response_format: str = None, include: List[ str ] = None,
-			mime_type: str = None, **kwargs: Any ) -> str:
+	def translate( self, path: str, model: str='grok-3-fast', language: str='English',
+			prompt: str=None, source_language: str=None, temperature: float=None,
+			top_p: float=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, store: bool = None, stream: bool = None,
+			instruct: str=None, response_format: str=None, include: List[ str ]=None,
+			mime_type: str=None, **kwargs: Any ) -> str:
 		"""Translate.
 		
 		Purpose:
@@ -3202,7 +3208,7 @@ class Image( Grok ):
 			ex.method = 'initialize_client( self )'
 			raise ex
 	
-	def normalize_resolution( self, value: str = None ) -> str | None:
+	def normalize_resolution( self, value: str=None ) -> str | None:
 		"""Normalize resolution.
 		
 		Purpose:
@@ -3230,7 +3236,7 @@ class Image( Grok ):
 			ex.method = 'normalize_resolution( self, value )'
 			raise ex
 	
-	def normalize_response_format( self, value: str = None ) -> str | None:
+	def normalize_response_format( self, value: str=None ) -> str | None:
 		"""Normalize response format.
 		
 		Purpose:
@@ -3318,7 +3324,7 @@ class Image( Grok ):
 			if not isinstance( output, list ):
 				return None
 			
-			text_parts: List[ str ] = [ ]
+			text_parts: List[ str ]=[ ]
 			for item in output:
 				if getattr( item, 'type', None ) != 'message':
 					continue
@@ -3356,7 +3362,7 @@ class Image( Grok ):
 			
 			data = getattr( self.response, 'data', None )
 			if isinstance( data, list ) and len( data ) > 0:
-				results: List[ Any ] = [ ]
+				results: List[ Any ]=[ ]
 				
 				for item in data:
 					url = getattr( item, 'url', None )
@@ -3413,19 +3419,19 @@ class Image( Grok ):
 			self.extra_body = { }
 			
 			if isinstance( self.number, int ) and self.number > 0:
-				self.request[ 'n' ] = self.number
+				self.request[ 'n' ]=self.number
 			
 			if self.response_format:
-				self.request[ 'response_format' ] = self.response_format
+				self.request[ 'response_format' ]=self.response_format
 			
 			if self.aspect_ratio:
-				self.extra_body[ 'aspect_ratio' ] = self.aspect_ratio
+				self.extra_body[ 'aspect_ratio' ]=self.aspect_ratio
 			
 			if self.resolution:
-				self.extra_body[ 'resolution' ] = self.resolution
+				self.extra_body[ 'resolution' ]=self.resolution
 			
 			if self.extra_body:
-				self.request[ 'extra_body' ] = self.extra_body
+				self.request[ 'extra_body' ]=self.extra_body
 			
 			return self.request
 		except Exception as e:
@@ -3458,13 +3464,13 @@ class Image( Grok ):
 			}
 			
 			if self.response_format:
-				self.request[ 'response_format' ] = self.response_format
+				self.request[ 'response_format' ]=self.response_format
 			
 			if self.aspect_ratio:
-				self.request[ 'aspect_ratio' ] = self.aspect_ratio
+				self.request[ 'aspect_ratio' ]=self.aspect_ratio
 			
 			if self.resolution:
-				self.request[ 'resolution' ] = self.resolution
+				self.request[ 'resolution' ]=self.resolution
 			
 			return self.request
 		except Exception as e:
@@ -3507,19 +3513,19 @@ class Image( Grok ):
 			}
 			
 			if self.detail:
-				self.request[ 'input' ][ 0 ][ 'content' ][ 0 ][ 'detail' ] = self.detail
+				self.request[ 'input' ][ 0 ][ 'content' ][ 0 ][ 'detail' ]=self.detail
 			
 			if isinstance( self.max_output_tokens, int ) and self.max_output_tokens > 0:
-				self.request[ 'max_output_tokens' ] = self.max_output_tokens
+				self.request[ 'max_output_tokens' ]=self.max_output_tokens
 			
 			if self.temperature is not None:
-				self.request[ 'temperature' ] = self.temperature
+				self.request[ 'temperature' ]=self.temperature
 			
 			if self.top_percent is not None:
-				self.request[ 'top_p' ] = self.top_percent
+				self.request[ 'top_p' ]=self.top_percent
 			
 			if self.store is not None:
-				self.request[ 'store' ] = self.store
+				self.request[ 'store' ]=self.store
 			
 			return self.request
 		except Exception as e:
@@ -3529,18 +3535,18 @@ class Image( Grok ):
 			ex.method = 'build_analysis_request( self )'
 			raise ex
 	
-	def generate( self, prompt: str, model: str = 'grok-imagine-image', number: int = None,
-			size: str = None, quality: str = None, style: str = None, fmt: str = None,
-			mime_type: str = None, compression: float = None, background: str = None,
-			aspect_ratio: str = None, response_modalities: str = None, temperature: float = None,
-			top_p: float = None, top_k: int = None, frequency: float = None, presence: float = None,
-			max_tokens: int = None, instruct: str = None, tools: List[ Any ] = None,
-			tool_choice: str = None, include: List[ str ] = None,
-			allowed_domains: List[ str ] = None,
+	def generate( self, prompt: str, model: str='grok-imagine-image', number: int=None,
+			size: str=None, quality: str=None, style: str=None, fmt: str=None,
+			mime_type: str=None, compression: float=None, background: str=None,
+			aspect_ratio: str=None, response_modalities: str=None, temperature: float=None,
+			top_p: float=None, top_k: int=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, instruct: str=None, tools: List[ Any ]=None,
+			tool_choice: str=None, include: List[ str ]=None,
+			allowed_domains: List[ str ]=None,
 			store: bool = None, stream: bool = None, is_parallel: bool = None,
-			max_tools: int = None,
-			max_searches: int = None, grounded: bool = False, image_search: bool = False,
-			response_format: str = None, **kwargs: Any ) -> Any:
+			max_tools: int=None,
+			max_searches: int=None, grounded: bool = False, image_search: bool = False,
+			response_format: str=None, **kwargs: Any ) -> Any:
 		"""Generate.
 		
 		Purpose:
@@ -3631,11 +3637,11 @@ class Image( Grok ):
 			ex.method = 'generate( self, prompt: str, model: str )'
 			raise ex
 	
-	def generate_image( self, prompt: str, model: str = 'grok-imagine-image',
-			number: int = None, size: str = None, quality: str = None, style: str = None,
-			fmt: str = None, mime_type: str = None, compression: float = None,
-			background: str = None, aspect_ratio: str = None,
-			response_modalities: str = None, **kwargs: Any ) -> Any:
+	def generate_image( self, prompt: str, model: str='grok-imagine-image',
+			number: int=None, size: str=None, quality: str=None, style: str=None,
+			fmt: str=None, mime_type: str=None, compression: float=None,
+			background: str=None, aspect_ratio: str=None,
+			response_modalities: str=None, **kwargs: Any ) -> Any:
 		"""Generate image.
 		
 		Purpose:
@@ -3671,9 +3677,9 @@ class Image( Grok ):
 			ex.method = 'generate_image( self, prompt: str, model: str )'
 			raise ex
 	
-	def create( self, prompt: str, model: str = 'grok-imagine-image', resolution: str = None,
-			aspect_ratio: str = None, format: str = None, number: int = None,
-			quality: str = None, style: str = None, **kwargs: Any ) -> Any:
+	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str=None,
+			aspect_ratio: str=None, format: str=None, number: int=None,
+			quality: str=None, style: str=None, **kwargs: Any ) -> Any:
 		"""Create.
 		
 		Purpose:
@@ -3704,7 +3710,7 @@ class Image( Grok ):
 			ex.method = 'create( self, prompt: str, model: str )'
 			raise ex
 	
-	def create_image( self, prompt: str, model: str = 'grok-imagine-image',
+	def create_image( self, prompt: str, model: str='grok-imagine-image',
 			**kwargs: Any ) -> Any:
 		"""Create image.
 		
@@ -3728,10 +3734,10 @@ class Image( Grok ):
 			ex.method = 'create_image( self, prompt: str, model: str )'
 			raise ex
 	
-	def edit( self, image_path: str = None, prompt: str = None, model: str = 'grok-imagine-image',
-			aspect_ratio: str = None, resolution: str = None, quality: str = None,
-			response_format: str = None, path: str = None, mask_path: str = None, mask: str = None,
-			size: str = None, fmt: str = None, mime_type: str = None, **kwargs: Any ) -> Any:
+	def edit( self, image_path: str=None, prompt: str=None, model: str='grok-imagine-image',
+			aspect_ratio: str=None, resolution: str=None, quality: str=None,
+			response_format: str=None, path: str=None, mask_path: str=None, mask: str=None,
+			size: str=None, fmt: str=None, mime_type: str=None, **kwargs: Any ) -> Any:
 		"""Edit.
 		
 		Purpose:
@@ -3799,8 +3805,8 @@ class Image( Grok ):
 			ex.method = 'edit( self, image_path: str, prompt: str )'
 			raise ex
 	
-	def edit_image( self, image_path: str = None, prompt: str = None,
-			model: str = 'grok-imagine-image', **kwargs: Any ) -> Any:
+	def edit_image( self, image_path: str=None, prompt: str=None,
+			model: str='grok-imagine-image', **kwargs: Any ) -> Any:
 		"""Edit image.
 		
 		Purpose:
@@ -3824,8 +3830,8 @@ class Image( Grok ):
 			ex.method = 'edit_image( self, image_path: str, prompt: str )'
 			raise ex
 	
-	def modify( self, image_path: str = None, prompt: str = None,
-			model: str = 'grok-imagine-image', **kwargs: Any ) -> Any:
+	def modify( self, image_path: str=None, prompt: str=None,
+			model: str='grok-imagine-image', **kwargs: Any ) -> Any:
 		"""Modify.
 		
 		Purpose:
@@ -3849,8 +3855,8 @@ class Image( Grok ):
 			ex.method = 'modify( self, image_path: str, prompt: str )'
 			raise ex
 	
-	def generate_edit( self, image_path: str = None, prompt: str = None,
-			model: str = 'grok-imagine-image', **kwargs: Any ) -> Any:
+	def generate_edit( self, image_path: str=None, prompt: str=None,
+			model: str='grok-imagine-image', **kwargs: Any ) -> Any:
 		"""Generate edit.
 		
 		Purpose:
@@ -3874,9 +3880,9 @@ class Image( Grok ):
 			ex.method = 'generate_edit( self, image_path: str, prompt: str )'
 			raise ex
 	
-	def analyze( self, prompt: str, image_url: str = None, model: str = 'grok-4.20-reasoning',
-			max_output_tokens: int = 10000, temperature: float = None, top_p: float = None,
-			detail: str = 'high', image_path: str = None, path: str = None, store: bool = False,
+	def analyze( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
+			max_output_tokens: int=10000, temperature: float=None, top_p: float=None,
+			detail: str='high', image_path: str=None, path: str=None, store: bool = False,
 			**kwargs: Any ) -> str | None:
 		"""Analyze.
 		
@@ -3931,8 +3937,8 @@ class Image( Grok ):
 			ex.method = 'analyze( self, prompt: str, image_url: str )'
 			raise ex
 	
-	def analyze_image( self, prompt: str, image_url: str = None, model: str = 'grok-4.20-reasoning',
-			image_path: str = None, path: str = None, **kwargs: Any ) -> str | None:
+	def analyze_image( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
+			image_path: str=None, path: str=None, **kwargs: Any ) -> str | None:
 		"""Analyze image.
 		
 		Purpose:
@@ -3959,8 +3965,8 @@ class Image( Grok ):
 			ex.method = 'analyze_image( self, prompt: str, image_url: str )'
 			raise ex
 	
-	def vision( self, prompt: str, image_url: str = None, model: str = 'grok-4.20-reasoning',
-			image_path: str = None, path: str = None, **kwargs: Any ) -> str | None:
+	def vision( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
+			image_path: str=None, path: str=None, **kwargs: Any ) -> str | None:
 		"""Vision.
 		
 		Purpose:
@@ -3987,8 +3993,8 @@ class Image( Grok ):
 			ex.method = 'vision( self, prompt: str, image_url: str )'
 			raise ex
 	
-	def describe( self, prompt: str, image_url: str = None, model: str = 'grok-4.20-reasoning',
-			image_path: str = None, path: str = None, **kwargs: Any ) -> str | None:
+	def describe( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
+			image_path: str=None, path: str=None, **kwargs: Any ) -> str | None:
 		"""Describe.
 		
 		Purpose:
@@ -4329,7 +4335,7 @@ class Files( Grok ):
 		"""
 		try:
 			headers = self.build_headers( )
-			headers[ 'Content-Type' ] = 'application/json'
+			headers[ 'Content-Type' ]='application/json'
 			return headers
 		except Exception as e:
 			ex = Error( e )
@@ -4391,7 +4397,7 @@ class Files( Grok ):
 			if not isinstance( output, list ):
 				return None
 			
-			parts: List[ str ] = [ ]
+			parts: List[ str ]=[ ]
 			for item in output:
 				if getattr( item, 'type', None ) != 'message':
 					continue
@@ -4486,22 +4492,22 @@ class Files( Grok ):
 			self.request = { }
 			
 			if self.team_id:
-				self.request[ 'team_id' ] = self.team_id
+				self.request[ 'team_id' ]=self.team_id
 			
 			if isinstance( self.limit, int ) and self.limit > 0:
-				self.request[ 'limit' ] = self.limit
+				self.request[ 'limit' ]=self.limit
 			
 			if self.next_token:
-				self.request[ 'next_token' ] = self.next_token
+				self.request[ 'next_token' ]=self.next_token
 			
 			if self.order:
-				self.request[ 'order' ] = self.order
+				self.request[ 'order' ]=self.order
 			
 			if self.sort_by:
-				self.request[ 'sort_by' ] = self.sort_by
+				self.request[ 'sort_by' ]=self.sort_by
 			
 			if self.filter:
-				self.request[ 'filter' ] = self.filter
+				self.request[ 'filter' ]=self.filter
 			
 			return self.request
 		except Exception as e:
@@ -4548,7 +4554,7 @@ class Files( Grok ):
 			self.request = { }
 			
 			if self.team_id:
-				self.request[ 'team_id' ] = self.team_id
+				self.request[ 'team_id' ]=self.team_id
 			
 			return self.request
 		except Exception as e:
@@ -4596,13 +4602,13 @@ class Files( Grok ):
 			self.request = { }
 			
 			if self.team_id:
-				self.request[ 'team_id' ] = self.team_id
+				self.request[ 'team_id' ]=self.team_id
 			
 			if self.download_format:
-				self.request[ 'format' ] = self.download_format
+				self.request[ 'format' ]=self.download_format
 			
 			if isinstance( self.page_number, int ) and self.page_number > 0:
-				self.request[ 'page_number' ] = self.page_number
+				self.request[ 'page_number' ]=self.page_number
 			
 			return self.request
 		except Exception as e:
@@ -4660,7 +4666,7 @@ class Files( Grok ):
 			self.request = { }
 			
 			if self.team_id:
-				self.request[ 'team_id' ] = self.team_id
+				self.request[ 'team_id' ]=self.team_id
 			
 			return self.request
 		except Exception as e:
@@ -4754,43 +4760,43 @@ class Files( Grok ):
 					'content': self.build_file_input( ),
 			} ], }
 			if self.instructions:
-				self.request[ 'instructions' ] = self.instructions
+				self.request[ 'instructions' ]=self.instructions
 			
 			if isinstance( self.max_output_tokens, int ) and self.max_output_tokens > 0:
-				self.request[ 'max_output_tokens' ] = self.max_output_tokens
+				self.request[ 'max_output_tokens' ]=self.max_output_tokens
 			
 			if self.temperature is not None:
-				self.request[ 'temperature' ] = self.temperature
+				self.request[ 'temperature' ]=self.temperature
 			
 			if self.top_percent is not None:
-				self.request[ 'top_p' ] = self.top_percent
+				self.request[ 'top_p' ]=self.top_percent
 			
 			if self.frequency_penalty is not None:
-				self.request[ 'frequency_penalty' ] = self.frequency_penalty
+				self.request[ 'frequency_penalty' ]=self.frequency_penalty
 			
 			if self.presence_penalty is not None:
-				self.request[ 'presence_penalty' ] = self.presence_penalty
+				self.request[ 'presence_penalty' ]=self.presence_penalty
 			
 			if self.store is not None:
-				self.request[ 'store' ] = self.store
+				self.request[ 'store' ]=self.store
 			
 			if self.include:
-				self.request[ 'include' ] = self.include
+				self.request[ 'include' ]=self.include
 			
 			if self.tools:
-				self.request[ 'tools' ] = self.tools
+				self.request[ 'tools' ]=self.tools
 			
 			if self.tool_choice:
-				self.request[ 'tool_choice' ] = self.tool_choice
+				self.request[ 'tool_choice' ]=self.tool_choice
 			
 			if self.previous_id:
-				self.request[ 'previous_response_id' ] = self.previous_id
+				self.request[ 'previous_response_id' ]=self.previous_id
 			
 			if self.conversation_id:
-				self.request[ 'conversation' ] = self.conversation_id
+				self.request[ 'conversation' ]=self.conversation_id
 			
 			if self.response_format:
-				self.request[ 'text' ] = { 'format': { 'type': self.response_format, } }
+				self.request[ 'text' ]={ 'format': { 'type': self.response_format, } }
 			
 			return self.request
 		except Exception as e:
@@ -4820,7 +4826,7 @@ class Files( Grok ):
 			ex.method = 'execute_file_response( self )'
 			raise ex
 	
-	def upload( self, filepath: str, filename: str = None, purpose: str = 'assistants',
+	def upload( self, filepath: str, filename: str=None, purpose: str='assistants',
 			**kwargs: Any ) -> Any:
 		"""Upload.
 		
@@ -4851,8 +4857,8 @@ class Files( Grok ):
 			ex.method = 'upload( self, filepath: str, filename: str=None )'
 			raise ex
 	
-	def list( self, limit: int = None, next_token: str = None, order: str = None,
-			sort_by: str = None, filter: str = None, team_id: str = None, **kwargs: Any ) -> Any:
+	def list( self, limit: int=None, next_token: str=None, order: str=None,
+			sort_by: str=None, filter: str=None, team_id: str=None, **kwargs: Any ) -> Any:
 		"""List.
 		
 		Purpose:
@@ -4887,8 +4893,8 @@ class Files( Grok ):
 			ex.method = 'list( self )'
 			raise ex
 	
-	def list_files( self, limit: int = None, next_token: str = None, order: str = None,
-			sort_by: str = None, filter: str = None, team_id: str = None, **kwargs: Any ) -> Any:
+	def list_files( self, limit: int=None, next_token: str=None, order: str=None,
+			sort_by: str=None, filter: str=None, team_id: str=None, **kwargs: Any ) -> Any:
 		"""List files.
 		
 		Purpose:
@@ -4916,7 +4922,7 @@ class Files( Grok ):
 			ex.method = 'list_files( self )'
 			raise ex
 	
-	def retrieve( self, file_id: str, team_id: str = None, **kwargs: Any ) -> Any:
+	def retrieve( self, file_id: str, team_id: str=None, **kwargs: Any ) -> Any:
 		"""Retrieve.
 		
 		Purpose:
@@ -4944,8 +4950,8 @@ class Files( Grok ):
 			ex.method = 'retrieve( self, file_id: str )'
 			raise ex
 	
-	def extract( self, file_id: str, format: str = None, page_number: int = None,
-			team_id: str = None, **kwargs: Any ) -> bytes | str | None:
+	def extract( self, file_id: str, format: str=None, page_number: int=None,
+			team_id: str=None, **kwargs: Any ) -> bytes | str | None:
 		"""Extract.
 		
 		Purpose:
@@ -4977,8 +4983,8 @@ class Files( Grok ):
 			ex.method = 'extract( self, file_id: str )'
 			raise ex
 	
-	def download( self, file_id: str, format: str = None, page_number: int = None,
-			team_id: str = None, **kwargs: Any ) -> bytes | str | None:
+	def download( self, file_id: str, format: str=None, page_number: int=None,
+			team_id: str=None, **kwargs: Any ) -> bytes | str | None:
 		"""Download.
 		
 		Purpose:
@@ -5004,7 +5010,7 @@ class Files( Grok ):
 			ex.method = 'download( self, file_id: str )'
 			raise ex
 	
-	def delete( self, file_id: str, team_id: str = None, **kwargs: Any ) -> Any:
+	def delete( self, file_id: str, team_id: str=None, **kwargs: Any ) -> Any:
 		"""Delete.
 		
 		Purpose:
@@ -5032,13 +5038,13 @@ class Files( Grok ):
 			ex.method = 'delete( self, file_id: str )'
 			raise ex
 	
-	def summarize( self, filepath: str = None, filename: str = None, prompt: str = None,
-			file_id: str = None, model: str = 'grok-4.20-reasoning', temperature: float = None,
-			top_p: float = None, frequency: float = None, presence: float = None,
-			max_tokens: int = None, store: bool = None, stream: bool = None,
-			instruct: str = None, include: List[ str ] = None, tools: List[ Any ] = None,
-			tool_choice: str = None, previous_id: str = None, conversation_id: str = None,
-			purpose: str = 'assistants', **kwargs: Any ) -> str | None:
+	def summarize( self, filepath: str=None, filename: str=None, prompt: str=None,
+			file_id: str=None, model: str='grok-4.20-reasoning', temperature: float=None,
+			top_p: float=None, frequency: float=None, presence: float=None,
+			max_tokens: int=None, store: bool = None, stream: bool = None,
+			instruct: str=None, include: List[ str ]=None, tools: List[ Any ]=None,
+			tool_choice: str=None, previous_id: str=None, conversation_id: str=None,
+			purpose: str='assistants', **kwargs: Any ) -> str | None:
 		"""Summarize.
 		
 		Purpose:
@@ -5111,10 +5117,10 @@ class Files( Grok ):
 			raise ex
 	
 	def survey( self, filepaths: List[ str ], filenames: List[ str ], prompt: str,
-			model: str = 'grok-4.20-reasoning', temperature: float = None, top_p: float = None,
-			frequency: float = None, presence: float = None, max_tokens: int = None,
-			store: bool = None, stream: bool = None, instruct: str = None,
-			purpose: str = 'assistants', **kwargs: Any ) -> str | None:
+			model: str='grok-4.20-reasoning', temperature: float=None, top_p: float=None,
+			frequency: float=None, presence: float=None, max_tokens: int=None,
+			store: bool = None, stream: bool = None, instruct: str=None,
+			purpose: str='assistants', **kwargs: Any ) -> str | None:
 		"""Survey.
 		
 		Purpose:
@@ -5498,7 +5504,7 @@ class VectorStores( Grok ):
 			f'enabling remote collection management.'
 		)
 	
-	def create( self, name: str, model: str = None ) -> Any:
+	def create( self, name: str, model: str=None ) -> Any:
 		"""Create.
 		
 		Purpose:
@@ -5585,7 +5591,7 @@ class VectorStores( Grok ):
 			ex.method = 'retrieve( self, store_id: str ) -> Dict[ str, Any ]'
 			raise ex
 	
-	def search( self, prompt: str, store_id: str, model: str = 'grok-4-fast' ) -> Any:
+	def search( self, prompt: str, store_id: str, model: str='grok-4-fast' ) -> Any:
 		"""Search.
 		
 		Purpose:
@@ -5618,7 +5624,7 @@ class VectorStores( Grok ):
 			ex.method = 'search( self, prompt: str, store_id: str, model: str ) -> Any'
 			raise ex
 	
-	def survey( self, prompt: str, store_ids: List[ str ], model: str = 'grok-4-fast' ) -> Any:
+	def survey( self, prompt: str, store_ids: List[ str ], model: str='grok-4-fast' ) -> Any:
 		"""Survey.
 		
 		Purpose:
@@ -5652,7 +5658,7 @@ class VectorStores( Grok ):
 			ex.method = 'survey( self, prompt: str, store_ids: List[ str ], model: str ) -> Any'
 			raise ex
 	
-	def update( self, store_id: str, filepath: str = None, filename: str = None ) -> Any:
+	def update( self, store_id: str, filepath: str=None, filename: str=None ) -> Any:
 		"""Update.
 		
 		Purpose:
