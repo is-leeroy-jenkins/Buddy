@@ -1300,7 +1300,7 @@ def normalize( obj: Any ) -> Any:
 	    session state, provider configuration, and local data processing.
 	
 	Args:
-	    obj: Object or nested value to normalize for safe display, serialization, or provider
+	    obj: value to normalize for safe display, serialization, or provider
 	    handling.
 	
 	Returns:
@@ -13311,9 +13311,8 @@ elif mode == 'Document Q&A':
 				st.selectbox( label='Use Template', options=template_options,
 					key='docqna_instruction_prompt_id', on_change=load_docqna_instruction,
 					format_func=lambda prompt_id: (
-						'Select Template' if prompt_id is None and selected_category else 'Select '
-						                                                                  'Category First' if prompt_id is None else format_prompt_option(
-							prompt_id=prompt_id, prompts=prompt_lookup, )),
+						'Select Template' if prompt_id is None and selected_category else 'Select Category First'
+						if prompt_id is None else format_prompt_option( prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
 					help='Load a System Instructions template for Document Q&A.', )
 			
