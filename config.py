@@ -207,7 +207,7 @@ LOG_PATH: str = get_text( 'LOG_PATH', str( LOG_DIR / 'Exceptions.db' ) )
 LOG_FILE: str = get_text( 'LOG_FILE', 'Exceptions' )
 FAVICON = r'resources/favicon.ico'
 CRS = r'https://www.congress.gov/crs-appropriations-status-table'
-BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:20px 30 30px 0;'></div>"
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:30px 0px 30px 0px;'></div>"
 APP_TITLE = 'Buddy'
 APP_SUBTITLE = 'A mulit-modal, Budget Execution AI'
 OPEN_TAG = re.compile( r'<([A-Za-z0-9_\-:.]+)>' )

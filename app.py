@@ -10961,8 +10961,8 @@ if mode == 'Chat':
 								model=chat_model or 'grok-4.3', temperature=chat_temperature,
 								format=chat_format if isinstance( chat_format, dict ) else None,
 								top_p=chat_top_p, frequency=chat_freq, presence=chat_presense,
-								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
-								store=chat_store, stream=False,
+								max_tokens=st.session_state.get( 'max_tokens',
+									0 ) or None,  store=chat_store, stream=False,
 								instruct=st.session_state.get( 'chat_system_instructions',
 									'' ) or None, background=False,
 								reasoning=chat_reasoning or None, include=[ 'inline_citations' ],
@@ -11110,7 +11110,7 @@ elif mode == 'Text':
 	text_avatar = get_text_avatar( provider_name )
 	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with ((((center)))):
+	with center:
 		st.subheader( '💬 Text Generation', help=cfg.TEXT_GENERATION )
 		st.divider( )
 		if st.session_state.get( 'clear_instructions' ):
@@ -11123,8 +11123,8 @@ elif mode == 'Text':
 			# Model Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
-				llm_c1, llm_c2, llm_c3, llm_c4, llm_c5, llm_c6 = st.columns(
-					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+				llm_c1, llm_c2, llm_c3, llm_c4, llm_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				with llm_c1:
 					model_options = get_text_option_list( text, 'model_options', [ '' ] )
@@ -11170,17 +11170,16 @@ elif mode == 'Text':
 						key='text_response_format', help='Optional. Desired response format.',
 						index=None, placeholder='Options' )
 				
-				with llm_c6:
-					st.button( label='Reset', key='text_model_reset', width='stretch',
-						on_click=reset_text_model_settings )
+				st.button( label='Reset', key='text_model_reset', width='stretch',
+					on_click=reset_text_model_settings )
 			
 			# ------------------------------------------------------------------
 			# Inference Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='Inference Settings', icon='🎚️', expanded=False,
 					width='stretch' ):
-				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5, prm_c6 = st.columns(
-					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+				prm_c1, prm_c2, prm_c3, prm_c4, prm_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				with prm_c1:
 					st.slider( label='Top-P', min_value=0.0, max_value=1.0,
@@ -11210,16 +11209,15 @@ elif mode == 'Text':
 					else:
 						st.caption( 'Top-K is only used by Gemini.' )
 				
-				with prm_c6:
-					st.button( label='Reset', key='text_inference_reset', width='stretch',
-						on_click=reset_text_inference_settings )
+				st.button( label='Reset', key='text_inference_reset', width='stretch',
+					on_click=reset_text_inference_settings )
 			
 			# ------------------------------------------------------------------
 			# Tool Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='Tool Settings', icon='🛠️', expanded=False, width='stretch' ):
-				tool_c1, tool_c2, tool_c3, tool_c4, tool_c5, tool_c6 = st.columns(
-					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+				tool_c1, tool_c2, tool_c3, tool_c4, tool_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				with tool_c1:
 					if provider_name == 'Gemini':
@@ -11257,10 +11255,6 @@ elif mode == 'Text':
 						key='text_tool_choice', help=cfg.CHOICE, index=None,
 						placeholder='Options' )
 				
-				with tool_c6:
-					st.button( label='Reset', key='text_tools_reset', width='stretch',
-						on_click=reset_text_tool_settings )
-				
 				if provider_name == 'GPT':
 					gpt_tool_c1, gpt_tool_c2 = st.columns( [ 0.5, 0.5 ], border=True,
 						gap='xxsmall' )
@@ -11294,13 +11288,16 @@ elif mode == 'Text':
 							help='Optional. Comma-delimited Gemini File Search Store resource '
 							     'names.', width='stretch' )
 			
+				st.button( label='Reset', key='text_tools_reset', width='stretch',
+					on_click=reset_text_tool_settings )
+				
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='Response Settings', icon='↔️', expanded=False,
 					width='stretch' ):
-				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
-					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				with resp_c1:
 					st.slider( label='Max Tokens', min_value=0, max_value=100000,
@@ -11323,9 +11320,8 @@ elif mode == 'Text':
 						help=cfg.STOP_SEQUENCE, width='stretch',
 						placeholder='Enter stop strings separated by commas' )
 				
-				with resp_c6:
-					st.button( label='Reset', key='text_response_reset', width='stretch',
-						on_click=reset_text_response_settings )
+				st.button( label='Reset', key='text_response_reset', width='stretch',
+					on_click=reset_text_response_settings )
 				
 				if provider_name == 'GPT' and st.session_state.get(
 						'text_response_format' ) == 'json_schema':
@@ -11736,19 +11732,19 @@ elif mode == 'Text':
 					else:
 						st.error( 'Generation Failed!.' )
 		
-		clear_c1, clear_c2 = st.columns( [ 0.8, 0.2 ] )
-		with clear_c2:
+		clr_c1, clr_c2 = st.columns( [ 0.5, 0.5 ] )
+		with clr_c1:
 			st.button( label='Clear Messages', width='stretch', on_click=clear_text_messages )
+		with clr_c2:
+			st.button( label='Clear Text', width='stretch'  )
 
 # ======================================================================================
 # IMAGES MODE
 # ======================================================================================
 elif mode == 'Images':
 	ensure_image_mode_state( )
-	
 	provider_name = get_provider_name( )
 	image = get_images_module( )
-	
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'image_system_instructions' ] = ''
 		st.session_state[ 'clear_image_instructions' ] = False
