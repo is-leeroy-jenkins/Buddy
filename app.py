@@ -11393,7 +11393,7 @@ elif mode == 'Text':
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area( label='Enter Text', height=90, width='stretch',
+				st.text_area( label='Enter Text', height=140, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions', )
 			
 			with in_right:
@@ -11956,14 +11956,11 @@ elif mode == 'Images':
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 				width='stretch' ):
 			active_image_mode = str( st.session_state.get( 'image_mode', '' ) or '' ).strip( )
-			
 			allowed_categories = resolve_image_prompt_categories( image_mode=active_image_mode, )
-			
 			image_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 				allowed_categories=allowed_categories, )
 			
 			operation_category = PROMPT_IMAGE_CATEGORY_MAP.get( active_image_mode )
-			
 			if (operation_category is not None and operation_category in image_categories):
 				st.session_state[ 'image_instruction_category' ] = operation_category
 			
@@ -11991,7 +11988,7 @@ elif mode == 'Images':
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area( label='Enter Text', height=90, width='stretch',
+				st.text_area( label='Enter Text', height=140, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions', )
 			
 			with in_right:
@@ -12539,7 +12536,7 @@ elif mode == 'Audio':
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area( label='Enter Text', height=90, width='stretch',
+				st.text_area( label='Enter Text', height=140, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions', )
 			
 			with in_right:
@@ -12872,7 +12869,6 @@ elif mode == 'Embeddings':
 					key='embeddings_dimensions', disabled=not supports_dimensions )
 				
 				embeddings_dimensions = st.session_state.get( 'embeddings_dimensions', 0 )
-				
 				if not supports_dimensions:
 					st.caption( 'Dimensions are omitted for this model.' )
 			
@@ -13259,6 +13255,8 @@ elif mode == 'Document Q&A':
 						st.success( st.session_state.get( 'docqna_index_status',
 							'Indexed' ) )  #
 					# ------------------------------------------------------------------
+		
+		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
@@ -13273,7 +13271,6 @@ elif mode == 'Document Q&A':
 				st.session_state.get( 'docqna_instruction_category', '', ) or '' ).strip( )
 			
 			selected_categories = ([ selected_category ] if selected_category else [ ])
-			
 			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
 				categories=selected_categories, )
 			
@@ -13283,14 +13280,12 @@ elif mode == 'Document Q&A':
 					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
-			
 			synchronize_instruction_prompt_selection( selector_key='docqna_instruction_prompt_id',
 				valid_prompt_ids=prompt_ids, )
 			
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-			
 			with in_left:
-				st.text_area( label='Enter Text', height=90, width='stretch',
+				st.text_area( label='Enter Text', height=140, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='docqna_system_instructions', )
 			
 			with in_right:
@@ -13316,7 +13311,6 @@ elif mode == 'Document Q&A':
 					help='Load a System Instructions template for Document Q&A.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-			
 			with btn_c1:
 				st.button( label='Clear Instructions', width='stretch',
 					on_click=clear_docqna_instructions, )
@@ -13397,8 +13391,7 @@ elif mode == 'Document Q&A':
 				with diag_c4:
 					st.metric( 'Source', st.session_state.get( 'docqna_source', 'Local Upload' ) )
 				
-				st.json(
-					{ 'index_status': st.session_state.get( 'docqna_index_status', 'Not indexed' ),
+				st.json( { 'index_status': st.session_state.get( 'docqna_index_status', 'Not indexed' ),
 						'fingerprint': st.session_state.get( 'docqna_fingerprint', '' ),
 						'active_documents': get_document_names( ), } )
 				

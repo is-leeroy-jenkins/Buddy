@@ -5724,8 +5724,8 @@ class VectorStores( GPT ):
 	
 	def upload_and_attach( self, store_id: str=None, vector_store_id: str=None,
 		path: str=None, filepath: str=None, purpose: str='assistants',
-		attributes: Dict[ str, Any ]=None, chunking_strategy: Dict[ str, Any ]=None ) -> Dict[
-			                                                                                     str, Any ] | None:
+		attributes: Dict[ str, Any ]=None,
+		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
 		"""Upload and attach.
 		
 		
