@@ -806,9 +806,8 @@ class Chat( Gemini ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_contents( self, prompt: str, content: str, context: List[ Any ]=None ) -> str | \
-	                                                                                      List[
-		                                                                                      Content ]:
+	def build_contents( self, prompt: str, content: str,
+		context: List[ Any ]=None ) -> str |  List[ Content ]:
 		"""Build contents.
 		
 		Purpose:
@@ -1020,8 +1019,7 @@ class Chat( Gemini ):
 		
 		Args:
 		    tools (List[str]): Tools supplied to the Gemini workflow.
-		    file_search_store_names (List[str]): File search store names supplied to the Gemini
-		    workflow.
+		    file_search_store_names (List[str]): File search store names supplied to the Gemini workflow.
 		
 		Returns:
 		    List[Tool] | None: Result produced by the Gemini workflow.
@@ -1085,8 +1083,7 @@ class Chat( Gemini ):
 		    media_resolution (str): Media resolution supplied to the Gemini workflow.
 		    response_schema (Any): Response schema supplied to the Gemini workflow.
 		    safety_profile (str): Safety profile supplied to the Gemini workflow.
-		    file_search_store_names (List[str]): File search store names supplied to the Gemini
-		    workflow.
+		    file_search_store_names (List[str]): File search store names supplied to the Gemini workflow.
 		
 		Returns:
 		    GenerateContentConfig: Result produced by the Gemini workflow.
@@ -1227,8 +1224,7 @@ class Chat( Gemini ):
 		    max_urls (int): Max urls supplied to the Gemini workflow.
 		    response_schema (Any): Response schema supplied to the Gemini workflow.
 		    safety_profile (str): Safety profile supplied to the Gemini workflow.
-		    file_search_store_names (List[str]): File search store names supplied to the Gemini
-		    workflow.
+		    file_search_store_names (List[str]): File search store names supplied to the Gemini workflow.
 		    stream (bool): Stream supplied to the Gemini workflow.
 		    stream_handler (Any): Stream handler supplied to the Gemini workflow.
 		
@@ -1638,8 +1634,7 @@ class Images( Gemini ):
 		    preserving provider request and response state.
 		
 		Args:
-		    response_modalities (Optional[str]): Response modalities supplied to the Gemini
-		    workflow.
+		    response_modalities (Optional[str]): Response modalities supplied to the Gemini workflow.
 		    image_only (bool): Image only supplied to the Gemini workflow.
 		
 		Returns:
@@ -1723,8 +1718,7 @@ class Images( Gemini ):
 		    or downstream request construction.
 		
 		Args:
-		    response_modalities (Optional[str]): Response modalities supplied to the Gemini
-		    workflow.
+		    response_modalities (Optional[str]): Response modalities supplied to the Gemini workflow.
 		    image_only (bool): Image only supplied to the Gemini workflow.
 		    image_search (bool): Image search supplied to the Gemini workflow.
 		    grounded (bool): Grounded supplied to the Gemini workflow.

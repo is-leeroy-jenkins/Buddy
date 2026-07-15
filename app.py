@@ -1300,8 +1300,7 @@ def normalize( obj: Any ) -> Any:
 	    session state, provider configuration, and local data processing.
 	
 	Args:
-	    obj: value to normalize for safe display, serialization, or provider
-	    handling.
+	    obj: value to normalize for safe display, serialization, or provider handling.
 	
 	Returns:
 	    Any: Normalized result produced for the active application workflow.

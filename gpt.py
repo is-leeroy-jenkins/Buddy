@@ -36,8 +36,7 @@ def throw_if( name: str, value: object ) -> None:
 		    value: Candidate value checked for required input validation.
 	
 		Raises:
-		    ValueError: Raised when required input validation fails or unsupported provider
-		    options are supplied.
+		    ValueError: Raised when required input validation fails or unsupported provider  options are supplied.
 	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
@@ -432,12 +431,10 @@ class Chat( GPT ):
 			    reasoning: Reasoning-effort value or reasoning configuration supplied by the UI.
 		
 			Returns:
-			    Dict[ str, str ] | None: Provider reasoning configuration or None when reasoning
-			    is not active.
+			    Dict[ str, str ] | None: Provider reasoning configuration or None when reasoning is not active.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			if reasoning is None:
@@ -488,8 +485,7 @@ class Chat( GPT ):
 			    List[ Dict[ str, Any ] ]: Responses API input payload for the current request.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
@@ -526,8 +522,8 @@ class Chat( GPT ):
 			raise exception
 	
 	def build_tools( self, tools: List[ Dict[ str, Any ] ]=None,
-		allowed_domains: List[ str ]=None, vector_store_ids: List[ str ]=None ) -> List[ Dict[
-		str, Any ] ] | None:
+		allowed_domains: List[ str ]=None,
+		vector_store_ids: List[ str ]=None ) -> List[ Dict[ str, Any ] ] | None:
 		"""Build tools.
 		
 		
@@ -541,12 +537,10 @@ class Chat( GPT ):
 			    vector_store_ids: Vector-store identifiers used by file-search tools.
 		
 			Returns:
-			    List[ Dict[ str, Any ] ] | None: Normalized provider tool definitions or None when
-			    no supported tools are active.
+			    List[ Dict[ str, Any ] ] | None: Normalized provider tool definitions or None when no supported tools are active.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
@@ -645,8 +639,7 @@ class Chat( GPT ):
 			    str | None: Validated tool-choice policy or None when not applicable.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution  errors are wrapped and logged.
 		"""
 		try:
 			if not isinstance( tool_choice, str ) or not tool_choice.strip( ):
@@ -737,8 +730,7 @@ class Chat( GPT ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_text_format( self, format: Dict[ str, Any ] | str = None ) -> Dict[ str,
-	Any ] | None:
+	def build_text_format( self, format: Dict[ str, Any ] | str = None ) -> Dict[ str, Any ] | None:
 		"""Build text format.
 		
 		
@@ -750,12 +742,10 @@ class Chat( GPT ):
 			    format: Output or response format selected for the operation.
 		
 			Returns:
-			    Dict[ str, Any ] | None: Provider text-format configuration or None when no format
-			    is active.
+			    Dict[ str, Any ] | None: Provider text-format configuration or None when no format is active.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			if format is None:
@@ -802,12 +792,10 @@ class Chat( GPT ):
 			    prompt_variables: Variables supplied to an OpenAI prompt template.
 		
 			Returns:
-			    Dict[ str, Any ] | None: Prompt-template reference dictionary or None when no
-			    template is selected.
+			    Dict[ str, Any ] | None: Prompt-template reference dictionary or None when no template is selected.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			if not isinstance( prompt_id, str ) or not prompt_id.strip( ):
@@ -881,8 +869,7 @@ class Chat( GPT ):
 			    Dict[ str, Any ]: Normalized provider request dictionary.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
@@ -988,8 +975,7 @@ class Chat( GPT ):
 			    str | None: Extracted response text or None when no text output is available.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution  errors are wrapped and logged.
 		"""
 		try:
 			if self.response is None:
@@ -1038,8 +1024,7 @@ class Chat( GPT ):
 			    Any: Usage metadata from the latest provider response.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			if self.response is None:
@@ -1104,8 +1089,7 @@ class Chat( GPT ):
 			    Response | Any: Full Responses API response object returned by OpenAI.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			prompt = user_input if user_input is not None else self.prompt
@@ -1592,7 +1576,7 @@ class Images( GPT ):
 			    values.
 		
 			Args:
-			    number: Requested output count before provider-specific normalization.
+			    number (int): Requested output count before provider-specific normalization.
 		
 			Returns:
 			    int: Validated image count accepted by the selected endpoint.
@@ -1623,8 +1607,8 @@ class Images( GPT ):
 			    application-ready Python values.
 		
 			Args:
-			    fmt: Image output format before provider-specific normalization.
-			    background: Background transparency or execution option supplied by the caller.
+			    fmt (str): Image output format before provider-specific normalization.
+			    background (str): Background transparency or execution option supplied by the caller.
 		
 			Returns:
 			    str: Image output format accepted by the selected endpoint.
@@ -4664,8 +4648,7 @@ class Files( GPT ):
 			    Dict[ str, Any ]: Structured file or vector-store survey output.
 		
 			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
 		"""
 		try:
 			self.file_id = self.validate_file_id( id )
