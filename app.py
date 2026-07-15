@@ -10289,6 +10289,78 @@ def convert_filestore_instructions( ) -> None:
 		converted = convert_markdown( source )
 	
 	st.session_state[ 'filestore_system_instructions' ] = converted
+
+def clear_bucket_instructions( ) -> None:
+	"""Clear Google Cloud Bucket instructions.
+	
+	Purpose:
+	    Clears the Google Cloud Buckets prompt category, selected prompt identifier, and editable
+	    System Instructions while preserving bucket names, object names, metadata, result tables,
+	    operation results, backend routing, and instruction state associated with other
+	    application modes.
+	
+	Returns:
+	    None: This function resets the Google Cloud Buckets instruction-template contract.
+	"""
+	clear_instruction_template(
+		category_key='bucket_instruction_category',
+		selector_key='bucket_instruction_prompt_id',
+		instruction_key='bucket_system_instructions',
+	)
+
+def change_bucket_instruction_category( ) -> None:
+	"""Change Google Cloud Bucket instruction category.
+	
+	Purpose:
+	    Clears the selected Google Cloud Buckets prompt identifier when the active category
+	    changes so a template from the previous category cannot remain selected under an
+	    incompatible option collection.
+	
+	Returns:
+	    None: This function resets the Google Cloud Buckets prompt selection.
+	"""
+	st.session_state[ 'bucket_instruction_prompt_id' ] = None
+
+def load_bucket_instruction( ) -> None:
+	"""Load Google Cloud Bucket instruction.
+	
+	Purpose:
+	    Loads the Google Cloud Buckets instruction template identified by the selected Prompts
+	    table primary key into the editable Google Cloud Buckets System Instructions state.
+	
+	Returns:
+	    None: This function updates the Google Cloud Buckets System Instructions state.
+	"""
+	load_instruction_template(
+		selector_key='bucket_instruction_prompt_id',
+		instruction_key='bucket_system_instructions',
+	)
+
+def convert_bucket_instructions( ) -> None:
+	"""Convert Google Cloud Bucket instructions.
+	
+	Purpose:
+	    Converts the active Google Cloud Buckets System Instructions between XML-style prompt
+	    blocks and Markdown headings while preserving the converted text in mode-specific
+	    session state.
+	
+	Returns:
+	    None: This function updates the Google Cloud Buckets System Instructions when text
+	        exists.
+	"""
+	text_value = st.session_state.get( 'bucket_system_instructions', '' )
+	
+	if not isinstance( text_value, str ) or not text_value.strip( ):
+		return
+	
+	source = text_value.strip( )
+	
+	if cfg.XML_BLOCK_PATTERN.search( source ):
+		converted = convert_xml( source )
+	else:
+		converted = convert_markdown( source )
+	
+	st.session_state[ 'bucket_system_instructions' ] = converted
 	
 # ======================================================================================
 # VECTOR STORES RETRIEVAL HOOK UTILITIES
@@ -15050,6 +15122,129 @@ elif mode == 'Vector Stores':
 		# ------------------------------------------------------------------
 		elif provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'Cloud Buckets':
 			buckets = get_vectorstores_module( provider_name, backend='Cloud Buckets' )
+			
+			# ------------------------------------------------------------------
+			# System Instructions
+			# ------------------------------------------------------------------
+			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
+					width='stretch' ):
+				bucket_categories = fetch_prompt_categories(
+					db_path=cfg.DB_PATH,
+					allowed_categories=PROMPT_BUCKET_CATEGORIES,
+				)
+				
+				synchronize_instruction_category_selection(
+					category_key='bucket_instruction_category',
+					valid_categories=bucket_categories,
+				)
+				
+				selected_category = str(
+					st.session_state.get(
+						'bucket_instruction_category',
+						'',
+					) or ''
+				).strip( )
+				
+				selected_categories = (
+					[ selected_category ]
+					if selected_category
+					else [ ]
+				)
+				
+				prompt_options = fetch_prompt_options(
+					db_path=cfg.DB_PATH,
+					categories=selected_categories,
+				)
+				
+				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
+					int( prompt[ 'ID' ] ): prompt
+					for prompt in prompt_options
+					if isinstance( prompt, dict )
+					and isinstance( prompt.get( 'ID' ), int )
+					and not isinstance( prompt.get( 'ID' ), bool )
+				}
+				
+				prompt_ids = list( prompt_lookup.keys( ) )
+				
+				synchronize_instruction_prompt_selection(
+					selector_key='bucket_instruction_prompt_id',
+					valid_prompt_ids=prompt_ids,
+				)
+				
+				in_left, in_right = st.columns(
+					[ 0.75, 0.25 ],
+					border=True,
+					gap='xxsmall',
+				)
+				
+				with in_left:
+					st.text_area(
+						label='Enter Text',
+						height=90,
+						width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS,
+						key='bucket_system_instructions',
+					)
+				
+				with in_right:
+					category_options = [ '' ] + bucket_categories
+					
+					st.selectbox(
+						label='Category',
+						options=category_options,
+						key='bucket_instruction_category',
+						on_change=change_bucket_instruction_category,
+						format_func=lambda category: (
+							'Select Category'
+							if category == '' and len( bucket_categories ) > 0
+							else 'No Categories Found'
+							if category == ''
+							else category
+						),
+						disabled=len( bucket_categories ) == 0,
+						help='Select a Google Cloud Buckets prompt category.',
+					)
+					
+					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
+					
+					st.selectbox(
+						label='Use Template',
+						options=template_options,
+						key='bucket_instruction_prompt_id',
+						on_change=load_bucket_instruction,
+						format_func=lambda prompt_id: (
+							'Select Template'
+							if prompt_id is None and selected_category
+							else 'Select Category First'
+							if prompt_id is None
+							else format_prompt_option(
+								prompt_id=prompt_id,
+								prompts=prompt_lookup,
+							)
+						),
+						disabled=not selected_category or len( prompt_ids ) == 0,
+						help=(
+							'Load a System Instructions template for Google Cloud Buckets.'
+						),
+					)
+				
+				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
+				
+				with btn_c1:
+					st.button(
+						label='Clear Instructions',
+						width='stretch',
+						on_click=clear_bucket_instructions,
+					)
+				
+				with btn_c2:
+					st.button(
+						label='XML <-> Markdown',
+						width='stretch',
+						on_click=convert_bucket_instructions,
+					)
+			
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
 			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small' )
 			
