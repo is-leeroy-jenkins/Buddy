@@ -5018,8 +5018,7 @@ class VectorStores( GPT ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_expires_after( self, anchor: str=None, days: int=None ) -> Dict[
-		                                                                         str, Any ] | None:
+	def build_expires_after( self, anchor: str=None, days: int=None ) -> Dict[ str, Any ] | None:
 		"""Build expires after.
 		
 		
@@ -5468,8 +5467,8 @@ class VectorStores( GPT ):
 			raise exception
 	
 	def update( self, store_id: str, name: str=None, description: str=None,
-		metadata: Dict[ str, Any ]=None, expires_after: Dict[ str, Any ]=None ) -> (
-			Dict[ str, Any ] | None):
+		metadata: Dict[ str, Any ]=None,
+		expires_after: Dict[ str, Any ]=None ) -> ( Dict[ str, Any ] | None):
 		"""Update.
 		
 		
