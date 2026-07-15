@@ -1740,11 +1740,8 @@ def fetch_prompt_schema( db_path: str ) -> List[ str ]:
 		with sqlite3.connect( db_path ) as conn:
 			rows = conn.execute( 'PRAGMA table_info("Prompts");' ).fetchall( )
 		
-		return [
-			str( row[ 1 ] ).strip( )
-			for row in rows
-			if len( row ) > 1 and str( row[ 1 ] ).strip( )
-		]
+		return [ str( row[ 1 ] ).strip( ) for row in rows if
+			len( row ) > 1 and str( row[ 1 ] ).strip( ) ]
 	except Exception as e:
 		exception = Error( e )
 		exception.module = 'app'
@@ -1775,22 +1772,17 @@ def validate_prompt_schema( db_path: str ) -> None:
 		actual_columns = fetch_prompt_schema( db_path )
 		
 		if len( actual_columns ) == 0:
-			raise ValueError(
-				'The Prompts table does not exist or does not define any columns.' )
+			raise ValueError( 'The Prompts table does not exist or does not define any columns.' )
 		
-		missing_columns = [
-			column
-			for column in PROMPT_REQUIRED_COLUMNS
-			if column not in actual_columns
-		]
+		missing_columns = [ column for column in PROMPT_REQUIRED_COLUMNS if
+			column not in actual_columns ]
 		
 		if len( missing_columns ) > 0:
 			missing_text = ', '.join( missing_columns )
 			actual_text = ', '.join( actual_columns )
 			
-			raise ValueError(
-				f'The Prompts table is missing required columns: {missing_text}. '
-				f'Actual columns: {actual_text}.' )
+			raise ValueError( f'The Prompts table is missing required columns: {missing_text}. '
+			                  f'Actual columns: {actual_text}.' )
 	except Exception as e:
 		if isinstance( e, Error ):
 			raise e
@@ -1961,11 +1953,8 @@ def fetch_prompt_categories( db_path: str, allowed_categories: List[ str ] ) -> 
 		if not isinstance( allowed_categories, list ) or len( allowed_categories ) == 0:
 			return [ ]
 		
-		categories = [
-			str( category ).strip( )
-			for category in allowed_categories
-			if isinstance( category, str ) and category.strip( )
-		]
+		categories = [ str( category ).strip( ) for category in allowed_categories if
+			isinstance( category, str ) and category.strip( ) ]
 		
 		if len( categories ) == 0:
 			return [ ]
@@ -1985,17 +1974,10 @@ def fetch_prompt_categories( db_path: str, allowed_categories: List[ str ] ) -> 
 		with sqlite3.connect( db_path ) as conn:
 			rows = conn.execute( query, categories ).fetchall( )
 		
-		available = {
-			str( row[ 0 ] ).strip( )
-			for row in rows
-			if row and row[ 0 ] is not None and str( row[ 0 ] ).strip( )
-		}
+		available = { str( row[ 0 ] ).strip( ) for row in rows if
+			row and row[ 0 ] is not None and str( row[ 0 ] ).strip( ) }
 		
-		return [
-			category
-			for category in categories
-			if category in available
-		]
+		return [ category for category in categories if category in available ]
 	except Exception as e:
 		if isinstance( e, Error ):
 			raise e
@@ -2003,10 +1985,8 @@ def fetch_prompt_categories( db_path: str, allowed_categories: List[ str ] ) -> 
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'fetch_prompt_categories'
-		exception.method = (
-			'fetch_prompt_categories( db_path: str, '
-			'allowed_categories: List[str] ) -> List[str]'
-		)
+		exception.method = ('fetch_prompt_categories( db_path: str, '
+		                    'allowed_categories: List[str] ) -> List[str]')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2034,11 +2014,8 @@ def fetch_prompt_options( db_path: str, categories: List[ str ] ) -> List[ Dict[
 		if not isinstance( categories, list ) or len( categories ) == 0:
 			return [ ]
 		
-		valid_categories = [
-			str( category ).strip( )
-			for category in categories
-			if isinstance( category, str ) and category.strip( )
-		]
+		valid_categories = [ str( category ).strip( ) for category in categories if
+			isinstance( category, str ) and category.strip( ) ]
 		
 		if len( valid_categories ) == 0:
 			return [ ]
@@ -2068,15 +2045,9 @@ def fetch_prompt_options( db_path: str, categories: List[ str ] ) -> List[ Dict[
 			conn.row_factory = sqlite3.Row
 			rows = conn.execute( query, valid_categories ).fetchall( )
 		
-		return [
-			{
-				'ID': int( row[ 'ID' ] ),
-				'Caption': str( row[ 'Caption' ] ).strip( ),
-				'Name': str( row[ 'Name' ] or '' ).strip( ),
-				'Category': str( row[ 'Category' ] ).strip( ),
-			}
-			for row in rows
-		]
+		return [ { 'ID': int( row[ 'ID' ] ), 'Caption': str( row[ 'Caption' ] ).strip( ),
+			'Name': str( row[ 'Name' ] or '' ).strip( ),
+			'Category': str( row[ 'Category' ] ).strip( ), } for row in rows ]
 	except Exception as e:
 		if isinstance( e, Error ):
 			raise e
@@ -2084,10 +2055,8 @@ def fetch_prompt_options( db_path: str, categories: List[ str ] ) -> List[ Dict[
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'fetch_prompt_options'
-		exception.method = (
-			'fetch_prompt_options( db_path: str, '
-			'categories: List[str] ) -> List[Dict[str, Any]]'
-		)
+		exception.method = ('fetch_prompt_options( db_path: str, '
+		                    'categories: List[str] ) -> List[Dict[str, Any]]')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2119,15 +2088,14 @@ def fetch_prompt_by_id( db_path: str, prompt_id: int ) -> Optional[ Dict[ str, A
 			raise ValueError( 'The prompt ID must be greater than zero.' )
 		
 		query = """
-			SELECT
-				ID,
-				Caption,
-				Name,
-				Category,
-				Text
-			FROM Prompts
-			WHERE ID = ?;
-		"""
+                SELECT ID,
+                       Caption,
+                       Name,
+                       Category,
+                       Text
+                FROM Prompts
+                WHERE ID = ?; \
+		        """
 		
 		with sqlite3.connect( db_path ) as conn:
 			conn.row_factory = sqlite3.Row
@@ -2136,13 +2104,10 @@ def fetch_prompt_by_id( db_path: str, prompt_id: int ) -> Optional[ Dict[ str, A
 		if row is None:
 			return None
 		
-		return {
-			'ID': int( row[ 'ID' ] ),
-			'Caption': str( row[ 'Caption' ] or '' ).strip( ),
+		return { 'ID': int( row[ 'ID' ] ), 'Caption': str( row[ 'Caption' ] or '' ).strip( ),
 			'Name': str( row[ 'Name' ] or '' ).strip( ),
 			'Category': str( row[ 'Category' ] or '' ).strip( ),
-			'Text': str( row[ 'Text' ] or '' ),
-		}
+			'Text': str( row[ 'Text' ] or '' ), }
 	except Exception as e:
 		if isinstance( e, Error ):
 			raise e
@@ -2150,10 +2115,8 @@ def fetch_prompt_by_id( db_path: str, prompt_id: int ) -> Optional[ Dict[ str, A
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'fetch_prompt_by_id'
-		exception.method = (
-			'fetch_prompt_by_id( db_path: str, '
-			'prompt_id: int ) -> Optional[Dict[str, Any]]'
-		)
+		exception.method = ('fetch_prompt_by_id( db_path: str, '
+		                    'prompt_id: int ) -> Optional[Dict[str, Any]]')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2235,22 +2198,13 @@ def fetch_prompts_df( search_text: str = '', category: str = '', sort_column: st
 		
 		if search:
 			search_value = f'%{search}%'
-			conditions.append(
-				'('
-				'Caption LIKE ? OR '
-				'Name LIKE ? OR '
-				'Category LIKE ? OR '
-				'Text LIKE ?'
-				')'
-			)
-			parameters.extend(
-				[
-					search_value,
-					search_value,
-					search_value,
-					search_value,
-				]
-			)
+			conditions.append( '('
+			                   'Caption LIKE ? OR '
+			                   'Name LIKE ? OR '
+			                   'Category LIKE ? OR '
+			                   'Text LIKE ?'
+			                   ')' )
+			parameters.extend( [ search_value, search_value, search_value, search_value, ] )
 		
 		if selected_category:
 			conditions.append( 'Category = ?' )
@@ -2274,11 +2228,7 @@ def fetch_prompts_df( search_text: str = '', category: str = '', sort_column: st
 		"""
 		
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
-			df_prompts = pd.read_sql_query(
-				query,
-				conn,
-				params=parameters,
-			)
+			df_prompts = pd.read_sql_query( query, conn, params=parameters, )
 		
 		df_prompts.insert( 0, 'Selected', False )
 		return df_prompts
@@ -2289,10 +2239,9 @@ def fetch_prompts_df( search_text: str = '', category: str = '', sort_column: st
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'fetch_prompts_df'
-		exception.method = (
-			'fetch_prompts_df( search_text: str = "", category: str = "", '
-			'sort_column: str = "ID", sort_direction: str = "ASC" ) -> pd.DataFrame'
-		)
+		exception.method = ('fetch_prompts_df( search_text: str = "", category: str = "", '
+		                    'sort_column: str = "ID", sort_direction: str = "ASC" ) -> '
+		                    'pd.DataFrame')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2317,22 +2266,16 @@ def insert_prompt( data: Dict[ str, Any ] ) -> int:
 		values = validate_prompt_data( data )
 		
 		query = """
-			INSERT INTO Prompts
-			(
-				Caption,
-				Name,
-				Category,
-				Text
-			)
-			VALUES (?, ?, ?, ?);
-		"""
+                INSERT INTO Prompts
+                (Caption,
+                 Name,
+                 Category,
+                 Text)
+                VALUES (?, ?, ?, ?); \
+		        """
 		
-		parameters = (
-			values[ 'Caption' ],
-			values[ 'Name' ],
-			values[ 'Category' ],
-			values[ 'Text' ],
-		)
+		parameters = (values[ 'Caption' ], values[ 'Name' ], values[ 'Category' ],
+			values[ 'Text' ],)
 		
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
 			cursor = conn.execute( query, parameters )
@@ -2380,22 +2323,17 @@ def update_prompt( prompt_id: int, data: Dict[ str, Any ] ) -> None:
 		values = validate_prompt_data( data )
 		
 		query = """
-			UPDATE Prompts
-			SET
-				Caption = ?,
-				Name = ?,
-				Category = ?,
-				Text = ?
-			WHERE ID = ?;
-		"""
+                UPDATE Prompts
+                SET Caption  = ?,
+                    Name     = ?,
+                    Category = ?,
+                    Text     = ?
+                WHERE ID = ?; \
+		        """
 		
-		parameters = (
-			values[ 'Caption' ],
-			values[ 'Name' ],
-			values[ 'Category' ],
-			values[ 'Text' ],
-			prompt_id,
-		)
+		parameters = (values[ 'Caption' ], values[ 'Name' ], values[ 'Category' ], values[
+			'Text' ],
+			prompt_id,)
 		
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
 			cursor = conn.execute( query, parameters )
@@ -2411,10 +2349,8 @@ def update_prompt( prompt_id: int, data: Dict[ str, Any ] ) -> None:
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'update_prompt'
-		exception.method = (
-			'update_prompt( prompt_id: int, '
-			'data: Dict[str, Any] ) -> None'
-		)
+		exception.method = ('update_prompt( prompt_id: int, '
+		                    'data: Dict[str, Any] ) -> None')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2444,10 +2380,7 @@ def delete_prompt( prompt_id: int ) -> None:
 			raise ValueError( 'The prompt ID must be greater than zero.' )
 		
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
-			cursor = conn.execute(
-				'DELETE FROM Prompts WHERE ID = ?;',
-				(prompt_id,),
-			)
+			cursor = conn.execute( 'DELETE FROM Prompts WHERE ID = ?;', (prompt_id,), )
 			
 			if cursor.rowcount == 0:
 				raise ValueError( f'Prompt ID {prompt_id} was not found.' )
@@ -2486,28 +2419,24 @@ def fetch_prompt_names( db_path: str ) -> List[ str ]:
 		validate_prompt_schema( db_path )
 		
 		query = """
-			SELECT Caption
-			FROM Prompts
-			WHERE Caption IS NOT NULL
-			  AND TRIM(Caption) <> ''
-			  AND Category IS NOT NULL
-			  AND TRIM(Category) <> ''
-			  AND Text IS NOT NULL
-			  AND TRIM(Text) <> ''
-			ORDER BY
-				Category ASC,
-				Caption ASC,
-				ID ASC;
-		"""
+                SELECT Caption
+                FROM Prompts
+                WHERE Caption IS NOT NULL
+                  AND TRIM(Caption) <> ''
+                  AND Category IS NOT NULL
+                  AND TRIM(Category) <> ''
+                  AND Text IS NOT NULL
+                  AND TRIM(Text) <> ''
+                ORDER BY Category ASC,
+                         Caption ASC,
+                         ID ASC; \
+		        """
 		
 		with sqlite3.connect( db_path ) as conn:
 			rows = conn.execute( query ).fetchall( )
 		
-		return [
-			str( row[ 0 ] ).strip( )
-			for row in rows
-			if row and row[ 0 ] is not None and str( row[ 0 ] ).strip( )
-		]
+		return [ str( row[ 0 ] ).strip( ) for row in rows if
+			row and row[ 0 ] is not None and str( row[ 0 ] ).strip( ) ]
 	except Exception as e:
 		exception = Error( e )
 		exception.module = 'app'
@@ -2541,16 +2470,15 @@ def fetch_prompt_text( db_path: str, name: str ) -> Optional[ str ]:
 			return None
 		
 		query = """
-			SELECT Text
-			FROM Prompts
-			WHERE Caption = ?
-			  AND Category IS NOT NULL
-			  AND TRIM(Category) <> ''
-			  AND Text IS NOT NULL
-			  AND TRIM(Text) <> ''
-			ORDER BY ID ASC
-			LIMIT 1;
-		"""
+                SELECT Text
+                FROM Prompts
+                WHERE Caption = ?
+                  AND Category IS NOT NULL
+                  AND TRIM(Category) <> ''
+                  AND Text IS NOT NULL
+                  AND TRIM(Text) <> ''
+                ORDER BY ID ASC LIMIT 1; \
+		        """
 		
 		with sqlite3.connect( db_path ) as conn:
 			row = conn.execute( query, (caption,) ).fetchone( )
@@ -2563,13 +2491,11 @@ def fetch_prompt_text( db_path: str, name: str ) -> Optional[ str ]:
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'fetch_prompt_text'
-		exception.method = (
-			'fetch_prompt_text( db_path: str, '
-			'name: str ) -> Optional[str]'
-		)
+		exception.method = ('fetch_prompt_text( db_path: str, '
+		                    'name: str ) -> Optional[str]')
 		Logger( ).write( exception )
 		return None
-	
+
 def normalize_prompt_id( value: Any ) -> Optional[ int ]:
 	"""Normalize prompt ID.
 	
@@ -2629,17 +2555,12 @@ def load_instruction_template( selector_key: str, instruction_key: str ) -> None
 		if not isinstance( instruction_key, str ) or not instruction_key.strip( ):
 			raise ValueError( 'The System Instructions state key is required.' )
 		
-		prompt_id = normalize_prompt_id(
-			st.session_state.get( selector_key.strip( ) )
-		)
+		prompt_id = normalize_prompt_id( st.session_state.get( selector_key.strip( ) ) )
 		
 		if prompt_id is None:
 			return
 		
-		prompt = fetch_prompt_by_id(
-			db_path=cfg.DB_PATH,
-			prompt_id=prompt_id,
-		)
+		prompt = fetch_prompt_by_id( db_path=cfg.DB_PATH, prompt_id=prompt_id, )
 		
 		if not isinstance( prompt, dict ):
 			return
@@ -2657,10 +2578,8 @@ def load_instruction_template( selector_key: str, instruction_key: str ) -> None
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'load_instruction_template'
-		exception.method = (
-			'load_instruction_template( selector_key: str, '
-			'instruction_key: str ) -> None'
-		)
+		exception.method = ('load_instruction_template( selector_key: str, '
+		                    'instruction_key: str ) -> None')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2685,18 +2604,10 @@ def clear_instruction_template( category_key: str, selector_key: str,
 	    Error: Raised when any required session-state key argument is invalid.
 	"""
 	try:
-		keys = [
-			category_key,
-			selector_key,
-			instruction_key,
-		]
+		keys = [ category_key, selector_key, instruction_key, ]
 		
-		if any(
-			not isinstance( key, str ) or not key.strip( )
-			for key in keys
-		):
-			raise ValueError(
-				'Category, selector, and instruction state keys are required.' )
+		if any( not isinstance( key, str ) or not key.strip( ) for key in keys ):
+			raise ValueError( 'Category, selector, and instruction state keys are required.' )
 		
 		st.session_state[ category_key.strip( ) ] = ''
 		st.session_state[ selector_key.strip( ) ] = None
@@ -2708,10 +2619,8 @@ def clear_instruction_template( category_key: str, selector_key: str,
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'clear_instruction_template'
-		exception.method = (
-			'clear_instruction_template( category_key: str, selector_key: str, '
-			'instruction_key: str ) -> None'
-		)
+		exception.method = ('clear_instruction_template( category_key: str, selector_key: str, '
+		                    'instruction_key: str ) -> None')
 		Logger( ).write( exception )
 		raise exception
 
@@ -2737,17 +2646,10 @@ def synchronize_instruction_prompt_selection( selector_key: str,
 	if not isinstance( valid_prompt_ids, list ):
 		valid_prompt_ids = [ ]
 	
-	normalized_ids = [
-		prompt_id
-		for prompt_id in valid_prompt_ids
-		if isinstance( prompt_id, int )
-		and not isinstance( prompt_id, bool )
-		and prompt_id > 0
-	]
+	normalized_ids = [ prompt_id for prompt_id in valid_prompt_ids if
+		isinstance( prompt_id, int ) and not isinstance( prompt_id, bool ) and prompt_id > 0 ]
 	
-	selected_id = normalize_prompt_id(
-		st.session_state.get( selector_key.strip( ) )
-	)
+	selected_id = normalize_prompt_id( st.session_state.get( selector_key.strip( ) ) )
 	
 	if selected_id is not None and selected_id not in normalized_ids:
 		st.session_state[ selector_key.strip( ) ] = None
@@ -2773,21 +2675,15 @@ def synchronize_instruction_category_selection( category_key: str,
 	if not isinstance( valid_categories, list ):
 		valid_categories = [ ]
 	
-	categories = [
-		category.strip( )
-		for category in valid_categories
-		if isinstance( category, str ) and category.strip( )
-	]
+	categories = [ category.strip( ) for category in valid_categories if
+		isinstance( category, str ) and category.strip( ) ]
 	
 	selected_category = st.session_state.get( category_key.strip( ), '' )
 	
-	if (
-		isinstance( selected_category, str )
-		and selected_category.strip( )
-		and selected_category.strip( ) not in categories
-	):
+	if (isinstance( selected_category,
+		str ) and selected_category.strip( ) and selected_category.strip( ) not in categories):
 		st.session_state[ category_key.strip( ) ] = ''
-		
+
 def build_prompt( user_input: str ) -> str:
 	"""Build prompt.
 	
@@ -4770,7 +4666,8 @@ def save_uploaded_storage_file( uploaded_file: Any ) -> str:
 		
 		return tmp.name
 
-def set_storage_rows( rows: Any, table_key: str='storage_table_data' ) -> List[ Dict[ str, Any ] ]:
+def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List[
+	Dict[ str, Any ] ]:
 	"""Set storage rows.
 	
 	Purpose:
@@ -5106,7 +5003,7 @@ def ensure_common_mode_state( ) -> None:
 	ensure_key( 'transcription_model', '' )
 	ensure_key( 'translation_model', '' )
 	
-		# ------------------------------------------------------------------
+	# ------------------------------------------------------------------
 	# Shared Instruction Output Keys
 	# ------------------------------------------------------------------
 	ensure_key( 'instructions', '' )
@@ -5753,11 +5650,8 @@ def clear_text_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Text Mode instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='text_instruction_category',
-		selector_key='text_instruction_prompt_id',
-		instruction_key='text_system_instructions',
-	)
+	clear_instruction_template( category_key='text_instruction_category',
+		selector_key='text_instruction_prompt_id', instruction_key='text_system_instructions', )
 
 def change_text_instruction_category( ) -> None:
 	"""Change text instruction category.
@@ -5782,10 +5676,8 @@ def load_text_instruction_template( ) -> None:
 	Returns:
 	    None: This function updates the Text Mode System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='text_instruction_prompt_id',
-		instruction_key='text_system_instructions',
-	)
+	load_instruction_template( selector_key='text_instruction_prompt_id',
+		instruction_key='text_system_instructions', )
 
 def load_text_instruction_template( ) -> None:
 	"""Load text instruction template.
@@ -6227,11 +6119,8 @@ def clear_image_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Images Mode instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='image_instruction_category',
-		selector_key='image_instruction_prompt_id',
-		instruction_key='image_system_instructions',
-	)
+	clear_instruction_template( category_key='image_instruction_category',
+		selector_key='image_instruction_prompt_id', instruction_key='image_system_instructions', )
 
 def append_image_message( role: str, content: str ) -> None:
 	"""Append image message.
@@ -6281,10 +6170,8 @@ def load_image_instruction_template( ) -> None:
 	Returns:
 	    None: This function updates the Images Mode System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='image_instruction_prompt_id',
-		instruction_key='image_system_instructions',
-	)
+	load_instruction_template( selector_key='image_instruction_prompt_id',
+		instruction_key='image_system_instructions', )
 
 def convert_image_system_instructions( ) -> None:
 	"""Convert image system instructions.
@@ -6777,7 +6664,8 @@ def get_audio_model_options( task: str | None, transcriber: Any, translator: Any
 	
 	return [ '' ]
 
-def get_audio_language_options( task: str | None, transcriber: Any, translator: Any ) -> List[ str ]:
+def get_audio_language_options( task: str | None, transcriber: Any, translator: Any ) -> List[
+	str ]:
 	"""Get audio language options.
 	
 	Purpose:
@@ -6962,11 +6850,8 @@ def clear_audio_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Audio Mode instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='audio_instruction_category',
-		selector_key='audio_instruction_prompt_id',
-		instruction_key='audio_system_instructions',
-	)
+	clear_instruction_template( category_key='audio_instruction_category',
+		selector_key='audio_instruction_prompt_id', instruction_key='audio_system_instructions', )
 
 def load_audio_instruction_template( ) -> None:
 	"""Load audio instruction template.
@@ -6978,10 +6863,8 @@ def load_audio_instruction_template( ) -> None:
 	Returns:
 	    None: This function updates the Audio Mode System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='audio_instruction_prompt_id',
-		instruction_key='audio_system_instructions',
-	)
+	load_instruction_template( selector_key='audio_instruction_prompt_id',
+		instruction_key='audio_system_instructions', )
 
 def convert_audio_system_instructions( ) -> None:
 	"""Convert audio system instructions.
@@ -7382,7 +7265,8 @@ def normalize_embedding_dimensions( model: str | None, dimensions: int | None,
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'normalize_embedding_dimensions'
-		exception.method = ('normalize_embedding_dimensions( model, dimensions, embedding ) -> int '
+		exception.method = ('normalize_embedding_dimensions( model, dimensions, embedding ) -> '
+		                    'int '
 		                    '| None')
 		Logger( ).write( exception )
 		return None
@@ -7399,8 +7283,8 @@ def normalize_embedding_dimensions( model: str | None, dimensions: int | None,
 	
 	return value
 
-def normalize_embedding_chunk_settings( chunk_size: int | None,
-	overlap_amount: int | None ) -> Tuple[ int, int ]:
+def normalize_embedding_chunk_settings( chunk_size: int | None, overlap_amount: int | None ) -> \
+Tuple[ int, int ]:
 	"""Normalize embedding chunk settings.
 	
 	Purpose:
@@ -7921,11 +7805,9 @@ def clear_docqna_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Document Q&A instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='docqna_instruction_category',
+	clear_instruction_template( category_key='docqna_instruction_category',
 		selector_key='docqna_instruction_prompt_id',
-		instruction_key='docqna_system_instructions',
-	)
+		instruction_key='docqna_system_instructions', )
 
 def change_docqna_instruction_category( ) -> None:
 	"""Change Document Q&A instruction category.
@@ -7950,10 +7832,8 @@ def load_docqna_instruction( ) -> None:
 	Returns:
 	    None: This function updates the Document Q&A System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='docqna_instruction_prompt_id',
-		instruction_key='docqna_system_instructions',
-	)
+	load_instruction_template( selector_key='docqna_instruction_prompt_id',
+		instruction_key='docqna_system_instructions', )
 
 def convert_docqna_instructions( ) -> None:
 	"""Convert docqna instructions.
@@ -8947,11 +8827,8 @@ def clear_files_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Files Mode instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='files_instruction_category',
-		selector_key='files_instruction_prompt_id',
-		instruction_key='files_system_instructions',
-	)
+	clear_instruction_template( category_key='files_instruction_category',
+		selector_key='files_instruction_prompt_id', instruction_key='files_system_instructions', )
 
 def change_files_instruction_category( ) -> None:
 	"""Change files instruction category.
@@ -8976,10 +8853,8 @@ def load_files_instruction( ) -> None:
 	Returns:
 	    None: This function updates the Files Mode System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='files_instruction_prompt_id',
-		instruction_key='files_system_instructions',
-	)
+	load_instruction_template( selector_key='files_instruction_prompt_id',
+		instruction_key='files_system_instructions', )
 
 def convert_files_instructions( ) -> None:
 	"""Convert files instructions.
@@ -9012,11 +8887,9 @@ def clear_stores_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Vector Stores instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='stores_instruction_category',
+	clear_instruction_template( category_key='stores_instruction_category',
 		selector_key='stores_instruction_prompt_id',
-		instruction_key='stores_system_instructions',
-	)
+		instruction_key='stores_system_instructions', )
 
 def change_stores_instruction_category( ) -> None:
 	"""Change vector-store instruction category.
@@ -9041,10 +8914,8 @@ def load_stores_instruction( ) -> None:
 	Returns:
 	    None: This function updates the Vector Stores System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='stores_instruction_prompt_id',
-		instruction_key='stores_system_instructions',
-	)
+	load_instruction_template( selector_key='stores_instruction_prompt_id',
+		instruction_key='stores_system_instructions', )
 
 def convert_stores_instructions( ) -> None:
 	"""Convert vector-store instructions.
@@ -9070,7 +8941,7 @@ def convert_stores_instructions( ) -> None:
 		converted = convert_markdown( source )
 	
 	st.session_state[ 'stores_system_instructions' ] = converted
-	
+
 def get_purpose_options( files: Any ) -> List[ str ]:
 	"""Get purpose options.
 	
@@ -9890,7 +9761,8 @@ def delete_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ str,
 	
 	return normalize_storage_object( result )
 
-def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str, file_id: str ) -> Dict[ str, Any ]:
+def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str, file_id: str ) -> Dict[
+	str, Any ]:
 	"""Attach file to openai vector store.
 	
 	Purpose:
@@ -10130,8 +10002,9 @@ def list_google_cloud_buckets( buckets: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	raise AttributeError( 'CloudBuckets wrapper does not expose a list method.' )
 
-def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
-	object_name: str, path: str ) ->  Dict[ str, Any ]:
+def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str, object_name: str, path: str ) \
+		-> \
+Dict[ str, Any ]:
 	"""Upload to google cloud bucket.
 	
 	Purpose:
@@ -10178,8 +10051,8 @@ def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
 	
 	raise AttributeError( 'CloudBuckets wrapper does not expose an upload method.' )
 
-def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str,
-	object_name: str ) -> Dict[ str, Any ]:
+def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str, object_name: str ) -> Dict[
+	str, Any ]:
 	"""Delete google cloud bucket object.
 	
 	Purpose:
@@ -10230,11 +10103,9 @@ def clear_filestore_instructions( ) -> None:
 	Returns:
 	    None: This function resets the File Search Stores instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='filestore_instruction_category',
+	clear_instruction_template( category_key='filestore_instruction_category',
 		selector_key='filestore_instruction_prompt_id',
-		instruction_key='filestore_system_instructions',
-	)
+		instruction_key='filestore_system_instructions', )
 
 def change_filestore_instruction_category( ) -> None:
 	"""Change File Search Store instruction category.
@@ -10260,10 +10131,8 @@ def load_filestore_instruction( ) -> None:
 	Returns:
 	    None: This function updates the File Search Stores System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='filestore_instruction_prompt_id',
-		instruction_key='filestore_system_instructions',
-	)
+	load_instruction_template( selector_key='filestore_instruction_prompt_id',
+		instruction_key='filestore_system_instructions', )
 
 def convert_filestore_instructions( ) -> None:
 	"""Convert File Search Store instructions.
@@ -10302,11 +10171,9 @@ def clear_bucket_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Google Cloud Buckets instruction-template contract.
 	"""
-	clear_instruction_template(
-		category_key='bucket_instruction_category',
+	clear_instruction_template( category_key='bucket_instruction_category',
 		selector_key='bucket_instruction_prompt_id',
-		instruction_key='bucket_system_instructions',
-	)
+		instruction_key='bucket_system_instructions', )
 
 def change_bucket_instruction_category( ) -> None:
 	"""Change Google Cloud Bucket instruction category.
@@ -10331,10 +10198,8 @@ def load_bucket_instruction( ) -> None:
 	Returns:
 	    None: This function updates the Google Cloud Buckets System Instructions state.
 	"""
-	load_instruction_template(
-		selector_key='bucket_instruction_prompt_id',
-		instruction_key='bucket_system_instructions',
-	)
+	load_instruction_template( selector_key='bucket_instruction_prompt_id',
+		instruction_key='bucket_system_instructions', )
 
 def convert_bucket_instructions( ) -> None:
 	"""Convert Google Cloud Bucket instructions.
@@ -10361,7 +10226,7 @@ def convert_bucket_instructions( ) -> None:
 		converted = convert_markdown( source )
 	
 	st.session_state[ 'bucket_system_instructions' ] = converted
-	
+
 # ======================================================================================
 # VECTOR STORES RETRIEVAL HOOK UTILITIES
 # ======================================================================================
@@ -10544,8 +10409,9 @@ def build_provider_retrieval_summary( provider_name: Optional[ str ] = None ) ->
 	if ready:
 		return f'{provider}: using {backend_name} resource {resource_id}.'
 	
-	return (f'{provider}: selected {backend_name} resource {resource_id}, but it is not a retrieval '
-	        f'store.')
+	return (
+		f'{provider}: selected {backend_name} resource {resource_id}, but it is not a retrieval '
+		f'store.')
 
 # ---------------- TEXT ----------------
 def text_model_options( chat: object ) -> List[ str ]:
@@ -11034,7 +10900,7 @@ if mode == 'Chat':
 	# Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with (center):
+	with center:
 		st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
 		st.divider( )
 		user_input = st.chat_input( 'Have a Planning, Programming, or Budget Execution question?' )
@@ -11056,8 +10922,8 @@ if mode == 'Chat':
 								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
 								store=chat_store, stream=chat_stream,
 								instruct=st.session_state.get( 'chat_system_instructions',
-									'' ) or None,
-								background=chat_background, reasoning=chat_reasoning or None,
+									'' ) or None, background=chat_background,
+								reasoning=chat_reasoning or None,
 								include=[ 'web_search_call.action.sources',
 									'code_interpreter_call.outputs', 'file_search_call.results', ],
 								tools=[ { 'type': 'file_search',
@@ -11245,7 +11111,7 @@ elif mode == 'Text':
 	text_avatar = get_text_avatar( provider_name )
 	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with ((center)):
+	with ((((center)))):
 		st.subheader( '💬 Text Generation', help=cfg.TEXT_GENERATION )
 		st.divider( )
 		if st.session_state.get( 'clear_instructions' ):
@@ -11409,8 +11275,7 @@ elif mode == 'Text':
 					with gpt_tool_c2:
 						st.text_input( label='Vector Store IDs', key='text_vector_store_ids',
 							help='Optional. Comma-delimited OpenAI vector store IDs for '
-							     'file_search.',
-							width='stretch', placeholder='vs_...' )
+							     'file_search.', width='stretch', placeholder='vs_...' )
 				
 				if provider_name == 'Gemini':
 					gemini_tool_c1, gemini_tool_c2 = st.columns( [ 0.5, 0.5 ], border=True,
@@ -11428,8 +11293,7 @@ elif mode == 'Text':
 							key='text_file_search_store_names_input', value=','.join(
 								st.session_state.get( 'text_file_search_store_names', [ ] ) ),
 							help='Optional. Comma-delimited Gemini File Search Store resource '
-							     'names.',
-							width='stretch' )
+							     'names.', width='stretch' )
 			
 			# ------------------------------------------------------------------
 			# Response Settings
@@ -11503,116 +11367,67 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 				width='stretch' ):
-			text_categories = fetch_prompt_categories(
-				db_path=cfg.DB_PATH,
-				allowed_categories=PROMPT_TEXT_CATEGORIES,
-			)
+			text_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+				allowed_categories=PROMPT_TEXT_CATEGORIES, )
 			
-			synchronize_instruction_category_selection(
-				category_key='text_instruction_category',
-				valid_categories=text_categories,
-			)
+			synchronize_instruction_category_selection( category_key='text_instruction_category',
+				valid_categories=text_categories, )
 			
 			selected_category = str(
-				st.session_state.get( 'text_instruction_category', '' ) or ''
-			).strip( )
+				st.session_state.get( 'text_instruction_category', '' ) or '' ).strip( )
 			
-			selected_categories = (
-				[ selected_category ]
-				if selected_category
-				else [ ]
-			)
+			selected_categories = ([ selected_category ] if selected_category else [ ])
 			
-			prompt_options = fetch_prompt_options(
-				db_path=cfg.DB_PATH,
-				categories=selected_categories,
-			)
+			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+				categories=selected_categories, )
 			
-			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-				int( prompt[ 'ID' ] ): prompt
-				for prompt in prompt_options
-				if isinstance( prompt, dict )
-				and isinstance( prompt.get( 'ID' ), int )
-				and not isinstance( prompt.get( 'ID' ), bool )
-			}
+			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+				prompt in prompt_options if
+				isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
 			
-			synchronize_instruction_prompt_selection(
-				selector_key='text_instruction_prompt_id',
-				valid_prompt_ids=prompt_ids,
-			)
+			synchronize_instruction_prompt_selection( selector_key='text_instruction_prompt_id',
+				valid_prompt_ids=prompt_ids, )
 			
-			in_left, in_right = st.columns(
-				[ 0.75, 0.25 ],
-				border=True,
-				gap='xxsmall',
-			)
+			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area(
-					label='Enter Text',
-					height=90,
-					width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS,
-					key='text_system_instructions',
-				)
+				st.text_area( label='Enter Text', height=90, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions', )
 			
 			with in_right:
 				category_options = [ '' ] + text_categories
 				
-				st.selectbox(
-					label='Category',
-					options=category_options,
-					key='text_instruction_category',
-					on_change=change_text_instruction_category,
-					format_func=lambda category: (
-						'Select Category'
-						if category == '' and len( text_categories ) > 0
-						else 'No Categories Found'
-						if category == ''
-						else category
-					),
+				st.selectbox( label='Category', options=category_options,
+					key='text_instruction_category', on_change=change_text_instruction_category,
+					format_func=lambda category: ('Select Category' if category == '' and len(
+						text_categories ) > 0 else 'No Categories Found' if category == '' else
+					category),
 					disabled=len( text_categories ) == 0,
-					help='Select a Text Mode prompt category.',
-				)
+					help='Select a Text Mode prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 				
-				st.selectbox(
-					label='Use Template',
-					options=template_options,
-					key='text_instruction_prompt_id',
-					on_change=load_text_instruction_template,
+				st.selectbox( label='Use Template', options=template_options,
+					key='text_instruction_prompt_id', on_change=load_text_instruction_template,
 					format_func=lambda prompt_id: (
-						'Select Template'
-						if prompt_id is None and selected_category
-						else 'Select Category First'
-						if prompt_id is None
-						else format_prompt_option(
-							prompt_id=prompt_id,
-							prompts=prompt_lookup,
-						)
-					),
+						'Select Template' if prompt_id is None and selected_category else 'Select '
+						                                                                  'Category First' if prompt_id is None else format_prompt_option(
+							prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
-					help='Load a System Instructions template from the selected category.',
-				)
+					help='Load a System Instructions template from the selected category.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
 			with btn_c1:
-				st.button(
-					label='Clear Instructions',
-					width='stretch',
-					on_click=clear_text_instructions,
-				)
+				st.button( label='Clear Instructions', width='stretch',
+					on_click=clear_text_instructions, )
 			
 			with btn_c2:
-				st.button(
-					label='XML <-> Markdown',
-					width='stretch',
-					on_click=convert_text_system_instructions,
-				)
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=convert_text_system_instructions, )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
@@ -11753,12 +11568,12 @@ elif mode == 'Text':
 								st.session_state.get( 'text_file_search_store_names_input', '' ),
 								delimiter=',' )
 							
-							selected_file_search_store_names = \
-								get_active_gemini_file_search_store_names( 'Gemini' )
+							selected_file_search_store_names = get_active_gemini_file_search_store_names( 'Gemini' )
 							
-							st.session_state[ 'text_file_search_store_names' ] = \
-								merge_unique_strings( primary=manual_file_search_store_names,
-									secondary=selected_file_search_store_names )
+							st.session_state[
+								'text_file_search_store_names' ] = merge_unique_strings(
+								primary=manual_file_search_store_names,
+								secondary=selected_file_search_store_names )
 							
 							response_text = text.generate_text( prompt=prompt,
 								model=st.session_state.get( 'text_model' ),
@@ -11800,18 +11615,19 @@ elif mode == 'Text':
 									st.session_state[ 'text_gemini_history' ] = structured_history
 						elif provider_name == 'Grok':
 							grok_collection_ids = get_active_grok_collection_ids( 'Grok' )
-							if len( grok_collection_ids ) > 0 and provider_supports( 'VectorStores', 'Grok' ):
+							if len( grok_collection_ids ) > 0 and provider_supports(
+									'VectorStores',
+									'Grok' ):
 								try:
 									grok_vectorstores = get_vectorstores_module( 'Grok' )
 									search_result = grok_vectorstores.search( prompt=prompt,
 										store_id=grok_collection_ids[ 0 ] )
 									
 									if isinstance( search_result, str ) and search_result.strip( ):
-										prompt = (
-											'Use xAI Collection search result as retrieval '
-											'context.\n\n'
-											f'{search_result.strip( )}\n\n'
-											f'User Question:\n{prompt}')
+										prompt = ('Use xAI Collection search result as retrieval '
+										          'context.\n\n'
+										          f'{search_result.strip( )}\n\n'
+										          f'User Question:\n{prompt}')
 								except Exception as exc:
 									exception = Error( exc )
 									exception.module = 'app'
@@ -12140,142 +11956,83 @@ elif mode == 'Images':
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 				width='stretch' ):
-			active_image_mode = str(
-				st.session_state.get( 'image_mode', '' ) or ''
-			).strip( )
+			active_image_mode = str( st.session_state.get( 'image_mode', '' ) or '' ).strip( )
 			
-			allowed_categories = resolve_image_prompt_categories(
-				image_mode=active_image_mode,
-			)
+			allowed_categories = resolve_image_prompt_categories( image_mode=active_image_mode, )
 			
-			image_categories = fetch_prompt_categories(
-				db_path=cfg.DB_PATH,
-				allowed_categories=allowed_categories,
-			)
+			image_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+				allowed_categories=allowed_categories, )
 			
-			operation_category = PROMPT_IMAGE_CATEGORY_MAP.get(
-				active_image_mode
-			)
+			operation_category = PROMPT_IMAGE_CATEGORY_MAP.get( active_image_mode )
 			
-			if (
-				operation_category is not None
-				and operation_category in image_categories
-			):
+			if (operation_category is not None and operation_category in image_categories):
 				st.session_state[ 'image_instruction_category' ] = operation_category
 			
-			synchronize_instruction_category_selection(
-				category_key='image_instruction_category',
-				valid_categories=image_categories,
-			)
+			synchronize_instruction_category_selection( category_key='image_instruction_category',
+				valid_categories=image_categories, )
 			
 			selected_category = str(
-				st.session_state.get( 'image_instruction_category', '' ) or ''
-			).strip( )
+				st.session_state.get( 'image_instruction_category', '' ) or '' ).strip( )
 			
-			selected_categories = (
-				[ selected_category ]
-				if selected_category
-				else [ ]
-			)
+			selected_categories = ([ selected_category ] if selected_category else [ ])
 			
-			prompt_options = fetch_prompt_options(
-				db_path=cfg.DB_PATH,
-				categories=selected_categories,
-			)
+			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+				categories=selected_categories, )
 			
-			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-				int( prompt[ 'ID' ] ): prompt
-				for prompt in prompt_options
-				if isinstance( prompt, dict )
-				and isinstance( prompt.get( 'ID' ), int )
-				and not isinstance( prompt.get( 'ID' ), bool )
-			}
+			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+				prompt in prompt_options if
+				isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
 			
-			synchronize_instruction_prompt_selection(
-				selector_key='image_instruction_prompt_id',
-				valid_prompt_ids=prompt_ids,
-			)
+			synchronize_instruction_prompt_selection( selector_key='image_instruction_prompt_id',
+				valid_prompt_ids=prompt_ids, )
 			
-			in_left, in_right = st.columns(
-				[ 0.75, 0.25 ],
-				border=True,
-				gap='xxsmall',
-			)
+			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area(
-					label='Enter Text',
-					height=90,
-					width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS,
-					key='image_system_instructions',
-				)
+				st.text_area( label='Enter Text', height=90, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions', )
 			
 			with in_right:
 				if operation_category is None:
 					category_options = [ '' ] + image_categories
 					
-					st.selectbox(
-						label='Category',
-						options=category_options,
+					st.selectbox( label='Category', options=category_options,
 						key='image_instruction_category',
-						on_change=change_image_instruction_category,
-						format_func=lambda category: (
-							'Select Category'
-							if category == '' and len( image_categories ) > 0
-							else 'No Categories Found'
-							if category == ''
-							else category
-						),
+						on_change=change_image_instruction_category, format_func=lambda category: (
+							'Select Category' if category == '' and len(
+								image_categories ) > 0 else 'No Categories Found' if category ==
+							                                                         '' else
+							category),
 						disabled=len( image_categories ) == 0,
-						help='Select an Images Mode prompt category.',
-					)
+						help='Select an Images Mode prompt category.', )
 				else:
-					st.text_input(
-						label='Category',
-						value=operation_category,
-						disabled=True,
-						help='The active image operation determines the prompt category.',
-					)
+					st.text_input( label='Category', value=operation_category, disabled=True,
+						help='The active image operation determines the prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 				
-				st.selectbox(
-					label='Use Template',
-					options=template_options,
-					key='image_instruction_prompt_id',
-					on_change=load_image_instruction_template,
+				st.selectbox( label='Use Template', options=template_options,
+					key='image_instruction_prompt_id', on_change=load_image_instruction_template,
 					format_func=lambda prompt_id: (
-						'Select Template'
-						if prompt_id is None and selected_category
-						else 'Select Image Operation First'
-						if prompt_id is None
-						else format_prompt_option(
-							prompt_id=prompt_id,
-							prompts=prompt_lookup,
-						)
-					),
+						'Select Template' if prompt_id is None and selected_category else 'Select '
+						                                                                  'Image '
+						                                                                  'Operation First' if prompt_id is None else format_prompt_option(
+							prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
-					help='Load a System Instructions template for the active image workflow.',
-				)
+					help='Load a System Instructions template for the active image workflow.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
 			with btn_c1:
-				st.button(
-					label='Clear Instructions',
-					width='stretch',
-					on_click=clear_image_instructions,
-				)
+				st.button( label='Clear Instructions', width='stretch',
+					on_click=clear_image_instructions, )
 			
 			with btn_c2:
-				st.button(
-					label='XML <-> Markdown',
-					width='stretch',
-					on_click=convert_image_system_instructions,
-				)
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=convert_image_system_instructions, )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
@@ -12748,23 +12505,14 @@ elif mode == 'Audio':
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 				width='stretch' ):
-			active_audio_task = str(
-				st.session_state.get( 'audio_task', '' ) or ''
-			).strip( )
+			active_audio_task = str( st.session_state.get( 'audio_task', '' ) or '' ).strip( )
 			
-			allowed_categories = resolve_audio_prompt_categories(
-				audio_task=active_audio_task,
-			)
+			allowed_categories = resolve_audio_prompt_categories( audio_task=active_audio_task, )
 			
-			audio_categories = fetch_prompt_categories(
-				db_path=cfg.DB_PATH,
-				allowed_categories=allowed_categories,
-			)
+			audio_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+				allowed_categories=allowed_categories, )
 			
-			resolved_category = PROMPT_AUDIO_CATEGORY_MAP.get(
-				active_audio_task,
-				'',
-			)
+			resolved_category = PROMPT_AUDIO_CATEGORY_MAP.get( active_audio_task, '', )
 			
 			if resolved_category in audio_categories:
 				st.session_state[ 'audio_instruction_category' ] = resolved_category
@@ -12772,100 +12520,59 @@ elif mode == 'Audio':
 				st.session_state[ 'audio_instruction_category' ] = ''
 			
 			selected_category = str(
-				st.session_state.get( 'audio_instruction_category', '' ) or ''
-			).strip( )
+				st.session_state.get( 'audio_instruction_category', '' ) or '' ).strip( )
 			
-			selected_categories = (
-				[ selected_category ]
-				if selected_category
-				else [ ]
-			)
+			selected_categories = ([ selected_category ] if selected_category else [ ])
 			
-			prompt_options = fetch_prompt_options(
-				db_path=cfg.DB_PATH,
-				categories=selected_categories,
-			)
+			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+				categories=selected_categories, )
 			
-			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-				int( prompt[ 'ID' ] ): prompt
-				for prompt in prompt_options
-				if isinstance( prompt, dict )
-				and isinstance( prompt.get( 'ID' ), int )
-				and not isinstance( prompt.get( 'ID' ), bool )
-			}
+			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+				prompt in prompt_options if
+				isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
 			
-			synchronize_instruction_prompt_selection(
-				selector_key='audio_instruction_prompt_id',
-				valid_prompt_ids=prompt_ids,
-			)
+			synchronize_instruction_prompt_selection( selector_key='audio_instruction_prompt_id',
+				valid_prompt_ids=prompt_ids, )
 			
-			in_left, in_right = st.columns(
-				[ 0.75, 0.25 ],
-				border=True,
-				gap='xxsmall',
-			)
+			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area(
-					label='Enter Text',
-					height=90,
-					width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS,
-					key='audio_system_instructions',
-				)
+				st.text_area( label='Enter Text', height=90, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='audio_system_instructions', )
 			
 			with in_right:
 				category_label = (
-					selected_category
-					if selected_category
-					else 'Select Audio Task First'
-				)
+					selected_category if selected_category else 'Select Audio Task First')
 				
-				st.text_input(
-					label='Category',
-					value=category_label,
-					disabled=True,
-					help='The active audio task determines the prompt category.',
-				)
+				st.text_input( label='Category', value=category_label, disabled=True,
+					help='The active audio task determines the prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 				
-				st.selectbox(
-					label='Use Template',
-					options=template_options,
-					key='audio_instruction_prompt_id',
-					on_change=load_audio_instruction_template,
+				st.selectbox( label='Use Template', options=template_options,
+					key='audio_instruction_prompt_id', on_change=load_audio_instruction_template,
 					format_func=lambda prompt_id: (
-						'Select Template'
-						if prompt_id is None and selected_category
-						else 'Select Audio Task First'
-						if prompt_id is None
-						else format_prompt_option(
-							prompt_id=prompt_id,
-							prompts=prompt_lookup,
-						)
-					),
+						'Select Template' if prompt_id is None and selected_category else 'Select '
+						                                                                  'Audio '
+						                                                                  'Task '
+						                                                                  'First'
+						if prompt_id is None else format_prompt_option(
+							prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
-					help='Load a System Instructions template for the active audio task.',
-				)
+					help='Load a System Instructions template for the active audio task.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
 			with btn_c1:
-				st.button(
-					label='Clear Instructions',
-					width='stretch',
-					on_click=clear_audio_instructions,
-				)
+				st.button( label='Clear Instructions', width='stretch',
+					on_click=clear_audio_instructions, )
 			
 			with btn_c2:
-				st.button(
-					label='XML <-> Markdown',
-					width='stretch',
-					on_click=convert_audio_system_instructions,
-				)
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=convert_audio_system_instructions, )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
@@ -13484,10 +13191,9 @@ elif mode == 'Document Q&A':
 						help='Comma-delimited Gemini File Search Store resource names.' )
 				
 				elif source_value == 'xAI Collection':
-					st.info(
-						'Grok Document Q&A uses the xAI Collection selected in Vector Stores '
-						'mode. '
-						'Select or enter a collection ID there before asking questions.' )
+					st.info( 'Grok Document Q&A uses the xAI Collection selected in Vector Stores '
+					         'mode. '
+					         'Select or enter a collection ID there before asking questions.' )
 			
 			# ------------------------------------------------------------------
 			# Model Controls
@@ -13551,126 +13257,75 @@ elif mode == 'Document Q&A':
 					if st.button( label='Rebuild Index', key='docqna_rebuild_index',
 							width='stretch' ):
 						rebuild_docqna_index( )
-						st.success( st.session_state.get( 'docqna_index_status', 'Indexed' ) )
-		
-				# ------------------------------------------------------------------
+						st.success( st.session_state.get( 'docqna_index_status',
+							'Indexed' ) )  #
+					# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 				width='stretch' ):
-			docqna_categories = fetch_prompt_categories(
-				db_path=cfg.DB_PATH,
-				allowed_categories=PROMPT_DOCQNA_CATEGORIES,
-			)
+			docqna_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+				allowed_categories=PROMPT_DOCQNA_CATEGORIES, )
 			
-			synchronize_instruction_category_selection(
-				category_key='docqna_instruction_category',
-				valid_categories=docqna_categories,
-			)
+			synchronize_instruction_category_selection( category_key='docqna_instruction_category',
+				valid_categories=docqna_categories, )
 			
 			selected_category = str(
-				st.session_state.get(
-					'docqna_instruction_category',
-					'',
-				) or ''
-			).strip( )
+				st.session_state.get( 'docqna_instruction_category', '', ) or '' ).strip( )
 			
-			selected_categories = (
-				[ selected_category ]
-				if selected_category
-				else [ ]
-			)
+			selected_categories = ([ selected_category ] if selected_category else [ ])
 			
-			prompt_options = fetch_prompt_options(
-				db_path=cfg.DB_PATH,
-				categories=selected_categories,
-			)
+			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+				categories=selected_categories, )
 			
-			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-				int( prompt[ 'ID' ] ): prompt
-				for prompt in prompt_options
-				if isinstance( prompt, dict )
-				and isinstance( prompt.get( 'ID' ), int )
-				and not isinstance( prompt.get( 'ID' ), bool )
-			}
+			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+				prompt in prompt_options if
+				isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
 			
-			synchronize_instruction_prompt_selection(
-				selector_key='docqna_instruction_prompt_id',
-				valid_prompt_ids=prompt_ids,
-			)
+			synchronize_instruction_prompt_selection( selector_key='docqna_instruction_prompt_id',
+				valid_prompt_ids=prompt_ids, )
 			
-			in_left, in_right = st.columns(
-				[ 0.75, 0.25 ],
-				border=True,
-				gap='xxsmall',
-			)
+			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area(
-					label='Enter Text',
-					height=90,
-					width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS,
-					key='docqna_system_instructions',
-				)
+				st.text_area( label='Enter Text', height=90, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='docqna_system_instructions', )
 			
 			with in_right:
 				category_options = [ '' ] + docqna_categories
 				
-				st.selectbox(
-					label='Category',
-					options=category_options,
+				st.selectbox( label='Category', options=category_options,
 					key='docqna_instruction_category',
 					on_change=change_docqna_instruction_category,
-					format_func=lambda category: (
-						'Select Category'
-						if category == '' and len( docqna_categories ) > 0
-						else 'No Categories Found'
-						if category == ''
-						else category
-					),
+					format_func=lambda category: ('Select Category' if category == '' and len(
+						docqna_categories ) > 0 else 'No Categories Found' if category == '' else
+					category),
 					disabled=len( docqna_categories ) == 0,
-					help='Select a Document Q&A prompt category.',
-				)
+					help='Select a Document Q&A prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 				
-				st.selectbox(
-					label='Use Template',
-					options=template_options,
-					key='docqna_instruction_prompt_id',
-					on_change=load_docqna_instruction,
+				st.selectbox( label='Use Template', options=template_options,
+					key='docqna_instruction_prompt_id', on_change=load_docqna_instruction,
 					format_func=lambda prompt_id: (
-						'Select Template'
-						if prompt_id is None and selected_category
-						else 'Select Category First'
-						if prompt_id is None
-						else format_prompt_option(
-							prompt_id=prompt_id,
-							prompts=prompt_lookup,
-						)
-					),
+						'Select Template' if prompt_id is None and selected_category else 'Select '
+						                                                                  'Category First' if prompt_id is None else format_prompt_option(
+							prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
-					help='Load a System Instructions template for Document Q&A.',
-				)
+					help='Load a System Instructions template for Document Q&A.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
 			with btn_c1:
-				st.button(
-					label='Clear Instructions',
-					width='stretch',
-					on_click=clear_docqna_instructions,
-				)
+				st.button( label='Clear Instructions', width='stretch',
+					on_click=clear_docqna_instructions, )
 			
 			with btn_c2:
-				st.button(
-					label='XML <-> Markdown',
-					width='stretch',
-					on_click=convert_docqna_instructions,
-				)
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=convert_docqna_instructions, )
 		
 		# ------------------------------------------------------------------
 		# Document Loading
@@ -13936,126 +13591,74 @@ elif mode == 'Files':
 						key='files_max_tokens', help=cfg.MAX_OUTPUT_TOKENS )
 				
 				with analysis_c5:
-					st.toggle( label='Store', key='files_store', help=cfg.STORE )
-		
+					st.toggle( label='Store', key='files_store',
+						help=cfg.STORE )  #
 				# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 				width='stretch' ):
-			files_categories = fetch_prompt_categories(
-				db_path=cfg.DB_PATH,
-				allowed_categories=PROMPT_FILES_CATEGORIES,
-			)
+			files_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+				allowed_categories=PROMPT_FILES_CATEGORIES, )
 			
-			synchronize_instruction_category_selection(
-				category_key='files_instruction_category',
-				valid_categories=files_categories,
-			)
+			synchronize_instruction_category_selection( category_key='files_instruction_category',
+				valid_categories=files_categories, )
 			
 			selected_category = str(
-				st.session_state.get(
-					'files_instruction_category',
-					'',
-				) or ''
-			).strip( )
+				st.session_state.get( 'files_instruction_category', '', ) or '' ).strip( )
 			
-			selected_categories = (
-				[ selected_category ]
-				if selected_category
-				else [ ]
-			)
+			selected_categories = ([ selected_category ] if selected_category else [ ])
 			
-			prompt_options = fetch_prompt_options(
-				db_path=cfg.DB_PATH,
-				categories=selected_categories,
-			)
+			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+				categories=selected_categories, )
 			
-			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-				int( prompt[ 'ID' ] ): prompt
-				for prompt in prompt_options
-				if isinstance( prompt, dict )
-				and isinstance( prompt.get( 'ID' ), int )
-				and not isinstance( prompt.get( 'ID' ), bool )
-			}
+			prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+				prompt in prompt_options if
+				isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
 			
-			synchronize_instruction_prompt_selection(
-				selector_key='files_instruction_prompt_id',
-				valid_prompt_ids=prompt_ids,
-			)
+			synchronize_instruction_prompt_selection( selector_key='files_instruction_prompt_id',
+				valid_prompt_ids=prompt_ids, )
 			
-			in_left, in_right = st.columns(
-				[ 0.75, 0.25 ],
-				border=True,
-				gap='xxsmall',
-			)
+			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
 			with in_left:
-				st.text_area(
-					label='Enter Text',
-					height=90,
-					width='stretch',
-					help=cfg.SYSTEM_INSTRUCTIONS,
-					key='files_system_instructions',
-				)
+				st.text_area( label='Enter Text', height=90, width='stretch',
+					help=cfg.SYSTEM_INSTRUCTIONS, key='files_system_instructions', )
 			
 			with in_right:
 				category_options = [ '' ] + files_categories
 				
-				st.selectbox(
-					label='Category',
-					options=category_options,
-					key='files_instruction_category',
-					on_change=change_files_instruction_category,
-					format_func=lambda category: (
-						'Select Category'
-						if category == '' and len( files_categories ) > 0
-						else 'No Categories Found'
-						if category == ''
-						else category
-					),
+				st.selectbox( label='Category', options=category_options,
+					key='files_instruction_category', on_change=change_files_instruction_category,
+					format_func=lambda category: ('Select Category' if category == '' and len(
+						files_categories ) > 0 else 'No Categories Found' if category == '' else
+					category),
 					disabled=len( files_categories ) == 0,
-					help='Select a Files Mode prompt category.',
-				)
+					help='Select a Files Mode prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 				
-				st.selectbox(
-					label='Use Template',
-					options=template_options,
-					key='files_instruction_prompt_id',
-					on_change=load_files_instruction,
+				st.selectbox( label='Use Template', options=template_options,
+					key='files_instruction_prompt_id', on_change=load_files_instruction,
 					format_func=lambda prompt_id: (
-						'Select Template'
-						if prompt_id is None and selected_category
-						else 'Select Category First'
-						if prompt_id is None
-						else format_prompt_option(
-							prompt_id=prompt_id,
-							prompts=prompt_lookup,
-						)
-					),
+						'Select Template' if prompt_id is None and selected_category else 'Select '
+						                                                                  'Category First' if prompt_id is None else format_prompt_option(
+							prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
-					help='Load a System Instructions template for Files Mode.',
-				)
+					help='Load a System Instructions template for Files Mode.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 			
 			with btn_c1:
-				st.button(
-					label='Clear Instructions',
-					width='stretch',
-					on_click=clear_files_instructions,
-				)
+				st.button( label='Clear Instructions', width='stretch',
+					on_click=clear_files_instructions, )
 			
 			with btn_c2:
-				st.button(
-					label='XML <-> Markdown',
-					width='stretch',
-					on_click=convert_files_instructions,
-				)
+				st.button( label='XML <-> Markdown', width='stretch',
+					on_click=convert_files_instructions, )
 		
 		# ------------------------------------------------------------------
 		# File Operations
@@ -14345,120 +13948,72 @@ elif mode == 'Vector Stores':
 		if provider_name in [ 'GPT', 'Grok' ]:
 			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 					width='stretch' ):
-				stores_categories = fetch_prompt_categories(
-					db_path=cfg.DB_PATH,
-					allowed_categories=PROMPT_VECTORSTORE_CATEGORIES,
-				)
+				stores_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+					allowed_categories=PROMPT_VECTORSTORE_CATEGORIES, )
 				
 				synchronize_instruction_category_selection(
 					category_key='stores_instruction_category',
-					valid_categories=stores_categories,
-				)
+					valid_categories=stores_categories, )
 				
 				selected_category = str(
-					st.session_state.get(
-						'stores_instruction_category',
-						'',
-					) or ''
-				).strip( )
+					st.session_state.get( 'stores_instruction_category', '', ) or '' ).strip( )
 				
-				selected_categories = (
-					[ selected_category ]
-					if selected_category
-					else [ ]
-				)
+				selected_categories = ([ selected_category ] if selected_category else [ ])
 				
-				prompt_options = fetch_prompt_options(
-					db_path=cfg.DB_PATH,
-					categories=selected_categories,
-				)
+				prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+					categories=selected_categories, )
 				
-				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-					int( prompt[ 'ID' ] ): prompt
-					for prompt in prompt_options
-					if isinstance( prompt, dict )
-					and isinstance( prompt.get( 'ID' ), int )
-					and not isinstance( prompt.get( 'ID' ), bool )
-				}
+				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+					prompt in prompt_options if
+					isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+						int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 				
 				prompt_ids = list( prompt_lookup.keys( ) )
 				
 				synchronize_instruction_prompt_selection(
-					selector_key='stores_instruction_prompt_id',
-					valid_prompt_ids=prompt_ids,
-				)
+					selector_key='stores_instruction_prompt_id', valid_prompt_ids=prompt_ids, )
 				
-				in_left, in_right = st.columns(
-					[ 0.75, 0.25 ],
-					border=True,
-					gap='xxsmall',
-				)
+				in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 				
 				with in_left:
-					st.text_area(
-						label='Enter Text',
-						height=90,
-						width='stretch',
-						help=cfg.SYSTEM_INSTRUCTIONS,
-						key='stores_system_instructions',
-					)
+					st.text_area( label='Enter Text', height=90, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS, key='stores_system_instructions', )
 				
 				with in_right:
 					category_options = [ '' ] + stores_categories
 					
-					st.selectbox(
-						label='Category',
-						options=category_options,
+					st.selectbox( label='Category', options=category_options,
 						key='stores_instruction_category',
-						on_change=change_stores_instruction_category,
-						format_func=lambda category: (
-							'Select Category'
-							if category == '' and len( stores_categories ) > 0
-							else 'No Categories Found'
-							if category == ''
-							else category
-						),
+						on_change=change_stores_instruction_category, format_func=lambda
+							category: (
+							'Select Category' if category == '' and len(
+								stores_categories ) > 0 else 'No Categories Found' if category ==
+							                                                          '' else
+							category),
 						disabled=len( stores_categories ) == 0,
-						help='Select a Vector Stores prompt category.',
-					)
+						help='Select a Vector Stores prompt category.', )
 					
 					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 					
-					st.selectbox(
-						label='Use Template',
-						options=template_options,
-						key='stores_instruction_prompt_id',
-						on_change=load_stores_instruction,
+					st.selectbox( label='Use Template', options=template_options,
+						key='stores_instruction_prompt_id', on_change=load_stores_instruction,
 						format_func=lambda prompt_id: (
-							'Select Template'
-							if prompt_id is None and selected_category
-							else 'Select Category First'
-							if prompt_id is None
-							else format_prompt_option(
-								prompt_id=prompt_id,
-								prompts=prompt_lookup,
-							)
-						),
+							'Select Template' if prompt_id is None and selected_category else
+							'Select Category First' if prompt_id is None else format_prompt_option(
+								prompt_id=prompt_id, prompts=prompt_lookup, )),
 						disabled=not selected_category or len( prompt_ids ) == 0,
-						help='Load a System Instructions template for Vector Stores Mode.',
-					)
+						help='Load a System Instructions template for Vector Stores Mode.', )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 				
 				with btn_c1:
-					st.button(
-						label='Clear Instructions',
-						width='stretch',
-						on_click=clear_stores_instructions,
-					)
+					st.button( label='Clear Instructions', width='stretch',
+						on_click=clear_stores_instructions, )
 				
 				with btn_c2:
-					st.button(
-						label='XML <-> Markdown',
-						width='stretch',
-						on_click=convert_stores_instructions,
-					)
-			
+					st.button( label='XML <-> Markdown', width='stretch',
+						on_click=convert_stores_instructions, )
+		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ------------------------------------------------------------------
@@ -14870,121 +14425,72 @@ elif mode == 'Vector Stores':
 			# ------------------------------------------------------------------
 			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 					width='stretch' ):
-				filestore_categories = fetch_prompt_categories(
-					db_path=cfg.DB_PATH,
-					allowed_categories=PROMPT_FILESTORE_CATEGORIES,
-				)
+				filestore_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+					allowed_categories=PROMPT_FILESTORE_CATEGORIES, )
 				
 				synchronize_instruction_category_selection(
 					category_key='filestore_instruction_category',
-					valid_categories=filestore_categories,
-				)
+					valid_categories=filestore_categories, )
 				
 				selected_category = str(
-					st.session_state.get(
-						'filestore_instruction_category',
-						'',
-					) or ''
-				).strip( )
+					st.session_state.get( 'filestore_instruction_category', '', ) or '' ).strip( )
 				
-				selected_categories = (
-					[ selected_category ]
-					if selected_category
-					else [ ]
-				)
+				selected_categories = ([ selected_category ] if selected_category else [ ])
 				
-				prompt_options = fetch_prompt_options(
-					db_path=cfg.DB_PATH,
-					categories=selected_categories,
-				)
+				prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+					categories=selected_categories, )
 				
-				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-					int( prompt[ 'ID' ] ): prompt
-					for prompt in prompt_options
-					if isinstance( prompt, dict )
-					and isinstance( prompt.get( 'ID' ), int )
-					and not isinstance( prompt.get( 'ID' ), bool )
-				}
+				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+					prompt in prompt_options if
+					isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+						int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 				
 				prompt_ids = list( prompt_lookup.keys( ) )
 				
 				synchronize_instruction_prompt_selection(
-					selector_key='filestore_instruction_prompt_id',
-					valid_prompt_ids=prompt_ids,
-				)
+					selector_key='filestore_instruction_prompt_id', valid_prompt_ids=prompt_ids, )
 				
-				in_left, in_right = st.columns(
-					[ 0.75, 0.25 ],
-					border=True,
-					gap='xxsmall',
-				)
+				in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 				
 				with in_left:
-					st.text_area(
-						label='Enter Text',
-						height=90,
-						width='stretch',
-						help=cfg.SYSTEM_INSTRUCTIONS,
-						key='filestore_system_instructions',
-					)
+					st.text_area( label='Enter Text', height=90, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS, key='filestore_system_instructions', )
 				
 				with in_right:
 					category_options = [ '' ] + filestore_categories
 					
-					st.selectbox(
-						label='Category',
-						options=category_options,
+					st.selectbox( label='Category', options=category_options,
 						key='filestore_instruction_category',
 						on_change=change_filestore_instruction_category,
-						format_func=lambda category: (
-							'Select Category'
-							if category == '' and len( filestore_categories ) > 0
-							else 'No Categories Found'
-							if category == ''
-							else category
-						),
+						format_func=lambda category: ('Select Category' if category == '' and len(
+							filestore_categories ) > 0 else 'No Categories Found' if category ==
+						                                                             '' else
+						category),
 						disabled=len( filestore_categories ) == 0,
-						help='Select a Gemini File Search Stores prompt category.',
-					)
+						help='Select a Gemini File Search Stores prompt category.', )
 					
 					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 					
-					st.selectbox(
-						label='Use Template',
-						options=template_options,
+					st.selectbox( label='Use Template', options=template_options,
 						key='filestore_instruction_prompt_id',
 						on_change=load_filestore_instruction,
 						format_func=lambda prompt_id: (
-							'Select Template'
-							if prompt_id is None and selected_category
-							else 'Select Category First'
-							if prompt_id is None
-							else format_prompt_option(
-								prompt_id=prompt_id,
-								prompts=prompt_lookup,
-							)
-						),
-						disabled=not selected_category or len( prompt_ids ) == 0,
-						help=(
-							'Load a System Instructions template for Gemini File Search Stores.'
-						),
-					)
+							'Select Template' if prompt_id is None and selected_category else
+							'Select Category First' if prompt_id is None else format_prompt_option(
+								prompt_id=prompt_id, prompts=prompt_lookup, )),
+						disabled=not selected_category or len( prompt_ids ) == 0, help=(
+							'Load a System Instructions template for Gemini File Search '
+							'Stores.'), )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 				
 				with btn_c1:
-					st.button(
-						label='Clear Instructions',
-						width='stretch',
-						on_click=clear_filestore_instructions,
-					)
+					st.button( label='Clear Instructions', width='stretch',
+						on_click=clear_filestore_instructions, )
 				
 				with btn_c2:
-					st.button(
-						label='XML <-> Markdown',
-						width='stretch',
-						on_click=convert_filestore_instructions,
-					)
+					st.button( label='XML <-> Markdown', width='stretch',
+						on_click=convert_filestore_instructions, )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
@@ -15128,121 +14634,71 @@ elif mode == 'Vector Stores':
 			# ------------------------------------------------------------------
 			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
 					width='stretch' ):
-				bucket_categories = fetch_prompt_categories(
-					db_path=cfg.DB_PATH,
-					allowed_categories=PROMPT_BUCKET_CATEGORIES,
-				)
+				bucket_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
+					allowed_categories=PROMPT_BUCKET_CATEGORIES, )
 				
 				synchronize_instruction_category_selection(
 					category_key='bucket_instruction_category',
-					valid_categories=bucket_categories,
-				)
+					valid_categories=bucket_categories, )
 				
 				selected_category = str(
-					st.session_state.get(
-						'bucket_instruction_category',
-						'',
-					) or ''
-				).strip( )
+					st.session_state.get( 'bucket_instruction_category', '', ) or '' ).strip( )
 				
-				selected_categories = (
-					[ selected_category ]
-					if selected_category
-					else [ ]
-				)
+				selected_categories = ([ selected_category ] if selected_category else [ ])
 				
-				prompt_options = fetch_prompt_options(
-					db_path=cfg.DB_PATH,
-					categories=selected_categories,
-				)
+				prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
+					categories=selected_categories, )
 				
-				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = {
-					int( prompt[ 'ID' ] ): prompt
-					for prompt in prompt_options
-					if isinstance( prompt, dict )
-					and isinstance( prompt.get( 'ID' ), int )
-					and not isinstance( prompt.get( 'ID' ), bool )
-				}
+				prompt_lookup: Dict[ int, Dict[ str, Any ] ] = { int( prompt[ 'ID' ] ): prompt for
+					prompt in prompt_options if
+					isinstance( prompt, dict ) and isinstance( prompt.get( 'ID' ),
+						int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 				
 				prompt_ids = list( prompt_lookup.keys( ) )
 				
 				synchronize_instruction_prompt_selection(
-					selector_key='bucket_instruction_prompt_id',
-					valid_prompt_ids=prompt_ids,
-				)
+					selector_key='bucket_instruction_prompt_id', valid_prompt_ids=prompt_ids, )
 				
-				in_left, in_right = st.columns(
-					[ 0.75, 0.25 ],
-					border=True,
-					gap='xxsmall',
-				)
+				in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 				
 				with in_left:
-					st.text_area(
-						label='Enter Text',
-						height=90,
-						width='stretch',
-						help=cfg.SYSTEM_INSTRUCTIONS,
-						key='bucket_system_instructions',
-					)
+					st.text_area( label='Enter Text', height=90, width='stretch',
+						help=cfg.SYSTEM_INSTRUCTIONS, key='bucket_system_instructions', )
 				
 				with in_right:
 					category_options = [ '' ] + bucket_categories
 					
-					st.selectbox(
-						label='Category',
-						options=category_options,
+					st.selectbox( label='Category', options=category_options,
 						key='bucket_instruction_category',
-						on_change=change_bucket_instruction_category,
-						format_func=lambda category: (
-							'Select Category'
-							if category == '' and len( bucket_categories ) > 0
-							else 'No Categories Found'
-							if category == ''
-							else category
-						),
+						on_change=change_bucket_instruction_category, format_func=lambda
+							category: (
+							'Select Category' if category == '' and len(
+								bucket_categories ) > 0 else 'No Categories Found' if category ==
+							                                                          '' else
+							category),
 						disabled=len( bucket_categories ) == 0,
-						help='Select a Google Cloud Buckets prompt category.',
-					)
+						help='Select a Google Cloud Buckets prompt category.', )
 					
 					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
 					
-					st.selectbox(
-						label='Use Template',
-						options=template_options,
-						key='bucket_instruction_prompt_id',
-						on_change=load_bucket_instruction,
+					st.selectbox( label='Use Template', options=template_options,
+						key='bucket_instruction_prompt_id', on_change=load_bucket_instruction,
 						format_func=lambda prompt_id: (
-							'Select Template'
-							if prompt_id is None and selected_category
-							else 'Select Category First'
-							if prompt_id is None
-							else format_prompt_option(
-								prompt_id=prompt_id,
-								prompts=prompt_lookup,
-							)
-						),
+							'Select Template' if prompt_id is None and selected_category else
+							'Select Category First' if prompt_id is None else format_prompt_option(
+								prompt_id=prompt_id, prompts=prompt_lookup, )),
 						disabled=not selected_category or len( prompt_ids ) == 0,
-						help=(
-							'Load a System Instructions template for Google Cloud Buckets.'
-						),
-					)
+						help=('Load a System Instructions template for Google Cloud Buckets.'), )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 				
 				with btn_c1:
-					st.button(
-						label='Clear Instructions',
-						width='stretch',
-						on_click=clear_bucket_instructions,
-					)
+					st.button( label='Clear Instructions', width='stretch',
+						on_click=clear_bucket_instructions, )
 				
 				with btn_c2:
-					st.button(
-						label='XML <-> Markdown',
-						width='stretch',
-						on_click=convert_bucket_instructions,
-					)
+					st.button( label='XML <-> Markdown', width='stretch',
+						on_click=convert_bucket_instructions, )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
@@ -15464,9 +14920,7 @@ elif mode == 'Prompt Engineering':
 		st.session_state[ 'pe_target_mode' ] = ''
 		st.session_state[ 'pe_new_category' ] = ''
 	
-	def cascade_prompt_engineering_selection(
-		prompt: Dict[ str, Any ],
-	) -> None:
+	def cascade_prompt_engineering_selection( prompt: Dict[ str, Any ], ) -> None:
 		"""Cascade Prompt Engineering selection.
 		
 		Purpose:
@@ -15488,9 +14942,7 @@ elif mode == 'Prompt Engineering':
 		
 		category = str( prompt.get( 'Category', '' ) or '' ).strip( )
 		prompt_text = str( prompt.get( 'Text', '' ) or '' )
-		target_mode = str(
-			st.session_state.get( 'pe_target_mode', '' ) or ''
-		).strip( )
+		target_mode = str( st.session_state.get( 'pe_target_mode', '' ) or '' ).strip( )
 		
 		target_modes = resolve_prompt_target_modes( category )
 		
@@ -15520,43 +14972,25 @@ elif mode == 'Prompt Engineering':
 		Returns:
 		    None: This function updates Prompt Engineering editor state.
 		"""
-		prompt = fetch_prompt_by_id(
-			db_path=cfg.DB_PATH,
-			prompt_id=prompt_id,
-		)
+		prompt = fetch_prompt_by_id( db_path=cfg.DB_PATH, prompt_id=prompt_id, )
 		
 		if not isinstance( prompt, dict ):
 			reset_prompt_engineering_selection( )
 			return
 		
 		st.session_state[ 'pe_selected_id' ] = int( prompt[ 'ID' ] )
-		st.session_state[ 'pe_caption' ] = str(
-			prompt.get( 'Caption', '' ) or ''
-		)
-		st.session_state[ 'pe_name' ] = str(
-			prompt.get( 'Name', '' ) or ''
-		)
-		st.session_state[ 'pe_category' ] = str(
-			prompt.get( 'Category', '' ) or ''
-		)
-		st.session_state[ 'pe_text' ] = str(
-			prompt.get( 'Text', '' ) or ''
-		)
+		st.session_state[ 'pe_caption' ] = str( prompt.get( 'Caption', '' ) or '' )
+		st.session_state[ 'pe_name' ] = str( prompt.get( 'Name', '' ) or '' )
+		st.session_state[ 'pe_category' ] = str( prompt.get( 'Category', '' ) or '' )
+		st.session_state[ 'pe_text' ] = str( prompt.get( 'Text', '' ) or '' )
 		
-		target_modes = resolve_prompt_target_modes(
-			st.session_state[ 'pe_category' ]
-		)
+		target_modes = resolve_prompt_target_modes( st.session_state[ 'pe_category' ] )
 		
-		current_target = str(
-			st.session_state.get( 'pe_target_mode', '' ) or ''
-		).strip( )
+		current_target = str( st.session_state.get( 'pe_target_mode', '' ) or '' ).strip( )
 		
 		if current_target not in target_modes:
 			st.session_state[ 'pe_target_mode' ] = (
-				target_modes[ 0 ]
-				if len( target_modes ) == 1
-				else ''
-			)
+				target_modes[ 0 ] if len( target_modes ) == 1 else '')
 		
 		cascade_prompt_engineering_selection( prompt )
 	
@@ -15586,166 +15020,87 @@ elif mode == 'Prompt Engineering':
 		# ------------------------------------------------------------------
 		# Cascade Configuration
 		# ------------------------------------------------------------------
-		cascade_c1, cascade_c2 = st.columns(
-			[ 0.50, 0.50 ],
-			border=True,
-			gap='xxsmall',
-		)
+		cascade_c1, cascade_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 		
 		with cascade_c1:
-			st.checkbox(
-				label='Cascade selection into System Instructions',
+			st.checkbox( label='Cascade selection into System Instructions',
 				key='pe_cascade_enabled',
-				help=(
-					'Copy the selected prompt into an approved mode-specific System '
-					'Instructions field.'
-				),
-			)
+				help=('Copy the selected prompt into an approved mode-specific System '
+				      'Instructions field.'), )
 		
-		selected_category = str(
-			st.session_state.get( 'pe_category', '' ) or ''
-		).strip( )
+		selected_category = str( st.session_state.get( 'pe_category', '' ) or '' ).strip( )
 		
 		target_modes = resolve_prompt_target_modes( selected_category )
 		
-		if (
-			st.session_state.get( 'pe_target_mode', '' )
-			not in target_modes
-		):
+		if (st.session_state.get( 'pe_target_mode', '' ) not in target_modes):
 			st.session_state[ 'pe_target_mode' ] = ''
 		
 		with cascade_c2:
-			st.selectbox(
-				label='Target Mode',
-				options=[ '' ] + target_modes,
-				key='pe_target_mode',
-				format_func=lambda value: (
-					'Select Target Mode'
-					if value == '' and len( target_modes ) > 0
-					else 'Select a Prompt First'
-					if value == ''
-					else value
-				),
-				disabled=(
-					not bool(
-						st.session_state.get(
-							'pe_cascade_enabled',
-							False,
-						)
-					)
-					or len( target_modes ) == 0
-				),
-				help='Select the mode that will receive the selected prompt text.',
-			)
+			st.selectbox( label='Target Mode', options=[ '' ] + target_modes, key='pe_target_mode',
+				format_func=lambda value: ('Select Target Mode' if value == '' and len(
+					target_modes ) > 0 else 'Select a Prompt First' if value == '' else value),
+				disabled=(not bool( st.session_state.get( 'pe_cascade_enabled', False, ) ) or len(
+					target_modes ) == 0),
+				help='Select the mode that will receive the selected prompt text.', )
 		
 		# ------------------------------------------------------------------
 		# Filters
 		# ------------------------------------------------------------------
 		filter_c1, filter_c2, filter_c3, filter_c4, filter_c5 = st.columns(
-			[ 3.5, 2.5, 1.5, 1.5, 3 ],
-		)
+			[ 3.5, 2.5, 1.5, 1.5, 3 ], )
 		
 		with filter_c1:
-			st.text_input(
-				label='Search',
-				key='pe_search',
+			st.text_input( label='Search', key='pe_search',
 				placeholder='Caption, name, category, or text',
-				on_change=change_prompt_engineering_filter,
-			)
+				on_change=change_prompt_engineering_filter, )
 		
 		with filter_c2:
-			st.selectbox(
-				label='Category',
-				options=[ '' ] + PROMPT_ALL_CATEGORIES,
-				key='pe_category_filter',
-				on_change=change_prompt_engineering_filter,
-				format_func=lambda value: (
-					'All Categories'
-					if value == ''
-					else value
-				),
-			)
+			st.selectbox( label='Category', options=[ '' ] + PROMPT_ALL_CATEGORIES,
+				key='pe_category_filter', on_change=change_prompt_engineering_filter,
+				format_func=lambda value: ('All Categories' if value == '' else value), )
 		
 		with filter_c3:
-			st.selectbox(
-				label='Sort By',
-				options=PROMPT_SORT_COLUMNS,
-				key='pe_sort_col',
-				on_change=change_prompt_engineering_filter,
-			)
+			st.selectbox( label='Sort By', options=PROMPT_SORT_COLUMNS, key='pe_sort_col',
+				on_change=change_prompt_engineering_filter, )
 		
 		with filter_c4:
-			st.selectbox(
-				label='Direction',
-				options=[ 'ASC', 'DESC' ],
-				key='pe_sort_dir',
-				on_change=change_prompt_engineering_filter,
-			)
+			st.selectbox( label='Direction', options=[ 'ASC', 'DESC' ], key='pe_sort_dir',
+				on_change=change_prompt_engineering_filter, )
 		
 		with filter_c5:
-			st.markdown(
-				"<div style='font-size:0.95rem;font-weight:600;"
-				"margin-bottom:0.25rem;'>Go to ID</div>",
-				unsafe_allow_html=True,
-			)
+			st.markdown( "<div style='font-size:0.95rem;font-weight:600;"
+			             "margin-bottom:0.25rem;'>Go to ID</div>", unsafe_allow_html=True, )
 			
 			jump_c1, jump_c2, jump_c3 = st.columns( [ 2, 1, 1 ] )
 			
 			with jump_c1:
-				jump_id = st.number_input(
-					label='Go to ID',
-					min_value=1,
-					step=1,
-					label_visibility='collapsed',
-					key='pe_jump_id',
-				)
+				jump_id = st.number_input( label='Go to ID', min_value=1, step=1,
+					label_visibility='collapsed', key='pe_jump_id', )
 			
 			with jump_c2:
-				if st.button(
-					label='Go',
-					key='pe_jump_button',
-					width='stretch',
-				):
-					prompt = fetch_prompt_by_id(
-						db_path=cfg.DB_PATH,
-						prompt_id=int( jump_id ),
-					)
+				if st.button( label='Go', key='pe_jump_button', width='stretch', ):
+					prompt = fetch_prompt_by_id( db_path=cfg.DB_PATH, prompt_id=int( jump_id ), )
 					
 					if isinstance( prompt, dict ):
-						load_prompt_engineering_record(
-							int( jump_id )
-						)
+						load_prompt_engineering_record( int( jump_id ) )
 					else:
-						st.warning(
-							f'Prompt ID {int( jump_id )} was not found.'
-						)
+						st.warning( f'Prompt ID {int( jump_id )} was not found.' )
 			
 			with jump_c3:
-				st.button(
-					label='Clear',
-					key='pe_jump_clear',
-					width='stretch',
-					on_click=reset_prompt_engineering_selection,
-				)
+				st.button( label='Clear', key='pe_jump_clear', width='stretch',
+					on_click=reset_prompt_engineering_selection, )
 		
 		# ------------------------------------------------------------------
 		# Query Construction
 		# ------------------------------------------------------------------
-		search_text = str(
-			st.session_state.get( 'pe_search', '' ) or ''
-		).strip( )
+		search_text = str( st.session_state.get( 'pe_search', '' ) or '' ).strip( )
 		
-		category_filter = str(
-			st.session_state.get( 'pe_category_filter', '' ) or ''
-		).strip( )
+		category_filter = str( st.session_state.get( 'pe_category_filter', '' ) or '' ).strip( )
 		
-		sort_column = str(
-			st.session_state.get( 'pe_sort_col', 'ID' ) or 'ID'
-		).strip( )
+		sort_column = str( st.session_state.get( 'pe_sort_col', 'ID' ) or 'ID' ).strip( )
 		
 		sort_direction = str(
-			st.session_state.get( 'pe_sort_dir', 'ASC' ) or 'ASC'
-		).strip( ).upper( )
+			st.session_state.get( 'pe_sort_dir', 'ASC' ) or 'ASC' ).strip( ).upper( )
 		
 		if sort_column not in PROMPT_SORT_COLUMNS:
 			sort_column = 'ID'
@@ -15760,22 +15115,13 @@ elif mode == 'Prompt Engineering':
 		
 		if search_text:
 			search_value = f'%{search_text}%'
-			conditions.append(
-				'('
-				'Caption LIKE ? OR '
-				'Name LIKE ? OR '
-				'Category LIKE ? OR '
-				'Text LIKE ?'
-				')'
-			)
-			parameters.extend(
-				[
-					search_value,
-					search_value,
-					search_value,
-					search_value,
-				]
-			)
+			conditions.append( '('
+			                   'Caption LIKE ? OR '
+			                   'Name LIKE ? OR '
+			                   'Category LIKE ? OR '
+			                   'Text LIKE ?'
+			                   ')' )
+			parameters.extend( [ search_value, search_value, search_value, search_value, ] )
 		
 		if category_filter:
 			conditions.append( 'Category = ?' )
@@ -15793,21 +15139,11 @@ elif mode == 'Prompt Engineering':
 		"""
 		
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
-			total_rows = int(
-				conn.execute(
-					count_query,
-					parameters,
-				).fetchone( )[ 0 ]
-			)
+			total_rows = int( conn.execute( count_query, parameters, ).fetchone( )[ 0 ] )
 		
-		total_pages = max(
-			1,
-			math.ceil( total_rows / PAGE_SIZE ),
-		)
+		total_pages = max( 1, math.ceil( total_rows / PAGE_SIZE ), )
 		
-		current_page = int(
-			st.session_state.get( 'pe_page', 1 ) or 1
-		)
+		current_page = int( st.session_state.get( 'pe_page', 1 ) or 1 )
 		
 		if current_page > total_pages:
 			current_page = total_pages
@@ -15833,103 +15169,41 @@ elif mode == 'Prompt Engineering':
 		"""
 		
 		query_parameters = list( parameters )
-		query_parameters.extend(
-			[
-				PAGE_SIZE,
-				offset,
-			]
-		)
+		query_parameters.extend( [ PAGE_SIZE, offset, ] )
 		
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
-			df_prompts = pd.read_sql_query(
-				query,
-				conn,
-				params=query_parameters,
-			)
+			df_prompts = pd.read_sql_query( query, conn, params=query_parameters, )
 		
-		df_prompts.insert(
-			0,
-			'Selected',
-			df_prompts[ 'ID' ].apply(
-				lambda prompt_id: (
-					int( prompt_id )
-					== normalize_prompt_id(
-						st.session_state.get(
-							'pe_selected_id'
-						)
-					)
-				)
-			),
-		)
+		df_prompts.insert( 0, 'Selected', df_prompts[ 'ID' ].apply( lambda prompt_id: (
+				int( prompt_id ) == normalize_prompt_id(
+			st.session_state.get( 'pe_selected_id' ) )) ), )
 		
 		# ------------------------------------------------------------------
 		# Prompt Table
 		# ------------------------------------------------------------------
-		edited_prompts = st.data_editor(
-			df_prompts,
-			hide_index=True,
-			use_container_width=True,
-			key='prompt_table',
-			column_config={
-				'Selected': st.column_config.CheckboxColumn(
-					label='Selected',
-					default=False,
-				),
-				'ID': st.column_config.NumberColumn(
-					label='ID',
-					disabled=True,
-					format='%d',
-				),
-				'Caption': st.column_config.TextColumn(
-					label='Caption',
-					disabled=True,
-				),
-				'Name': st.column_config.TextColumn(
-					label='Name',
-					disabled=True,
-				),
-				'Category': st.column_config.TextColumn(
-					label='Category',
-					disabled=True,
-				),
-				'Text': st.column_config.TextColumn(
-					label='Text',
-					disabled=True,
-					width='large',
-				),
-			},
-			disabled=[
-				'ID',
-				'Caption',
-				'Name',
-				'Category',
-				'Text',
-			],
-		)
+		edited_prompts = st.data_editor( df_prompts, hide_index=True, use_container_width=True,
+			key='prompt_table', column_config={
+				'Selected': st.column_config.CheckboxColumn( label='Selected', default=False, ),
+				'ID': st.column_config.NumberColumn( label='ID', disabled=True, format='%d', ),
+				'Caption': st.column_config.TextColumn( label='Caption', disabled=True, ),
+				'Name': st.column_config.TextColumn( label='Name', disabled=True, ),
+				'Category': st.column_config.TextColumn( label='Category', disabled=True, ),
+				'Text': st.column_config.TextColumn( label='Text', disabled=True,
+					width='large', ), },
+			disabled=[ 'ID', 'Caption', 'Name', 'Category', 'Text', ], )
 		
 		# ------------------------------------------------------------------
 		# Selection Processing
 		# ------------------------------------------------------------------
 		if isinstance( edited_prompts, pd.DataFrame ):
-			df_selected = edited_prompts[
-				edited_prompts[ 'Selected' ] == True
-			]
+			df_selected = edited_prompts[ edited_prompts[ 'Selected' ] == True ]
 		else:
 			df_selected = pd.DataFrame( )
 		
 		if len( df_selected ) == 1:
-			prompt_id = int(
-				df_selected.iloc[ 0 ][ 'ID' ]
-			)
+			prompt_id = int( df_selected.iloc[ 0 ][ 'ID' ] )
 			
-			if (
-				prompt_id
-				!= normalize_prompt_id(
-					st.session_state.get(
-						'pe_selected_id'
-					)
-				)
-			):
+			if (prompt_id != normalize_prompt_id( st.session_state.get( 'pe_selected_id' ) )):
 				load_prompt_engineering_record( prompt_id )
 		
 		elif len( df_selected ) > 1:
@@ -15938,242 +15212,107 @@ elif mode == 'Prompt Engineering':
 		# ------------------------------------------------------------------
 		# Paging
 		# ------------------------------------------------------------------
-		page_c1, page_c2, page_c3 = st.columns(
-			[ 0.25, 3.5, 0.25 ]
-		)
+		page_c1, page_c2, page_c3 = st.columns( [ 0.25, 3.5, 0.25 ] )
 		
 		with page_c1:
-			if st.button(
-				label='◀ Prev',
-				key='pe_previous_page',
-				width='stretch',
-				disabled=current_page <= 1,
-			):
+			if st.button( label='◀ Prev', key='pe_previous_page', width='stretch',
+					disabled=current_page <= 1, ):
 				st.session_state[ 'pe_page' ] = current_page - 1
 				st.rerun( )
 		
 		with page_c2:
-			first_row = (
-				offset + 1
-				if total_rows > 0
-				else 0
-			)
+			first_row = (offset + 1 if total_rows > 0 else 0)
 			
-			last_row = min(
-				offset + PAGE_SIZE,
-				total_rows,
-			)
+			last_row = min( offset + PAGE_SIZE, total_rows, )
 			
-			st.markdown(
-				f'Page **{current_page}** of **{total_pages}** '
-				f'— Records **{first_row:,}–{last_row:,}** '
-				f'of **{total_rows:,}**'
-			)
+			st.markdown( f'Page **{current_page}** of **{total_pages}** '
+			             f'— Records **{first_row:,}–{last_row:,}** '
+			             f'of **{total_rows:,}**' )
 		
 		with page_c3:
-			if st.button(
-				label='Next ▶',
-				key='pe_next_page',
-				width='stretch',
-				disabled=current_page >= total_pages,
-			):
+			if st.button( label='Next ▶', key='pe_next_page', width='stretch',
+					disabled=current_page >= total_pages, ):
 				st.session_state[ 'pe_page' ] = current_page + 1
 				st.rerun( )
 		
-		st.markdown(
-			cfg.BLUE_DIVIDER,
-			unsafe_allow_html=True,
-		)
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
 		
 		# ------------------------------------------------------------------
 		# Edit Prompt
 		# ------------------------------------------------------------------
-		with st.expander(
-			label='🖊️ Edit Prompt',
-			expanded=False,
-			width='stretch',
-		):
-			editor_c1, editor_c2, editor_c3 = st.columns(
-				[ 1, 2, 2 ],
-				border=True,
-				gap='xxsmall',
-			)
+		with st.expander( label='🖊️ Edit Prompt', expanded=False, width='stretch', ):
+			editor_c1, editor_c2, editor_c3 = st.columns( [ 1, 2, 2 ], border=True,
+				gap='xxsmall', )
 			
 			with editor_c1:
-				st.text_input(
-					label='ID',
-					value=(
-						str(
-							st.session_state[
-								'pe_selected_id'
-							]
-						)
-						if normalize_prompt_id(
-							st.session_state.get(
-								'pe_selected_id'
-							)
-						) is not None
-						else ''
-					),
-					disabled=True,
-				)
+				st.text_input( label='ID', value=(
+					str( st.session_state[ 'pe_selected_id' ] ) if normalize_prompt_id(
+						st.session_state.get( 'pe_selected_id' ) ) is not None else ''),
+					disabled=True, )
 			
 			with editor_c2:
-				st.text_input(
-					label='Caption',
-					key='pe_caption',
-					max_chars=80,
-				)
+				st.text_input( label='Caption', key='pe_caption', max_chars=80, )
 			
 			with editor_c3:
-				st.text_input(
-					label='Name',
-					key='pe_name',
-					max_chars=80,
-				)
+				st.text_input( label='Name', key='pe_name', max_chars=80, )
 			
-			category_c1, category_c2 = st.columns(
-				[ 0.50, 0.50 ],
-				border=True,
-				gap='xxsmall',
-			)
+			category_c1, category_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 			
-			category_options = (
-				[ '' ]
-				+ PROMPT_ALL_CATEGORIES
-				+ [ 'New Category' ]
-			)
+			category_options = ([ '' ] + PROMPT_ALL_CATEGORIES + [ 'New Category' ])
 			
-			current_category = str(
-				st.session_state.get(
-					'pe_category',
-					'',
-				) or ''
-			).strip( )
+			current_category = str( st.session_state.get( 'pe_category', '', ) or '' ).strip( )
 			
-			if (
-				current_category
-				and current_category not in category_options
-			):
-				category_options.insert(
-					len( category_options ) - 1,
-					current_category,
-				)
+			if (current_category and current_category not in category_options):
+				category_options.insert( len( category_options ) - 1, current_category, )
 			
 			with category_c1:
-				st.selectbox(
-					label='Category',
-					options=category_options,
-					key='pe_category',
-					format_func=lambda value: (
-						'Select Category'
-						if value == ''
-						else value
-					),
-				)
+				st.selectbox( label='Category', options=category_options, key='pe_category',
+					format_func=lambda value: ('Select Category' if value == '' else value), )
 			
 			with category_c2:
-				st.text_input(
-					label='New Category',
-					key='pe_new_category',
-					max_chars=80,
-					disabled=(
-						st.session_state.get(
-							'pe_category'
-						)
-						!= 'New Category'
-					),
-					help=(
-						'Enter a category only when New Category '
-						'is selected.'
-					),
-				)
+				st.text_input( label='New Category', key='pe_new_category', max_chars=80,
+					disabled=(st.session_state.get( 'pe_category' ) != 'New Category'),
+					help=('Enter a category only when New Category '
+					      'is selected.'), )
 			
-			st.text_area(
-				label='Text',
-				key='pe_text',
-				height=260,
-			)
+			st.text_area( label='Text', key='pe_text', height=260, )
 			
 			button_c1, button_c2, button_c3 = st.columns( 3 )
 			
 			with button_c1:
-				save_label = (
-					'💾 Save Changes'
-					if normalize_prompt_id(
-						st.session_state.get(
-							'pe_selected_id'
-						)
-					) is not None
-					else '➕ Create Prompt'
-				)
+				save_label = ('💾 Save Changes' if normalize_prompt_id(
+					st.session_state.get( 'pe_selected_id' ) ) is not None else '➕ Create Prompt')
 				
-				if st.button(
-					label=save_label,
-					key='pe_save_prompt',
-					width='stretch',
-				):
+				if st.button( label=save_label, key='pe_save_prompt', width='stretch', ):
 					try:
 						selected_prompt_id = normalize_prompt_id(
-							st.session_state.get(
-								'pe_selected_id'
-							)
-						)
+							st.session_state.get( 'pe_selected_id' ) )
 						
 						category_value = str(
-							st.session_state.get(
-								'pe_category',
-								'',
-							) or ''
-						).strip( )
+							st.session_state.get( 'pe_category', '', ) or '' ).strip( )
 						
 						if category_value == 'New Category':
 							category_value = str(
-								st.session_state.get(
-									'pe_new_category',
-									'',
-								) or ''
-							).strip( )
+								st.session_state.get( 'pe_new_category', '', ) or '' ).strip( )
 						
 						prompt_data: Dict[ str, Any ] = {
-							'Caption': st.session_state.get(
-								'pe_caption',
-								'',
-							),
-							'Name': st.session_state.get(
-								'pe_name',
-								'',
-							),
+							'Caption': st.session_state.get( 'pe_caption', '', ),
+							'Name': st.session_state.get( 'pe_name', '', ),
 							'Category': category_value,
-							'Text': st.session_state.get(
-								'pe_text',
-								'',
-							),
-						}
+							'Text': st.session_state.get( 'pe_text', '', ), }
 						
 						if selected_prompt_id is None:
-							new_prompt_id = insert_prompt(
-								prompt_data
-							)
+							new_prompt_id = insert_prompt( prompt_data )
 							
-							st.success(
-								f'Prompt ID {new_prompt_id} created.'
-							)
+							st.success( f'Prompt ID {new_prompt_id} created.' )
 							
 							reset_prompt_engineering_selection( )
 						else:
-							update_prompt(
-								prompt_id=selected_prompt_id,
-								data=prompt_data,
-							)
+							update_prompt( prompt_id=selected_prompt_id, data=prompt_data, )
 							
-							st.success(
-								f'Prompt ID {selected_prompt_id} updated.'
-							)
+							st.success( f'Prompt ID {selected_prompt_id} updated.' )
 							
-							load_prompt_engineering_record(
-								selected_prompt_id
-							)
+							load_prompt_engineering_record( selected_prompt_id )
 						
 						st.rerun( )
 					except Exception as exc:
@@ -16185,32 +15324,19 @@ elif mode == 'Prompt Engineering':
 						st.error( f'Save failed: {exc}' )
 			
 			with button_c2:
-				selected_prompt_id = normalize_prompt_id(
-					st.session_state.get(
-						'pe_selected_id'
-					)
-				)
+				selected_prompt_id = normalize_prompt_id( st.session_state.get( 'pe_selected_id'
+				) )
 				
-				if st.button(
-					label='Delete',
-					key='pe_delete_prompt',
-					width='stretch',
-					disabled=selected_prompt_id is None,
-				):
+				if st.button( label='Delete', key='pe_delete_prompt', width='stretch',
+						disabled=selected_prompt_id is None, ):
 					try:
 						if selected_prompt_id is None:
-							raise ValueError(
-								'Select a prompt before deleting.'
-							)
+							raise ValueError( 'Select a prompt before deleting.' )
 						
-						delete_prompt(
-							prompt_id=selected_prompt_id
-						)
+						delete_prompt( prompt_id=selected_prompt_id )
 						
 						reset_prompt_engineering_selection( )
-						st.success(
-							f'Prompt ID {selected_prompt_id} deleted.'
-						)
+						st.success( f'Prompt ID {selected_prompt_id} deleted.' )
 						st.rerun( )
 					except Exception as exc:
 						exception = Error( exc )
@@ -16221,12 +15347,8 @@ elif mode == 'Prompt Engineering':
 						st.error( f'Delete failed: {exc}' )
 			
 			with button_c3:
-				st.button(
-					label='🧹 Clear Selection',
-					key='pe_clear_selection',
-					width='stretch',
-					on_click=reset_prompt_engineering_selection,
-				)
+				st.button( label='🧹 Clear Selection', key='pe_clear_selection', width='stretch',
+					on_click=reset_prompt_engineering_selection, )
 
 # ==============================================================================
 # EXPORT MODE
@@ -16779,11 +15901,11 @@ st.markdown( """
 		bottom: 0;
 		left: 0;
 		width: 100%;
-		background-color: rgba(17, 17, 17, 0.95);
-		border-top: 1px solid #2a2a2a;
+		background-color: rgba(27, 27, 27, 0.95);
+		border-top: 1px solid #4d4d4d;
 		padding: 10px 16px;
 		font-size: 0.80rem;
-		color: #35618c;
+		color: #4aa2f7;
 		z-index: 1000;
 	}
 	.boo-status-inner {
