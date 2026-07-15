@@ -11769,7 +11769,6 @@ elif mode == 'Images':
 				
 				with llm_c2:
 					current_image_mode = st.session_state.get( 'image_mode', '' )
-					
 					if current_image_mode == 'Analysis':
 						model_options = get_image_analysis_models( image )
 					elif current_image_mode == 'Editing':
@@ -11811,8 +11810,8 @@ elif mode == 'Images':
 			# ------------------------------------------------------------------
 			with st.expander( label='Visual Settings', icon='👁️', expanded=False,
 					width='stretch' ):
-				vis_c1, vis_c2, vis_c3, vis_c4, vis_c5 = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				vis_c1, vis_c2, vis_c3, vis_c4  = st.columns(
+					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='xxsmall' )
 				
 				with vis_c1:
 					st.selectbox( label='Output Format', options=get_image_mime_options( image ),
@@ -11841,7 +11840,8 @@ elif mode == 'Images':
 						key='image_backcolor', help='Requested background mode when supported.',
 						index=None, placeholder='Options' )
 				
-				with vis_c5:
+				set_c1, set_c2 = st.columns( [ 0.25, 0.75 ], border=True )
+				with set_c1:
 					if provider_name == 'GPT':
 						st.selectbox( label='Analysis Detail',
 							options=get_image_detail_options( image ), key='image_analysis_detail',
@@ -11855,10 +11855,11 @@ elif mode == 'Images':
 							help='Media or output resolution when supported.', index=None,
 							placeholder='Options' )
 				
-				st.slider( label='Compression', min_value=0.0, max_value=1.0,
-					value=float( st.session_state.get( 'image_compression', 0.0 ) or 0.0 ),
-					step=0.01, help='Optional JPEG/WebP compression value.',
-					key='image_compression' )
+				with set_c2:
+					st.slider( label='Compression', min_value=0.0, max_value=1.0,
+						value=float( st.session_state.get( 'image_compression', 0.0 ) or 0.0 ),
+						step=0.01, help='Optional JPEG/WebP compression value.',
+						key='image_compression' )
 				
 				st.button( label='Reset', key='image_visual_reset', width='stretch',
 					on_click=reset_image_visual_settings )
@@ -13121,142 +13122,132 @@ elif mode == 'Document Q&A':
 	
 	provider_name = get_provider_name( )
 	docqna_avatar = get_docqna_avatar( provider_name )
-	
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		st.subheader( '📖 Document Q & A' )
 		st.divider( )
 		
+		
 		# ------------------------------------------------------------------
-		# Mind Controls
+		# Source Controls
 		# ------------------------------------------------------------------
-		with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
-			# ------------------------------------------------------------------
-			# Source Controls
-			# ------------------------------------------------------------------
-			with st.expander( label='Source Controls', icon='📚', expanded=False,
+		with st.expander( label='Source Controls', icon='📚', expanded=False, width='stretch' ):
+			source_c1, source_c2, source_c3 = st.columns( [ 0.33, 0.33, 0.33 ],
+				border=True, gap='xxsmall' )
+			
+			with source_c1:
+				source_options = get_docqna_sources( )
+				if st.session_state.get( 'docqna_source' ) not in source_options:
+					st.session_state[ 'docqna_source' ] = 'Local Upload'
+				
+				st.selectbox( label='Source', options=source_options, key='docqna_source',
+					help='Document source used for Q&A.', index=None, placeholder='Options' )
+			
+			with source_c2:
+				st.toggle( label='Multi-Document', key='docqna_multi_mode',
+					help='Allow multiple local document uploads.' )
+			
+			with source_c3:
+				st.slider( label='Top-K', min_value=1, max_value=20,
+					value=int( st.session_state.get( 'docqna_top_k', 6 ) or 6 ), step=1,
+					key='docqna_top_k',
+					help='Number of retrieved chunks to use for local Q&A.' )
+			
+			source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
+			if source_value == 'OpenAI File ID':
+				st.text_input( label='OpenAI File ID', key='docqna_file_id', width='stretch',
+					placeholder='file-...',
+					help='OpenAI file identifier. Use Vector Store ID for retrieval-backed '
+					     'Q&A.' )
+			
+			elif source_value == 'OpenAI Vector Store ID':
+				st.text_input( label='OpenAI Vector Store ID(s)', key='docqna_vector_store_id',
+					width='stretch', placeholder='vs_...',
+					help='Comma-delimited OpenAI vector store IDs.' )
+			
+			elif source_value == 'Gemini File Search Store':
+				st.text_input( label='Gemini File Search Store Resource Name(s)',
+					key='docqna_file_search_store_names_input', width='stretch',
+					placeholder='fileSearchStores/...',
+					help='Comma-delimited Gemini File Search Store resource names.' )
+			
+			elif source_value == 'xAI Collection':
+				st.info( 'Grok Document Q&A uses the xAI Collection selected in Vector Stores '
+				         'mode. '
+				         'Select or enter a collection ID there before asking questions.' )
+		
+			st.button( label='Reset Controls', key='docqna_reset_controls',
+				width='stretch',
+				on_click=reset_docqna_controls )
+			
+		# ------------------------------------------------------------------
+		# Model Controls
+		# ------------------------------------------------------------------
+		with st.expander( label='Model Controls', icon='🧊', expanded=False, width='stretch' ):
+			model_c1, model_c2, model_c3, model_c4, model_c5 = st.columns(
+				[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+			
+			chat = get_chat_module( )
+			
+			with model_c1:
+				model_options = get_text_option_list( chat, 'model_options', [ '' ] )
+				st.selectbox( label='Model', options=model_options, key='docqna_model',
+					help='Provider model used for answering document questions.', index=None,
+					placeholder='Options' )
+			
+			with model_c2:
+				st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
+					value=float( st.session_state.get( 'docqna_temperature', 0.0 ) ),
+					step=0.01,
+					key='docqna_temperature', help=cfg.TEMPERATURE )
+			
+			with model_c3:
+				st.slider( label='Top-P', min_value=0.0, max_value=1.0,
+					value=float( st.session_state.get( 'docqna_top_percent', 0.0 ) ),
+					step=0.01,
+					key='docqna_top_percent', help=cfg.TOP_P )
+			
+			with model_c4:
+				st.slider( label='Max Tokens', min_value=0, max_value=100000,
+					value=int( st.session_state.get( 'docqna_max_tokens', 0 ) ), step=500,
+					key='docqna_max_tokens', help=cfg.MAX_OUTPUT_TOKENS )
+			
+			with model_c5:
+				st.toggle( label='Store', key='docqna_store', help=cfg.STORE )
+		
+		# ------------------------------------------------------------------
+		# Chunk Controls
+		# ------------------------------------------------------------------
+		with st.expander( label='Chunk Controls', icon='🧩', expanded=False, width='stretch' ):
+			chunk_c1, chunk_c2, chunk_c3 = st.columns( [ 0.33, 0.33, 0.33 ], border=True,
+				gap='xxsmall' )
+			
+			with chunk_c1:
+				st.slider( label='Chunk Size', min_value=100, max_value=3000,
+					value=int( st.session_state.get( 'docqna_chunk_size', 900 ) or 900 ),
+					step=50, key='docqna_chunk_size',
+					help='Maximum words per local retrieval chunk.' )
+			
+			with chunk_c2:
+				st.slider( label='Chunk Overlap', min_value=0, max_value=1000,
+					value=int( st.session_state.get( 'docqna_chunk_overlap', 150 ) or 150 ),
+					step=25, key='docqna_chunk_overlap',
+					help='Word overlap between local retrieval chunks.' )
+			
+			with chunk_c3:
+				st.toggle( label='Diagnostics', key='docqna_show_diagnostics',
+					help='Show retrieval/index diagnostics.' )
+				
+			if st.button( label='Rebuild Index', key='docqna_rebuild_index',
 					width='stretch' ):
-				source_c1, source_c2, source_c3, source_c4 = st.columns( [ 0.25, 0.25, 0.25,
-					0.25 ],
-					border=True, gap='xxsmall' )
-				
-				with source_c1:
-					source_options = get_docqna_sources( )
-					if st.session_state.get( 'docqna_source' ) not in source_options:
-						st.session_state[ 'docqna_source' ] = 'Local Upload'
-					
-					st.selectbox( label='Source', options=source_options, key='docqna_source',
-						help='Document source used for Q&A.', index=None, placeholder='Options' )
-				
-				with source_c2:
-					st.toggle( label='Multi-Document', key='docqna_multi_mode',
-						help='Allow multiple local document uploads.' )
-				
-				with source_c3:
-					st.slider( label='Top-K', min_value=1, max_value=20,
-						value=int( st.session_state.get( 'docqna_top_k', 6 ) or 6 ), step=1,
-						key='docqna_top_k',
-						help='Number of retrieved chunks to use for local Q&A.' )
-				
-				with source_c4:
-					st.button( label='Reset Controls', key='docqna_reset_controls',
-						width='stretch',
-						on_click=reset_docqna_controls )
-				
-				source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
-				if source_value == 'OpenAI File ID':
-					st.text_input( label='OpenAI File ID', key='docqna_file_id', width='stretch',
-						placeholder='file-...',
-						help='OpenAI file identifier. Use Vector Store ID for retrieval-backed '
-						     'Q&A.' )
-				
-				elif source_value == 'OpenAI Vector Store ID':
-					st.text_input( label='OpenAI Vector Store ID(s)', key='docqna_vector_store_id',
-						width='stretch', placeholder='vs_...',
-						help='Comma-delimited OpenAI vector store IDs.' )
-				
-				elif source_value == 'Gemini File Search Store':
-					st.text_input( label='Gemini File Search Store Resource Name(s)',
-						key='docqna_file_search_store_names_input', width='stretch',
-						placeholder='fileSearchStores/...',
-						help='Comma-delimited Gemini File Search Store resource names.' )
-				
-				elif source_value == 'xAI Collection':
-					st.info( 'Grok Document Q&A uses the xAI Collection selected in Vector Stores '
-					         'mode. '
-					         'Select or enter a collection ID there before asking questions.' )
-			
-			# ------------------------------------------------------------------
-			# Model Controls
-			# ------------------------------------------------------------------
-			with st.expander( label='Model Controls', icon='🧊', expanded=False, width='stretch' ):
-				model_c1, model_c2, model_c3, model_c4, model_c5 = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
-				
-				chat = get_chat_module( )
-				
-				with model_c1:
-					model_options = get_text_option_list( chat, 'model_options', [ '' ] )
-					st.selectbox( label='Model', options=model_options, key='docqna_model',
-						help='Provider model used for answering document questions.', index=None,
-						placeholder='Options' )
-				
-				with model_c2:
-					st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
-						value=float( st.session_state.get( 'docqna_temperature', 0.0 ) ),
-						step=0.01,
-						key='docqna_temperature', help=cfg.TEMPERATURE )
-				
-				with model_c3:
-					st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-						value=float( st.session_state.get( 'docqna_top_percent', 0.0 ) ),
-						step=0.01,
-						key='docqna_top_percent', help=cfg.TOP_P )
-				
-				with model_c4:
-					st.slider( label='Max Tokens', min_value=0, max_value=100000,
-						value=int( st.session_state.get( 'docqna_max_tokens', 0 ) ), step=500,
-						key='docqna_max_tokens', help=cfg.MAX_OUTPUT_TOKENS )
-				
-				with model_c5:
-					st.toggle( label='Store', key='docqna_store', help=cfg.STORE )
-			
-			# ------------------------------------------------------------------
-			# Chunk Controls
-			# ------------------------------------------------------------------
-			with st.expander( label='Chunk Controls', icon='🧩', expanded=False, width='stretch' ):
-				chunk_c1, chunk_c2, chunk_c3, chunk_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
-					border=True, gap='xxsmall' )
-				
-				with chunk_c1:
-					st.slider( label='Chunk Size', min_value=100, max_value=3000,
-						value=int( st.session_state.get( 'docqna_chunk_size', 900 ) or 900 ),
-						step=50, key='docqna_chunk_size',
-						help='Maximum words per local retrieval chunk.' )
-				
-				with chunk_c2:
-					st.slider( label='Chunk Overlap', min_value=0, max_value=1000,
-						value=int( st.session_state.get( 'docqna_chunk_overlap', 150 ) or 150 ),
-						step=25, key='docqna_chunk_overlap',
-						help='Word overlap between local retrieval chunks.' )
-				
-				with chunk_c3:
-					st.toggle( label='Diagnostics', key='docqna_show_diagnostics',
-						help='Show retrieval/index diagnostics.' )
-				
-				with chunk_c4:
-					if st.button( label='Rebuild Index', key='docqna_rebuild_index',
-							width='stretch' ):
-						rebuild_docqna_index( )
-						st.success( st.session_state.get( 'docqna_index_status',
-							'Indexed' ) )  #
-					# ------------------------------------------------------------------
+				rebuild_docqna_index( )
+				st.success( st.session_state.get( 'docqna_index_status',
+					'Indexed' ) )
 		
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-				width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			docqna_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 				allowed_categories=PROMPT_DOCQNA_CATEGORIES, )
 			
