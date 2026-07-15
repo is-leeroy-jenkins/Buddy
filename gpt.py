@@ -5620,7 +5620,6 @@ class VectorStores( GPT ):
 			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			self.store_id = self.validate_store_id( store_id )
 			self.request = { 'limit': limit, 'order': order, }
-			
 			self.response = self.client.vector_stores.files.list( vector_store_id=self.store_id,
 				**self.request )
 			
@@ -5658,9 +5657,7 @@ class VectorStores( GPT ):
 			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
 			self.store_id = self.validate_store_id( store_id )
 			self.file_id = self.validate_file_id( file_id )
-			
-			self.response = self.client.vector_stores.files.retrieve(
-				vector_store_id=self.store_id,
+			self.response = self.client.vector_stores.files.retrieve( vector_store_id=self.store_id,
 				file_id=self.file_id )
 			
 			self.vector_file = self.normalize_vector_store_file( self.response )
