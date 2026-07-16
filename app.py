@@ -12384,8 +12384,8 @@ elif mode == 'Audio':
 			# LLM Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
-				audio_c1, audio_c2, audio_c3, audio_c4, audio_c5 = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+				audio_c1, audio_c2, audio_c3, audio_c4 = st.columns(
+					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
 				
 				with audio_c1:
 					task_options = get_audio_task_options( )
@@ -12433,17 +12433,16 @@ elif mode == 'Audio':
 						key='audio_response_format', help='Response or output audio format.',
 						index=None, placeholder='Options' )
 				
-				with audio_c5:
-					st.button( label='Reset', key='audio_llm_reset', width='stretch',
-						on_click=reset_audio_llm_settings )
+				st.button( label='Reset', key='audio_llm_reset', width='stretch',
+					on_click=reset_audio_llm_settings )
 			
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='Response Settings', icon='↔️', expanded=False,
 					width='stretch' ):
-				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5, resp_c6 = st.columns(
-					[ 0.16, 0.16, 0.16, 0.16, 0.16, 0.16 ], border=True, gap='xxsmall' )
+				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
+					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
 				with resp_c1:
 					st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
@@ -12469,10 +12468,6 @@ elif mode == 'Audio':
 				with resp_c5:
 					st.toggle( label='Store', key='audio_store', help=cfg.STORE )
 				
-				with resp_c6:
-					st.button( label='Reset', key='audio_response_reset', width='stretch',
-						on_click=reset_audio_response_settings )
-				
 				play_c1, play_c2, play_c3, play_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 					border=True, gap='xxsmall' )
 				
@@ -12493,6 +12488,9 @@ elif mode == 'Audio':
 					st.toggle( label='Autoplay', key='audio_autoplay',
 						help='Autoplay local playback when supported.' )
 		
+				st.button( label='Reset', key='audio_response_reset', width='stretch',
+					on_click=reset_audio_response_settings )
+				
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
@@ -12702,7 +12700,6 @@ elif mode == 'Audio':
 				height=150, width='stretch' )
 			
 			tts_c1, tts_c2 = st.columns( [ 0.5, 0.5 ] )
-			
 			with tts_c1:
 				if st.button( 'Generate Audio', key='audio_generate_tts', width='stretch' ):
 					with st.spinner( 'Synthesizing speech…' ):
@@ -13127,58 +13124,103 @@ elif mode == 'Document Q&A':
 		st.subheader( '📖 Document Q & A' )
 		st.divider( )
 		
-		
+				# ------------------------------------------------------------------
+		# Document Controls
 		# ------------------------------------------------------------------
-		# Source Controls
-		# ------------------------------------------------------------------
-		with st.expander( label='Source Controls', icon='📚', expanded=False, width='stretch' ):
-			source_c1, source_c2, source_c3 = st.columns( [ 0.33, 0.33, 0.33 ],
-				border=True, gap='xxsmall' )
+		with st.expander( label='Document Controls', icon='📚', expanded=False,
+				width='stretch' ):
+			document_c1, document_c2 = st.columns( [ 0.50, 0.50 ], gap='small' )
+			with document_c1:
+				# ------------------------------------------------------------------
+				# Source Controls
+				# ------------------------------------------------------------------
+				with st.container( border=True ):
+					st.markdown( '##### Source Controls' )
+					
+					source_c1, source_c2, source_c3 = st.columns(
+						[ 0.33, 0.33, 0.33 ], border=True, gap='xxsmall' )
+					
+					with source_c1:
+						source_options = get_docqna_sources( )
+						
+						if st.session_state.get( 'docqna_source' ) not in source_options:
+							st.session_state[ 'docqna_source' ] = 'Local Upload'
+						
+						st.selectbox( label='Select', options=source_options,
+							key='docqna_source', help='Document source used for Q&A.',
+							index=None, placeholder='Options' )
+					
+					with source_c2:
+						st.toggle( label='Multi-Document', key='docqna_multi_mode',
+							help='Allow multiple local document uploads.' )
+					
+					with source_c3:
+						st.slider( label='Top-K', min_value=1, max_value=20,
+							value=int(
+								st.session_state.get( 'docqna_top_k', 6 ) or 6 ),
+							step=1, key='docqna_top_k',
+							help='Number of retrieved chunks to use for local Q&A.' )
+					
+					st.button( label='Reset Controls', key='docqna_reset_controls',
+						width='stretch', on_click=reset_docqna_controls )
+					
+					source_value = st.session_state.get(
+						'docqna_source', 'Local Upload' )
+					
+					if source_value == 'OpenAI File ID':
+						st.text_input( label='OpenAI File ID',
+							key='docqna_file_id', width='stretch',
+							placeholder='file-...',
+							help='OpenAI file identifier. Use Vector Store ID for retrieval-backed Q&A.' )
+					
+					elif source_value == 'OpenAI Vector Store ID':
+						st.text_input( label='OpenAI Vector Store ID(s)',
+							key='docqna_vector_store_id', width='stretch',
+							placeholder='vs_...',
+							help='Comma-delimited OpenAI vector store IDs.' )
+					
+					elif source_value == 'Gemini File Search Store':
+						st.text_input(
+							label='Gemini File Search Store Resource Name(s)',
+							key='docqna_file_search_store_names_input',
+							width='stretch', placeholder='fileSearchStores/...',
+							help='Comma-delimited Gemini File Search Store resource names.' )
+					
+					elif source_value == 'xAI Collection':
+						st.info(
+							'Grok Document Q&A uses the xAI Collection selected in '
+							'Vector Stores mode. Select or enter a collection ID there '
+							'before asking questions.' )
 			
-			with source_c1:
-				source_options = get_docqna_sources( )
-				if st.session_state.get( 'docqna_source' ) not in source_options:
-					st.session_state[ 'docqna_source' ] = 'Local Upload'
-				
-				st.selectbox( label='Source', options=source_options, key='docqna_source',
-					help='Document source used for Q&A.', index=None, placeholder='Options' )
+			with document_c2:
+				# ------------------------------------------------------------------
+				# Chunk Controls
+				# ------------------------------------------------------------------
+				with st.container( border=True ):
+					st.markdown( '##### Chunk Controls' )
+					chunk_c1, chunk_c2, chunk_c3 = st.columns( [ 0.33, 0.33, 0.33 ],
+						border=True, gap='xxsmall' )
+					
+					with chunk_c1:
+						st.slider( label='Size', min_value=100, max_value=3000,
+							value=int( st.session_state.get( 'docqna_chunk_size', 900 ) or 900 ),
+							step=50, key='docqna_chunk_size',
+							help='Maximum words per local retrieval chunk.' )
+					
+					with chunk_c2:
+						st.slider( label='Overlap', min_value=0, max_value=1000,
+							value=int( st.session_state.get( 'docqna_chunk_overlap', 150 ) or 150 ),
+							step=25, key='docqna_chunk_overlap',
+							help='Word overlap between local retrieval chunks.' )
+					
+					with chunk_c3:
+						st.toggle( label='Diagnostics', key='docqna_show_diagnostics',
+							help='Show retrieval/index diagnostics.' )
+					
+					if st.button( label='Rebuild Index', key='docqna_rebuild_index', width='stretch' ):
+						rebuild_docqna_index( )
+						st.success( st.session_state.get( 'docqna_index_status', 'Indexed' ) )
 			
-			with source_c2:
-				st.toggle( label='Multi-Document', key='docqna_multi_mode',
-					help='Allow multiple local document uploads.' )
-			
-			with source_c3:
-				st.slider( label='Top-K', min_value=1, max_value=20,
-					value=int( st.session_state.get( 'docqna_top_k', 6 ) or 6 ), step=1,
-					key='docqna_top_k',
-					help='Number of retrieved chunks to use for local Q&A.' )
-			
-			source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
-			if source_value == 'OpenAI File ID':
-				st.text_input( label='OpenAI File ID', key='docqna_file_id', width='stretch',
-					placeholder='file-...',
-					help='OpenAI file identifier. Use Vector Store ID for retrieval-backed '
-					     'Q&A.' )
-			
-			elif source_value == 'OpenAI Vector Store ID':
-				st.text_input( label='OpenAI Vector Store ID(s)', key='docqna_vector_store_id',
-					width='stretch', placeholder='vs_...',
-					help='Comma-delimited OpenAI vector store IDs.' )
-			
-			elif source_value == 'Gemini File Search Store':
-				st.text_input( label='Gemini File Search Store Resource Name(s)',
-					key='docqna_file_search_store_names_input', width='stretch',
-					placeholder='fileSearchStores/...',
-					help='Comma-delimited Gemini File Search Store resource names.' )
-			
-			elif source_value == 'xAI Collection':
-				st.info( 'Grok Document Q&A uses the xAI Collection selected in Vector Stores '
-				         'mode. '
-				         'Select or enter a collection ID there before asking questions.' )
-		
-			st.button( label='Reset Controls', key='docqna_reset_controls',
-				width='stretch',
-				on_click=reset_docqna_controls )
 			
 		# ------------------------------------------------------------------
 		# Model Controls
@@ -13188,7 +13230,6 @@ elif mode == 'Document Q&A':
 				[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 			
 			chat = get_chat_module( )
-			
 			with model_c1:
 				model_options = get_text_option_list( chat, 'model_options', [ '' ] )
 				st.selectbox( label='Model', options=model_options, key='docqna_model',
@@ -13215,35 +13256,9 @@ elif mode == 'Document Q&A':
 			with model_c5:
 				st.toggle( label='Store', key='docqna_store', help=cfg.STORE )
 		
-		# ------------------------------------------------------------------
-		# Chunk Controls
-		# ------------------------------------------------------------------
-		with st.expander( label='Chunk Controls', icon='🧩', expanded=False, width='stretch' ):
-			chunk_c1, chunk_c2, chunk_c3 = st.columns( [ 0.33, 0.33, 0.33 ], border=True,
-				gap='xxsmall' )
+			st.button( label='Reset Controls', key='docqna_reset_model_controls',
+				width='stretch'  )
 			
-			with chunk_c1:
-				st.slider( label='Chunk Size', min_value=100, max_value=3000,
-					value=int( st.session_state.get( 'docqna_chunk_size', 900 ) or 900 ),
-					step=50, key='docqna_chunk_size',
-					help='Maximum words per local retrieval chunk.' )
-			
-			with chunk_c2:
-				st.slider( label='Chunk Overlap', min_value=0, max_value=1000,
-					value=int( st.session_state.get( 'docqna_chunk_overlap', 150 ) or 150 ),
-					step=25, key='docqna_chunk_overlap',
-					help='Word overlap between local retrieval chunks.' )
-			
-			with chunk_c3:
-				st.toggle( label='Diagnostics', key='docqna_show_diagnostics',
-					help='Show retrieval/index diagnostics.' )
-				
-			if st.button( label='Rebuild Index', key='docqna_rebuild_index',
-					width='stretch' ):
-				rebuild_docqna_index( )
-				st.success( st.session_state.get( 'docqna_index_status',
-					'Indexed' ) )
-		
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
@@ -13288,7 +13303,6 @@ elif mode == 'Document Q&A':
 					help='Select a Document Q&A prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
-				
 				st.selectbox( label='Use Template', options=template_options,
 					key='docqna_instruction_prompt_id', on_change=load_docqna_instruction,
 					format_func=lambda prompt_id: (
@@ -13395,22 +13409,17 @@ elif mode == 'Document Q&A':
 			
 			role = msg.get( 'role', 'assistant' )
 			avatar = docqna_avatar if role == 'assistant' else ''
-			
 			with st.chat_message( role, avatar=avatar ):
 				st.markdown( msg.get( 'content', '' ) )
 		
 		prompt = st.chat_input( 'Ask a question about the active document source …' )
-		
 		if prompt is not None and str( prompt ).strip( ):
 			prompt = str( prompt ).strip( )
-			
 			st.session_state[ 'docqna_messages' ].append( { 'role': 'user', 'content': prompt, } )
-			
 			with st.chat_message( 'assistant', avatar=docqna_avatar ):
 				with st.spinner( 'Answering from the active document source…' ):
 					try:
 						answer = route_document_query( prompt )
-						
 						if isinstance( answer, str ) and answer.strip( ):
 							st.markdown( answer )
 							st.session_state[ 'docqna_messages' ].append(
@@ -13449,8 +13458,7 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		# Reset Buttons
 		# ------------------------------------------------------------------
-		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ], border=True,
-			gap='xxsmall' )
+		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ]  )
 		
 		with reset_c1:
 			st.button( label='Clear Messages', key='docqna_clear_messages', width='stretch',
