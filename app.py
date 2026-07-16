@@ -15690,8 +15690,7 @@ elif mode == 'Files':
 				valid_models = [ str( option ).strip( ) for option in model_options if
 					isinstance( option, str ) and option.strip( ) ]
 				
-				selected_model = str( st.session_state.get( 'files_model', '' ) or '' ).strip( )
-				
+				selected_model = str( st.session_state.get( 'files_model', '' ) or '' ).strip( )				
 				if selected_model and selected_model not in valid_models:
 					st.session_state[ 'files_model' ] = ''
 				
@@ -15801,7 +15800,6 @@ elif mode == 'Files':
 		# File Operations
 		# ------------------------------------------------------------------
 		ops_left, ops_right = st.columns( [ 0.45, 0.55 ], border=True, gap='small' )
-		
 		with ops_left:
 			st.caption( 'Upload' )
 			uploaded_file = st.file_uploader( label='Upload file to provider Files API',
@@ -15811,7 +15809,6 @@ elif mode == 'Files':
 			
 			if uploaded_file is not None:
 				tmp_path = save_temp( uploaded_file )
-				
 				if st.button( label='Upload File', key='files_upload_button', width='stretch' ):
 					if not tmp_path:
 						st.warning( 'Could not save uploaded file for provider upload.' )
@@ -15825,7 +15822,6 @@ elif mode == 'Files':
 								st.session_state[ 'files_last_upload' ] = metadata
 								st.session_state[ 'files_metadata' ] = metadata
 								st.session_state[ 'files_last_operation' ] = 'upload'
-								
 								file_id = get_files_id( metadata )
 								if file_id:
 									st.session_state[ 'files_id' ] = file_id
@@ -15851,7 +15847,6 @@ elif mode == 'Files':
 							st.session_state[ 'files_table_data' ] = rows
 							st.session_state[ 'files_last_list' ] = rows
 							st.session_state[ 'files_last_operation' ] = 'list'
-							
 							st.success( f'Found {len( rows )} file(s).' )
 						except Exception as exc:
 							exception = Error( exc )
@@ -15915,7 +15910,6 @@ elif mode == 'Files':
 						with st.spinner( 'Deleting file…' ):
 							try:
 								result = delete_provider_file( files=files, file_id=file_id )
-								
 								st.session_state[ 'files_delete_result' ] = result
 								st.session_state[ 'files_last_operation' ] = 'delete'
 								st.success( 'Delete request completed.' )
@@ -15949,8 +15943,7 @@ elif mode == 'Files':
 			
 			content = st.session_state.get( 'files_content', '' )
 			if isinstance( content, str ) and content.strip( ):
-				with st.expander( label='Extracted Content', icon='📄', expanded=False,
-						width='stretch' ):
+				with st.expander( label='Extracted Content', icon='📄', expanded=False, width='stretch' ):
 					st.text_area( label='Content', value=content[ :20000 ], height=360,
 						width='stretch', disabled=True )
 			
