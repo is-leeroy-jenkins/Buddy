@@ -13999,6 +13999,21 @@ elif mode == 'Embeddings':
 			# ---------- Model ------------
 			with cfg_c1:
 				model_options = get_embedding_model_options( embedding )
+				synchronize_embedding_model_selection( model_options )
+				valid_model_options = [ str( model ).strip( ) for model in model_options if
+					isinstance( model, str ) and model.strip( ) ]
+				
+				if not valid_model_options:
+					st.selectbox( label='Model', options=[ ], key='embedding_model_unavailable',
+						disabled=True,
+						help=(f'{provider_name} exposes an Embeddings capability but provides '
+						      'no usable embedding models.'), index=None, placeholder='Unavailable', )
+					
+					st.session_state[ 'embedding_model' ] = ''
+				else:
+					st.selectbox( label='Model', options=model_options, key='embedding_model',
+						index=None, placeholder='Options', )
+			
 				if st.session_state.get( 'embedding_model' ) not in model_options:
 					st.session_state[ 'embedding_model' ] = ''
 				
@@ -14076,8 +14091,7 @@ elif mode == 'Embeddings':
 			# ---------- Overlap Amount ------------
 			with cfg_c5:
 				try:
-					current_overlap = int(
-						st.session_state.get( 'embeddings_overlap_amount', 0 ) or 0 )
+					current_overlap = int( st.session_state.get( 'embeddings_overlap_amount', 0 ) or 0 )
 				except Exception as e:
 					exception = Error( e )
 					exception.module = 'app'
@@ -14099,16 +14113,34 @@ elif mode == 'Embeddings':
 					key='embeddings_overlap_amount' )
 				
 				embeddings_overlap_amount = st.session_state.get( 'embeddings_overlap_amount', 0 )
+				task_options = get_embedding_task_options( embedding=embedding,
+					provider_name=provider_name, )
 			
-			user_c1, user_c2 = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall' )
+			synchronize_embedding_task_selection( task_options=task_options,
+				provider_name=provider_name, )
+			
+			user_c1, user_c2, user_c3 = st.columns( [ 0.35, 0.40, 0.25 ], border=True, gap='xxsmall', )
+			
 			with user_c1:
-				st.text_input( label='User', key='embeddings_user',
-					help='Optional end-user identifier for providers that support it.',
-					width='stretch' )
+				if task_options:
+					st.selectbox( label='Task Type', options=task_options, key='embeddings_method',
+						index=None, placeholder='Options',
+						help=('Embedding intent used by providers that distinguish document, '
+						      'query, similarity, classification, and clustering vectors.'), )
+				else:
+					st.text_input( label='Task Type', value='Not Required', disabled=True,
+						key='embeddings_method_display',
+						help=(f'{provider_name} does not require a task type for embedding '
+						      'generation.'), )
 			
 			with user_c2:
+				st.text_input( label='User', key='embeddings_user',
+					help=('Optional end-user identifier for providers that support it.'),
+					width='stretch', disabled=provider_name != 'GPT', )
+			
+			with user_c3:
 				st.button( label='Reset Configuration', key='embedding_config_reset',
-					width='stretch', on_click=reset_embeddings_controls )
+					width='stretch', on_click=reset_embeddings_controls, )
 		
 		# ------------------------------------------------------------------
 		# Input
@@ -14127,7 +14159,6 @@ elif mode == 'Embeddings':
 				with st.spinner( 'Creating embeddings…' ):
 					try:
 						source_text = st.session_state.get( 'embeddings_input_text', '', )
-						
 						model_name = str(
 							st.session_state.get( 'embedding_model', '', ) or '' ).strip( )
 						
@@ -14170,8 +14201,7 @@ elif mode == 'Embeddings':
 							chunk_size=chunk_size, overlap_amount=overlap_amount, )
 						
 						if len( chunks ) == 0:
-							raise ValueError( 'No valid chunks were produced from the input '
-							                  'text.' )
+							raise ValueError( 'No valid chunks were produced from the input text.' )
 						
 						dimensions = normalize_embedding_dimensions( model=model_name,
 							dimensions=st.session_state.get( 'embeddings_dimensions', 0, ),
@@ -14181,9 +14211,20 @@ elif mode == 'Embeddings':
 						user_value = (user_value.strip( ) if isinstance( user_value,
 							str ) and user_value.strip( ) else None)
 						
+						task_type = str(
+							st.session_state.get( 'embeddings_method', '', ) or '' ).strip( )
+						
+						if provider_name == 'Gemini':
+							task_options = get_embedding_task_options( embedding=embedding,
+								provider_name=provider_name, )
+							
+							if task_options and task_type not in task_options:
+								raise ValueError( 'Select a valid Gemini embedding task.' )
+						
 						vectors = create_provider_embeddings( embedding=embedding, chunks=chunks,
 							model=model_name, encoding_format=encoding_format,
-							dimensions=dimensions, user_value=user_value, )
+							dimensions=dimensions, user_value=user_value,
+							task_type=task_type or None, )
 						
 						normalized_vectors = validate_embedding_result_count( chunks=chunks,
 							vectors=vectors, )
