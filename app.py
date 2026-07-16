@@ -981,11 +981,11 @@ def convert_xml( text: str ) -> str:
 	"""
 	markdown_blocks: List[ str ] = [ ]
 	for match in cfg.XML_BLOCK_PATTERN.finditer( text ):
-		raw_tag: str = match.group( "tag" )
-		body: str = match.group( "body" ).strip( )
+		raw_tag: str=match.group( "tag" )
+		body: str=match.group( "body" ).strip( )
 		
 		# Humanize tag name for Markdown heading
-		heading: str = raw_tag.replace( "_", " " ).replace( "-", " " ).title( )
+		heading: str=raw_tag.replace( "_", " " ).replace( "-", " " ).title( )
 		markdown_blocks.append( f"## {heading}" )
 		if body:
 			markdown_blocks.append( body )
@@ -1118,7 +1118,7 @@ def normalize_text( text: str ) -> str:
 	
 	return text
 
-def chunk_text( text: str, max_tokens: int = 400 ) -> list[ str ]:
+def chunk_text( text: str, max_tokens: int=400 ) -> list[ str ]:
 	"""Chunk text.
 	
 	Purpose:
@@ -2156,8 +2156,8 @@ def format_prompt_option( prompt_id: int, prompts: Dict[ int, Dict[ str, Any ] ]
 	
 	return f'Prompt ID {prompt_id}'
 
-def fetch_prompts_df( search_text: str = '', category: str = '', sort_column: str = 'ID',
-	sort_direction: str = 'ASC' ) -> pd.DataFrame:
+def fetch_prompts_df( search_text: str='', category: str='', sort_column: str='ID',
+	sort_direction: str='ASC' ) -> pd.DataFrame:
 	"""Fetch prompts dataframe.
 	
 	Purpose:
@@ -2238,8 +2238,8 @@ def fetch_prompts_df( search_text: str = '', category: str = '', sort_column: st
 		exception = Error( e )
 		exception.module = 'app'
 		exception.cause = 'fetch_prompts_df'
-		exception.method = ('fetch_prompts_df( search_text: str = "", category: str = "", '
-		                    'sort_column: str = "ID", sort_direction: str = "ASC" ) -> '
+		exception.method = ('fetch_prompts_df( search_text: str="", category: str="", '
+		                    'sort_column: str="ID", sort_direction: str="ASC" ) -> '
 		                    'pd.DataFrame')
 		Logger( ).write( exception )
 		raise exception
@@ -2700,14 +2700,12 @@ def build_prompt( user_input: str ) -> str:
 	system_instructions = st.session_state.get( 'system_instructions', '' )
 	use_semantic = bool( st.session_state.get( 'use_semantic', False ) )
 	basic_docs = st.session_state.get( 'basic_docs', [ ] )
-	messages = st.session_state.get( 'messages', [ ] )
-	
+	messages = st.session_state.get( 'messages', [ ] )	
 	top_k_value = int( st.session_state.get( 'top_k', 0 ) )
 	if top_k_value <= 0:
 		top_k_value = 4
 	
-	prompt = f"<|system|>\n{system_instructions}\n</s>\n"
-	
+	prompt = f"<|system|>\n{system_instructions}\n</s>\n"	
 	if use_semantic:
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
 			rows = conn.execute( "SELECT chunk, vector FROM embeddings" ).fetchall( )
@@ -2724,8 +2722,7 @@ def build_prompt( user_input: str ) -> str:
 	if isinstance( messages, list ):
 		for msg in messages:
 			role = ''
-			content = ''
-			
+			content = ''			
 			if isinstance( msg, tuple ) or isinstance( msg, list ):
 				if len( msg ) == 2:
 					role = str( msg[ 0 ] or '' ).strip( )
@@ -2857,7 +2854,7 @@ def create_schema( table: str ) -> List[ Tuple ]:
 	with create_connection( ) as conn:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
-def read_table( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
+def read_table( table: str, limit: int=None, offset: int=0 ) -> pd.DataFrame:
 	"""Read table.
 	
 	Purpose:
@@ -4506,8 +4503,8 @@ def get_storage_id_from_option( option: Optional[ str ] ) -> str:
 	
 	return text
 
-def get_selected_store_id( manual_key: str = 'stores_manual_id',
-	selected_key: str = 'stores_selected_id', fallback_key: str = 'stores_id' ) -> str:
+def get_selected_store_id( manual_key: str='stores_manual_id',
+	selected_key: str='stores_selected_id', fallback_key: str='stores_id' ) -> str:
 	"""Get selected store id.
 	
 	Purpose:
@@ -4665,8 +4662,7 @@ def save_uploaded_storage_file( uploaded_file: Any ) -> str:
 		
 		return tmp.name
 
-def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List[
-	Dict[ str, Any ] ]:
+def set_storage_rows( rows: Any, table_key: str='storage_table_data' ) -> List[ Dict[ str, Any ] ]:
 	"""Set storage rows.
 	
 	Purpose:
@@ -4687,7 +4683,7 @@ def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List
 	return normalized_rows
 
 def set_storage_result( result: Any, operation: str,
-	result_key: str = 'storage_operation_result' ) -> Dict[ str, Any ]:
+	result_key: str='storage_operation_result' ) -> Dict[ str, Any ]:
 	"""Set storage result.
 	
 	Purpose:
@@ -5838,7 +5834,7 @@ def reset_text_mind_controls( ) -> None:
 	reset_text_tool_settings( )
 	reset_text_response_settings( )
 
-def split_text_values( value: Any, delimiter: str = ',' ) -> List[ str ]:
+def split_text_values( value: Any, delimiter: str=',' ) -> List[ str ]:
 	"""Split text values.
 	
 	Purpose:
@@ -6648,7 +6644,7 @@ def get_image_modality_options( image: Any ) -> List[ str ]:
 	return [ '', 'text', 'image', 'auto' ]
 
 def render_image_output( image_result: str | bytes | List[ str | bytes ] | Any | None,
-	caption: str = 'Image output' ) -> bool:
+	caption: str='Image output' ) -> bool:
 	"""Render image output.
 	
 	Purpose:
@@ -7892,8 +7888,8 @@ def normalize_embedding_chunk_settings( chunk_size: int | None,
 	
 	return chunk_value, overlap_value
 
-def chunk_text_for_embeddings( text: str, chunk_size: int = 800, overlap_amount: int = 0,
-	encoding_name: str = 'cl100k_base' ) -> List[ str ]:
+def chunk_text_for_embeddings( text: str, chunk_size: int=800, overlap_amount: int=0,
+	encoding_name: str='cl100k_base' ) -> List[ str ]:
 	"""Chunk text for embeddings.
 	
 	Purpose:
@@ -7971,7 +7967,7 @@ def normalize_embedding_vectors( vectors: Any ) -> List[ Any ]:
 	return [ vectors ]
 
 def build_embeddings_dataframe( chunks: List[ str ], vectors: Any,
-	encoding_format: str = 'float' ) -> pd.DataFrame:
+	encoding_format: str='float' ) -> pd.DataFrame:
 	"""Build embeddings dataframe.
 	
 	Purpose:
@@ -8873,7 +8869,7 @@ def normalize_docqna_text( text: str ) -> str:
 	value = re.sub( r'\n{3,}', '\n\n', value )
 	return value.strip( )
 
-def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int=150 ) -> List[ str ]:
+def chunk_docqna_text( text: str, chunk_size: int=900, chunk_overlap: int=150 ) -> List[ str ]:
 	"""Chunk docqna text.
 	
 	Purpose:
@@ -9152,7 +9148,7 @@ def score_chunk( query: str, chunk: str ) -> float:
 	
 	return float( density )
 
-def retrieve_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any ] ]:
+def retrieve_chunks( query: str, top_k: int=6 ) -> List[ Dict[ str, Any ] ]:
 	"""Retrieve chunks.
 	
 	Purpose:
@@ -11113,8 +11109,7 @@ def get_active_grok_collection_ids( provider_name: Optional[ str ] = None ) -> L
 	
 	return parse_storage_ids( resource_id )
 
-def get_active_gemini_file_search_store_names( provider_name: Optional[ str ] = None ) -> List[
-	str ]:
+def get_active_gemini_file_search_store_names( provider_name: Optional[ str ] = None ) -> List[ str ]:
 	"""Get active gemini file search store names.
 	
 	Purpose:
@@ -11632,7 +11627,6 @@ with st.sidebar:
 			st.rerun( )
 	
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	
 	if provider == 'Gemini':
 		mode = st.sidebar.radio( 'Select Mode', cfg.GEMINI_MODES, index=0 )
 	elif provider == 'Grok':
@@ -16677,11 +16671,11 @@ elif mode == 'Data Export':
 		st.caption( 'System Prompt' )
 		export_format = st.radio( 'Export Format', options=[ 'XML-Delimited', 'Markdown' ],
 			horizontal=True, help='Choose how system instructions should be exported.' )
-		prompt_text: str = st.session_state.get( 'system_prompt', '' )
+		prompt_text: str=st.session_state.get( 'system_prompt', '' )
 		if export_format == 'Markdown':
 			try:
-				export_text: str = convert_xml( prompt_text )
-				export_filename: str = 'Buddy_Instructions.md'
+				export_text: str=convert_xml( prompt_text )
+				export_filename: str='Buddy_Instructions.md'
 			except Exception as exc:
 				exception = Error( exc )
 				exception.module = 'app'
