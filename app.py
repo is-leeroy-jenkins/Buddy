@@ -9243,77 +9243,172 @@ def build_docqna_local_prompt( query: str, hits: List[ Dict[ str, Any ] ] ) -> s
 	return '\n\n'.join( prompt_parts ).strip( )
 
 def run_docqna_query( query: str ) -> str:
-	"""Run docqna query.
+	"""Run local Document Q&A query.
 	
 	Purpose:
-	    Executes the run docqna query workflow using the current provider, document, prompt,
-	    and session-state configuration.
+	    Retrieves relevant chunks from the currently loaded local documents, constructs a
+	    bounded document-grounded prompt, executes the selected provider model, and persists
+	    retrieval, source, answer, and usage state.
 	
 	Args:
-	    query: Query string used by the database, retrieval, or provider workflow.
+	    query: Question or summarization instruction submitted against the active local
+	        documents.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
+	    str: Provider answer grounded in the retrieved local document chunks.
+	
+	Raises:
+	    Error: Raised when local documents, retrieval chunks, provider capability, model
+	        configuration, or provider execution is invalid.
 	"""
-	provider_name = get_provider_name( )
-	chat = get_chat_module( )
-	top_k = int( st.session_state.get( 'docqna_top_k', 6 ) or 6 )
-	hits = retrieve_chunks( query=query, top_k=top_k )
-	
-	st.session_state[ 'docqna_last_hits' ] = hits
-	st.session_state[ 'docqna_last_sources' ] = [
-		{ 'document': hit.get( 'document' ), 'chunk_index': hit.get( 'chunk_index' ),
-			'score': hit.get( 'score' ), 'tokens': hit.get( 'tokens' ), } for hit in hits if
-		isinstance( hit, dict ) ]
-	
-	prompt = build_docqna_local_prompt( query=query, hits=hits )
-	
-	if provider_name == 'Gemini':
-		apply_gemini_runtime_config( )
-		result = chat.generate_text( prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'gemini-2.5-flash-lite',
-			temperature=st.session_state.get( 'docqna_temperature' ),
-			top_p=st.session_state.get( 'docqna_top_percent' ),
-			top_k=st.session_state.get( 'docqna_top_k' ),
-			max_tokens=st.session_state.get( 'docqna_max_tokens' ),
-			instruct=st.session_state.get( 'docqna_system_instructions' ), stream=False )
-		return str( result or '' ).strip( )
-	
-	if provider_name == 'GPT':
-		result = chat.generate_text( prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'gpt-5-nano',
-			temperature=st.session_state.get( 'docqna_temperature' ),
-			top_p=st.session_state.get( 'docqna_top_percent' ),
-			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
-			presence=st.session_state.get( 'docqna_presence_penalty' ),
-			max_tokens=st.session_state.get( 'docqna_max_tokens' ),
-			store=st.session_state.get( 'docqna_store' ), stream=False,
-			instruct=st.session_state.get( 'docqna_system_instructions' ) )
-		return str( result or '' ).strip( )
-	
-	if provider_name == 'Grok':
-		result = chat.generate_text( prompt=prompt,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'grok-4.3',
-			temperature=st.session_state.get( 'docqna_temperature' ),
-			top_p=st.session_state.get( 'docqna_top_percent' ),
-			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
-			presence=st.session_state.get( 'docqna_presence_penalty' ),
-			max_tokens=st.session_state.get( 'docqna_max_tokens' ) or 10000,
-			store=bool( st.session_state.get( 'docqna_store', True ) ), stream=False,
-			instruct=st.session_state.get( 'docqna_system_instructions' ),
-			reasoning=st.session_state.get( 'docqna_reasoning' ) or 'high',
-			response_format=st.session_state.get( 'docqna_response_format' ) or 'text' )
+	try:
+		question = str( query or '' ).strip( )
+		if not question:
+			raise ValueError( 'Enter a question about the active local document source.' )
 		
-		response_obj = getattr( chat, 'response', None )
-		st.session_state[ 'docqna_last_sources' ] = extract_sources( response_obj )
-		st.session_state[ 'last_sources' ] = st.session_state[ 'docqna_last_sources' ]
+		active_documents = st.session_state.get( 'docqna_active_docs', [ ], )
+		if not isinstance( active_documents, list ) or len( active_documents ) == 0:
+			raise ValueError( 'Load at least one local document before asking a question.' )
 		
-		return str( result or '' ).strip( )
-	
-	return ''
+		readable_documents = [ document for document in active_documents if
+			isinstance( document, dict ) and isinstance( document.get( 'text' ),
+				str ) and document.get( 'text', '' ).strip( ) ]
+		
+		if len( readable_documents ) == 0:
+			raise ValueError( 'The loaded local documents contain no readable text.' )
+		
+		provider_name = get_provider_name( )
+		if not provider_supports( 'Chat', provider_name ):
+			raise AttributeError( f'{provider_name} does not expose a Chat capability required by '
+			                      'Document Q&A.' )
+		
+		chat = get_chat_module( provider_name )
+		model_name = str( st.session_state.get( 'docqna_model', '' ) or '' ).strip( )
+		
+		if not model_name:
+			raise ValueError(
+				f'Select a {provider_name} Document Q&A model before asking a question.' )
+		
+		model_options = get_text_option_list( chat, 'model_options', [ ], )
+		valid_models = [ str( model ).strip( ) for model in model_options if
+			isinstance( model, str ) and model.strip( ) ]
+		
+		if valid_models and model_name not in valid_models:
+			raise ValueError( f'The selected Document Q&A model is not available for '
+			                  f'{provider_name}: {model_name}.' )
+		
+		top_k = int( st.session_state.get( 'docqna_top_k', 6 ) or 6 )
+		if top_k < 1:
+			top_k = 1
+		
+		hits = retrieve_chunks( query=question, top_k=top_k, )
+		if not isinstance( hits, list ) or len( hits ) == 0:
+			raise ValueError(
+				'No document chunks are available for the local Document Q&A request.' )
+		
+		local_sources: List[ Dict[ str, Any ] ] = [
+			{ 'document': hit.get( 'document' ), 'chunk_index': hit.get( 'chunk_index' ),
+				'score': hit.get( 'score' ), 'tokens': hit.get( 'tokens' ), } for hit in hits if
+			isinstance( hit, dict ) ]
+		
+		st.session_state[ 'docqna_last_hits' ] = hits
+		st.session_state[ 'docqna_last_sources' ] = local_sources
+		st.session_state[ 'last_sources' ] = local_sources
+		prompt = build_docqna_local_prompt( query=question, hits=hits, )
+		st.session_state[ 'docqna_context' ] = prompt
+		max_tokens_value = int( st.session_state.get( 'docqna_max_tokens', 0 ) or 0 )
+		temperature_value = float( st.session_state.get( 'docqna_temperature', 0.0 ) or 0.0 )
+		top_percent_value = float( st.session_state.get( 'docqna_top_percent', 0.0 ) or 0.0 )
+		frequency_penalty_value = float(
+			st.session_state.get( 'docqna_frequency_penalty', 0.0, ) or 0.0 )
+		
+		presence_penalty_value = float(
+			st.session_state.get( 'docqna_presence_penalty', 0.0, ) or 0.0 )
+		
+		instruction_value = str(
+			st.session_state.get( 'docqna_system_instructions', '', ) or '' ).strip( )
+		
+		reasoning_value = str( st.session_state.get( 'docqna_reasoning', '', ) or '' ).strip( )
+		response_format_value = str(
+			st.session_state.get( 'docqna_response_format', '', ) or '' ).strip( )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			result = chat.generate_text( prompt=prompt, model=model_name,
+				temperature=temperature_value, top_p=top_percent_value,
+				max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+				instruct=instruction_value or None, response_format=response_format_value or None,
+				stream=False, )
+		
+		elif provider_name == 'GPT':
+			result = chat.generate_text( prompt=prompt, model=model_name,
+				temperature=temperature_value, top_p=top_percent_value,
+				frequency=frequency_penalty_value, presence=presence_penalty_value,
+				max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+				store=bool( st.session_state.get( 'docqna_store', False, ) ), stream=False,
+				instruct=instruction_value or None, format=response_format_value or 'text', )
+		
+		elif provider_name == 'Grok':
+			result = chat.generate_text( prompt=prompt, model=model_name,
+				temperature=temperature_value, top_p=top_percent_value,
+				frequency=frequency_penalty_value, presence=presence_penalty_value,
+				max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+				store=bool( st.session_state.get( 'docqna_store', False, ) ), stream=False,
+				instruct=instruction_value or None, reasoning=reasoning_value or None,
+				format=response_format_value or 'text', )
+		
+		else:
+			raise ValueError( f'Unsupported Document Q&A provider: {provider_name}.' )
+		
+		response_obj = (
+				getattr( chat, 'response', None ) or getattr( chat, 'content_response', None ))
+		
+		if isinstance( result, str ):
+			answer = result.strip( )
+		else:
+			answer = str( getattr( result, 'output_text', None ) or getattr( result, 'text',
+				None ) or extract_response_text( result ) or '' ).strip( )
+		
+		if not answer and response_obj is not None:
+			answer = str(
+				getattr( response_obj, 'output_text', None ) or getattr( response_obj, 'text',
+					None ) or extract_response_text( response_obj ) or '' ).strip( )
+		
+		if not answer:
+			raise ValueError( f'{provider_name} returned no Document Q&A answer.' )
+		
+		provider_sources = extract_sources( response_obj )
+		if isinstance( provider_sources, list ) and provider_sources:
+			source_rows = local_sources + [ source for source in provider_sources if
+				isinstance( source, dict ) ]
+		else:
+			source_rows = local_sources
+		
+		st.session_state[ 'docqna_last_sources' ] = source_rows
+		st.session_state[ 'last_sources' ] = source_rows
+		st.session_state[ 'docqna_last_answer' ] = answer
+		st.session_state[ 'last_answer' ] = answer
+		try:
+			update_token_counters( response_obj )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'run_docqna_query'
+			exception.method = 'run_docqna_query( query: str ) -> str'
+			Logger( ).write( exception )
+			pass
+		
+		return answer
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_docqna_query'
+		exception.method = 'run_docqna_query( query: str ) -> str'
+		Logger( ).write( exception )
+		raise exception
 
 def run_remote_query( query: str ) -> str:
 	"""Run remote query.
@@ -9433,38 +9528,58 @@ def run_remote_query( query: str ) -> str:
 	return run_docqna_query( query )
 
 def route_document_query( prompt: str ) -> str:
-	"""Route document query.
+	"""Route Document Q&A query.
 	
 	Purpose:
-	    Executes the route document query workflow using the current provider, document,
-	    prompt, and session-state configuration.
+	    Routes a question to the local retrieval workflow or the provider-specific remote source
+	    workflow using the current Document Q&A source selection.
 	
 	Args:
-	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
+	    prompt: Question or summarization instruction submitted against the active document
+	        source.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
+	    str: Answer returned by the active Document Q&A execution path.
+	
+	Raises:
+	    Error: Raised when source selection or query execution fails.
 	"""
-	query = str( prompt or '' ).strip( )
-	if not query:
-		return 'Please enter a question about the active document source.'
-	
-	source = st.session_state.get( 'docqna_source', 'Local Upload' )
-	
-	if source == 'Local Upload':
-		return run_docqna_query( query )
-	
-	return run_remote_query( query )
+	try:
+		query = str( prompt or '' ).strip( )
+		if not query:
+			raise ValueError( 'Enter a question about the active document source.' )
+		
+		source = str(
+			st.session_state.get( 'docqna_source', 'Local Upload', ) or 'Local Upload' ).strip( )
+		
+		if source == 'Local Upload':
+			st.session_state[ 'doc_source' ] = 'uploadlocal'
+			return run_docqna_query( query )
+		
+		return run_remote_query( query )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'route_document_query'
+		exception.method = 'route_document_query( prompt: str ) -> str'
+		Logger( ).write( exception )
+		raise exception
 
 def summarize_document( ) -> str:
-	"""Summarize document.
+	"""Summarize active document source.
 	
 	Purpose:
-	    Executes the summarize document workflow using the current provider, document, prompt,
-	    and session-state configuration.
+	    Submits a structured summary request through the same authoritative local or remote
+	    Document Q&A route used by interactive questions.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
+	    str: Structured summary of the active document source.
+	
+	Raises:
+	    Error: Raised when the active source cannot be summarized.
 	"""
 	summary_prompt = """
 		Provide a clear, structured summary of the active document source.
@@ -9476,9 +9591,12 @@ def summarize_document( ) -> str:
 		- Important data points, if any
 		- Policy or operational implications, if applicable
 		
-		Be precise and concise.
-	"""
-	return route_document_query( summary_prompt.strip( ) )
+		Use only information available in the active document source.
+		Identify the relevant document name when multiple documents are loaded.
+		If the available source does not support a requested conclusion, state that limitation.
+	""".strip( )
+	
+	return route_document_query( summary_prompt )
 
 def render_hits( ) -> None:
 	"""Render hits.
