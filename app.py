@@ -15672,45 +15672,65 @@ elif mode == 'Files':
 						help='Provider file identifier for retrieve, extract, delete, '
 						     'or analysis.' )
 				
-				with mgmt_c4:
-					st.button( label='Reset Controls', key='files_reset_controls', width='stretch',
-						on_click=reset_files_controls )
+				st.button( label='Reset Controls', key='files_reset_management_controls',
+						width='stretch', on_click=reset_files_management_controls, )
 			
 			# ------------------------------------------------------------------
 			# Analysis Controls
 			# ------------------------------------------------------------------
 			with st.expander( label='Analysis Controls', icon='🧊', expanded=False,
-					width='stretch' ):
-				analysis_c1, analysis_c2, analysis_c3, analysis_c4, analysis_c5 = st.columns(
-					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
+					width='stretch', ):
+				if provider_supports( 'Chat', provider_name ):
+					chat = get_chat_module( provider_name )
+					model_options = get_text_option_list( chat, 'model_options', [ ], )
+				else:
+					chat = None
+					model_options = [ ]
 				
-				chat = get_chat_module( )
+				valid_models = [ str( option ).strip( ) for option in model_options if
+					isinstance( option, str ) and option.strip( ) ]
+				
+				selected_model = str( st.session_state.get( 'files_model', '' ) or '' ).strip( )
+				
+				if selected_model and selected_model not in valid_models:
+					st.session_state[ 'files_model' ] = ''
+				
+				analysis_c1, analysis_c2, analysis_c3, analysis_c4, analysis_c5 = (
+					st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall', ))
 				
 				with analysis_c1:
-					model_options = get_text_option_list( chat, 'model_options', [ '' ] )
-					st.selectbox( label='Model', options=model_options, key='files_model',
+					st.selectbox( label='Model', options=valid_models, key='files_model',
 						help='Model used for optional file analysis.', index=None,
-						placeholder='Options' )
+						placeholder='Options' if valid_models else 'Unavailable',
+						disabled=chat is None or len( valid_models ) == 0, )
 				
 				with analysis_c2:
 					st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
-						value=float( st.session_state.get( 'files_temperature', 0.0 ) ), step=0.01,
-						key='files_temperature', help=cfg.TEMPERATURE )
+						value=float( st.session_state.get( 'files_temperature', 0.0, ) ),
+						step=0.01,
+						key='files_temperature', help=cfg.TEMPERATURE, )
 				
 				with analysis_c3:
 					st.slider( label='Top-P', min_value=0.0, max_value=1.0,
-						value=float( st.session_state.get( 'files_top_percent', 0.0 ) ), step=0.01,
-						key='files_top_percent', help=cfg.TOP_P )
+						value=float( st.session_state.get( 'files_top_percent', 0.0, ) ),
+						step=0.01,
+						key='files_top_percent', help=cfg.TOP_P, )
 				
 				with analysis_c4:
 					st.slider( label='Max Tokens', min_value=0, max_value=100000,
-						value=int( st.session_state.get( 'files_max_tokens', 0 ) ), step=500,
-						key='files_max_tokens', help=cfg.MAX_OUTPUT_TOKENS )
+						value=int( st.session_state.get( 'files_max_tokens', 0, ) ), step=500,
+						key='files_max_tokens', help=cfg.MAX_OUTPUT_TOKENS, )
 				
 				with analysis_c5:
-					st.toggle( label='Store', key='files_store',
-						help=cfg.STORE )  #
-				# ------------------------------------------------------------------
+					st.toggle( label='Store', key='files_store', help=cfg.STORE, )
+				
+				st.button( label='Reset Controls', key='files_reset_analysis_controls',
+					width='stretch', on_click=reset_files_analysis_controls, )
+			
+			st.button( label='Reset All Mind Controls', key='files_reset_mind_controls',
+				width='stretch', on_click=reset_files_controls, )
+		
+		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
 		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
