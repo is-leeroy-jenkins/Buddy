@@ -6172,50 +6172,68 @@ def clear_image_messages( ) -> None:
 	"""Clear image messages.
 	
 	Purpose:
-	    Maintains application runtime state for clear image messages by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears Images Mode conversation history, context, generated output, analysis output,
+	    response identifiers, and shared answer state without modifying provider configuration,
+	    image controls, or System Instructions.
+	
+	Returns:
+	    None: This function resets Images Mode output and conversation state.
 	"""
 	st.session_state[ 'image_input' ] = [ ]
 	st.session_state[ 'image_messages' ] = [ ]
 	st.session_state[ 'image_context' ] = [ ]
 	st.session_state[ 'image_output_bytes' ] = None
+	st.session_state[ 'image_analysis_output' ] = ''
+	st.session_state[ 'image_previous_response_id' ] = ''
 	st.session_state[ 'last_answer' ] = ''
+	st.session_state[ 'last_sources' ] = [ ]
 
 def clear_image_instructions( ) -> None:
 	"""Clear image instructions.
 	
 	Purpose:
-	    Clears the Images Mode prompt category, selected prompt identifier, and editable System
-	    Instructions while preserving all instruction state associated with other application
-	    modes.
+	    Resets the Images Mode prompt category, selected prompt identifier, and editable System
+	    Instructions without modifying instruction state belonging to another application mode.
 	
 	Returns:
-	    None: This function resets the Images Mode instruction-template contract.
+	    None: This function resets the Images Mode instruction-template state.
 	"""
-	clear_instruction_template( category_key='image_instruction_category',
-		selector_key='image_instruction_prompt_id', instruction_key='image_system_instructions', )
+	clear_instruction_template(
+		category_key='image_instruction_category',
+		selector_key='image_instruction_prompt_id',
+		instruction_key='image_system_instructions',
+	)
 
 def append_image_message( role: str, content: str ) -> None:
 	"""Append image message.
 	
 	Purpose:
-	    Supports the append image message application workflow by coordinating validated
-	    inputs, Streamlit session state, provider configuration, and local data processing.
+	    Appends a normalized Images Mode message to the provider-input and display-message
+	    collections while preserving the role and content contract used by downstream workflows.
 	
 	Args:
-	    role: Role value used by the application workflow.
-	    content: Text value supplied to the prompt, conversion, retrieval, or provider
-	        workflow.
+	    role: Message role associated with the content.
+	    content: Text content associated with the Images Mode message.
+	
+	Returns:
+	    None: This function appends the message to Images Mode session state.
 	"""
-	if 'image_input' not in st.session_state or not isinstance( st.session_state[ 'image_input' ],
-			list ):
+	if (
+		'image_input' not in st.session_state
+		or not isinstance( st.session_state[ 'image_input' ], list )
+	):
 		st.session_state[ 'image_input' ] = [ ]
 	
-	if 'image_messages' not in st.session_state or not isinstance(
-			st.session_state[ 'image_messages' ], list ):
+	if (
+		'image_messages' not in st.session_state
+		or not isinstance( st.session_state[ 'image_messages' ], list )
+	):
 		st.session_state[ 'image_messages' ] = [ ]
 	
-	message = { 'role': role, 'content': content, }
+	message = {
+		'role': str( role or '' ).strip( ),
+		'content': str( content or '' ),
+	}
 	
 	st.session_state[ 'image_input' ].append( message )
 	st.session_state[ 'image_messages' ].append( message )
@@ -6224,9 +6242,9 @@ def change_image_instruction_category( ) -> None:
 	"""Change image instruction category.
 	
 	Purpose:
-	    Clears the selected Images Mode prompt identifier when the user changes the active
-	    prompt category so a template from the previous category cannot remain selected under
-	    an incompatible option collection.
+	    Clears the selected Images Mode prompt identifier when the active prompt category changes
+	    so a template from a previous category cannot remain selected under an incompatible
+	    option collection.
 	
 	Returns:
 	    None: This function resets the Images Mode prompt selection.
@@ -6238,83 +6256,160 @@ def load_image_instruction_template( ) -> None:
 	
 	Purpose:
 	    Loads the Images Mode instruction template identified by the selected Prompts table
-	    primary key into the editable Images Mode System Instructions state.
+	    integer primary key into the editable Images Mode System Instructions state.
 	
 	Returns:
 	    None: This function updates the Images Mode System Instructions state.
+	
+	Raises:
+	    Error: Raised when the selected prompt cannot be retrieved or loaded.
 	"""
-	load_instruction_template( selector_key='image_instruction_prompt_id',
-		instruction_key='image_system_instructions', )
+	try:
+		load_instruction_template(
+			selector_key='image_instruction_prompt_id',
+			instruction_key='image_system_instructions',
+		)
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'load_image_instruction_template'
+		exception.method = 'load_image_instruction_template( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def convert_image_system_instructions( ) -> None:
 	"""Convert image system instructions.
 	
 	Purpose:
-	    Transforms convert image system instructions inputs into a normalized representation
-	    used by provider calls, document retrieval, data management, or UI rendering.
+	    Converts the editable Images Mode System Instructions between supported XML-like section
+	    markup and Markdown heading markup while preserving the state key consumed by provider
+	    execution.
+	
+	Returns:
+	    None: This function updates the Images Mode System Instructions state.
+	
+	Raises:
+	    Error: Raised when instruction conversion fails.
 	"""
-	text_value = st.session_state.get( 'image_system_instructions', '' )
-	if not isinstance( text_value, str ) or not text_value.strip( ):
-		return
-	
-	source = text_value.strip( )
-	if cfg.XML_BLOCK_PATTERN.search( source ):
-		converted = convert_xml( source )
-	else:
-		converted = convert_markdown( source )
-	
-	st.session_state[ 'image_system_instructions' ] = converted
+	try:
+		text_value = st.session_state.get( 'image_system_instructions', '' )
+		
+		if not isinstance( text_value, str ) or not text_value.strip( ):
+			return
+		
+		source = text_value.strip( )
+		
+		if cfg.XML_BLOCK_PATTERN.search( source ):
+			converted = convert_xml( source )
+		else:
+			converted = convert_markdown( source )
+		
+		st.session_state[ 'image_system_instructions' ] = converted
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'convert_image_system_instructions'
+		exception.method = 'convert_image_system_instructions( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def reset_image_llm_settings( ) -> None:
-	"""Reset image llm settings.
+	"""Reset image LLM settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset image llm settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Images Mode LLM Settings expander to the initial
+	    values established by the Images Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Images Mode model controls.
 	"""
-	for key in [ 'image_mode', 'image_model', 'image_analysis_model', 'image_number',
-		'image_modality' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'image_mode' ] = ''
+	st.session_state[ 'image_model' ] = ''
+	st.session_state[ 'image_analysis_model' ] = ''
+	st.session_state[ 'image_number' ] = 1
+	st.session_state[ 'image_modality' ] = ''
 
 def reset_image_visual_settings( ) -> None:
 	"""Reset image visual settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset image visual settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Images Mode Visual Settings expander to the
+	    initial values established by the Images Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Images Mode visual controls.
 	"""
-	for key in [ 'image_mime_type', 'image_size', 'image_quality', 'image_backcolor',
-		'image_compression', 'image_aspect_ratio', 'image_detail' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'image_mime_type' ] = ''
+	st.session_state[ 'image_size' ] = ''
+	st.session_state[ 'image_quality' ] = ''
+	st.session_state[ 'image_backcolor' ] = ''
+	st.session_state[ 'image_compression' ] = 0.0
+	st.session_state[ 'image_aspect_ratio' ] = ''
+	st.session_state[ 'image_detail' ] = ''
+	st.session_state[ 'image_analysis_detail' ] = 'auto'
+	st.session_state[ 'image_media_resolution' ] = ''
 
 def reset_image_tool_settings( ) -> None:
 	"""Reset image tool settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset image tool settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Images Mode Tool Settings expander to the initial
+	    values established by the Images Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Images Mode tool controls.
 	"""
-	for key in [ 'image_include', 'image_tools', 'image_domains_input', 'image_domains',
-		'image_tool_choice', 'image_grounded', 'image_image_search', 'image_max_calls',
-		'image_max_searches', 'image_parallel_calls' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'image_include' ] = [ ]
+	st.session_state[ 'image_tools' ] = [ ]
+	st.session_state[ 'image_domains_input' ] = ''
+	st.session_state[ 'image_domains' ] = [ ]
+	st.session_state[ 'image_tool_choice' ] = ''
+	st.session_state[ 'image_grounded' ] = False
+	st.session_state[ 'image_image_search' ] = False
+	st.session_state[ 'image_max_calls' ] = 0
+	st.session_state[ 'image_max_searches' ] = 0
+	st.session_state[ 'image_parallel_calls' ] = False
 
 def reset_image_response_settings( ) -> None:
 	"""Reset image response settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset image response settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Images Mode Response Settings expander to the
+	    initial values established by the Images Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Images Mode response controls.
 	"""
-	for key in [ 'image_temperature', 'image_top_percent', 'image_frequency_penalty',
-		'image_presence_penalty', 'image_max_tokens', 'image_store', 'image_stream',
-		'image_background', 'image_response_format', 'image_reasoning',
-		'image_previous_response_id' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'image_temperature' ] = 0.0
+	st.session_state[ 'image_top_percent' ] = 0.0
+	st.session_state[ 'image_frequency_penalty' ] = 0.0
+	st.session_state[ 'image_presence_penalty' ] = 0.0
+	st.session_state[ 'image_max_tokens' ] = 0
+	st.session_state[ 'image_store' ] = False
+	st.session_state[ 'image_stream' ] = False
+	st.session_state[ 'image_background' ] = False
+	st.session_state[ 'image_response_format' ] = ''
+	st.session_state[ 'image_reasoning' ] = ''
+	st.session_state[ 'image_previous_response_id' ] = ''
+
+def reset_image_mind_controls( ) -> None:
+	"""Reset image mind controls.
+	
+	Purpose:
+	    Restores every control contained in the Images Mode Mind Controls expander and its nested
+	    configuration expanders to the initial values established by the Images Mode
+	    session-state contract.
+	
+	Returns:
+	    None: This function resets all Images Mode generation controls.
+	"""
+	reset_image_llm_settings( )
+	reset_image_visual_settings( )
+	reset_image_tool_settings( )
+	reset_image_response_settings( )
 
 def get_image_models( image: Any ) -> List[ str ]:
 	"""Get image models.
@@ -6699,8 +6794,8 @@ def get_audio_option_list( source: Any, attr_name: str, fallback: List[ str ] ) 
 	
 	return fallback
 
-def get_audio_model_options( task: str | None, transcriber: Any, translator: Any, tts: Any ) -> \
-		List[ str ]:
+def get_audio_model_options( task: str | None, transcriber: Any,
+	translator: Any, tts: Any ) -> List[ str ]:
 	"""Get audio model options.
 	
 	Purpose:
@@ -6737,8 +6832,8 @@ def get_audio_model_options( task: str | None, transcriber: Any, translator: Any
 	
 	return [ '' ]
 
-def get_audio_language_options( task: str | None, transcriber: Any, translator: Any ) -> List[
-	str ]:
+def get_audio_language_options( task: str | None, transcriber: Any,
+	translator: Any ) -> List[ str ]:
 	"""Get audio language options.
 	
 	Purpose:
@@ -6894,20 +6989,29 @@ def clear_audio_outputs( ) -> None:
 	"""Clear audio outputs.
 	
 	Purpose:
-	    Maintains application runtime state for clear audio outputs by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears generated audio bytes, transcribed or translated text, normalized provider
+	    results, usage data, and shared answer state without modifying Audio Mode controls,
+	    uploaded input, messages, or System Instructions.
+	
+	Returns:
+	    None: This function resets Audio Mode output state.
 	"""
 	st.session_state[ 'audio_output' ] = ''
 	st.session_state[ 'audio_output_bytes' ] = None
 	st.session_state[ 'audio_last_result' ] = { }
 	st.session_state[ 'audio_last_usage' ] = { }
+	st.session_state[ 'last_answer' ] = ''
+	st.session_state[ 'last_sources' ] = [ ]
 
 def clear_audio_messages( ) -> None:
 	"""Clear audio messages.
 	
 	Purpose:
-	    Maintains application runtime state for clear audio messages by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears Audio Mode message history and generated output state without modifying provider,
+	    task, model, response, playback, or System Instructions controls.
+	
+	Returns:
+	    None: This function resets Audio Mode message and output state.
 	"""
 	st.session_state[ 'audio_messages' ] = [ ]
 	clear_audio_outputs( )
@@ -6916,12 +7020,11 @@ def clear_audio_instructions( ) -> None:
 	"""Clear audio instructions.
 	
 	Purpose:
-	    Clears the Audio Mode prompt category, selected prompt identifier, and editable System
-	    Instructions while preserving all instruction state associated with other application
-	    modes.
+	    Resets the Audio Mode prompt category, selected prompt identifier, and editable System
+	    Instructions without modifying instruction state belonging to another application mode.
 	
 	Returns:
-	    None: This function resets the Audio Mode instruction-template contract.
+	    None: This function resets the Audio Mode instruction-template state.
 	"""
 	clear_instruction_template( category_key='audio_instruction_category',
 		selector_key='audio_instruction_prompt_id', instruction_key='audio_system_instructions', )
@@ -6931,226 +7034,335 @@ def load_audio_instruction_template( ) -> None:
 	
 	Purpose:
 	    Loads the Audio Mode instruction template identified by the selected Prompts table
-	    primary key into the editable Audio Mode System Instructions state.
+	    integer primary key into the editable Audio Mode System Instructions state.
 	
 	Returns:
 	    None: This function updates the Audio Mode System Instructions state.
+	
+	Raises:
+	    Error: Raised when the selected prompt cannot be retrieved or loaded.
 	"""
-	load_instruction_template( selector_key='audio_instruction_prompt_id',
-		instruction_key='audio_system_instructions', )
+	try:
+		load_instruction_template( selector_key='audio_instruction_prompt_id',
+			instruction_key='audio_system_instructions', )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'load_audio_instruction_template'
+		exception.method = 'load_audio_instruction_template( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def convert_audio_system_instructions( ) -> None:
 	"""Convert audio system instructions.
 	
 	Purpose:
-	    Transforms convert audio system instructions inputs into a normalized representation
-	    used by provider calls, document retrieval, data management, or UI rendering.
+	    Converts the editable Audio Mode System Instructions between supported XML-like section
+	    markup and Markdown heading markup while preserving the state key consumed by provider
+	    execution.
+	
+	Returns:
+	    None: This function updates the Audio Mode System Instructions state.
+	
+	Raises:
+	    Error: Raised when instruction conversion fails.
 	"""
-	text_value = st.session_state.get( 'audio_system_instructions', '' )
-	if not isinstance( text_value, str ) or not text_value.strip( ):
-		return
-	
-	source = text_value.strip( )
-	if cfg.XML_BLOCK_PATTERN.search( source ):
-		converted = convert_xml( source )
-	else:
-		converted = convert_markdown( source )
-	
-	st.session_state[ 'audio_system_instructions' ] = converted
+	try:
+		text_value = st.session_state.get( 'audio_system_instructions', '' )
+		if not isinstance( text_value, str ) or not text_value.strip( ):
+			return
+		
+		source = text_value.strip( )
+		if cfg.XML_BLOCK_PATTERN.search( source ):
+			converted = convert_xml( source )
+		else:
+			converted = convert_markdown( source )
+		
+		st.session_state[ 'audio_system_instructions' ] = converted
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'convert_audio_system_instructions'
+		exception.method = 'convert_audio_system_instructions( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def reset_audio_llm_settings( ) -> None:
-	"""Reset audio llm settings.
+	"""Reset audio LLM settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset audio llm settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Audio Mode LLM Settings expander to the initial
+	    values established by the Audio Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Audio Mode task and model controls.
 	"""
-	for key in [ 'audio_task', 'audio_model', 'audio_language', 'audio_voice',
-		'audio_response_format', 'audio_mime_type' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'audio_task' ] = ''
+	st.session_state[ 'audio_model' ] = ''
+	st.session_state[ 'audio_language' ] = ''
+	st.session_state[ 'audio_voice' ] = ''
+	st.session_state[ 'audio_response_format' ] = ''
+	st.session_state[ 'audio_mime_type' ] = ''
 
 def reset_audio_response_settings( ) -> None:
 	"""Reset audio response settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset audio response settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
-	"""
-	for key in [ 'audio_temperature', 'audio_top_percent', 'audio_frequency_penalty',
-		'audio_presence_penalty', 'audio_max_tokens', 'audio_speed', 'audio_store', 'audio_stream',
-		'audio_background', 'audio_start_time', 'audio_end_time', 'audio_loop', 'audio_autoplay' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
-
-def save_audio_upload( upload: Any ) -> str | None:
-	"""Save audio upload.
-	
-	Purpose:
-	    Applies the save audio upload operation to application-managed data, files, prompts, or
-	    provider resources while preserving the surrounding workflow state.
-	
-	Args:
-	    upload: Streamlit uploaded-file object to persist to a temporary path.
+	    Restores every control contained in the Audio Mode Response Settings expander to the
+	    initial values established by the Audio Mode session-state contract.
 	
 	Returns:
-	    str | None: Text value produced for the active application workflow.
+	    None: This function resets Audio Mode response and playback controls.
 	"""
-	if upload is None:
-		return None
+	st.session_state[ 'audio_temperature' ] = 0.0
+	st.session_state[ 'audio_top_percent' ] = 0.0
+	st.session_state[ 'audio_frequency_penalty' ] = 0.0
+	st.session_state[ 'audio_presence_penalty' ] = 0.0
+	st.session_state[ 'audio_max_tokens' ] = 0
+	st.session_state[ 'audio_speed' ] = 1.0
+	st.session_state[ 'audio_store' ] = False
+	st.session_state[ 'audio_stream' ] = False
+	st.session_state[ 'audio_background' ] = False
+	st.session_state[ 'audio_start_time' ] = 0.0
+	st.session_state[ 'audio_end_time' ] = 0.0
+	st.session_state[ 'audio_loop' ] = False
+	st.session_state[ 'audio_autoplay' ] = False
+
+def reset_audio_mind_controls( ) -> None:
+	"""Reset audio mind controls.
 	
-	try:
-		name = getattr( upload, 'name', 'audio.wav' )
-		_, ext = os.path.splitext( name )
-		ext = ext if ext else '.wav'
-		
-		with tempfile.NamedTemporaryFile( delete=False, suffix=ext ) as tmp:
-			if hasattr( upload, 'getbuffer' ):
-				tmp.write( upload.getbuffer( ) )
-			elif hasattr( upload, 'read' ):
-				tmp.write( upload.read( ) )
-			else:
-				return None
-			
-			return tmp.name
-	except Exception as e:
-		exception = Error( e )
-		exception.module = 'app'
-		exception.cause = 'save_audio_upload'
-		exception.method = 'save_audio_upload( upload ) -> str | None'
-		Logger( ).write( exception )
-		return None
+	Purpose:
+	    Restores every control contained in the Audio Mode Mind Controls expander and its nested
+	    configuration expanders to the initial values established by the Audio Mode
+	    session-state contract.
+	
+	Returns:
+	    None: This function resets all Audio Mode configuration controls.
+	"""
+	reset_audio_llm_settings( )
+	reset_audio_response_settings( )
 
 def run_audio_file_task( task: str | None, file_path: str | None, transcriber: Any,
 	translator: Any ) -> str | None:
 	"""Run audio file task.
 	
 	Purpose:
-	    Executes the run audio file task workflow using the current provider, document, prompt,
-	    and session-state configuration.
+	    Executes transcription or translation through the capability exposed by the active
+	    provider while validating the task, provider module, source file, model, response format,
+	    and provider-specific argument contract.
 	
 	Args:
-	    task: Task value used by the application workflow.
-	    file_path: File, upload, or path value used by the document or storage workflow.
-	    transcriber: Transcriber value used by the application workflow.
-	    translator: Translator value used by the application workflow.
+	    task: Audio operation selected by the user.
+	    file_path: Temporary path containing the uploaded or recorded audio.
+	    transcriber: Active provider transcription capability.
+	    translator: Active provider translation capability.
 	
 	Returns:
-	    str | None: Text value produced for the active application workflow.
+	    str | None: Normalized transcription or translation text when execution succeeds;
+	        otherwise, None.
+	
+	Raises:
+	    Error: Raised when validation or provider execution fails.
 	"""
-	if not isinstance( task, str ) or not task.strip( ):
-		st.warning( 'Select an audio task before processing audio.' )
-		return None
-	
-	if not isinstance( file_path, str ) or not file_path.strip( ):
-		st.warning( 'Upload or record audio before processing.' )
-		return None
-	
-	provider_name = get_provider_name( )
-	file_suffix = Path( file_path ).suffix.lower( ).replace( '.', '' )
-	
-	if provider_name == 'GPT':
-		valid_extensions = [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm', ]
+	try:
+		task_name = str( task or '' ).strip( )
+		if task_name not in [ 'Transcribe', 'Translate' ]:
+			raise ValueError( 'Select Transcribe or Translate before processing an audio file.' )
 		
-		if file_suffix not in valid_extensions:
-			st.warning( 'OpenAI audio transcription and translation support flac, mp3, mp4, '
-			            'mpeg, mpga, m4a, ogg, wav, and webm files. Convert the file before '
-			            'processing it with GPT.' )
-			return None
-	
-	prompt_value = get_audio_prompt_value( task=task,
-		prompt=st.session_state.get( 'audio_system_instructions', '' ) )
-	
-	response_format = get_audio_response_format_value( task=task,
-		selected_format=st.session_state.get( 'audio_response_format' ),
-		selected_mime_type=st.session_state.get( 'audio_mime_type' ) )
-	
-	model = st.session_state.get( 'audio_model' )
-	language = st.session_state.get( 'audio_language' )
-	temperature = st.session_state.get( 'audio_temperature' )
-	include = st.session_state.get( 'audio_include', [ ] )
-	
-	if task == 'Transcribe':
-		try:
-			result_text = transcriber.transcribe( path=file_path,
-				model=model or 'gpt-4o-transcribe', language=language or None, prompt=prompt_value,
-				format=response_format, temperature=temperature, include=include )
-		except TypeError:
-			result_text = transcriber.transcribe( path=file_path,
-				model=model or 'gemini-3-flash-preview', language=language or None )
+		if not isinstance( file_path, str ) or not file_path.strip( ):
+			raise ValueError( 'Upload or record audio before processing.' )
 		
-		st.session_state[ 'audio_output' ] = result_text or ''
-		st.session_state[ 'audio_last_result' ] = getattr( transcriber, 'normalized_result',
-			{ } ) or { }
-		st.session_state[ 'audio_last_usage' ] = extract_audio_usage(
-			getattr( transcriber, 'response', None ) )
+		source_path = file_path.strip( )
+		if not os.path.isfile( source_path ):
+			raise FileNotFoundError( f'The temporary audio file does not exist: {source_path}' )
 		
+		provider_name = get_provider_name( )
+		file_suffix = Path( source_path ).suffix.lower( ).replace( '.', '' )
+		if provider_name == 'GPT':
+			valid_extensions = [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm' ]
+			
+			if file_suffix not in valid_extensions:
+				raise ValueError( 'GPT audio transcription and translation support flac, mp3, '
+				                  'mp4, mpeg, mpga, m4a, ogg, wav, and webm files.' )
+		
+		model_name = str( st.session_state.get( 'audio_model', '' ) or '' ).strip( )
+		if not model_name:
+			raise ValueError(
+				f'Select a {provider_name} audio model before running {task_name.lower( )}.' )
+		
+		language_value = str( st.session_state.get( 'audio_language', '' ) or '' ).strip( )
+		prompt_value = get_audio_prompt_value( task=task_name,
+			prompt=st.session_state.get( 'audio_system_instructions', '' ), )
+		
+		response_format = get_audio_response_format_value( task=task_name,
+			selected_format=st.session_state.get( 'audio_response_format' ),
+			selected_mime_type=st.session_state.get( 'audio_mime_type' ), )
+		
+		temperature_value = float( st.session_state.get( 'audio_temperature', 0.0 ) or 0.0 )
+		include_value = st.session_state.get( 'audio_include', [ ] )
+		if not isinstance( include_value, list ):
+			include_value = [ ]
+		
+		if task_name == 'Transcribe':
+			if transcriber is None:
+				raise AttributeError( f'{provider_name} does not expose audio transcription.' )
+			
+			if provider_name == 'GPT':
+				result = transcriber.transcribe( path=source_path, model=model_name,
+					language=language_value or None, prompt=prompt_value or None,
+					format=response_format or 'json', temperature=temperature_value,
+					include=include_value, )
+			else:
+				result = transcriber.transcribe( path=source_path, model=model_name,
+					language=language_value or None, )
+			
+			response_obj = getattr( transcriber, 'response', None )
+			normalized_result = getattr( transcriber, 'normalized_result', { }, )
+		
+		else:
+			if translator is None:
+				raise AttributeError( f'{provider_name} does not expose audio translation.' )
+			
+			if provider_name == 'GPT':
+				result = translator.translate( filepath=source_path, model=model_name,
+					prompt=prompt_value or None, format=response_format or 'json',
+					temperature=temperature_value, language=language_value or None, )
+			else:
+				result = translator.translate( path=source_path, model=model_name,
+					language=language_value or None, )
+			
+			response_obj = getattr( translator, 'response', None )
+			normalized_result = getattr( translator, 'normalized_result', { }, )
+		
+		if isinstance( result, str ):
+			result_text = result.strip( )
+		else:
+			result_text = str( getattr( result, 'text', None ) or getattr( result, 'output_text',
+				None ) or extract_response_text( result ) or '' ).strip( )
+		
+		if not result_text and response_obj is not None:
+			result_text = str(
+				getattr( response_obj, 'text', None ) or getattr( response_obj, 'output_text',
+					None ) or extract_response_text( response_obj ) or '' ).strip( )
+		
+		if not result_text:
+			raise ValueError( f'{provider_name} returned no {task_name.lower( )} text.' )
+		
+		st.session_state[ 'audio_output' ] = result_text
+		st.session_state[ 'audio_last_result' ] = (
+			normalized_result if isinstance( normalized_result, dict ) else { })
+		st.session_state[ 'audio_last_usage' ] = extract_audio_usage( response_obj )
 		return result_text
-	
-	if task == 'Translate':
-		try:
-			result_text = translator.translate( filepath=file_path, model=model or 'whisper-1',
-				prompt=prompt_value, format=response_format, temperature=temperature,
-				language=language or None )
-		except TypeError:
-			try:
-				result_text = translator.translate( path=file_path,
-					model=model or 'gemini-3-flash-preview', language=language or None )
-			except TypeError:
-				result_text = translator.translate( file_path,
-					model=model or 'gemini-3-flash-preview', language=language or None )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
 		
-		st.session_state[ 'audio_output' ] = result_text or ''
-		st.session_state[ 'audio_last_result' ] = getattr( translator, 'normalized_result',
-			{ } ) or { }
-		st.session_state[ 'audio_last_usage' ] = extract_audio_usage(
-			getattr( translator, 'response', None ) )
-		
-		return result_text
-	
-	st.info( 'Use the Text-to-Speech input area to generate speech from text.' )
-	return None
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_audio_file_task'
+		exception.method = 'run_audio_file_task( self, *args ) -> str | None'
+		Logger( ).write( exception )
+		raise exception
 
 def run_audio_tts_task( text: str | None, tts: Any ) -> bytes | None:
-	"""Run audio tts task.
+	"""Run audio TTS task.
 	
 	Purpose:
-	    Executes the run audio tts task workflow using the current provider, document, prompt,
-	    and session-state configuration.
+	    Generates speech through the Text-to-Speech capability exposed by the active provider
+	    while validating the input text, provider capability, model, voice, speed, response
+	    format, and returned audio-byte contract.
 	
 	Args:
-	    text: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
-	    tts: Tts value used by the application workflow.
+	    text: Text synthesized into speech.
+	    tts: Active provider Text-to-Speech capability.
 	
 	Returns:
-	    bytes | None: Normalized result produced for the active application workflow.
+	    bytes | None: Generated audio bytes when execution succeeds; otherwise, None.
+	
+	Raises:
+	    Error: Raised when validation or provider execution fails.
 	"""
-	if not isinstance( text, str ) or not text.strip( ):
-		st.warning( 'Enter text before generating speech.' )
-		return None
-	
-	model = st.session_state.get( 'audio_model' )
-	voice = st.session_state.get( 'audio_voice' )
-	speed = float( st.session_state.get( 'audio_speed', 1.0 ) or 1.0 )
-	response_format = get_audio_response_format_value( task='Text-to-Speech',
-		selected_format=st.session_state.get( 'audio_response_format' ),
-		selected_mime_type=st.session_state.get( 'audio_mime_type' ) )
-	
-	instructions = get_audio_prompt_value( task='Text-to-Speech',
-		prompt=st.session_state.get( 'audio_system_instructions', '' ) )
-	
-	audio_bytes = tts.create_speech( text=text.strip( ), model=model or 'gpt-4o-mini-tts',
-		format=response_format or 'mp3', speed=speed, voice=voice or 'alloy',
-		instruct=instructions )
-	
-	st.session_state[ 'audio_output_bytes' ] = audio_bytes
-	st.session_state[ 'audio_output' ] = text.strip( )
-	st.session_state[ 'audio_last_result' ] = { 'text': text.strip( ),
-		'format': response_format or 'mp3', 'voice': voice or 'alloy', 'speed': speed, }
-	st.session_state[ 'audio_last_usage' ] = extract_audio_usage( getattr( tts, 'response',
-		None ) )
-	
-	return audio_bytes
+	try:
+		if not isinstance( text, str ) or not text.strip( ):
+			raise ValueError( 'Enter text before generating speech.' )
+		
+		if tts is None:
+			raise AttributeError( f'{get_provider_name( )} does not expose Text-to-Speech.' )
+		
+		provider_name = get_provider_name( )
+		model_name = str( st.session_state.get( 'audio_model', '' ) or '' ).strip( )
+		if not model_name:
+			raise ValueError( f'Select a {provider_name} TTS model before generating audio.' )
+		
+		voice_value = str( st.session_state.get( 'audio_voice', '' ) or '' ).strip( )
+		if provider_name == 'GPT' and not voice_value:
+			raise ValueError( 'Select a GPT Text-to-Speech voice before generating audio.' )
+		
+		speed_value = float( st.session_state.get( 'audio_speed', 1.0 ) or 1.0 )
+		if speed_value < 0.25 or speed_value > 4.0:
+			raise ValueError( 'Text-to-Speech speed must be between 0.25 and 4.0.' )
+		
+		response_format = get_audio_response_format_value( task='Text-to-Speech',
+			selected_format=st.session_state.get( 'audio_response_format' ),
+			selected_mime_type=st.session_state.get( 'audio_mime_type' ), )
+		
+		instruction_value = get_audio_prompt_value( task='Text-to-Speech',
+			prompt=st.session_state.get( 'audio_system_instructions', '' ), )
+		
+		if provider_name == 'GPT':
+			result = tts.create_speech( text=text.strip( ), model=model_name,
+				format=response_format or 'mp3', speed=speed_value, voice=voice_value,
+				instruct=instruction_value or None, )
+		else:
+			result = tts.create_speech( text=text.strip( ), model=model_name,
+				format=response_format or None, speed=speed_value, voice=voice_value or None,
+				instruct=instruction_value or None, )
+		
+		if isinstance( result, bytes ):
+			audio_bytes = result
+		elif isinstance( result, bytearray ):
+			audio_bytes = bytes( result )
+		elif hasattr( result, 'read' ) and callable( result.read ):
+			audio_bytes = result.read( )
+		elif hasattr( result, 'content' ):
+			content = getattr( result, 'content', None )
+			audio_bytes = bytes( content ) if isinstance( content, (bytes, bytearray), ) else None
+		else:
+			audio_bytes = None
+		
+		if not isinstance( audio_bytes, bytes ) or len( audio_bytes ) == 0:
+			response_obj = getattr( tts, 'response', None )
+			response_content = getattr( response_obj, 'content', None )
+			if isinstance( response_content, bytearray ):
+				audio_bytes = bytes( response_content )
+			elif isinstance( response_content, bytes ):
+				audio_bytes = response_content
+		
+		if not isinstance( audio_bytes, bytes ) or len( audio_bytes ) == 0:
+			raise ValueError( f'{provider_name} returned no audio bytes.' )
+		
+		st.session_state[ 'audio_output_bytes' ] = audio_bytes
+		st.session_state[ 'audio_output' ] = text.strip( )
+		st.session_state[ 'audio_last_result' ] = { 'text': text.strip( ),
+			'format': response_format or 'mp3', 'voice': voice_value, 'speed': speed_value,
+			'model': model_name, 'provider': provider_name, }
+		st.session_state[ 'audio_last_usage' ] = extract_audio_usage(
+			getattr( tts, 'response', None ) )
+		
+		return audio_bytes
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_audio_tts_task'
+		exception.method = 'run_audio_tts_task( *args ) -> bytes | None'
+		Logger( ).write( exception )
+		raise exception
 
 def render_audio_text_result( title: str, result_text: str | None ) -> None:
 	"""Render audio text result.
@@ -7356,8 +7568,8 @@ def normalize_embedding_dimensions( model: str | None, dimensions: int | None,
 	
 	return value
 
-def normalize_embedding_chunk_settings( chunk_size: int | None, overlap_amount: int | None ) -> \
-Tuple[ int, int ]:
+def normalize_embedding_chunk_settings( chunk_size: int | None,
+	overlap_amount: int | None ) -> Tuple[ int, int ]:
 	"""Normalize embedding chunk settings.
 	
 	Purpose:
@@ -8159,7 +8371,7 @@ def normalize_docqna_text( text: str ) -> str:
 	value = re.sub( r'\n{3,}', '\n\n', value )
 	return value.strip( )
 
-def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int = 150 ) -> List[ str ]:
+def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int=150 ) -> List[ str ]:
 	"""Chunk docqna text.
 	
 	Purpose:
@@ -9834,8 +10046,8 @@ def delete_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ str,
 	
 	return normalize_storage_object( result )
 
-def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str, file_id: str ) -> Dict[
-	str, Any ]:
+def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str,
+	file_id: str ) -> Dict[ str, Any ]:
 	"""Attach file to openai vector store.
 	
 	Purpose:
@@ -10972,7 +11184,7 @@ if mode == 'Chat':
 	# Main Chat UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with center:
+	with (center):
 		st.subheader( "💬 Chat Completions", help=cfg.CHAT_COMPLETIONS )
 		st.divider( )
 		user_input = st.chat_input( 'Have a Planning, Programming, or Budget Execution question?' )
@@ -11034,8 +11246,8 @@ if mode == 'Chat':
 								model=chat_model or 'grok-4.3', temperature=chat_temperature,
 								format=chat_format if isinstance( chat_format, dict ) else None,
 								top_p=chat_top_p, frequency=chat_freq, presence=chat_presense,
-								max_tokens=st.session_state.get( 'max_tokens',
-									0 ) or None,  store=chat_store, stream=False,
+								max_tokens=st.session_state.get( 'max_tokens', 0 ) or None,
+								store=chat_store, stream=False,
 								instruct=st.session_state.get( 'chat_system_instructions',
 									'' ) or None, background=False,
 								reasoning=chat_reasoning or None, include=[ 'inline_citations' ],
@@ -11183,7 +11395,7 @@ elif mode == 'Text':
 	text_avatar = get_text_avatar( provider_name )
 	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with center:
+	with (center):
 		st.subheader( '💬 Text Generation', help=cfg.TEXT_GENERATION )
 		st.divider( )
 		if st.session_state.get( 'clear_instructions' ):
@@ -11360,15 +11572,14 @@ elif mode == 'Text':
 								st.session_state.get( 'text_file_search_store_names', [ ] ) ),
 							help='Optional. Comma-delimited Gemini File Search Store resource '
 							     'names.', width='stretch' )
-			
+				
 				st.button( label='Reset', key='text_tools_reset', width='stretch',
 					on_click=reset_text_tool_settings )
-				
+			
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -11435,8 +11646,7 @@ elif mode == 'Text':
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-				width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			text_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 				allowed_categories=PROMPT_TEXT_CATEGORIES, )
 			
@@ -11447,7 +11657,6 @@ elif mode == 'Text':
 				st.session_state.get( 'text_instruction_category', '' ) or '' ).strip( )
 			
 			selected_categories = ([ selected_category ] if selected_category else [ ])
-			
 			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
 				categories=selected_categories, )
 			
@@ -11457,12 +11666,10 @@ elif mode == 'Text':
 					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
-			
 			synchronize_instruction_prompt_selection( selector_key='text_instruction_prompt_id',
 				valid_prompt_ids=prompt_ids, )
 			
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-			
 			with in_left:
 				st.text_area( label='Enter Text', height=140, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='text_system_instructions', )
@@ -11483,14 +11690,13 @@ elif mode == 'Text':
 				st.selectbox( label='Use Template', options=template_options,
 					key='text_instruction_prompt_id', on_change=load_text_instruction_template,
 					format_func=lambda prompt_id: (
-						'Select Template' if prompt_id is None and selected_category else 'Select '
-						                                                                  'Category First' if prompt_id is None else format_prompt_option(
-							prompt_id=prompt_id, prompts=prompt_lookup, )),
+						'Select Template' if prompt_id is None and selected_category else
+						'Select Category First' if prompt_id is None else
+						format_prompt_option( prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
 					help='Load a System Instructions template from the selected category.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-			
 			with btn_c1:
 				st.button( label='Clear Instructions', width='stretch',
 					on_click=clear_text_instructions, )
@@ -11559,15 +11765,11 @@ elif mode == 'Text':
 							input_mode = str(
 								st.session_state.get( 'text_input', '' ) or '' ).strip( )
 							
-							if input_mode not in [
-								'single_turn',
-								'response_chain',
-								'conversation',
-							]:
+							if input_mode not in [ 'single_turn', 'response_chain',
+								'conversation', ]:
 								input_mode = 'single_turn'
 							
-							stream_enabled = bool(
-								st.session_state.get( 'text_stream', False ) )
+							stream_enabled = bool( st.session_state.get( 'text_stream', False ) )
 							
 							background_enabled = bool(
 								st.session_state.get( 'text_background', False ) )
@@ -11590,25 +11792,17 @@ elif mode == 'Text':
 								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0 )
 							
 							frequency_penalty_value = float(
-								st.session_state.get(
-									'text_frequency_penalty',
-									0.0,
-								) or 0.0 )
+								st.session_state.get( 'text_frequency_penalty', 0.0, ) or 0.0 )
 							
 							presence_penalty_value = float(
-								st.session_state.get(
-									'text_presence_penalty',
-									0.0,
-								) or 0.0 )
+								st.session_state.get( 'text_presence_penalty', 0.0, ) or 0.0 )
 							
 							reasoning_value = str(
 								st.session_state.get( 'text_reasoning', '' ) or '' ).strip( )
 							
 							instruction_value = str(
-								st.session_state.get(
-									'text_system_instructions',
-									'',
-								) or '' ).strip( )
+								st.session_state.get( 'text_system_instructions',
+									'', ) or '' ).strip( )
 							
 							manual_vector_store_ids = parse_text_vector_store_ids(
 								st.session_state.get( 'text_vector_store_ids', '' ) )
@@ -11617,158 +11811,95 @@ elif mode == 'Text':
 							
 							vector_store_ids = merge_unique_strings(
 								primary=manual_vector_store_ids,
-								secondary=selected_vector_store_ids,
-							)
+								secondary=selected_vector_store_ids, )
 							
 							text_tools = build_text_tools(
 								selected_tools=st.session_state.get( 'text_tools', [ ] ),
-								vector_store_ids=vector_store_ids,
-							)
+								vector_store_ids=vector_store_ids, )
 							
 							text_include = build_text_include(
 								selected_include=st.session_state.get( 'text_include', [ ] ),
-								selected_tools=text_tools,
-							)
+								selected_tools=text_tools, )
 							
 							text_tool_choice = build_text_tool_choice(
 								tool_choice=st.session_state.get( 'text_tool_choice' ),
-								selected_tools=text_tools,
-							)
+								selected_tools=text_tools, )
 							
 							text_format = build_text_response_format(
-								response_format=st.session_state.get(
-									'text_response_format'
-								),
-								schema_name=st.session_state.get(
-									'text_json_schema_name'
-								),
-								schema_text=st.session_state.get(
-									'text_json_schema'
-								),
+								response_format=st.session_state.get( 'text_response_format' ),
+								schema_name=st.session_state.get( 'text_json_schema_name' ),
+								schema_text=st.session_state.get( 'text_json_schema' ),
 								strict=bool(
-									st.session_state.get(
-										'text_json_schema_strict',
-										True,
-									)
-								),
-							)
+									st.session_state.get( 'text_json_schema_strict', True, ) ), )
 							
 							if input_mode == 'single_turn':
 								text_context: List[ Dict[ str, str ] ] = [ ]
 							else:
 								text_context = build_text_context(
-									messages=st.session_state.get(
-										'text_messages',
-										[ ],
-									),
-									include_last_message=False,
-								)
+									messages=st.session_state.get( 'text_messages', [ ], ),
+									include_last_message=False, )
 							
 							st.session_state[ 'text_context' ] = text_context
 							
 							text_previous_id = get_text_previous_response_id(
 								input_mode=input_mode,
-								previous_id=st.session_state.get(
-									'text_previous_response_id'
-								),
-							)
+								previous_id=st.session_state.get( 'text_previous_response_id' ), )
 							
-							text_conversation_id = get_text_conversation_id(
-								input_mode=input_mode,
-								conversation_id=st.session_state.get(
-									'text_conversation_id'
-								),
-							)
+							text_conversation_id = get_text_conversation_id( input_mode=input_mode,
+								conversation_id=st.session_state.get( 'text_conversation_id' ), )
 							
-							response_text = text.generate_text(
-								prompt=prompt,
-								model=model_name,
-								temperature=temperature_value,
-								format=text_format,
-								top_p=top_percent_value,
-								frequency=frequency_penalty_value,
+							response_text = text.generate_text( prompt=prompt, model=model_name,
+								temperature=temperature_value, format=text_format,
+								top_p=top_percent_value, frequency=frequency_penalty_value,
 								max_tools=max_tools_value if max_tools_value > 0 else None,
 								presence=presence_penalty_value,
 								max_tokens=max_tokens_value if max_tokens_value > 0 else None,
-								store=bool(
-									st.session_state.get( 'text_store', False )
-								),
-								stream=stream_enabled,
-								instruct=instruction_value or None,
-								background=background_enabled,
-								reasoning=reasoning_value or None,
-								include=text_include,
-								tools=text_tools,
-								allowed_domains=st.session_state.get(
-									'text_domains',
-									[ ],
-								),
-								previous_id=text_previous_id,
-								tool_choice=text_tool_choice,
+								store=bool( st.session_state.get( 'text_store', False ) ),
+								stream=stream_enabled, instruct=instruction_value or None,
+								background=background_enabled, reasoning=reasoning_value or None,
+								include=text_include, tools=text_tools,
+								allowed_domains=st.session_state.get( 'text_domains', [ ], ),
+								previous_id=text_previous_id, tool_choice=text_tool_choice,
 								is_parallel=bool(
-									st.session_state.get(
-										'text_parallel_tools',
-										False,
-									)
-								),
-								context=text_context,
-								vector_store_ids=vector_store_ids,
-								conversation_id=text_conversation_id,
-							)
+									st.session_state.get( 'text_parallel_tools', False, ) ),
+								context=text_context, vector_store_ids=vector_store_ids,
+								conversation_id=text_conversation_id, )
 							
 							response_obj = getattr( text, 'response', None )
 							
 							response_id = getattr( response_obj, 'id', '' )
 							
 							st.session_state[ 'text_previous_response_id' ] = (
-								str( response_id ).strip( )
-								if response_id is not None
-								else ''
-							)
+								str( response_id ).strip( ) if response_id is not None else '')
 							
 							conversation = getattr( response_obj, 'conversation', None )
-							returned_conversation_id = getattr(
-								conversation,
-								'id',
-								'',
-							)
+							returned_conversation_id = getattr( conversation, 'id', '', )
 							
 							if returned_conversation_id:
 								st.session_state[ 'text_conversation_id' ] = str(
-									returned_conversation_id
-								).strip( )
+									returned_conversation_id ).strip( )
 							
 							if (
-								not response_text
-								and response_obj is not None
-								and not background_enabled
-							):
-								response_text = (
-									getattr( response_obj, 'output_text', None )
-									or extract_response_text( response_obj )
-									or ''
-								)
+									not response_text and response_obj is not None and not
+							background_enabled):
+								response_text = (getattr( response_obj, 'output_text',
+									None ) or extract_response_text( response_obj ) or '')
 							
 							if background_enabled and not response_text:
 								response_status = str(
-									getattr( response_obj, 'status', '' ) or ''
-								).strip( )
+									getattr( response_obj, 'status', '' ) or '' ).strip( )
 								
 								response_identifier = str(
-									getattr( response_obj, 'id', '' ) or ''
-								).strip( )
+									getattr( response_obj, 'id', '' ) or '' ).strip( )
 								
 								if response_identifier:
 									response_text = (
 										'Background response submitted successfully.\n\n'
-										f'**Response ID:** `{response_identifier}`'
-									)
+										f'**Response ID:** `{response_identifier}`')
 									
 									if response_status:
-										response_text += (
-											'\n\n'
-											f'**Status:** {response_status}'
-										)
+										response_text += ('\n\n'
+										                  f'**Status:** {response_status}')
 						
 						elif provider_name == 'Gemini':
 							apply_gemini_runtime_config( )
@@ -11784,27 +11915,20 @@ elif mode == 'Text':
 							input_mode = str(
 								st.session_state.get( 'text_input', '' ) or '' ).strip( )
 							
-							if input_mode not in [
-								'single_turn',
-								'response_chain',
-								'conversation',
-							]:
+							if input_mode not in [ 'single_turn', 'response_chain',
+								'conversation', ]:
 								input_mode = 'single_turn'
 							
-							stream_enabled = bool(
-								st.session_state.get( 'text_stream', False ) )
+							stream_enabled = bool( st.session_state.get( 'text_stream', False ) )
 							
-							number_value = int(
-								st.session_state.get( 'text_number', 0 ) or 0 )
+							number_value = int( st.session_state.get( 'text_number', 0 ) or 0 )
 							
 							max_tokens_value = int(
 								st.session_state.get( 'text_max_tokens', 0 ) or 0 )
 							
-							top_k_value = int(
-								st.session_state.get( 'text_top_k', 0 ) or 0 )
+							top_k_value = int( st.session_state.get( 'text_top_k', 0 ) or 0 )
 							
-							max_urls_value = int(
-								st.session_state.get( 'text_max_urls', 0 ) or 0 )
+							max_urls_value = int( st.session_state.get( 'text_max_urls', 0 ) or 0 )
 							
 							temperature_value = float(
 								st.session_state.get( 'text_temperature', 0.0 ) or 0.0 )
@@ -11813,49 +11937,32 @@ elif mode == 'Text':
 								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0 )
 							
 							frequency_penalty_value = float(
-								st.session_state.get(
-									'text_frequency_penalty',
-									0.0,
-								) or 0.0 )
+								st.session_state.get( 'text_frequency_penalty', 0.0, ) or 0.0 )
 							
 							presence_penalty_value = float(
-								st.session_state.get(
-									'text_presence_penalty',
-									0.0,
-								) or 0.0 )
+								st.session_state.get( 'text_presence_penalty', 0.0, ) or 0.0 )
 							
 							instruction_value = str(
-								st.session_state.get(
-									'text_system_instructions',
-									'',
-								) or '' ).strip( )
+								st.session_state.get( 'text_system_instructions',
+									'', ) or '' ).strip( )
 							
 							reasoning_value = str(
 								st.session_state.get( 'text_reasoning', '' ) or '' ).strip( )
 							
 							response_format_value = str(
-								st.session_state.get(
-									'text_response_format',
-									'',
-								) or '' ).strip( )
+								st.session_state.get( 'text_response_format', '', ) or ''
+							).strip( )
 							
 							response_schema_value = str(
-								st.session_state.get(
-									'text_response_schema',
-									'',
-								) or '' ).strip( )
+								st.session_state.get( 'text_response_schema', '', ) or ''
+							).strip( )
 							
 							safety_profile_value = str(
-								st.session_state.get(
-									'text_safety_profile',
-									'',
-								) or '' ).strip( )
+								st.session_state.get( 'text_safety_profile', '', ) or '' ).strip( )
 							
 							media_resolution_value = str(
-								st.session_state.get(
-									'text_media_resolution',
-									'',
-								) or '' ).strip( )
+								st.session_state.get( 'text_media_resolution',
+									'', ) or '' ).strip( )
 							
 							if response_format_value == 'json_schema':
 								if not response_schema_value:
@@ -11864,13 +11971,10 @@ elif mode == 'Text':
 										'JSON-schema response format.' )
 								
 								try:
-									parsed_response_schema = json.loads(
-										response_schema_value
-									)
+									parsed_response_schema = json.loads( response_schema_value )
 								except json.JSONDecodeError as e:
 									raise ValueError(
-										f'The Gemini response schema is not valid JSON: {e}'
-									) from e
+										f'The Gemini response schema is not valid JSON: {e}' ) from e
 								
 								if not isinstance( parsed_response_schema, dict ):
 									raise ValueError(
@@ -11879,10 +11983,8 @@ elif mode == 'Text':
 							else:
 								parsed_response_schema = None
 							
-							structured_history = st.session_state.get(
-								'text_gemini_history',
-								[ ],
-							)
+							structured_history = st.session_state.get( 'text_gemini_history',
+								[ ], )
 							
 							if not isinstance( structured_history, list ):
 								structured_history = [ ]
@@ -11892,10 +11994,8 @@ elif mode == 'Text':
 							elif len( structured_history ) > 0:
 								structured_context = structured_history
 							else:
-								structured_context = st.session_state.get(
-									'text_messages',
-									[ ],
-								)[ :-1 ]
+								structured_context = st.session_state.get( 'text_messages', [ ], )[
+									:-1 ]
 							
 							if not isinstance( structured_context, list ):
 								structured_context = [ ]
@@ -11903,11 +12003,7 @@ elif mode == 'Text':
 							st.session_state[ 'text_context' ] = structured_context
 							
 							grounding_enabled = bool(
-								st.session_state.get(
-									'text_google_grounding',
-									False,
-								)
-							)
+								st.session_state.get( 'text_google_grounding', False, ) )
 							
 							selected_tools: List[ str ] = [ ]
 							
@@ -11920,99 +12016,62 @@ elif mode == 'Text':
 								if tool_name and tool_name not in selected_tools:
 									selected_tools.append( tool_name )
 							
-							if (
-								grounding_enabled
-								and 'google_search' not in selected_tools
-							):
+							if (grounding_enabled and 'google_search' not in selected_tools):
 								selected_tools.append( 'google_search' )
 							
 							st.session_state[ 'text_urls' ] = split_text_values(
-								st.session_state.get( 'text_urls_input', '' ),
-								delimiter=';',
-							)
+								st.session_state.get( 'text_urls_input', '' ), delimiter=';', )
 							
 							manual_file_search_store_names = split_text_values(
-								st.session_state.get(
-									'text_file_search_store_names_input',
-									'',
-								),
-								delimiter=',',
-							)
+								st.session_state.get( 'text_file_search_store_names_input', '', ),
+								delimiter=',', )
 							
 							selected_file_search_store_names = (
-								get_active_gemini_file_search_store_names(
-									'Gemini'
-								)
-							)
+								get_active_gemini_file_search_store_names( 'Gemini' ))
 							
 							file_search_store_names = merge_unique_strings(
 								primary=manual_file_search_store_names,
-								secondary=selected_file_search_store_names,
-							)
+								secondary=selected_file_search_store_names, )
 							
 							st.session_state[
-								'text_file_search_store_names'
-							] = file_search_store_names
+								'text_file_search_store_names' ] = file_search_store_names
 							
-							selected_modalities = st.session_state.get(
-								'text_modalities',
-								[ ],
-							)
+							selected_modalities = st.session_state.get( 'text_modalities', [ ], )
 							
 							if not isinstance( selected_modalities, list ):
 								selected_modalities = [ ]
 							
-							stop_sequences = st.session_state.get(
-								'text_stops',
-								[ ],
-							)
+							stop_sequences = st.session_state.get( 'text_stops', [ ], )
 							
 							if not isinstance( stop_sequences, list ):
 								stop_sequences = [ ]
 							
-							content_value = st.session_state.get(
-								'text_content'
-							)
+							content_value = st.session_state.get( 'text_content' )
 							
-							response_text = text.generate_text(
-								prompt=prompt,
-								model=model_name,
+							response_text = text.generate_text( prompt=prompt, model=model_name,
 								number=number_value if number_value > 0 else None,
-								temperature=temperature_value,
-								top_p=top_percent_value,
+								temperature=temperature_value, top_p=top_percent_value,
 								top_k=top_k_value if top_k_value > 0 else None,
-								frequency=frequency_penalty_value,
-								presence=presence_penalty_value,
-								max_tokens=max_tokens_value
-								if max_tokens_value > 0
-								else None,
-								stops=stop_sequences,
-								instruct=instruction_value or None,
+								frequency=frequency_penalty_value, presence=presence_penalty_value,
+								max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+								stops=stop_sequences, instruct=instruction_value or None,
 								response_format=response_format_value or None,
 								tools=selected_tools,
-								tool_choice=st.session_state.get(
-									'text_tool_choice'
-								) or None,
-								reasoning=reasoning_value or None,
-								modalities=selected_modalities,
+								tool_choice=st.session_state.get( 'text_tool_choice' ) or None,
+								reasoning=reasoning_value or None, modalities=selected_modalities,
 								media_resolution=media_resolution_value or None,
-								context=structured_context,
-								content=content_value,
+								context=structured_context, content=content_value,
 								urls=st.session_state.get( 'text_urls', [ ] ),
 								max_urls=max_urls_value if max_urls_value > 0 else None,
 								response_schema=parsed_response_schema,
 								safety_profile=safety_profile_value or None,
 								file_search_store_names=file_search_store_names,
 								stream=stream_enabled,
-								stream_handler=on_stream_chunk
-								if stream_enabled
-								else None,
-							)
+								stream_handler=on_stream_chunk if stream_enabled else None, )
 							
 							response_obj = (
-								getattr( text, 'content_response', None )
-								or getattr( text, 'response', None )
-							)
+									getattr( text, 'content_response', None ) or getattr( text,
+								'response', None ))
 							
 							if stream_enabled:
 								streamed_text = ''.join( stream_buffer ).strip( )
@@ -12021,16 +12080,10 @@ elif mode == 'Text':
 									response_text = streamed_text
 									stream_placeholder.markdown( streamed_text )
 							
-							if (
-								not response_text
-								and response_obj is not None
-							):
-								response_text = (
-									getattr( response_obj, 'text', None )
-									or getattr( response_obj, 'output_text', None )
-									or extract_response_text( response_obj )
-									or ''
-								)
+							if (not response_text and response_obj is not None):
+								response_text = (getattr( response_obj, 'text', None ) or getattr(
+									response_obj, 'output_text', None ) or extract_response_text(
+									response_obj ) or '')
 							
 							updated_history: List[ Any ] = [ ]
 							
@@ -12041,117 +12094,72 @@ elif mode == 'Text':
 									updated_history = history_result
 							
 							if len( updated_history ) > 0:
-								st.session_state[
-									'text_gemini_history'
-								] = updated_history
+								st.session_state[ 'text_gemini_history' ] = updated_history
 							elif input_mode == 'single_turn':
-								st.session_state[
-									'text_gemini_history'
-								] = [ ]
+								st.session_state[ 'text_gemini_history' ] = [ ]
 							else:
 								fallback_history = list( structured_context )
 								
-								fallback_history.append(
-									{
-										'role': 'user',
-										'content': prompt,
-									}
-								)
+								fallback_history.append( { 'role': 'user', 'content': prompt, } )
 								
 								if response_text:
-									fallback_history.append(
-										{
-											'role': 'assistant',
-											'content': str(
-												response_text
-											).strip( ),
-										}
-									)
+									fallback_history.append( { 'role': 'assistant',
+										'content': str( response_text ).strip( ), } )
 								
-								st.session_state[
-									'text_gemini_history'
-								] = fallback_history
+								st.session_state[ 'text_gemini_history' ] = fallback_history
 						
 						elif provider_name == 'Grok':
 							model_name = str(
-								st.session_state.get( 'text_model', '' ) or ''
-							).strip( )
+								st.session_state.get( 'text_model', '' ) or '' ).strip( )
 							
 							if not model_name:
 								raise ValueError(
 									'Select a Grok text-generation model before submitting a '
-									'prompt.'
-								)
+									'prompt.' )
 							
 							input_mode = str(
-								st.session_state.get( 'text_input', '' ) or ''
-							).strip( )
+								st.session_state.get( 'text_input', '' ) or '' ).strip( )
 							
-							if input_mode not in [
-								'single_turn',
-								'response_chain',
-								'conversation',
-							]:
+							if input_mode not in [ 'single_turn', 'response_chain',
+								'conversation', ]:
 								input_mode = 'single_turn'
 							
-							stream_enabled = bool(
-								st.session_state.get( 'text_stream', False )
-							)
+							stream_enabled = bool( st.session_state.get( 'text_stream', False ) )
 							
 							background_enabled = bool(
-								st.session_state.get( 'text_background', False )
-							)
+								st.session_state.get( 'text_background', False ) )
 							
 							if stream_enabled and background_enabled:
 								raise ValueError(
 									'Grok streaming and background execution cannot be enabled '
-									'at the same time.'
-								)
+									'at the same time.' )
 							
 							max_tokens_value = int(
-								st.session_state.get( 'text_max_tokens', 0 ) or 0
-							)
+								st.session_state.get( 'text_max_tokens', 0 ) or 0 )
 							
 							max_tools_value = int(
-								st.session_state.get( 'text_max_calls', 0 ) or 0
-							)
+								st.session_state.get( 'text_max_calls', 0 ) or 0 )
 							
 							temperature_value = float(
-								st.session_state.get( 'text_temperature', 0.0 ) or 0.0
-							)
+								st.session_state.get( 'text_temperature', 0.0 ) or 0.0 )
 							
 							top_percent_value = float(
-								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0
-							)
+								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0 )
 							
 							frequency_penalty_value = float(
-								st.session_state.get(
-									'text_frequency_penalty',
-									0.0,
-								) or 0.0
-							)
+								st.session_state.get( 'text_frequency_penalty', 0.0, ) or 0.0 )
 							
 							presence_penalty_value = float(
-								st.session_state.get(
-									'text_presence_penalty',
-									0.0,
-								) or 0.0
-							)
+								st.session_state.get( 'text_presence_penalty', 0.0, ) or 0.0 )
 							
 							instruction_value = str(
-								st.session_state.get(
-									'text_system_instructions',
-									'',
-								) or ''
-							).strip( )
+								st.session_state.get( 'text_system_instructions',
+									'', ) or '' ).strip( )
 							
 							reasoning_value = str(
-								st.session_state.get( 'text_reasoning', '' ) or ''
-							).strip( )
+								st.session_state.get( 'text_reasoning', '' ) or '' ).strip( )
 							
-							response_format_value = st.session_state.get(
-								'text_response_format'
-							)
+							response_format_value = st.session_state.get( 'text_response_format' )
 							
 							if isinstance( response_format_value, str ):
 								response_format_value = response_format_value.strip( )
@@ -12165,53 +12173,33 @@ elif mode == 'Text':
 								text_context: List[ Dict[ str, str ] ] = [ ]
 							else:
 								text_context = build_text_context(
-									messages=st.session_state.get(
-										'text_messages',
-										[ ],
-									),
-									include_last_message=False,
-								)
+									messages=st.session_state.get( 'text_messages', [ ], ),
+									include_last_message=False, )
 							
 							st.session_state[ 'text_context' ] = text_context
 							
 							text_previous_id = get_text_previous_response_id(
 								input_mode=input_mode,
-								previous_id=st.session_state.get(
-									'text_previous_response_id'
-								),
-							)
+								previous_id=st.session_state.get( 'text_previous_response_id' ), )
 							
-							text_conversation_id = get_text_conversation_id(
-								input_mode=input_mode,
-								conversation_id=st.session_state.get(
-									'text_conversation_id'
-								),
-							)
+							text_conversation_id = get_text_conversation_id( input_mode=input_mode,
+								conversation_id=st.session_state.get( 'text_conversation_id' ), )
 							
-							grok_collection_ids = get_active_grok_collection_ids(
-								'Grok'
-							)
+							grok_collection_ids = get_active_grok_collection_ids( 'Grok' )
 							
 							grok_collection_ids = merge_unique_strings(
 								primary=grok_collection_ids,
-								secondary=[ ],
-							)
+								secondary=[ ], )
 							
 							grok_tools: List[ Dict[ str, Any ] ] = [ ]
-							selected_tools = st.session_state.get(
-								'text_tools',
-								[ ],
-							)
+							selected_tools = st.session_state.get( 'text_tools', [ ], )
 							
 							if isinstance( selected_tools, list ):
 								for selected_tool in selected_tools:
 									if isinstance( selected_tool, dict ):
 										tool_payload = dict( selected_tool )
 										
-										if (
-											tool_payload
-											and tool_payload not in grok_tools
-										):
+										if (tool_payload and tool_payload not in grok_tools):
 											grok_tools.append( tool_payload )
 										
 										continue
@@ -12229,10 +12217,7 @@ elif mode == 'Text':
 									if tool_payload not in grok_tools:
 										grok_tools.append( tool_payload )
 							
-							selected_include = st.session_state.get(
-								'text_include',
-								[ ],
-							)
+							selected_include = st.session_state.get( 'text_include', [ ], )
 							
 							if not isinstance( selected_include, list ):
 								selected_include = [ ]
@@ -12245,121 +12230,71 @@ elif mode == 'Text':
 								
 								include_name = include_value.strip( )
 								
-								if (
-									include_name
-									and include_name not in grok_include
-								):
+								if (include_name and include_name not in grok_include):
 									grok_include.append( include_name )
 							
 							st.session_state[ 'text_domains' ] = split_text_values(
-								st.session_state.get( 'text_domains_input', '' ),
-								delimiter=',',
-							)
+								st.session_state.get( 'text_domains_input', '' ), delimiter=',', )
 							
 							if hasattr( text, 'user' ):
 								text.user = prompt
 							
-							response_text = text.generate_text(
-								prompt=prompt,
-								model=model_name,
-								temperature=temperature_value,
-								format=response_format_value,
-								top_p=top_percent_value,
-								frequency=frequency_penalty_value,
-								max_tools=max_tools_value
-								if max_tools_value > 0
-								else None,
+							response_text = text.generate_text( prompt=prompt, model=model_name,
+								temperature=temperature_value, format=response_format_value,
+								top_p=top_percent_value, frequency=frequency_penalty_value,
+								max_tools=max_tools_value if max_tools_value > 0 else None,
 								presence=presence_penalty_value,
-								max_tokens=max_tokens_value
-								if max_tokens_value > 0
-								else None,
-								store=bool(
-									st.session_state.get( 'text_store', False )
-								),
-								stream=stream_enabled,
-								instruct=instruction_value or None,
-								background=background_enabled,
-								reasoning=reasoning_value or None,
-								include=grok_include,
-								tools=grok_tools,
-								allowed_domains=st.session_state.get(
-									'text_domains',
-									[ ],
-								),
+								max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+								store=bool( st.session_state.get( 'text_store', False ) ),
+								stream=stream_enabled, instruct=instruction_value or None,
+								background=background_enabled, reasoning=reasoning_value or None,
+								include=grok_include, tools=grok_tools,
+								allowed_domains=st.session_state.get( 'text_domains', [ ], ),
 								previous_id=text_previous_id,
-								tool_choice=st.session_state.get(
-									'text_tool_choice'
-								) or None,
+								tool_choice=st.session_state.get( 'text_tool_choice' ) or None,
 								is_parallel=bool(
-									st.session_state.get(
-										'text_parallel_tools',
-										False,
-									)
-								),
-								context=text_context,
-								vector_store_ids=grok_collection_ids,
-								conversation_id=text_conversation_id,
-							)
+									st.session_state.get( 'text_parallel_tools', False, ) ),
+								context=text_context, vector_store_ids=grok_collection_ids,
+								conversation_id=text_conversation_id, )
 							
 							response_obj = getattr( text, 'response', None )
 							
 							response_id = getattr( response_obj, 'id', '' )
 							
 							st.session_state[ 'text_previous_response_id' ] = (
-								str( response_id ).strip( )
-								if response_id is not None
-								else ''
-							)
+								str( response_id ).strip( ) if response_id is not None else '')
 							
-							conversation = getattr(
-								response_obj,
-								'conversation',
-								None,
-							)
+							conversation = getattr( response_obj, 'conversation', None, )
 							
-							returned_conversation_id = getattr(
-								conversation,
-								'id',
-								'',
-							)
+							returned_conversation_id = getattr( conversation, 'id', '', )
 							
 							if returned_conversation_id:
 								st.session_state[ 'text_conversation_id' ] = str(
-									returned_conversation_id
-								).strip( )
+									returned_conversation_id ).strip( )
 							
 							if (
-								not response_text
-								and response_obj is not None
-								and not background_enabled
-							):
+									not response_text and response_obj is not None and not
+							background_enabled):
 								response_text = (
-									getattr( response_obj, 'output_text', None )
-									or getattr( response_obj, 'text', None )
-									or extract_response_text( response_obj )
-									or ''
-								)
+										getattr( response_obj, 'output_text', None ) or getattr(
+									response_obj, 'text', None ) or extract_response_text(
+									response_obj ) or '')
 							
 							if background_enabled and not response_text:
 								response_identifier = str(
-									getattr( response_obj, 'id', '' ) or ''
-								).strip( )
+									getattr( response_obj, 'id', '' ) or '' ).strip( )
 								
 								response_status = str(
-									getattr( response_obj, 'status', '' ) or ''
-								).strip( )
+									getattr( response_obj, 'status', '' ) or '' ).strip( )
 								
 								if response_identifier:
 									response_text = (
 										'Background response submitted successfully.\n\n'
-										f'**Response ID:** `{response_identifier}`'
-									)
+										f'**Response ID:** `{response_identifier}`')
 									
 									if response_status:
-										response_text += (
-											'\n\n'
-											f'**Status:** {response_status}'
-										)
+										response_text += ('\n\n'
+										                  f'**Status:** {response_status}')
 						
 						else:
 							response_text = ''
@@ -12406,7 +12341,7 @@ elif mode == 'Text':
 		with clr_c1:
 			st.button( label='Clear Messages', width='stretch', on_click=clear_text_messages )
 		with clr_c2:
-			st.button( label='Clear Text', width='stretch'  )
+			st.button( label='Clear Text', width='stretch' )
 
 # ======================================================================================
 # IMAGES MODE
@@ -12414,7 +12349,18 @@ elif mode == 'Text':
 elif mode == 'Images':
 	ensure_image_mode_state( )
 	provider_name = get_provider_name( )
-	image = get_images_module( )
+	if not provider_supports( 'Images', provider_name ):
+		left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+		with center:
+			st.subheader( '📷 Images API', help=cfg.IMAGES_API )
+			st.divider( )
+			st.warning(
+				f'{provider_name} does not expose an Images capability in the current provider '
+				'module.' )
+		
+		st.stop( )
+	
+	image = get_images_module( provider_name )
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'image_system_instructions' ] = ''
 		st.session_state[ 'clear_image_instructions' ] = False
@@ -12478,10 +12424,9 @@ elif mode == 'Images':
 			# ------------------------------------------------------------------
 			# Visual Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Visual Settings', icon='👁️', expanded=False,
-					width='stretch' ):
-				vis_c1, vis_c2, vis_c3, vis_c4  = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25  ], border=True, gap='xxsmall' )
+			with st.expander( label='Visual Settings', icon='👁️', expanded=False, width='stretch' ):
+				vis_c1, vis_c2, vis_c3, vis_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+					border=True, gap='xxsmall' )
 				
 				with vis_c1:
 					st.selectbox( label='Output Format', options=get_image_mime_options( image ),
@@ -12587,8 +12532,7 @@ elif mode == 'Images':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -12615,13 +12559,15 @@ elif mode == 'Images':
 						help=cfg.BACKGROUND_MODE )
 				
 				st.button( label='Reset', key='image_response_reset', width='stretch',
-					on_click=reset_image_response_settings )
+					on_click=reset_image_response_settings, )
+			
+			st.button( label='Reset All', key='image_mind_controls_reset', width='stretch',
+				on_click=reset_image_mind_controls, )
 		
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-				width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			active_image_mode = str( st.session_state.get( 'image_mode', '' ) or '' ).strip( )
 			allowed_categories = resolve_image_prompt_categories( image_mode=active_image_mode, )
 			image_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
@@ -12638,7 +12584,6 @@ elif mode == 'Images':
 				st.session_state.get( 'image_instruction_category', '' ) or '' ).strip( )
 			
 			selected_categories = ([ selected_category ] if selected_category else [ ])
-			
 			prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
 				categories=selected_categories, )
 			
@@ -12648,12 +12593,10 @@ elif mode == 'Images':
 					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
-			
 			synchronize_instruction_prompt_selection( selector_key='image_instruction_prompt_id',
 				valid_prompt_ids=prompt_ids, )
 			
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-			
 			with in_left:
 				st.text_area( label='Enter Text', height=140, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='image_system_instructions', )
@@ -12661,34 +12604,28 @@ elif mode == 'Images':
 			with in_right:
 				if operation_category is None:
 					category_options = [ '' ] + image_categories
-					
 					st.selectbox( label='Category', options=category_options,
 						key='image_instruction_category',
 						on_change=change_image_instruction_category, format_func=lambda category: (
 							'Select Category' if category == '' and len(
-								image_categories ) > 0 else 'No Categories Found' if category ==
-							                                                         '' else
-							category),
-						disabled=len( image_categories ) == 0,
+								image_categories ) > 0 else 'No Categories Found'
+							if category == '' else category), disabled=len( image_categories ) == 0,
 						help='Select an Images Mode prompt category.', )
 				else:
 					st.text_input( label='Category', value=operation_category, disabled=True,
 						help='The active image operation determines the prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
-				
 				st.selectbox( label='Use Template', options=template_options,
 					key='image_instruction_prompt_id', on_change=load_image_instruction_template,
 					format_func=lambda prompt_id: (
-						'Select Template' if prompt_id is None and selected_category else 'Select '
-						                                                                  'Image '
-						                                                                  'Operation First' if prompt_id is None else format_prompt_option(
-							prompt_id=prompt_id, prompts=prompt_lookup, )),
+						'Select Template' if prompt_id is None and selected_category else
+						'Select Image Operation First' if prompt_id is None else
+						format_prompt_option( prompt_id=prompt_id, prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
 					help='Load a System Instructions template for the active image workflow.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-			
 			with btn_c1:
 				st.button( label='Clear Instructions', width='stretch',
 					on_click=clear_image_instructions, )
@@ -12700,16 +12637,14 @@ elif mode == 'Images':
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ------------------------------------------------------------------
-		# Workflow Tabs
+		# Image Generation
 		# ------------------------------------------------------------------
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit' ] )
-		
-		# Image Generation
 		with tab_gen:
 			prompt = st.chat_input( 'Enter image generation prompt...',
 				key='image_generate_prompt' )
-			gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
 			
+			gen_c1, gen_c2 = st.columns( [ 0.5, 0.5 ] )
 			with gen_c1:
 				if st.button( 'Generate Image', key='generate_image', width='stretch' ):
 					prompt_value = get_image_prompt( prompt )
@@ -12723,28 +12658,75 @@ elif mode == 'Images':
 								if provider_name == 'Gemini':
 									apply_gemini_runtime_config( )
 									
+									model_name = str(
+										st.session_state.get( 'image_model', '' ) or '' ).strip( )
+									
+									if not model_name:
+										raise ValueError(
+											'Select a Gemini image-generation model before '
+											'generating an image.' )
+									
+									number_value = int(
+										st.session_state.get( 'image_number', 1 ) or 1 )
+									
+									temperature_value = float(
+										st.session_state.get( 'image_temperature', 0.0, ) or 0.0 )
+									
+									top_percent_value = float(
+										st.session_state.get( 'image_top_percent', 0.0, ) or 0.0 )
+									
+									frequency_penalty_value = float(
+										st.session_state.get( 'image_frequency_penalty',
+											0.0, ) or 0.0 )
+									
+									presence_penalty_value = float(
+										st.session_state.get( 'image_presence_penalty',
+											0.0, ) or 0.0 )
+									
+									max_tokens_value = int(
+										st.session_state.get( 'image_max_tokens', 0, ) or 0 )
+									
+									aspect_ratio_value = str(
+										st.session_state.get( 'image_aspect_ratio',
+											'', ) or '' ).strip( )
+									
+									resolution_value = str(
+										st.session_state.get( 'image_media_resolution',
+											'', ) or '' ).strip( )
+									
+									instruction_value = str(
+										st.session_state.get( 'image_system_instructions',
+											'', ) or '' ).strip( )
+									
+									mime_type_value = str( st.session_state.get( 'image_mime_type',
+										'', ) or '' ).strip( )
+									
+									modality_value = st.session_state.get( 'image_modality' )
+									
+									if isinstance( modality_value, str ):
+										modality_value = modality_value.strip( )
+									
+									if not modality_value:
+										modality_value = 'image'
+									
+									if number_value < 1:
+										number_value = 1
+									
 									image_result = image.generate( prompt=prompt_value,
-										model=st.session_state.get(
-											'image_model' ) or 'gemini-2.5-flash-image',
-										aspect=st.session_state.get( 'image_aspect_ratio' ) or
-										       None,
-										number=st.session_state.get( 'image_number' ),
-										temperature=st.session_state.get( 'image_temperature' ),
-										top_p=st.session_state.get( 'image_top_percent' ),
-										frequency=st.session_state.get(
-											'image_frequency_penalty' ),
-										presence=st.session_state.get( 'image_presence_penalty' ),
-										max_tokens=st.session_state.get( 'image_max_tokens' ),
-										resolution=st.session_state.get(
-											'image_media_resolution' ),
-										instruct=st.session_state.get(
-											'image_system_instructions' ),
-										output_mime_type=st.session_state.get( 'image_mime_type' ),
-										response_modalities=st.session_state.get(
-											'image_modality' ),
-										grounded=st.session_state.get( 'image_grounded', False ),
-										image_search=st.session_state.get( 'image_image_search',
-											False ) )
+										model=model_name, aspect=aspect_ratio_value or None,
+										number=number_value, temperature=temperature_value,
+										top_p=top_percent_value, frequency=frequency_penalty_value,
+										presence=presence_penalty_value,
+										max_tokens=max_tokens_value if max_tokens_value > 0 else
+										None,
+										resolution=resolution_value or None,
+										instruct=instruction_value or None,
+										output_mime_type=mime_type_value or None,
+										response_modalities=modality_value, grounded=bool(
+											st.session_state.get( 'image_grounded', False, ) ),
+										image_search=bool(
+											st.session_state.get( 'image_image_search',
+												False, ) ), )
 								else:
 									st.session_state[ 'image_domains' ] = split_text_values(
 										st.session_state.get( 'image_domains_input', '' ),
@@ -12766,20 +12748,45 @@ elif mode == 'Images':
 											response_modalities=st.session_state.get(
 												'image_modality' ) )
 									else:
+										model_name = str( st.session_state.get( 'image_model',
+											'' ) or '' ).strip( )
+										
+										if not model_name:
+											raise ValueError(
+												'Select a GPT image-generation model before '
+												'generating an image.' )
+										
+										number_value = int(
+											st.session_state.get( 'image_number', 1 ) or 1 )
+										
+										size_value = str( st.session_state.get( 'image_size',
+											'' ) or '' ).strip( )
+										
+										quality_value = str( st.session_state.get( 'image_quality',
+											'' ) or '' ).strip( )
+										
+										mime_value = str( st.session_state.get( 'image_mime_type',
+											'' ) or '' ).strip( )
+										
+										background_value = str(
+											st.session_state.get( 'image_backcolor',
+												'' ) or '' ).strip( )
+										
+										compression_value = float(
+											st.session_state.get( 'image_compression',
+												0.0, ) or 0.0 )
+										
+										if number_value < 1:
+											number_value = 1
+										
 										image_result = image.generate( prompt=prompt_value,
-											number=st.session_state.get( 'image_number' ) or 1,
-											model=st.session_state.get(
-												'image_model' ) or 'gpt-image-1-mini',
-											size=st.session_state.get(
-												'image_size' ) or '1024x1024',
-											quality=st.session_state.get(
-												'image_quality' ) or 'auto',
-											fmt=st.session_state.get( 'image_mime_type' ) or
-											    'jpeg',
-											compression=st.session_state.get(
-												'image_compression' ),
-											background=st.session_state.get(
-												'image_backcolor' ) or None )
+											number=number_value, model=model_name,
+											size=size_value or '1024x1024',
+											quality=quality_value or 'auto',
+											fmt=mime_value or 'jpeg',
+											compression=compression_value if compression_value >
+											                                 0.0 else None,
+											background=background_value or None, )
 								
 								if render_image_output( image_result, caption='Generated image' ):
 									append_image_message( 'assistant', 'Generated image.' )
@@ -12844,63 +12851,75 @@ elif mode == 'Images':
 								if provider_name == 'Gemini':
 									apply_gemini_runtime_config( )
 									
-									analysis_result = image.analyze( prompt=prompt_value,
-										path=tmp_path, model=st.session_state.get(
-											'image_model' ) or 'gemini-2.5-flash-image',
-										aspect=st.session_state.get( 'image_aspect_ratio' ) or
-										       None,
-										number=st.session_state.get( 'image_number' ),
-										temperature=st.session_state.get( 'image_temperature' ),
-										top_p=st.session_state.get( 'image_top_percent' ),
-										frequency=st.session_state.get(
-											'image_frequency_penalty' ),
-										presence=st.session_state.get( 'image_presence_penalty' ),
-										max_tokens=st.session_state.get( 'image_max_tokens' ),
-										resolution=st.session_state.get(
-											'image_media_resolution' ),
-										instruct=st.session_state.get(
-											'image_system_instructions' ),
-										output_mime_type=st.session_state.get( 'image_mime_type' ),
-										response_modalities=st.session_state.get(
-											'image_modality' ) or 'text',
-										grounded=st.session_state.get( 'image_grounded', False ),
-										image_search=st.session_state.get( 'image_image_search',
-											False ) )
-								else:
-									if provider_name == 'Grok':
-										analysis_model = (st.session_state.get(
-											'image_analysis_model' ) or st.session_state.get(
-											'image_model' ) or 'grok-4.20-reasoning')
-										
-										analysis_result = image.analyze( prompt=prompt_value,
-											path=tmp_path, instruct=st.session_state.get(
-												'image_system_instructions' ),
-											model=analysis_model,
-											max_output_tokens=st.session_state.get(
-												'image_max_tokens' ),
-											temperature=st.session_state.get(
-												'image_temperature' ),
-											top_p=st.session_state.get( 'image_top_percent' ),
-											store=st.session_state.get( 'image_store' ),
-											detail=st.session_state.get(
-												'image_analysis_detail' ) or 'high' )
-									else:
-										analysis_model = (st.session_state.get(
-											'image_analysis_model' ) or st.session_state.get(
-											'image_model' ) or 'gpt-4o-mini')
-										
-										analysis_result = image.analyze( text=prompt_value,
-											path=tmp_path, instruct=st.session_state.get(
-												'image_system_instructions' ),
-											model=analysis_model,
-											max_tokens=st.session_state.get( 'image_max_tokens' ),
-											temperature=st.session_state.get(
-												'image_temperature' ),
-											include=st.session_state.get( 'image_include', [ ] ),
-											store=st.session_state.get( 'image_store' ),
-											stream=False, detail=st.session_state.get(
-												'image_analysis_detail' ) or 'auto' )
-							
+									model_name = str(
+										st.session_state.get( 'image_model', '' ) or '' ).strip( )
+									
+									if not model_name:
+										raise ValueError(
+											'Select a Gemini image-generation model before '
+											'generating an image.' )
+									
+									number_value = int(
+										st.session_state.get( 'image_number', 1 ) or 1 )
+									
+									temperature_value = float(
+										st.session_state.get( 'image_temperature', 0.0, ) or 0.0 )
+									
+									top_percent_value = float(
+										st.session_state.get( 'image_top_percent', 0.0, ) or 0.0 )
+									
+									frequency_penalty_value = float(
+										st.session_state.get( 'image_frequency_penalty',
+											0.0, ) or 0.0 )
+									
+									presence_penalty_value = float(
+										st.session_state.get( 'image_presence_penalty',
+											0.0, ) or 0.0 )
+									
+									max_tokens_value = int(
+										st.session_state.get( 'image_max_tokens', 0, ) or 0 )
+									
+									aspect_ratio_value = str(
+										st.session_state.get( 'image_aspect_ratio',
+											'', ) or '' ).strip( )
+									
+									resolution_value = str(
+										st.session_state.get( 'image_media_resolution',
+											'', ) or '' ).strip( )
+									
+									instruction_value = str(
+										st.session_state.get( 'image_system_instructions',
+											'', ) or '' ).strip( )
+									
+									mime_type_value = str( st.session_state.get( 'image_mime_type',
+										'', ) or '' ).strip( )
+									
+									modality_value = st.session_state.get( 'image_modality' )
+									
+									if isinstance( modality_value, str ):
+										modality_value = modality_value.strip( )
+									
+									if not modality_value:
+										modality_value = 'image'
+									
+									if number_value < 1:
+										number_value = 1
+									
+									image_result = image.generate( prompt=prompt_value,
+										model=model_name, aspect=aspect_ratio_value or None,
+										number=number_value, temperature=temperature_value,
+										top_p=top_percent_value, frequency=frequency_penalty_value,
+										presence=presence_penalty_value,
+										max_tokens=max_tokens_value if max_tokens_value > 0 else
+										None,
+										resolution=resolution_value or None,
+										instruct=instruction_value or None,
+										output_mime_type=mime_type_value or None,
+										response_modalities=modality_value, grounded=bool(
+											st.session_state.get( 'image_grounded', False, ) ),
+										image_search=bool(
+											st.session_state.get( 'image_image_search',
+												False, ) ), )
 							except Exception as exc:
 								exception = Error( exc )
 								exception.module = 'app'
@@ -12943,28 +12962,75 @@ elif mode == 'Images':
 								if provider_name == 'Gemini':
 									apply_gemini_runtime_config( )
 									
-									edit_result = image.edit( prompt=prompt_value, path=tmp_path,
-										model=st.session_state.get(
-											'image_model' ) or 'gemini-2.5-flash-image',
-										aspect=st.session_state.get( 'image_aspect_ratio' ) or
-										       None,
-										number=st.session_state.get( 'image_number' ),
-										temperature=st.session_state.get( 'image_temperature' ),
-										top_p=st.session_state.get( 'image_top_percent' ),
-										frequency=st.session_state.get(
-											'image_frequency_penalty' ),
-										presence=st.session_state.get( 'image_presence_penalty' ),
-										max_tokens=st.session_state.get( 'image_max_tokens' ),
-										resolution=st.session_state.get(
-											'image_media_resolution' ),
-										instruct=st.session_state.get(
-											'image_system_instructions' ),
-										output_mime_type=st.session_state.get( 'image_mime_type' ),
-										response_modalities=st.session_state.get(
-											'image_modality' ) or 'image',
-										grounded=st.session_state.get( 'image_grounded', False ),
-										image_search=st.session_state.get( 'image_image_search',
-											False ) )
+									model_name = str(
+										st.session_state.get( 'image_model', '' ) or '' ).strip( )
+									
+									if not model_name:
+										raise ValueError(
+											'Select a Gemini image-generation model before '
+											'generating an image.' )
+									
+									number_value = int(
+										st.session_state.get( 'image_number', 1 ) or 1 )
+									
+									temperature_value = float(
+										st.session_state.get( 'image_temperature', 0.0, ) or 0.0 )
+									
+									top_percent_value = float(
+										st.session_state.get( 'image_top_percent', 0.0, ) or 0.0 )
+									
+									frequency_penalty_value = float(
+										st.session_state.get( 'image_frequency_penalty',
+											0.0, ) or 0.0 )
+									
+									presence_penalty_value = float(
+										st.session_state.get( 'image_presence_penalty',
+											0.0, ) or 0.0 )
+									
+									max_tokens_value = int(
+										st.session_state.get( 'image_max_tokens', 0, ) or 0 )
+									
+									aspect_ratio_value = str(
+										st.session_state.get( 'image_aspect_ratio',
+											'', ) or '' ).strip( )
+									
+									resolution_value = str(
+										st.session_state.get( 'image_media_resolution',
+											'', ) or '' ).strip( )
+									
+									instruction_value = str(
+										st.session_state.get( 'image_system_instructions',
+											'', ) or '' ).strip( )
+									
+									mime_type_value = str( st.session_state.get( 'image_mime_type',
+										'', ) or '' ).strip( )
+									
+									modality_value = st.session_state.get( 'image_modality' )
+									
+									if isinstance( modality_value, str ):
+										modality_value = modality_value.strip( )
+									
+									if not modality_value:
+										modality_value = 'image'
+									
+									if number_value < 1:
+										number_value = 1
+									
+									image_result = image.generate( prompt=prompt_value,
+										model=model_name, aspect=aspect_ratio_value or None,
+										number=number_value, temperature=temperature_value,
+										top_p=top_percent_value, frequency=frequency_penalty_value,
+										presence=presence_penalty_value,
+										max_tokens=max_tokens_value if max_tokens_value > 0 else
+										None,
+										resolution=resolution_value or None,
+										instruct=instruction_value or None,
+										output_mime_type=mime_type_value or None,
+										response_modalities=modality_value, grounded=bool(
+											st.session_state.get( 'image_grounded', False, ) ),
+										image_search=bool(
+											st.session_state.get( 'image_image_search',
+												False, ) ), )
 								else:
 									if provider_name == 'Grok':
 										edit_result = image.edit( prompt=prompt_value,
@@ -12982,20 +13048,46 @@ elif mode == 'Images':
 											aspect_ratio=st.session_state.get(
 												'image_aspect_ratio' ) or None )
 									else:
+										model_name = str( st.session_state.get( 'image_model',
+											'' ) or '' ).strip( )
+										
+										if not model_name:
+											raise ValueError(
+												'Select a GPT image-editing model before '
+												'editing an image.' )
+										
+										number_value = int(
+											st.session_state.get( 'image_number', 1 ) or 1 )
+										
+										size_value = str( st.session_state.get( 'image_size',
+											'' ) or '' ).strip( )
+										
+										quality_value = str( st.session_state.get( 'image_quality',
+											'' ) or '' ).strip( )
+										
+										mime_value = str( st.session_state.get( 'image_mime_type',
+											'' ) or '' ).strip( )
+										
+										background_value = str(
+											st.session_state.get( 'image_backcolor',
+												'' ) or '' ).strip( )
+										
+										compression_value = float(
+											st.session_state.get( 'image_compression',
+												0.0, ) or 0.0 )
+										
+										if number_value < 1:
+											number_value = 1
+										
 										edit_result = image.edit( prompt=prompt_value,
-											path=tmp_path, model=st.session_state.get(
-												'image_model' ) or 'gpt-image-1-mini',
-											size=st.session_state.get(
-												'image_size' ) or '1024x1024',
-											quality=st.session_state.get(
-												'image_quality' ) or 'auto',
-											fmt=st.session_state.get( 'image_mime_type' ) or
-											    'jpeg',
-											compression=st.session_state.get(
-												'image_compression' ),
-											background=st.session_state.get(
-												'image_backcolor' ) or None,
-											number=st.session_state.get( 'image_number' ) )
+											path=tmp_path, model=model_name,
+											size=size_value or '1024x1024',
+											quality=quality_value or 'auto',
+											fmt=mime_value or 'jpeg',
+											compression=compression_value if compression_value >
+											                                 0.0 else None,
+											background=background_value or None,
+											number=number_value, )
 								
 								if render_image_output( edit_result, caption='Edited image' ):
 									append_image_message( 'assistant', 'Edited image.' )
@@ -13034,12 +13126,10 @@ elif mode == 'Images':
 # ======================================================================================
 elif mode == 'Audio':
 	ensure_audio_runtime_state( )
-	
 	provider_name = get_provider_name( )
 	transcriber = get_transcription_module( ) if provider_supports( 'Transcription' ) else None
 	translator = get_translation_module( ) if provider_supports( 'Translation' ) else None
 	tts = get_tts_module( ) if provider_supports( 'TTS' ) else None
-	
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'audio_system_instructions' ] = ''
 		st.session_state[ 'clear_audio_instructions' ] = False
@@ -13049,13 +13139,16 @@ elif mode == 'Audio':
 	with center:
 		st.subheader( '🎧 Audio API', help=cfg.AUDIO_API )
 		st.divider( )
+		# ------------------------------------------------------------------
+		# Mind Controls
+		# ------------------------------------------------------------------
 		with st.expander( label='Mind Controls', icon='🧠', expanded=False, width='stretch' ):
 			# ------------------------------------------------------------------
 			# LLM Settings
 			# ------------------------------------------------------------------
 			with st.expander( label='LLM Settings', icon='🧊', expanded=False, width='stretch' ):
-				audio_c1, audio_c2, audio_c3, audio_c4 = st.columns(
-					[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall' )
+				audio_c1, audio_c2, audio_c3, audio_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
+					border=True, gap='xxsmall' )
 				
 				with audio_c1:
 					task_options = get_audio_task_options( )
@@ -13069,7 +13162,6 @@ elif mode == 'Audio':
 						audio_task = st.session_state.get( 'audio_task', '' )
 				
 				model_options = get_audio_model_options( audio_task, transcriber, translator, tts )
-				
 				if st.session_state.get( 'audio_model' ) not in model_options:
 					st.session_state[ 'audio_model' ] = ''
 				
@@ -13109,8 +13201,7 @@ elif mode == 'Audio':
 			# ------------------------------------------------------------------
 			# Response Settings
 			# ------------------------------------------------------------------
-			with st.expander( label='Response Settings', icon='↔️', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Response Settings', icon='↔️', expanded=False, width='stretch' ):
 				resp_c1, resp_c2, resp_c3, resp_c4, resp_c5 = st.columns(
 					[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall' )
 				
@@ -13159,13 +13250,15 @@ elif mode == 'Audio':
 						help='Autoplay local playback when supported.' )
 		
 				st.button( label='Reset', key='audio_response_reset', width='stretch',
-					on_click=reset_audio_response_settings )
-				
+					on_click=reset_audio_response_settings, )
+			
+			st.button( label='Reset All', key='audio_mind_controls_reset', width='stretch',
+				on_click=reset_audio_mind_controls, )
+		
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-				width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			active_audio_task = str( st.session_state.get( 'audio_task', '' ) or '' ).strip( )
 			
 			allowed_categories = resolve_audio_prompt_categories( audio_task=active_audio_task, )
@@ -13384,7 +13477,6 @@ elif mode == 'Audio':
 								selected_mime_type=st.session_state.get( 'audio_mime_type' ) )
 							
 							render_audio_bytes( audio_bytes, response_format )
-							
 							if audio_bytes:
 								st.session_state[ 'audio_messages' ].append( { 'role': 'assistant',
 									'content': 'Generated audio from text.', } )
@@ -13797,8 +13889,7 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		# Document Controls
 		# ------------------------------------------------------------------
-		with st.expander( label='Document Controls', icon='📚', expanded=False,
-				width='stretch' ):
+		with st.expander( label='Document Controls', icon='📚', expanded=False, width='stretch' ):
 			document_c1, document_c2 = st.columns( [ 0.50, 0.50 ], gap='small' )
 			with document_c1:
 				# ------------------------------------------------------------------
@@ -13806,13 +13897,11 @@ elif mode == 'Document Q&A':
 				# ------------------------------------------------------------------
 				with st.container( border=True ):
 					st.markdown( '##### Source Controls' )
-					
-					source_c1, source_c2, source_c3 = st.columns(
-						[ 0.33, 0.33, 0.33 ], border=True, gap='xxsmall' )
+					source_c1, source_c2, source_c3 = st.columns( [ 0.33, 0.33, 0.33 ],
+						border=True, gap='xxsmall' )
 					
 					with source_c1:
 						source_options = get_docqna_sources( )
-						
 						if st.session_state.get( 'docqna_source' ) not in source_options:
 							st.session_state[ 'docqna_source' ] = 'Local Upload'
 						
@@ -13834,24 +13923,19 @@ elif mode == 'Document Q&A':
 					st.button( label='Reset Controls', key='docqna_reset_controls',
 						width='stretch', on_click=reset_docqna_controls )
 					
-					source_value = st.session_state.get(
-						'docqna_source', 'Local Upload' )
-					
+					source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
 					if source_value == 'OpenAI File ID':
-						st.text_input( label='OpenAI File ID',
-							key='docqna_file_id', width='stretch',
-							placeholder='file-...',
+						st.text_input( label='OpenAI File ID', key='docqna_file_id',
+							width='stretch', placeholder='file-...',
 							help='OpenAI file identifier. Use Vector Store ID for retrieval-backed Q&A.' )
 					
 					elif source_value == 'OpenAI Vector Store ID':
 						st.text_input( label='OpenAI Vector Store ID(s)',
-							key='docqna_vector_store_id', width='stretch',
-							placeholder='vs_...',
+							key='docqna_vector_store_id', width='stretch', placeholder='vs_...',
 							help='Comma-delimited OpenAI vector store IDs.' )
 					
 					elif source_value == 'Gemini File Search Store':
-						st.text_input(
-							label='Gemini File Search Store Resource Name(s)',
+						st.text_input( label='Gemini File Search Store Resource Name(s)',
 							key='docqna_file_search_store_names_input',
 							width='stretch', placeholder='fileSearchStores/...',
 							help='Comma-delimited Gemini File Search Store resource names.' )
@@ -13890,8 +13974,7 @@ elif mode == 'Document Q&A':
 					if st.button( label='Rebuild Index', key='docqna_rebuild_index', width='stretch' ):
 						rebuild_docqna_index( )
 						st.success( st.session_state.get( 'docqna_index_status', 'Indexed' ) )
-			
-			
+						
 		# ------------------------------------------------------------------
 		# Model Controls
 		# ------------------------------------------------------------------
