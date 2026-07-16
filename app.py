@@ -8422,20 +8422,27 @@ def get_docqna_avatar( provider_name: str ) -> str:
 	return getattr( cfg, 'BUDDY', '🧠' )
 
 def clear_docqna_messages( ) -> None:
-	"""Clear docqna messages.
+	"""Clear Document Q&A messages.
 	
 	Purpose:
-	    Maintains application runtime state for clear docqna messages by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Clears the Document Q&A conversation history without modifying loaded documents,
+	    retrieval indexes, provider controls, outputs, or System Instructions.
+	
+	Returns:
+	    None: This function resets Document Q&A message history.
 	"""
 	st.session_state[ 'docqna_messages' ] = [ ]
 
 def clear_docqna_outputs( ) -> None:
-	"""Clear docqna outputs.
+	"""Clear Document Q&A outputs.
 	
 	Purpose:
-	    Maintains application runtime state for clear docqna outputs by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears the most recent answer, retrieved chunks, source metadata, provider context,
+	    usage state, and shared answer aliases without unloading active documents or changing
+	    Document Q&A controls.
+	
+	Returns:
+	    None: This function resets Document Q&A output state.
 	"""
 	st.session_state[ 'docqna_last_answer' ] = ''
 	st.session_state[ 'docqna_last_hits' ] = [ ]
@@ -8443,13 +8450,22 @@ def clear_docqna_outputs( ) -> None:
 	st.session_state[ 'docqna_context' ] = ''
 	st.session_state[ 'last_answer' ] = ''
 	st.session_state[ 'last_sources' ] = [ ]
+	st.session_state[ 'last_call_usage' ] = {
+		'prompt_tokens': 0,
+		'completion_tokens': 0,
+		'total_tokens': 0,
+	}
 
 def unload_docqna_documents( ) -> None:
-	"""Unload docqna documents.
+	"""Unload Document Q&A documents.
 	
 	Purpose:
-	    Supports the unload docqna documents application workflow by coordinating validated
-	    inputs, Streamlit session state, provider configuration, and local data processing.
+	    Removes all locally loaded Document Q&A files, extracted text, active-document records,
+	    retrieval chunks, fingerprints, index metadata, and local output state without changing
+	    provider, model, source, or System Instructions controls.
+	
+	Returns:
+	    None: This function unloads local documents and resets their retrieval state.
 	"""
 	st.session_state[ 'docqna_uploaded' ] = None
 	st.session_state[ 'docqna_files' ] = [ ]
@@ -8462,34 +8478,81 @@ def unload_docqna_documents( ) -> None:
 	st.session_state[ 'docqna_vec_ready' ] = False
 	st.session_state[ 'docqna_fingerprint' ] = ''
 	st.session_state[ 'docqna_chunk_count' ] = 0
+	st.session_state[ 'docqna_fallback_rows' ] = [ ]
 	st.session_state[ 'docqna_index_status' ] = 'Not indexed'
 	clear_docqna_outputs( )
 
-def reset_docqna_controls( ) -> None:
-	"""Reset docqna controls.
+def reset_docqna_document_controls( ) -> None:
+	"""Reset Document Q&A document controls.
 	
 	Purpose:
-	    Maintains application runtime state for reset docqna controls by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every selectable control contained in the Document Controls expander to its
+	    initial value without unloading documents or changing model and instruction controls.
+	
+	Returns:
+	    None: This function resets Document Controls state.
 	"""
-	for key in [ 'docqna_model', 'docqna_source', 'docqna_file_id', 'docqna_vector_store_id',
-		'docqna_multi_mode', 'docqna_top_k', 'docqna_chunk_size', 'docqna_chunk_overlap',
-		'docqna_show_diagnostics', 'docqna_temperature', 'docqna_top_percent', 'docqna_max_tokens',
-		'docqna_response_format', 'docqna_tool_choice', 'docqna_reasoning',
-		'docqna_file_search_store_names_input', 'docqna_file_search_store_names' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'docqna_source' ] = 'Local Upload'
+	st.session_state[ 'doc_source' ] = 'uploadlocal'
+	st.session_state[ 'docqna_file_id' ] = ''
+	st.session_state[ 'docqna_vector_store_id' ] = ''
+	st.session_state[ 'docqna_file_search_store_names_input' ] = ''
+	st.session_state[ 'docqna_file_search_store_names' ] = [ ]
+	st.session_state[ 'docqna_multi_mode' ] = False
+	st.session_state[ 'docqna_top_k' ] = 6
+	st.session_state[ 'docqna_chunk_size' ] = 900
+	st.session_state[ 'docqna_chunk_overlap' ] = 150
+	st.session_state[ 'docqna_show_diagnostics' ] = True
+
+def reset_docqna_model_controls( ) -> None:
+	"""Reset Document Q&A model controls.
+	
+	Purpose:
+	    Restores every control contained in the Model Controls expander to the initial values
+	    established by the Document Q&A session-state contract.
+	
+	Returns:
+	    None: This function resets Document Q&A model controls.
+	"""
+	st.session_state[ 'docqna_model' ] = ''
+	st.session_state[ 'docqna_temperature' ] = 0.0
+	st.session_state[ 'docqna_top_percent' ] = 0.0
+	st.session_state[ 'docqna_max_tokens' ] = 0
+	st.session_state[ 'docqna_store' ] = False
+	st.session_state[ 'docqna_response_format' ] = ''
+	st.session_state[ 'docqna_reasoning' ] = ''
+	st.session_state[ 'docqna_tool_choice' ] = ''
+	st.session_state[ 'docqna_parallel_tools' ] = False
+	st.session_state[ 'docqna_background' ] = False
+	st.session_state[ 'docqna_stream' ] = False
+
+def reset_docqna_controls( ) -> None:
+	"""Reset Document Q&A controls.
+	
+	Purpose:
+	    Restores Document Controls and Model Controls to their initial values without unloading
+	    active documents, clearing messages, or changing System Instructions.
+	
+	Returns:
+	    None: This function resets Document Q&A control state.
+	"""
+	reset_docqna_document_controls( )
+	reset_docqna_model_controls( )
 
 def reset_docqna_all( ) -> None:
-	"""Reset docqna all.
+	"""Reset all Document Q&A state.
 	
 	Purpose:
-	    Maintains application runtime state for reset docqna all by initializing, clearing, or
-	    restoring the session values used by the active Streamlit workflow.
+	    Restores all Document Q&A controls and clears loaded documents, retrieval indexes,
+	    messages, outputs, and System Instructions without modifying another application mode.
+	
+	Returns:
+	    None: This function resets all Document Q&A state.
 	"""
 	reset_docqna_controls( )
 	unload_docqna_documents( )
 	clear_docqna_messages( )
+	clear_docqna_instructions( )
 
 def clear_docqna_instructions( ) -> None:
 	"""Clear Document Q&A instructions.
@@ -8503,16 +8566,15 @@ def clear_docqna_instructions( ) -> None:
 	    None: This function resets the Document Q&A instruction-template contract.
 	"""
 	clear_instruction_template( category_key='docqna_instruction_category',
-		selector_key='docqna_instruction_prompt_id',
-		instruction_key='docqna_system_instructions', )
+		selector_key='docqna_instruction_prompt_id', instruction_key='docqna_system_instructions', )
 
 def change_docqna_instruction_category( ) -> None:
 	"""Change Document Q&A instruction category.
 	
 	Purpose:
-	    Clears the selected Document Q&A prompt identifier when the active prompt category
-	    changes so a template from the previous category cannot remain selected under an
-	    incompatible option collection.
+	    Clears the selected Document Q&A prompt identifier when the active category changes so
+	    a template from the previous category cannot remain selected under an incompatible
+	    prompt collection.
 	
 	Returns:
 	    None: This function resets the Document Q&A prompt selection.
@@ -8524,32 +8586,60 @@ def load_docqna_instruction( ) -> None:
 	
 	Purpose:
 	    Loads the Document Q&A instruction template identified by the selected Prompts table
-	    primary key into the editable Document Q&A System Instructions state.
+	    integer primary key into the editable System Instructions state.
 	
 	Returns:
-	    None: This function updates the Document Q&A System Instructions state.
+	    None: This function updates Document Q&A System Instructions.
+	
+	Raises:
+	    Error: Raised when the selected prompt cannot be retrieved or loaded.
 	"""
-	load_instruction_template( selector_key='docqna_instruction_prompt_id',
-		instruction_key='docqna_system_instructions', )
+	try:
+		load_instruction_template( selector_key='docqna_instruction_prompt_id',
+			instruction_key='docqna_system_instructions', )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'load_docqna_instruction'
+		exception.method = 'load_docqna_instruction( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def convert_docqna_instructions( ) -> None:
-	"""Convert docqna instructions.
+	"""Convert Document Q&A instructions.
 	
 	Purpose:
-	    Transforms convert docqna instructions inputs into a normalized representation used by
-	    provider calls, document retrieval, data management, or UI rendering.
+	    Converts the editable Document Q&A System Instructions between supported XML-like
+	    section markup and Markdown heading markup.
+	
+	Returns:
+	    None: This function updates Document Q&A System Instructions.
+	
+	Raises:
+	    Error: Raised when instruction conversion fails.
 	"""
-	text_value = st.session_state.get( 'docqna_system_instructions', '' )
-	if not isinstance( text_value, str ) or not text_value.strip( ):
-		return
-	
-	source = text_value.strip( )
-	if cfg.XML_BLOCK_PATTERN.search( source ):
-		converted = convert_xml( source )
-	else:
-		converted = convert_markdown( source )
-	
-	st.session_state[ 'docqna_system_instructions' ] = converted
+	try:
+		text_value = st.session_state.get( 'docqna_system_instructions', '', )
+		if not isinstance( text_value, str ) or not text_value.strip( ):
+			return
+		
+		source = text_value.strip( )
+		if cfg.XML_BLOCK_PATTERN.search( source ):
+			converted = convert_xml( source )
+		else:
+			converted = convert_markdown( source )
+		
+		st.session_state[ 'docqna_system_instructions' ] = converted
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'convert_docqna_instructions'
+		exception.method = 'convert_docqna_instructions( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def get_docqna_sources( ) -> List[ str ]:
 	"""Get docqna sources.
@@ -14026,7 +14116,6 @@ elif mode == 'Embeddings':
 			# Normalize dimension state before the dimension slider is instantiated.
 			max_dimensions = get_embedding_max_dimensions( embedding_model, embedding )
 			supports_dimensions = embedding_model_supports_dimensions( embedding_model, embedding )
-			
 			try:
 				current_dimensions = int( st.session_state.get( 'embeddings_dimensions', 0 ) or 0 )
 			except Exception as e:
@@ -14120,7 +14209,6 @@ elif mode == 'Embeddings':
 				provider_name=provider_name, )
 			
 			user_c1, user_c2, user_c3 = st.columns( [ 0.35, 0.40, 0.25 ], border=True, gap='xxsmall', )
-			
 			with user_c1:
 				if task_options:
 					st.selectbox( label='Task Type', options=task_options, key='embeddings_method',
@@ -14325,8 +14413,7 @@ elif mode == 'Embeddings':
 		# ------------------------------------------------------------------
 		usage = st.session_state.get( 'embedding_usage', { } )
 		if isinstance( usage, dict ) and len( usage ) > 0:
-			with st.expander( label='Embedding Usage', icon='📊', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Embedding Usage', icon='📊', expanded=False, width='stretch' ):
 				st.json( usage )
 
 # ======================================================================================
