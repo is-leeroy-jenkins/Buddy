@@ -6739,6 +6739,139 @@ def ensure_audio_runtime_state( ) -> None:
 	ensure_key( 'audio_last_result', { } )
 	ensure_key( 'audio_last_usage', { } )
 
+def get_audio_provider_capabilities( provider_name: Optional[ str ] = None, ) -> Dict[ str, bool ]:
+	"""Get audio provider capabilities.
+	
+	Purpose:
+	    Resolves the transcription, translation, and Text-to-Speech capabilities exposed by the
+	    selected provider module so Audio Mode controls and execution paths cannot advertise or
+	    instantiate unsupported operations.
+	
+	Args:
+	    provider_name: Provider name evaluated for Audio API capability support.
+	
+	Returns:
+	    Dict[str, bool]: Capability flags keyed by Transcription, Translation, and TTS.
+	"""
+	provider = get_provider_name( provider_name )
+	
+	return { 'Transcription': provider_supports( 'Transcription', provider ),
+		'Translation': provider_supports( 'Translation', provider ),
+		'TTS': provider_supports( 'TTS', provider ), }
+
+def get_audio_task_capability_name( task: Optional[ str ] ) -> str:
+	"""Get audio task capability name.
+	
+	Purpose:
+	    Maps an Audio Mode task label to the provider-module capability required to execute that
+	    operation.
+	
+	Args:
+	    task: Audio Mode task selected by the user.
+	
+	Returns:
+	    str: Provider capability name associated with the selected task, or an empty string when
+	        the task is not recognized.
+	"""
+	task_name = str( task or '' ).strip( )
+	
+	task_map = { 'Transcribe': 'Transcription', 'Translate': 'Translation',
+		'Text-to-Speech': 'TTS', }
+	
+	return task_map.get( task_name, '' )
+
+def audio_provider_supports_task( task: Optional[ str ],
+	provider_name: Optional[ str ] = None, ) -> bool:
+	"""Determine whether an audio task is supported.
+	
+	Purpose:
+	    Verifies that the selected provider exposes the exact capability required by an Audio
+	    Mode task before the application constructs a provider wrapper or enables execution.
+	
+	Args:
+	    task: Audio Mode task evaluated for provider support.
+	    provider_name: Provider name evaluated for Audio API capability support.
+	
+	Returns:
+	    bool: True when the provider exposes the required task capability; otherwise, False.
+	"""
+	capability_name = get_audio_task_capability_name( task )
+	
+	if not capability_name:
+		return False
+	
+	capabilities = get_audio_provider_capabilities( provider_name )
+	return bool( capabilities.get( capability_name, False ) )
+
+def synchronize_audio_task_selection( valid_tasks: List[ str ], ) -> None:
+	"""Synchronize audio task selection.
+	
+	Purpose:
+	    Clears stale Audio Mode task, model, voice, format, and output state when the currently
+	    selected task is not supported by the active provider.
+	
+	Args:
+	    valid_tasks: Audio Mode tasks currently supported by the active provider.
+	
+	Returns:
+	    None: This function may reset incompatible Audio Mode session-state values.
+	"""
+	tasks = [ str( task ).strip( ) for task in valid_tasks if
+		isinstance( task, str ) and task.strip( ) ]
+	
+	selected_task = str( st.session_state.get( 'audio_task', '' ) or '' ).strip( )
+	if selected_task and selected_task not in tasks:
+		st.session_state[ 'audio_task' ] = ''
+		st.session_state[ 'audio_model' ] = ''
+		st.session_state[ 'audio_language' ] = ''
+		st.session_state[ 'audio_voice' ] = ''
+		st.session_state[ 'audio_response_format' ] = ''
+		st.session_state[ 'audio_mime_type' ] = ''
+		clear_audio_outputs( )
+
+def synchronize_audio_model_selection( valid_models: List[ str ], ) -> None:
+	"""Synchronize audio model selection.
+	
+	Purpose:
+	    Clears a stale Audio Mode model and its dependent voice and response-format selections
+	    when the model is not available for the active provider and task.
+	
+	Args:
+	    valid_models: Audio models currently accepted by the active provider task.
+	
+	Returns:
+	    None: This function may reset incompatible Audio Mode model-dependent state.
+	"""
+	models = [ str( model ).strip( ) for model in valid_models if
+		isinstance( model, str ) and model.strip( ) ]
+	
+	selected_model = str( st.session_state.get( 'audio_model', '' ) or '' ).strip( )
+	if selected_model and selected_model not in models:
+		st.session_state[ 'audio_model' ] = ''
+		st.session_state[ 'audio_voice' ] = ''
+		st.session_state[ 'audio_response_format' ] = ''
+		st.session_state[ 'audio_mime_type' ] = ''
+
+def synchronize_audio_format_selection( valid_formats: List[ str ], ) -> None:
+	"""Synchronize audio response-format selection.
+	
+	Purpose:
+	    Clears a stale Audio Mode response format when it is not supported by the active
+	    provider, task, and model combination.
+	
+	Args:
+	    valid_formats: Response formats currently accepted by the active provider task.
+	
+	Returns:
+	    None: This function may reset incompatible Audio Mode response-format state.
+	"""
+	formats = [ str( value ).strip( ) for value in valid_formats if
+		isinstance( value, str ) and value.strip( ) ]
+	
+	selected_format = str( st.session_state.get( 'audio_response_format', '' ) or '' ).strip( )
+	if selected_format and selected_format not in formats:
+		st.session_state[ 'audio_response_format' ] = ''
+		
 def get_audio_task_options( ) -> List[ str ]:
 	"""Get audio task options.
 	
@@ -7145,6 +7278,44 @@ def reset_audio_mind_controls( ) -> None:
 	reset_audio_llm_settings( )
 	reset_audio_response_settings( )
 
+def save_audio_upload( upload: Any ) -> str | None:
+	"""Save audio upload.
+	
+	Purpose:
+	    Applies the save audio upload operation to application-managed data, files, prompts, or
+	    provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    upload: Streamlit uploaded-file object to persist to a temporary path.
+	
+	Returns:
+	    str | None: Text value produced for the active application workflow.
+	"""
+	if upload is None:
+		return None
+	
+	try:
+		name = getattr( upload, 'name', 'audio.wav' )
+		_, ext = os.path.splitext( name )
+		ext = ext if ext else '.wav'
+		
+		with tempfile.NamedTemporaryFile( delete=False, suffix=ext ) as tmp:
+			if hasattr( upload, 'getbuffer' ):
+				tmp.write( upload.getbuffer( ) )
+			elif hasattr( upload, 'read' ):
+				tmp.write( upload.read( ) )
+			else:
+				return None
+			
+			return tmp.name
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'save_audio_upload'
+		exception.method = 'save_audio_upload( upload ) -> str | None'
+		Logger( ).write( exception )
+		return None
+	
 def run_audio_file_task( task: str | None, file_path: str | None, transcriber: Any,
 	translator: Any ) -> str | None:
 	"""Run audio file task.
@@ -7464,6 +7635,108 @@ def get_embedding_encoding_options( embedding: Any ) -> List[ str ]:
 		return [ 'float' ]
 	
 	return [ 'float' ]
+
+def get_embedding_task_options( embedding: Any,
+	provider_name: Optional[ str ] = None, ) -> List[ str ]:
+	"""Get embedding task options.
+	
+	Purpose:
+	    Returns the embedding task types supported by the active provider so document, query,
+	    classification, clustering, and semantic-similarity vectors are generated with the
+	    provider intent appropriate to their downstream use.
+	
+	Args:
+	    embedding: Active provider embedding capability.
+	    provider_name: Provider name used to resolve provider-specific task options.
+	
+	Returns:
+	    List[str]: Supported embedding task types, or an empty list when the provider does not
+	        expose task-specific embedding behavior.
+	"""
+	provider = get_provider_name( provider_name )
+	options = getattr( embedding, 'task_options', None )
+	
+	if isinstance( options, (list, tuple) ):
+		normalized_options = [ str( option ).strip( ) for option in options if
+			isinstance( option, str ) and option.strip( ) ]
+		
+		if normalized_options:
+			return normalized_options
+	
+	if provider == 'Gemini':
+		return [ 'RETRIEVAL_DOCUMENT', 'RETRIEVAL_QUERY', 'SEMANTIC_SIMILARITY', 'CLASSIFICATION',
+			'CLUSTERING', 'QUESTION_ANSWERING', 'FACT_VERIFICATION', 'CODE_RETRIEVAL_QUERY', ]
+	
+	return [ ]
+
+def get_default_embedding_task( provider_name: Optional[ str ] = None, ) -> str:
+	"""Get default embedding task.
+	
+	Purpose:
+	    Returns the initial embedding task appropriate to the active provider while leaving
+	    providers without task-specific embedding behavior unset.
+	
+	Args:
+	    provider_name: Provider name used to resolve the initial task.
+	
+	Returns:
+	    str: Initial provider embedding task, or an empty string when no task is required.
+	"""
+	provider = get_provider_name( provider_name )
+	
+	if provider == 'Gemini':
+		return 'RETRIEVAL_DOCUMENT'
+	
+	return ''
+
+def synchronize_embedding_model_selection( model_options: List[ str ], ) -> None:
+	"""Synchronize embedding model selection.
+	
+	Purpose:
+	    Clears a stale embedding model and dependent dimension state when the model is not
+	    available through the active provider capability.
+	
+	Args:
+	    model_options: Embedding models available through the active provider.
+	
+	Returns:
+	    None: This function may reset incompatible model and dimension state.
+	"""
+	valid_models = [ str( model ).strip( ) for model in model_options if
+		isinstance( model, str ) and model.strip( ) ]
+	
+	selected_model = str( st.session_state.get( 'embedding_model', '' ) or '' ).strip( )
+	
+	if selected_model and selected_model not in valid_models:
+		st.session_state[ 'embedding_model' ] = ''
+		st.session_state[ 'embeddings_dimensions' ] = 0
+
+def synchronize_embedding_task_selection( task_options: List[ str ],
+	provider_name: Optional[ str ] = None, ) -> None:
+	"""Synchronize embedding task selection.
+	
+	Purpose:
+	    Restores the provider-specific initial task when the current task is not supported by the
+	    active embedding provider.
+	
+	Args:
+	    task_options: Embedding task types currently supported by the active provider.
+	    provider_name: Provider name used to resolve the initial task.
+	
+	Returns:
+	    None: This function may reset incompatible embedding task state.
+	"""
+	valid_tasks = [ str( task ).strip( ) for task in task_options if
+		isinstance( task, str ) and task.strip( ) ]
+	
+	selected_task = str( st.session_state.get( 'embeddings_method', '' ) or '' ).strip( )
+	
+	if not valid_tasks:
+		st.session_state[ 'embeddings_method' ] = ''
+		return
+	
+	if selected_task not in valid_tasks:
+		st.session_state[ 'embeddings_method' ] = get_default_embedding_task( provider_name )
 
 def get_embedding_max_dimensions( model: str | None, embedding: Any ) -> int:
 	"""Get embedding max dimensions.
@@ -7914,72 +8187,211 @@ def reset_embeddings_controls( ) -> None:
 	"""Reset embeddings controls.
 	
 	Purpose:
-	    Maintains application runtime state for reset embeddings controls by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Embeddings Mode Configuration expander to the
+	    initial values established for the active provider.
+	
+	Returns:
+	    None: This function resets Embeddings Mode configuration controls.
 	"""
-	for key in [ 'embedding_model', 'embeddings_dimensions', 'embeddings_chunk_size',
-		'embeddings_overlap_amount', 'embeddings_encoding_format', 'embeddings_user' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	provider_name = get_provider_name( )
+	st.session_state[ 'embedding_model' ] = ''
+	st.session_state[ 'embeddings_dimensions' ] = 0
+	st.session_state[ 'embeddings_chunk_size' ] = 800
+	st.session_state[ 'embeddings_overlap_amount' ] = 0
+	st.session_state[ 'embeddings_encoding_format' ] = 'float'
+	st.session_state[ 'embeddings_user' ] = ''
+	st.session_state[ 'embeddings_method' ] = get_default_embedding_task( provider_name )
 
 def clear_embeddings_output( ) -> None:
 	"""Clear embeddings output.
 	
 	Purpose:
-	    Maintains application runtime state for clear embeddings output by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Clears generated vectors, generated chunks, output dataframes, metrics, usage values, and
+	    shared embedding-result aliases without modifying source text or Configuration controls.
+	
+	Returns:
+	    None: This function resets Embeddings Mode output state.
 	"""
 	st.session_state[ 'embeddings' ] = [ ]
 	st.session_state[ 'embeddings_chunks' ] = [ ]
 	st.session_state[ 'embeddings_df' ] = pd.DataFrame( )
 	st.session_state[ 'embedding_metrics' ] = { }
 	st.session_state[ 'embedding_usage' ] = { }
+	
+	if 'embedding_texts' in st.session_state:
+		st.session_state[ 'embedding_texts' ] = [ ]
+	
+	if 'embedding_documents' in st.session_state:
+		st.session_state[ 'embedding_documents' ] = None
+	
+	if 'embedding_provider' in st.session_state:
+		st.session_state[ 'embedding_provider' ] = ''
+	
+	if 'df_embedding_output' in st.session_state:
+		st.session_state[ 'df_embedding_output' ] = pd.DataFrame( )
 
 def reset_embeddings_all( ) -> None:
 	"""Reset embeddings all.
 	
 	Purpose:
-	    Maintains application runtime state for reset embeddings all by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Restores all Embeddings Mode controls, source text, and generated output state to the
+	    initial values established by the Embeddings Mode session-state contract.
+	
+	Returns:
+	    None: This function resets all Embeddings Mode state.
 	"""
 	reset_embeddings_controls( )
 	clear_embeddings_output( )
+	st.session_state[ 'embeddings_input_text' ] = ''
+
+def prepare_embedding_source_text( source_text: str ) -> str:
+	"""Prepare embedding source text.
 	
-	if 'embeddings_input_text' in st.session_state:
-		del st.session_state[ 'embeddings_input_text' ]
+	Purpose:
+	    Normalizes line endings and redundant whitespace while preserving capitalization,
+	    punctuation, numbers, symbols, and sentence boundaries that contribute to semantic
+	    embedding quality.
+	
+	Args:
+	    source_text: Original text entered for embedding generation.
+	
+	Returns:
+	    str: Whitespace-normalized text that preserves semantic content.
+	"""
+	if not isinstance( source_text, str ) or not source_text.strip( ):
+		return ''
+	
+	text = source_text.replace( '\r\n', '\n' ).replace( '\r', '\n' )
+	text = re.sub( r'[ \t]+', ' ', text )
+	text = re.sub( r'\n{3,}', '\n\n', text )
+	
+	return text.strip( )
+
+def validate_embedding_result_count( chunks: List[ str ], vectors: Any, ) -> List[ Any ]:
+	"""Validate embedding result count.
+	
+	Purpose:
+	    Normalizes provider embedding output and verifies that one vector was returned for every
+	    submitted chunk so output rows cannot be silently associated with the wrong source text.
+	
+	Args:
+	    chunks: Ordered text chunks submitted to the provider.
+	    vectors: Raw embedding output returned by the provider wrapper.
+	
+	Returns:
+	    List[Any]: Normalized embedding vectors aligned with the source chunks.
+	
+	Raises:
+	    Error: Raised when no embeddings are returned or the output count does not match the
+	        submitted chunk count.
+	"""
+	try:
+		outputs = normalize_embedding_vectors( vectors )
+		
+		if len( outputs ) == 0:
+			raise ValueError( 'The provider returned no embeddings.' )
+		
+		if len( outputs ) != len( chunks ):
+			raise ValueError( f'The provider returned {len( outputs ):,} embedding(s) for '
+			                  f'{len( chunks ):,} submitted chunk(s).' )
+		
+		return outputs
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'validate_embedding_result_count'
+		exception.method = ('validate_embedding_result_count( chunks: List[str], '
+		                    'vectors: Any ) -> List[Any]')
+		Logger( ).write( exception )
+		raise exception
 
 def create_provider_embeddings( embedding: Any, chunks: List[ str ], model: str,
-	encoding_format: str, dimensions: int | None, user_value: str | None ) -> Any:
+	encoding_format: str, dimensions: int | None, user_value: str | None,
+	task_type: str | None = None, ) -> Any:
 	"""Create provider embeddings.
 	
 	Purpose:
-	    Builds create provider embeddings from validated runtime inputs and prepares the
-	    resulting object, payload, table, or display structure for later application
-	    processing.
+	    Executes embedding generation through an explicit provider-specific request contract,
+	    applying task types, dimensions, encoding formats, and user identifiers only when the
+	    selected provider and model support them.
 	
 	Args:
-	    embedding: Embedding value used by the application workflow.
-	    chunks: Chunks value used by the application workflow.
-	    model: Provider model identifier selected for the active workflow.
-	    encoding_format: Encoding Format value used by the application workflow.
-	    dimensions: Dimensions value used by the application workflow.
-	    user_value: User Value value used by the application workflow.
+	    embedding: Active provider embedding capability.
+	    chunks: Ordered text chunks submitted for embedding.
+	    model: Provider embedding model identifier.
+	    encoding_format: Provider-supported vector encoding format.
+	    dimensions: Optional output dimensions supported by the selected model.
+	    user_value: Optional end-user identifier supported by GPT.
+	    task_type: Optional embedding intent supported by Gemini.
 	
 	Returns:
-	    Any: Normalized result produced for the active application workflow.
+	    Any: Raw embedding vectors returned by the active provider.
+	
+	Raises:
+	    Error: Raised when validation or provider execution fails.
 	"""
-	provider_name = get_provider_name( )
+	try:
+		if embedding is None:
+			raise ValueError( 'The active provider does not expose an Embeddings capability.' )
+		
+		if not isinstance( chunks, list ) or len( chunks ) == 0:
+			raise ValueError( 'At least one embedding chunk is required.' )
+		
+		if any( not isinstance( chunk, str ) or not chunk.strip( ) for chunk in chunks ):
+			raise ValueError( 'Every embedding chunk must contain usable text.' )
+		
+		model_name = str( model or '' ).strip( )
+		if not model_name:
+			raise ValueError( 'Select an embedding model before creating embeddings.' )
+		
+		format_value = str( encoding_format or 'float' ).strip( ) or 'float'
+		provider_name = get_provider_name( )
+		if provider_name == 'GPT':
+			return embedding.create( text=chunks, model=model_name, format=format_value,
+				dimensions=dimensions, user=user_value, )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			task_value = str( task_type or '' ).strip( )
+			task_options = get_embedding_task_options( embedding=embedding,
+				provider_name=provider_name, )
+			
+			if not task_value:
+				task_value = get_default_embedding_task( provider_name )
+			
+			if task_options and task_value not in task_options:
+				raise ValueError( f'The selected Gemini embedding task is not supported: '
+				                  f'{task_value}.' )
+			
+			return embedding.create( text=chunks, model=model_name, dimensions=dimensions,
+				encoding_format=format_value, task_type=task_value, )
+		
+		if provider_name == 'Grok':
+			request_arguments: Dict[ str, Any ] = { 'text': chunks, 'model': model_name, }
+			
+			if (dimensions is not None and embedding_model_supports_dimensions( model_name,
+				embedding, )):
+				request_arguments[ 'dimensions' ] = dimensions
+			
+			return embedding.create( **request_arguments )
+		
+		raise ValueError( f'Unsupported embeddings provider: {provider_name}.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'create_provider_embeddings'
+		exception.method = ('create_provider_embeddings( embedding: Any, chunks: List[str], '
+		                    'model: str, encoding_format: str, dimensions: int | None, '
+		                    'user_value: str | None, task_type: str | None = None ) -> Any')
+		Logger( ).write( exception )
+		raise exception
 	
-	if provider_name == 'Gemini':
-		return embedding.create( text=chunks, model=model, dimensions=dimensions,
-			encoding_format=encoding_format, task_type='RETRIEVAL_DOCUMENT' )
-	
-	if provider_name == 'GPT':
-		return embedding.create( text=chunks, model=model, format=encoding_format,
-			dimensions=dimensions, user=user_value )
-	
-	return embedding.create( text=chunks, model=model, dimensions=dimensions )
-
 # ======================================================================================
 # DOCQNA UTILITIES
 # ======================================================================================
@@ -13127,9 +13539,15 @@ elif mode == 'Images':
 elif mode == 'Audio':
 	ensure_audio_runtime_state( )
 	provider_name = get_provider_name( )
-	transcriber = get_transcription_module( ) if provider_supports( 'Transcription' ) else None
-	translator = get_translation_module( ) if provider_supports( 'Translation' ) else None
-	tts = get_tts_module( ) if provider_supports( 'TTS' ) else None
+	audio_capabilities = get_audio_provider_capabilities( provider_name )
+	transcriber = (
+		get_transcription_module( provider_name ) if audio_capabilities.get( 'Transcription',
+			False ) else None)
+	
+	translator = (get_translation_module( provider_name ) if audio_capabilities.get( 'Translation',
+		False ) else None)
+	
+	tts = (get_tts_module( provider_name ) if audio_capabilities.get( 'TTS', False ) else None)
 	if st.session_state.get( 'clear_instructions' ):
 		st.session_state[ 'audio_system_instructions' ] = ''
 		st.session_state[ 'clear_audio_instructions' ] = False
@@ -13150,27 +13568,33 @@ elif mode == 'Audio':
 				audio_c1, audio_c2, audio_c3, audio_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 					border=True, gap='xxsmall' )
 				
+				task_options = get_audio_task_options( )
+				synchronize_audio_task_selection( task_options )
+				
 				with audio_c1:
-					task_options = get_audio_task_options( )
 					if not task_options:
-						st.info( 'Audio is not supported by the selected provider.' )
+						st.info( f'{provider_name} does not expose transcription, translation, or TTS' )
 						audio_task = ''
 					else:
 						st.selectbox( label='Task', options=task_options, key='audio_task',
 							help='Select the Audio API workflow to run.', index=None,
-							placeholder='Options' )
-						audio_task = st.session_state.get( 'audio_task', '' )
+							placeholder='Options', )
+						
+						audio_task = str( st.session_state.get( 'audio_task', '' ) or '' ).strip( )
+				
+				if (audio_task and not audio_provider_supports_task( audio_task, provider_name, )):
+					st.session_state[ 'audio_task' ] = ''
+					st.session_state[ 'audio_model' ] = ''
+					st.session_state[ 'audio_voice' ] = ''
+					st.session_state[ 'audio_response_format' ] = ''
+					audio_task = ''
 				
 				model_options = get_audio_model_options( audio_task, transcriber, translator, tts )
-				if st.session_state.get( 'audio_model' ) not in model_options:
-					st.session_state[ 'audio_model' ] = ''
-				
+				synchronize_audio_model_selection( model_options )
 				format_options = get_audio_response_format_options( audio_task,
-					st.session_state.get( 'audio_model' ), transcriber, translator, tts )
+					st.session_state.get( 'audio_model' ), transcriber, translator, tts, )
 				
-				if st.session_state.get( 'audio_response_format' ) not in format_options:
-					st.session_state[ 'audio_response_format' ] = ''
-				
+				synchronize_audio_format_selection( format_options )
 				with audio_c2:
 					st.selectbox( label='Model', options=model_options, key='audio_model',
 						help='Audio model for the selected task.', index=None,
@@ -13333,9 +13757,7 @@ elif mode == 'Audio':
 		# ------------------------------------------------------------------
 		# Audio Work Area
 		# ------------------------------------------------------------------
-		left_audio, center_audio, right_audio = st.columns( [ 0.34, 0.33, 0.33 ], border=True,
-			gap='small' )
-		
+		left_audio, center_audio, right_audio = st.columns( [ 0.34, 0.33, 0.33 ], border=True, gap='small' )
 		audio_task = st.session_state.get( 'audio_task', '' )
 		tmp_path = None
 		
@@ -13363,7 +13785,6 @@ elif mode == 'Audio':
 								transcriber=transcriber, translator=translator )
 							
 							render_audio_text_result( audio_task, result_text )
-							
 							if result_text:
 								st.session_state[ 'audio_messages' ].append(
 									{ 'role': 'assistant', 'content': result_text, } )
@@ -13405,15 +13826,11 @@ elif mode == 'Audio':
 			st.caption( 'Record Audio' )
 			sample_rate = int( st.session_state.get( 'audio_rate', 44100 ) or 44100 )
 			recording = st.audio_input( label='Record Audio', sample_rate=sample_rate )
-			
 			if recording is not None:
 				st.audio( recording, format='audio/wav' )
-				
 				if audio_task in [ 'Transcribe', 'Translate' ]:
-					if st.button( 'Process Recording', key='audio_process_recording',
-							width='stretch' ):
+					if st.button( 'Process Recording', key='audio_process_recording', width='stretch' ):
 						record_path = save_audio_upload( recording )
-						
 						with st.spinner( f'{audio_task} recording…' ):
 							try:
 								if provider_name == 'Gemini':
@@ -13424,10 +13841,9 @@ elif mode == 'Audio':
 									translator=translator )
 								
 								render_audio_text_result( audio_task, result_text )
-								
 								if result_text:
-									st.session_state[ 'audio_messages' ].append(
-										{ 'role': 'assistant', 'content': result_text, } )
+									st.session_state[ 'audio_messages' ].append( { 'role': 'assistant',
+										'content': result_text, } )
 									st.session_state[ 'last_answer' ] = result_text
 							
 							except Exception as exc:
@@ -13444,10 +13860,8 @@ elif mode == 'Audio':
 		with right_audio:
 			st.caption( 'Local Audio File' )
 			data = getattr( cfg, 'AUDIO_TEST_FILE', None )
-			
 			if data is not None and os.path.exists( data ):
-				st.audio( data, start_time=float( st.session_state.get( 'audio_start_time',
-					0.0 ) ),
+				st.audio( data, start_time=float( st.session_state.get( 'audio_start_time', 0.0 ) ),
 					end_time=float( st.session_state.get( 'audio_end_time', 0.0 ) ),
 					format='audio/mp3', width='stretch',
 					loop=bool( st.session_state.get( 'audio_loop', False ) ),
@@ -13471,8 +13885,7 @@ elif mode == 'Audio':
 								apply_gemini_runtime_config( )
 							
 							audio_bytes = run_audio_tts_task( tts_text, tts )
-							response_format = get_audio_response_format_value(
-								task='Text-to-Speech',
+							response_format = get_audio_response_format_value( task='Text-to-Speech',
 								selected_format=st.session_state.get( 'audio_response_format' ),
 								selected_mime_type=st.session_state.get( 'audio_mime_type' ) )
 							
@@ -13526,8 +13939,8 @@ elif mode == 'Audio':
 		
 		audio_chat = st.chat_input( 'Enter audio note …', key='audio_messages_input' )
 		if audio_chat is not None and isinstance( audio_chat, str ) and audio_chat.strip( ):
-			st.session_state.audio_messages.append(
-				{ 'role': 'user', 'content': audio_chat.strip( ), } )
+			st.session_state.audio_messages.append( { 'role': 'user',
+				'content': audio_chat.strip( ), } )
 		
 		st.button( 'Clear Messages', key='audio_clear_messages', width='stretch',
 			on_click=clear_audio_messages )
@@ -13537,9 +13950,18 @@ elif mode == 'Audio':
 # ======================================================================================
 elif mode == 'Embeddings':
 	ensure_embeddings_mode_state( )
-	
 	provider_name = get_provider_name( )
-	embedding = get_embeddings_module( )
+	if not provider_supports( 'Embeddings', provider_name ):
+		left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+		with center:
+			st.subheader( '🧬 Embeddings API' )
+			st.divider( )
+			st.warning( f'{provider_name} does not expose an Embeddings capability in the current '
+			            'provider module.' )
+		
+		st.stop( )
+	
+	embedding = get_embeddings_module( provider_name )
 	
 	# ------------------------------------------------------------------
 	# Session State Type Guards
@@ -13704,83 +14126,107 @@ elif mode == 'Embeddings':
 			if st.button( label='Create Embeddings', key='embedding_create', width='stretch' ):
 				with st.spinner( 'Creating embeddings…' ):
 					try:
-						if provider_name == 'Gemini':
-							apply_gemini_runtime_config( )
+						source_text = st.session_state.get( 'embeddings_input_text', '', )
 						
-						source_text = st.session_state.get( 'embeddings_input_text', '' )
-						model = st.session_state.get( 'embedding_model' )
-						
-						if not isinstance( model, str ) or not model.strip( ):
-							if provider_name == 'GPT':
-								model = 'text-embedding-3-small'
-							elif provider_name == 'Gemini':
-								model = 'gemini-embedding-001'
-							else:
-								model = ''
-						
-						encoding_format = st.session_state.get(
-							'embeddings_encoding_format' ) or 'float'
+						model_name = str(
+							st.session_state.get( 'embedding_model', '', ) or '' ).strip( )
 						
 						if not isinstance( source_text, str ) or not source_text.strip( ):
-							st.warning( 'Enter text before creating embeddings.' )
-						else:
-							normalized_text = normalize_text( source_text )
-							
-							chunk_size, overlap_amount = normalize_embedding_chunk_settings(
-								chunk_size=st.session_state.get( 'embeddings_chunk_size', 800 ),
-								overlap_amount=st.session_state.get( 'embeddings_overlap_amount',
-									0 ) )
-							
-							chunks = chunk_text_for_embeddings( text=normalized_text,
-								chunk_size=chunk_size, overlap_amount=overlap_amount )
-							
-							if len( chunks ) == 0:
-								st.warning( 'No valid chunks were produced from the input text.' )
-							else:
-								dimensions = normalize_embedding_dimensions( model=model,
-									dimensions=st.session_state.get( 'embeddings_dimensions', 0 ),
-									embedding=embedding )
-								
-								user_value = st.session_state.get( 'embeddings_user', '' )
-								user_value = user_value.strip( ) if isinstance( user_value,
-									str ) and user_value.strip( ) else None
-								
-								vectors = create_provider_embeddings( embedding=embedding,
-									chunks=chunks, model=model, encoding_format=encoding_format,
-									dimensions=dimensions, user_value=user_value )
-								
-								response_obj = (getattr( embedding, 'response', None ) or getattr(
-									embedding, 'content_response', None ) or getattr( embedding,
-									'embedding_response', None ))
-								
-								usage = extract_embedding_usage( response_obj )
-								
-								df_embeddings = build_embeddings_dataframe( chunks=chunks,
-									vectors=vectors, encoding_format=encoding_format )
-								
-								metrics = build_embedding_metrics( source_text=source_text,
-									normalized_text=normalized_text, chunks=chunks,
-									vectors=vectors,
-									usage=usage )
-								
-								st.session_state[ 'embeddings' ] = normalize_embedding_vectors(
-									vectors )
-								st.session_state[ 'embeddings_chunks' ] = chunks
-								st.session_state[ 'embeddings_df' ] = df_embeddings
-								st.session_state[ 'embedding_metrics' ] = metrics
-								st.session_state[ 'embedding_usage' ] = usage
-								
-								try:
-									update_token_counters( response_obj )
-								except Exception as e:
-									exception = Error( e )
-									exception.module = 'app'
-									exception.cause = 'app'
-									exception.method = 'module initialization'
-									Logger( ).write( exception )
-									pass
-								
-								st.success( 'Embeddings created successfully.' )
+							raise ValueError( 'Enter text before creating embeddings.' )
+						
+						if not model_name:
+							raise ValueError(
+								f'Select a {provider_name} embedding model before creating '
+								'embeddings.' )
+						
+						model_options = get_embedding_model_options( embedding )
+						valid_models = [ str( value ).strip( ) for value in model_options if
+							isinstance( value, str ) and value.strip( ) ]
+						
+						if valid_models and model_name not in valid_models:
+							raise ValueError(
+								f'The selected model is not available for {provider_name}: '
+								f'{model_name}.' )
+						
+						encoding_format = str( st.session_state.get( 'embeddings_encoding_format',
+							'float', ) or 'float' ).strip( )
+						
+						encoding_options = get_embedding_encoding_options( embedding )
+						if encoding_format not in encoding_options:
+							raise ValueError(
+								f'The {encoding_format} encoding format is not supported by '
+								f'{provider_name}.' )
+						
+						prepared_text = prepare_embedding_source_text( source_text )
+						if not prepared_text:
+							raise ValueError( 'The embedding text contains no usable content.' )
+						
+						chunk_size, overlap_amount = (normalize_embedding_chunk_settings(
+							chunk_size=st.session_state.get( 'embeddings_chunk_size', 800, ),
+							overlap_amount=st.session_state.get( 'embeddings_overlap_amount',
+								0, ), ))
+						
+						chunks = chunk_text_for_embeddings( text=prepared_text,
+							chunk_size=chunk_size, overlap_amount=overlap_amount, )
+						
+						if len( chunks ) == 0:
+							raise ValueError( 'No valid chunks were produced from the input '
+							                  'text.' )
+						
+						dimensions = normalize_embedding_dimensions( model=model_name,
+							dimensions=st.session_state.get( 'embeddings_dimensions', 0, ),
+							embedding=embedding, )
+						
+						user_value = st.session_state.get( 'embeddings_user', '', )
+						user_value = (user_value.strip( ) if isinstance( user_value,
+							str ) and user_value.strip( ) else None)
+						
+						vectors = create_provider_embeddings( embedding=embedding, chunks=chunks,
+							model=model_name, encoding_format=encoding_format,
+							dimensions=dimensions, user_value=user_value, )
+						
+						normalized_vectors = validate_embedding_result_count( chunks=chunks,
+							vectors=vectors, )
+						
+						response_obj = ( getattr( embedding, 'response', None ) or getattr(
+							embedding, 'content_response', None, ) or getattr(
+							embedding, 'embedding_response', None, ))
+						
+						usage = extract_embedding_usage( response_obj )
+						df_embeddings = build_embeddings_dataframe( chunks=chunks,
+							vectors=normalized_vectors, encoding_format=encoding_format, )
+						
+						if df_embeddings.empty:
+							raise ValueError( 'The provider returned embeddings that could not be '
+							                  'converted into output rows.' )
+						
+						metrics = build_embedding_metrics( source_text=source_text,
+							normalized_text=prepared_text, chunks=chunks,
+							vectors=normalized_vectors, usage=usage, )
+						
+						st.session_state[ 'embeddings' ] = normalized_vectors
+						st.session_state[ 'embeddings_chunks' ] = chunks
+						st.session_state[ 'embeddings_df' ] = df_embeddings
+						st.session_state[ 'embedding_metrics' ] = metrics
+						st.session_state[ 'embedding_usage' ] = usage
+						st.session_state[ 'embedding_texts' ] = list( chunks )
+						st.session_state[ 'embedding_documents' ] = (
+							df_embeddings.to_dict( orient='records' ))
+						
+						st.session_state[ 'embedding_provider' ] = provider_name
+						
+						try:
+							update_token_counters( response_obj )
+						except Exception as e:
+							exception = Error( e )
+							exception.module = 'app'
+							exception.cause = ('Embeddings Mode token accounting')
+							exception.method = ('Embeddings Mode provider execution')
+							Logger( ).write( exception )
+							pass
+						
+						st.success( f'Created {len( normalized_vectors ):,} embedding(s) with '
+							f'{provider_name}.' )
 					
 					except Exception as exc:
 						exception = Error( exc )
