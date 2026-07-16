@@ -8869,6 +8869,93 @@ def normalize_docqna_text( text: str ) -> str:
 	value = re.sub( r'\n{3,}', '\n\n', value )
 	return value.strip( )
 
+def normalize_grok_collection_search_result( result: Any,
+	collection_id: str, ) -> List[ Dict[ str, Any ] ]:
+	"""Normalize Grok collection search result.
+	
+	Purpose:
+	    Converts xAI Collection search output into ordered text-bearing source records suitable
+	    for grounded prompt construction, diagnostics, and source attribution.
+	
+	Args:
+	    result: Raw result returned by the Grok Vector Stores search operation.
+	    collection_id: xAI Collection identifier associated with the search result.
+	
+	Returns:
+	    List[Dict[str, Any]]: Normalized collection-search records containing source text and
+	        available metadata.
+	"""
+	normalized_rows: List[ Dict[ str, Any ] ] = [ ]
+	if result is None:
+		return normalized_rows
+	
+	if isinstance( result, str ):
+		text_value = result.strip( )
+		
+		if text_value:
+			normalized_rows.append(
+				{ 'type': 'xAI Collection Result', 'collection_id': collection_id,
+					'text': text_value, } )
+		
+		return normalized_rows
+	
+	if isinstance( result, dict ):
+		candidate_rows: Any = (result.get( 'results' ) or result.get( 'data' ) or result.get(
+			'matches' ) or result.get( 'items' ))
+		
+		if isinstance( candidate_rows, list ):
+			for candidate in candidate_rows:
+				if isinstance( candidate, dict ):
+					text_value = str(
+						candidate.get( 'text' ) or candidate.get( 'content' ) or candidate.get(
+							'chunk' ) or candidate.get( 'snippet' ) or '' ).strip( )
+					
+					if not text_value:
+						continue
+					
+					source_row = dict( candidate )
+					source_row[ 'type' ] = 'xAI Collection Result'
+					source_row[ 'collection_id' ] = collection_id
+					source_row[ 'text' ] = text_value
+					normalized_rows.append( source_row )
+				
+				elif isinstance( candidate, str ) and candidate.strip( ):
+					normalized_rows.append(
+						{ 'type': 'xAI Collection Result', 'collection_id': collection_id,
+							'text': candidate.strip( ), } )
+			
+			return normalized_rows
+		
+		text_value = str(
+			result.get( 'text' ) or result.get( 'content' ) or result.get( 'chunk' ) or result.get(
+				'snippet' ) or '' ).strip( )
+		
+		if text_value:
+			source_row = dict( result )
+			source_row[ 'type' ] = 'xAI Collection Result'
+			source_row[ 'collection_id' ] = collection_id
+			source_row[ 'text' ] = text_value
+			normalized_rows.append( source_row )
+		
+		return normalized_rows
+	
+	if isinstance( result, (list, tuple) ):
+		for candidate in result:
+			normalized_rows.extend( normalize_grok_collection_search_result( result=candidate,
+				collection_id=collection_id, ) )
+		
+		return normalized_rows
+	
+	text_value = str(
+		getattr( result, 'text', None ) or getattr( result, 'content', None ) or getattr( result,
+			'snippet', None ) or '' ).strip( )
+	
+	if text_value:
+		normalized_rows.append( { 'type': 'xAI Collection Result', 'collection_id': collection_id,
+			'text': text_value, } )
+	
+	return normalized_rows
+
 def chunk_docqna_text( text: str, chunk_size: int=900, chunk_overlap: int=150 ) -> List[ str ]:
 	"""Chunk docqna text.
 	
@@ -9410,133 +9497,703 @@ def run_docqna_query( query: str ) -> str:
 		Logger( ).write( exception )
 		raise exception
 
-def run_remote_query( query: str ) -> str:
-	"""Run remote query.
+def run_gpt_remote_docqna_query( query: str, source: str, chat: Any ) -> str:
+	"""Run GPT remote Document Q&A query.
 	
 	Purpose:
-	    Executes the run remote query workflow using the current provider, document, prompt,
-	    and session-state configuration.
+	    Executes Document Q&A against an OpenAI file or OpenAI Vector Store using the
+	    source-specific retrieval contract, selected GPT model, active System Instructions,
+	    response controls, source extraction, and token accounting.
 	
 	Args:
-	    query: Query string used by the database, retrieval, or provider workflow.
+	    query: Question or summarization instruction submitted against the remote source.
+	    source: Active GPT Document Q&A source selection.
+	    chat: Active GPT Chat capability.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	provider_name = get_provider_name( )
-	chat = get_chat_module( )
-	source = st.session_state.get( 'docqna_source', 'Local Upload' )
+	    str: GPT answer grounded in the selected OpenAI file or Vector Store.
 	
-	if provider_name == 'GPT':
-		selected_vector_store_ids = get_store_ids( 'GPT' )
-		manual_vector_store_ids = [ ]
+	Raises:
+	    Error: Raised when the source, model, remote resource, extracted content, or provider
+	        response is invalid.
+	"""
+	try:
+		question = str( query or '' ).strip( )
 		
-		if source == 'OpenAI Vector Store ID':
-			manual_vector_store_ids = split_text_values(
-				st.session_state.get( 'docqna_vector_store_id', '' ), delimiter=',' )
+		if not question:
+			raise ValueError( 'Enter a question about the active OpenAI document source.' )
 		
-		vector_store_ids = merge_unique_strings( primary=manual_vector_store_ids,
-			secondary=selected_vector_store_ids )
+		if source not in [ 'OpenAI File ID', 'OpenAI Vector Store ID', ]:
+			raise ValueError( f'Unsupported GPT Document Q&A source: {source}.' )
+		
+		model_name = str( st.session_state.get( 'docqna_model', '' ) or '' ).strip( )
+		
+		if not model_name:
+			raise ValueError(
+				'Select a GPT Document Q&A model before asking a remote-source question.' )
+		
+		model_options = get_text_option_list( chat, 'model_options', [ ], )
+		
+		valid_models = [ str( model ).strip( ) for model in model_options if
+			isinstance( model, str ) and model.strip( ) ]
+		
+		if valid_models and model_name not in valid_models:
+			raise ValueError(
+				f'The selected GPT Document Q&A model is not available: {model_name}.' )
+		
+		max_tokens_value = int( st.session_state.get( 'docqna_max_tokens', 0 ) or 0 )
+		
+		temperature_value = float( st.session_state.get( 'docqna_temperature', 0.0 ) or 0.0 )
+		
+		top_percent_value = float( st.session_state.get( 'docqna_top_percent', 0.0 ) or 0.0 )
+		
+		frequency_penalty_value = float(
+			st.session_state.get( 'docqna_frequency_penalty', 0.0, ) or 0.0 )
+		
+		presence_penalty_value = float(
+			st.session_state.get( 'docqna_presence_penalty', 0.0, ) or 0.0 )
+		
+		instruction_value = str(
+			st.session_state.get( 'docqna_system_instructions', '', ) or '' ).strip( )
+		
+		response_format_value = str(
+			st.session_state.get( 'docqna_response_format', '', ) or '' ).strip( )
+		
+		reasoning_value = str( st.session_state.get( 'docqna_reasoning', '', ) or '' ).strip( )
+		
+		tool_choice_value = str( st.session_state.get( 'docqna_tool_choice', '', ) or '' ).strip( )
+		
+		store_enabled = bool( st.session_state.get( 'docqna_store', False ) )
+		
+		background_enabled = bool( st.session_state.get( 'docqna_background', False ) )
+		
+		stream_enabled = bool( st.session_state.get( 'docqna_stream', False ) )
+		
+		if stream_enabled and background_enabled:
+			raise ValueError(
+				'GPT Document Q&A streaming and background execution cannot be enabled '
+				'at the same time.' )
 		
 		tools: List[ Dict[ str, Any ] ] = [ ]
+		include_values: List[ str ] = [ ]
+		vector_store_ids: List[ str ] = [ ]
+		request_prompt = question
+		source_rows: List[ Dict[ str, Any ] ] = [ ]
 		
-		if len( vector_store_ids ) > 0:
-			tools.append( { 'type': 'file_search', 'vector_store_ids': vector_store_ids, } )
+		if source == 'OpenAI File ID':
+			file_id = str( st.session_state.get( 'docqna_file_id', '' ) or '' ).strip( )
+			
+			if not file_id:
+				raise ValueError( 'Enter an OpenAI file ID before asking a file-based question.' )
+			
+			if not provider_supports( 'Files', 'GPT' ):
+				raise AttributeError(
+					'GPT does not expose the Files capability required for OpenAI File ID '
+					'Document Q&A.' )
+			
+			files = get_files_module( 'GPT' )
+			file_object = retrieve_provider_file( files=files, file_id=file_id, )
+			
+			file_content = extract_file_content( files=files, file_id=file_id, )
+			
+			if not isinstance( file_content, str ) or not file_content.strip( ):
+				raise ValueError(
+					f'No readable content could be extracted from OpenAI file `{file_id}`.' )
+			
+			file_name = str( file_object.get( 'filename', '' ) or file_object.get( 'name',
+				'' ) or file_id ).strip( )
+			
+			content_limit = 120000
+			bounded_content = file_content.strip( )[ :content_limit ]
+			
+			request_prompt = (
+				'Use only the following OpenAI file content to answer the user request.\n'
+				'Do not use unsupported assumptions or external information.\n'
+				'When the file does not contain the answer, state that limitation clearly.\n\n'
+				f'File ID: {file_id}\n'
+				f'File Name: {file_name}\n\n'
+				f'File Content:\n{bounded_content}\n\n'
+				f'User Request:\n{question}')
+			
+			source_rows = [ { 'type': 'OpenAI File', 'file_id': file_id, 'filename': file_name,
+				'characters_used': len( bounded_content ),
+				'characters_available': len( file_content ),
+				'truncated': len( file_content ) > len( bounded_content ), }, ]
 		
-		if source == 'OpenAI File ID' and not st.session_state.get( 'docqna_file_id' ):
-			return 'Enter an OpenAI file ID before asking a file-based question.'
+		else:
+			manual_vector_store_ids = split_text_values(
+				st.session_state.get( 'docqna_vector_store_id', '', ), delimiter=',', )
+			
+			selected_vector_store_ids = get_store_ids( 'GPT' )
+			
+			vector_store_ids = merge_unique_strings( primary=manual_vector_store_ids,
+				secondary=selected_vector_store_ids, )
+			
+			if len( vector_store_ids ) == 0:
+				raise ValueError(
+					'Enter or select at least one OpenAI Vector Store ID before asking a '
+					'vector-store question.' )
+			
+			tools = [ { 'type': 'file_search', 'vector_store_ids': vector_store_ids, }, ]
+			
+			include_values = [ 'file_search_call.results', ]
+			
+			source_rows = [ { 'type': 'OpenAI Vector Store', 'vector_store_id': vector_store_id, }
+				for vector_store_id in vector_store_ids ]
 		
-		if source == 'OpenAI Vector Store ID' and len( vector_store_ids ) == 0:
-			return ('Enter or select an OpenAI vector store ID before asking a vector-store '
-			        'question.')
+		result = chat.generate_text( prompt=request_prompt, model=model_name,
+			temperature=temperature_value, top_p=top_percent_value,
+			frequency=frequency_penalty_value, presence=presence_penalty_value,
+			max_tokens=max_tokens_value if max_tokens_value > 0 else None, store=store_enabled,
+			stream=stream_enabled, instruct=instruction_value or None,
+			background=background_enabled, reasoning=reasoning_value or None,
+			format=response_format_value or 'text', tools=tools, include=include_values,
+			tool_choice=tool_choice_value or None,
+			is_parallel=bool( st.session_state.get( 'docqna_parallel_tools', False, ) ), )
 		
-		result = chat.generate_text( prompt=query,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'gpt-5-nano',
-			temperature=st.session_state.get( 'docqna_temperature' ),
-			top_p=st.session_state.get( 'docqna_top_percent' ),
-			frequency=st.session_state.get( 'docqna_frequency_penalty' ),
-			presence=st.session_state.get( 'docqna_presence_penalty' ),
-			max_tokens=st.session_state.get( 'docqna_max_tokens' ),
-			store=st.session_state.get( 'docqna_store' ), stream=False,
-			instruct=st.session_state.get( 'docqna_system_instructions' ), tools=tools,
-			include=[ 'file_search_call.results' ] if len( tools ) > 0 else [ ],
-			vector_store_ids=vector_store_ids )
+		response_obj = (
+				getattr( chat, 'response', None ) or getattr( chat, 'content_response', None ))
 		
-		response_obj = getattr( chat, 'response', None )
-		st.session_state[ 'docqna_last_sources' ] = extract_sources( response_obj )
-		st.session_state[ 'last_sources' ] = st.session_state[ 'docqna_last_sources' ]
+		if isinstance( result, str ):
+			answer = result.strip( )
+		else:
+			answer = str( getattr( result, 'output_text', None ) or getattr( result, 'text',
+				None ) or extract_response_text( result ) or '' ).strip( )
 		
-		return str( result or '' ).strip( )
+		if not answer and response_obj is not None:
+			answer = str(
+				getattr( response_obj, 'output_text', None ) or getattr( response_obj, 'text',
+					None ) or extract_response_text( response_obj ) or '' ).strip( )
+		
+		if background_enabled and not answer:
+			response_id = str( getattr( response_obj, 'id', '' ) or '' ).strip( )
+			
+			response_status = str( getattr( response_obj, 'status', '' ) or '' ).strip( )
+			
+			if response_id:
+				answer = ('Background Document Q&A request submitted successfully.\n\n'
+				          f'**Response ID:** `{response_id}`')
+				
+				if response_status:
+					answer += f'\n\n**Status:** {response_status}'
+		
+		if not answer:
+			raise ValueError( 'GPT returned no remote Document Q&A answer.' )
+		
+		provider_sources = extract_sources( response_obj )
+		
+		if isinstance( provider_sources, list ):
+			for provider_source in provider_sources:
+				if (isinstance( provider_source, dict ) and provider_source not in source_rows):
+					source_rows.append( provider_source )
+		
+		st.session_state[ 'docqna_context' ] = request_prompt
+		st.session_state[ 'docqna_last_hits' ] = [ ]
+		st.session_state[ 'docqna_last_sources' ] = source_rows
+		st.session_state[ 'docqna_last_answer' ] = answer
+		st.session_state[ 'last_sources' ] = source_rows
+		st.session_state[ 'last_answer' ] = answer
+		
+		try:
+			update_token_counters( response_obj )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'run_gpt_remote_docqna_query'
+			exception.method = ('run_gpt_remote_docqna_query( query: str, source: str, '
+			                    'chat: Any ) -> str')
+			Logger( ).write( exception )
+			pass
+		
+		return answer
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_gpt_remote_docqna_query'
+		exception.method = ('run_gpt_remote_docqna_query( query: str, source: str, '
+		                    'chat: Any ) -> str')
+		Logger( ).write( exception )
+		raise exception
+
+def run_gemini_remote_docqna_query( query: str, source: str, chat: Any, ) -> str:
+	"""Run Gemini remote Document Q&A query.
 	
-	if provider_name == 'Gemini':
+	Purpose:
+	    Executes Document Q&A against one or more Gemini File Search Stores using validated
+	    provider resources, the selected Gemini model, active System Instructions, response
+	    controls, citation extraction, answer normalization, and token accounting.
+	
+	Args:
+	    query: Question or summarization instruction submitted against the remote source.
+	    source: Active Gemini Document Q&A source selection.
+	    chat: Active Gemini Chat capability.
+	
+	Returns:
+	    str: Gemini answer grounded in the selected File Search Stores.
+	
+	Raises:
+	    Error: Raised when the source, backend, store names, model, or provider response is
+	        invalid.
+	"""
+	try:
+		question = str( query or '' ).strip( )
+		if not question:
+			raise ValueError( 'Enter a question about the active Gemini document source.' )
+		
+		if source != 'Gemini File Search Store':
+			raise ValueError( f'Unsupported Gemini Document Q&A source: {source}.' )
+		
+		if chat is None:
+			raise AttributeError(
+				'Gemini does not expose the Chat capability required by Document Q&A.' )
+		
 		apply_gemini_runtime_config( )
+		backend_name = str( get_gemini_vector_backend( ) or '' ).strip( )
+		if backend_name == 'Cloud Buckets':
+			raise ValueError(
+				'The selected Gemini backend is Cloud Buckets. Cloud Buckets contain storage '
+				'objects and are not Gemini File Search Store resources. Select the Gemini '
+				'File Search Stores backend or use Local Upload after downloading the object.' )
 		
-		manual_store_names = [ ]
-		
-		if source == 'Gemini File Search Store':
-			manual_store_names = split_text_values(
-				st.session_state.get( 'docqna_file_search_store_names_input', '' ), delimiter=',' )
+		manual_store_names = split_text_values(
+			st.session_state.get( 'docqna_file_search_store_names_input', '', ), delimiter=',', )
 		
 		selected_store_names = get_active_gemini_file_search_store_names( 'Gemini' )
-		
 		store_names = merge_unique_strings( primary=manual_store_names,
-			secondary=selected_store_names )
+			secondary=selected_store_names, )
 		
 		st.session_state[ 'docqna_file_search_store_names' ] = store_names
+		if len( store_names ) == 0:
+			raise ValueError(
+				'Enter or select at least one Gemini File Search Store resource name before '
+				'asking a remote-source question.' )
 		
-		if get_gemini_vector_backend( ) == 'Cloud Buckets' and len( store_names ) == 0:
-			return ('The selected Gemini backend is Cloud Buckets. Cloud Buckets are storage '
-			        'objects, not Gemini File Search Store resources. Select a Gemini File '
-			        'Search Store backend or use Local Upload after downloading/loading the '
-			        'object.')
+		model_name = str( st.session_state.get( 'docqna_model', '' ) or '' ).strip( )
+		if not model_name:
+			raise ValueError(
+				'Select a Gemini Document Q&A model before asking a remote-source question.' )
 		
-		if source == 'Gemini File Search Store' and len( store_names ) == 0:
-			return ('Enter or select at least one Gemini File Search Store resource name before '
-			        'asking.')
+		model_options = get_text_option_list( chat, 'model_options', [ ], )
+		valid_models = [ str( model ).strip( ) for model in model_options if
+			isinstance( model, str ) and model.strip( ) ]
 		
-		result = chat.generate_text( prompt=query,
-			model=st.session_state.get( 'docqna_model' ) or st.session_state.get(
-				'text_model' ) or 'gemini-2.5-flash-lite',
-			temperature=st.session_state.get( 'docqna_temperature' ),
-			top_p=st.session_state.get( 'docqna_top_percent' ),
-			top_k=st.session_state.get( 'docqna_top_k' ),
-			max_tokens=st.session_state.get( 'docqna_max_tokens' ),
-			instruct=st.session_state.get( 'docqna_system_instructions' ),
-			file_search_store_names=store_names, stream=False )
+		if valid_models and model_name not in valid_models:
+			raise ValueError(
+				f'The selected Gemini Document Q&A model is not available: {model_name}.' )
 		
-		return str( result or '' ).strip( )
+		temperature_value = float( st.session_state.get( 'docqna_temperature', 0.0, ) or 0.0 )
+		top_percent_value = float( st.session_state.get( 'docqna_top_percent', 0.0, ) or 0.0 )
+		max_tokens_value = int( st.session_state.get( 'docqna_max_tokens', 0, ) or 0 )
+		
+		instruction_value = str(
+			st.session_state.get( 'docqna_system_instructions', '', ) or '' ).strip( )
+		
+		response_format_value = str(
+			st.session_state.get( 'docqna_response_format', '', ) or '' ).strip( )
+		
+		if bool( st.session_state.get( 'docqna_background', False, ) ):
+			raise ValueError(
+				'Background execution is not supported by the Gemini File Search Store '
+				'Document Q&A path.' )
+		
+		if bool( st.session_state.get( 'docqna_stream', False, ) ):
+			raise ValueError( 'Streaming is not supported by the current Gemini File Search Store '
+			                  'Document Q&A path. Disable Stream before submitting the request.' )
+		
+		request_prompt = ('Answer the user request using the selected Gemini File Search Stores.\n'
+		                  'Ground factual claims in the retrieved store content.\n'
+		                  'Do not invent details that are absent from the retrieved content.\n'
+		                  'When the stores do not contain enough information, state that '
+		                  'limitation '
+		                  'clearly.\n\n'
+		                  f'User Request:\n{question}')
+		
+		result = chat.generate_text( prompt=request_prompt, model=model_name,
+			temperature=temperature_value, top_p=top_percent_value,
+			max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+			instruct=instruction_value or None, response_format=response_format_value or None,
+			file_search_store_names=store_names, stream=False, )
+		
+		response_obj = (getattr( chat, 'response', None ) or getattr( chat, 'content_response',
+			None ) or getattr( chat, 'generate_response', None ))
+		
+		if isinstance( result, str ):
+			answer = result.strip( )
+		else:
+			answer = str( getattr( result, 'output_text', None ) or getattr( result, 'text',
+				None ) or extract_response_text( result ) or '' ).strip( )
+		
+		if not answer and response_obj is not None:
+			answer = str(
+				getattr( response_obj, 'output_text', None ) or getattr( response_obj, 'text',
+					None ) or extract_response_text( response_obj ) or '' ).strip( )
+		
+		if not answer:
+			raise ValueError( 'Gemini returned no remote Document Q&A answer.' )
+		
+		source_rows: List[ Dict[ str, Any ] ] = [
+			{ 'type': 'Gemini File Search Store', 'store_name': store_name, } for store_name in
+			store_names ]
+		
+		provider_sources = extract_sources( response_obj )
+		if isinstance( provider_sources, list ):
+			for provider_source in provider_sources:
+				if not isinstance( provider_source, dict ):
+					continue
+				
+				if provider_source not in source_rows:
+					source_rows.append( provider_source )
+		
+		grounding_metadata = getattr( response_obj, 'grounding_metadata', None, )
+		if isinstance( grounding_metadata, dict ):
+			grounding_chunks = grounding_metadata.get( 'grounding_chunks', [ ], )
+			
+			if isinstance( grounding_chunks, list ):
+				for chunk_index, grounding_chunk in enumerate( grounding_chunks ):
+					if not isinstance( grounding_chunk, dict ):
+						continue
+					
+					source_row = { 'type': 'Gemini Grounding Chunk', 'chunk_index': chunk_index,
+						**grounding_chunk, }
+					
+					if source_row not in source_rows:
+						source_rows.append( source_row )
+		
+		st.session_state[ 'docqna_context' ] = request_prompt
+		st.session_state[ 'docqna_last_hits' ] = [ ]
+		st.session_state[ 'docqna_last_sources' ] = source_rows
+		st.session_state[ 'docqna_last_answer' ] = answer
+		st.session_state[ 'last_sources' ] = source_rows
+		st.session_state[ 'last_answer' ] = answer
+		
+		try:
+			update_token_counters( response_obj )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'run_gemini_remote_docqna_query'
+			exception.method = ('run_gemini_remote_docqna_query( query: str, source: str, '
+			                    'chat: Any ) -> str')
+			Logger( ).write( exception )
+			pass
+		
+		return answer
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_gemini_remote_docqna_query'
+		exception.method = ('run_gemini_remote_docqna_query( query: str, source: str, '
+		                    'chat: Any ) -> str')
+		Logger( ).write( exception )
+		raise exception
 	
-	if provider_name == 'Grok':
+def run_grok_remote_docqna_query( query: str, source: str, chat: Any, ) -> str:
+	"""Run Grok remote Document Q&A query.
+	
+	Purpose:
+	    Searches every selected xAI Collection, constructs a bounded collection-grounded
+	    context, executes the selected Grok model, and persists answer, source, context, and
+	    token-usage state.
+	
+	Args:
+	    query: Question or summarization instruction submitted against the selected collections.
+	    source: Active Grok Document Q&A source selection.
+	    chat: Active Grok Chat capability.
+	
+	Returns:
+	    str: Grok answer grounded in the selected xAI Collections.
+	
+	Raises:
+	    Error: Raised when collection selection, retrieval, model configuration, or provider
+	        execution is invalid.
+	"""
+	try:
+		question = str( query or '' ).strip( )
+		
+		if not question:
+			raise ValueError( 'Enter a question about the active xAI Collection source.' )
+		
+		if source != 'xAI Collection':
+			raise ValueError( f'Unsupported Grok Document Q&A source: {source}.' )
+		
+		if chat is None:
+			raise AttributeError(
+				'Grok does not expose the Chat capability required by Document Q&A.' )
+		
+		if not provider_supports( 'VectorStores', 'Grok' ):
+			raise AttributeError( 'Grok does not expose the Vector Stores capability required for '
+			                      'xAI Collection Document Q&A.' )
+		
 		collection_ids = get_active_grok_collection_ids( 'Grok' )
+		collection_ids = merge_unique_strings( primary=collection_ids, secondary=[ ], )
 		
 		if len( collection_ids ) == 0:
-			return ('Select an xAI Collection in Vector Stores mode before using Grok remote '
-			        'Document Q&A.')
+			raise ValueError(
+				'Select at least one xAI Collection in Vector Stores Mode before using '
+				'Grok remote Document Q&A.' )
+		
+		model_name = str( st.session_state.get( 'docqna_model', '' ) or '' ).strip( )
+		
+		if not model_name:
+			raise ValueError(
+				'Select a Grok Document Q&A model before asking a collection-based question.' )
+		
+		model_options = get_text_option_list( chat, 'model_options', [ ], )
+		
+		valid_models = [ str( model ).strip( ) for model in model_options if
+			isinstance( model, str ) and model.strip( ) ]
+		
+		if valid_models and model_name not in valid_models:
+			raise ValueError(
+				f'The selected Grok Document Q&A model is not available: {model_name}.' )
+		
+		if bool( st.session_state.get( 'docqna_stream', False, ) ):
+			raise ValueError( 'Streaming is not supported by the current Grok xAI Collection '
+			                  'Document Q&A path. Disable Stream before submitting the request.' )
+		
+		if bool( st.session_state.get( 'docqna_background', False, ) ):
+			raise ValueError(
+				'Background execution is not supported by the current Grok xAI Collection '
+				'Document Q&A path. Disable Background before submitting the request.' )
 		
 		vectorstores = get_vectorstores_module( 'Grok' )
-		result = vectorstores.search( prompt=query, store_id=collection_ids[ 0 ] )
+		if vectorstores is None:
+			raise AttributeError( 'The Grok Vector Stores capability could not be initialized.' )
 		
-		if isinstance( result, str ) and result.strip( ):
-			return result.strip( )
+		retrieved_rows: List[ Dict[ str, Any ] ] = [ ]
+		search_failures: List[ Dict[ str, str ] ] = [ ]
 		
-		if isinstance( result, dict ):
-			return json.dumps( result, indent=2, default=str )
+		for collection_id in collection_ids:
+			try:
+				search_result = vectorstores.search( prompt=question, store_id=collection_id, )
+				
+				collection_rows = normalize_grok_collection_search_result( result=search_result,
+					collection_id=collection_id, )
+				
+				retrieved_rows.extend( collection_rows )
+			except Exception as e:
+				search_failures.append( { 'collection_id': collection_id, 'error': str( e ), } )
 		
-		return str( result or '' ).strip( )
+		if len( retrieved_rows ) == 0:
+			if search_failures:
+				failure_details = '; '.join(
+					f"{failure[ 'collection_id' ]}: {failure[ 'error' ]}" for failure in
+					search_failures )
+				
+				raise ValueError( 'No xAI Collection content was retrieved. '
+				                  f'Collection search failures: {failure_details}' )
+			
+			raise ValueError(
+				'No relevant content was returned from the selected xAI Collections.' )
+		
+		top_k = int( st.session_state.get( 'docqna_top_k', 6 ) or 6 )
+		
+		if top_k < 1:
+			top_k = 1
+		
+		selected_rows = retrieved_rows[ :top_k ]
+		
+		context_sections: List[ str ] = [ ]
+		source_rows: List[ Dict[ str, Any ] ] = [ ]
+		
+		for index, row in enumerate( selected_rows, start=1 ):
+			text_value = str( row.get( 'text', '' ) or '' ).strip( )
+			
+			if not text_value:
+				continue
+			
+			collection_id = str( row.get( 'collection_id', '' ) or '' ).strip( )
+			
+			context_sections.append( (f'[Collection Result {index}]\n'
+			                          f'Collection ID: {collection_id}\n'
+			                          f'{text_value}') )
+			
+			source_row = { key: value for key, value in row.items( ) if key != 'text' }
+			
+			source_row[ 'result_index' ] = index
+			source_row[ 'excerpt' ] = text_value[ :500 ]
+			source_rows.append( source_row )
+		
+		if len( context_sections ) == 0:
+			raise ValueError( 'The selected xAI Collection results contain no usable text.' )
+		
+		context_value = '\n\n'.join( context_sections )
+		context_limit = 120000
+		bounded_context = context_value[ :context_limit ]
+		
+		request_prompt = (
+			'Answer the user request using only the xAI Collection search results below.\n'
+			'Ground each material conclusion in the supplied collection content.\n'
+			'Do not invent information or rely on unsupported external assumptions.\n'
+			'When the collection results do not contain enough information, state that '
+			'limitation clearly.\n\n'
+			f'xAI Collection Results:\n{bounded_context}\n\n'
+			f'User Request:\n{question}')
+		
+		temperature_value = float( st.session_state.get( 'docqna_temperature', 0.0, ) or 0.0 )
+		
+		top_percent_value = float( st.session_state.get( 'docqna_top_percent', 0.0, ) or 0.0 )
+		
+		frequency_penalty_value = float(
+			st.session_state.get( 'docqna_frequency_penalty', 0.0, ) or 0.0 )
+		
+		presence_penalty_value = float(
+			st.session_state.get( 'docqna_presence_penalty', 0.0, ) or 0.0 )
+		
+		max_tokens_value = int( st.session_state.get( 'docqna_max_tokens', 0, ) or 0 )
+		
+		instruction_value = str(
+			st.session_state.get( 'docqna_system_instructions', '', ) or '' ).strip( )
+		
+		reasoning_value = str( st.session_state.get( 'docqna_reasoning', '', ) or '' ).strip( )
+		
+		response_format_value = str(
+			st.session_state.get( 'docqna_response_format', '', ) or '' ).strip( )
+		
+		result = chat.generate_text( prompt=request_prompt, model=model_name,
+			temperature=temperature_value, top_p=top_percent_value,
+			frequency=frequency_penalty_value, presence=presence_penalty_value,
+			max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+			store=bool( st.session_state.get( 'docqna_store', False, ) ), stream=False,
+			instruct=instruction_value or None, reasoning=reasoning_value or None,
+			response_format=response_format_value or 'text', )
+		
+		response_obj = (
+				getattr( chat, 'response', None ) or getattr( chat, 'content_response', None ))
+		
+		if isinstance( result, str ):
+			answer = result.strip( )
+		else:
+			answer = str( getattr( result, 'output_text', None ) or getattr( result, 'text',
+				None ) or extract_response_text( result ) or '' ).strip( )
+		
+		if not answer and response_obj is not None:
+			answer = str(
+				getattr( response_obj, 'output_text', None ) or getattr( response_obj, 'text',
+					None ) or extract_response_text( response_obj ) or '' ).strip( )
+		
+		if not answer:
+			raise ValueError( 'Grok returned no xAI Collection Document Q&A answer.' )
+		
+		provider_sources = extract_sources( response_obj )
+		
+		if isinstance( provider_sources, list ):
+			for provider_source in provider_sources:
+				if (isinstance( provider_source, dict ) and provider_source not in source_rows):
+					source_rows.append( provider_source )
+		
+		if search_failures:
+			source_rows.extend(
+				{ 'type': 'xAI Collection Search Failure', **failure, } for failure in
+				search_failures )
+		
+		st.session_state[ 'docqna_context' ] = request_prompt
+		st.session_state[ 'docqna_last_hits' ] = selected_rows
+		st.session_state[ 'docqna_last_sources' ] = source_rows
+		st.session_state[ 'docqna_last_answer' ] = answer
+		st.session_state[ 'last_sources' ] = source_rows
+		st.session_state[ 'last_answer' ] = answer
+		
+		try:
+			update_token_counters( response_obj )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'run_grok_remote_docqna_query'
+			exception.method = ('run_grok_remote_docqna_query( query: str, source: str, '
+			                    'chat: Any ) -> str')
+			Logger( ).write( exception )
+			pass
+		
+		return answer
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_grok_remote_docqna_query'
+		exception.method = ('run_grok_remote_docqna_query( query: str, source: str, '
+		                    'chat: Any ) -> str')
+		Logger( ).write( exception )
+		raise exception
+
+def run_remote_query( query: str ) -> str:
+	"""Run remote Document Q&A query.
 	
-	return run_docqna_query( query )
+	Purpose:
+	    Routes a remote Document Q&A request to the provider-specific OpenAI, Gemini, or xAI
+	    source workflow after validating the active provider, source, and Chat capability.
+	
+	Args:
+	    query: Question or summarization instruction submitted against the active remote source.
+	
+	Returns:
+	    str: Answer returned by the provider-specific remote Document Q&A workflow.
+	
+	Raises:
+	    Error: Raised when the provider, source, Chat capability, or remote execution path is
+	        invalid.
+	"""
+	try:
+		question = str( query or '' ).strip( )
+		if not question:
+			raise ValueError( 'Enter a question about the active remote document source.' )
+		
+		provider_name = get_provider_name( )
+		source = str(
+			st.session_state.get( 'docqna_source', 'Local Upload', ) or 'Local Upload' ).strip( )
+		
+		if source == 'Local Upload':
+			raise ValueError(
+				'Local Upload must be routed through the local Document Q&A workflow.' )
+		
+		valid_sources = get_docqna_sources( )
+		if source not in valid_sources:
+			raise ValueError( f'The source `{source}` is not available for {provider_name}.' )
+		
+		if not provider_supports( 'Chat', provider_name ):
+			raise AttributeError(
+				f'{provider_name} does not expose the Chat capability required by '
+				'remote Document Q&A.' )
+		
+		chat = get_chat_module( provider_name )
+		if provider_name == 'GPT':
+			return run_gpt_remote_docqna_query( query=question, source=source, chat=chat, )
+		
+		if provider_name == 'Gemini':
+			return run_gemini_remote_docqna_query( query=question, source=source, chat=chat, )
+		
+		if provider_name == 'Grok':
+			return run_grok_remote_docqna_query( query=question, source=source, chat=chat, )
+		
+		raise ValueError( f'Unsupported remote Document Q&A provider: {provider_name}.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'run_remote_query'
+		exception.method = 'run_remote_query( query: str ) -> str'
+		Logger( ).write( exception )
+		raise exception
 
 def route_document_query( prompt: str ) -> str:
 	"""Route Document Q&A query.
 	
 	Purpose:
 	    Routes a question to the local retrieval workflow or the provider-specific remote source
-	    workflow using the current Document Q&A source selection.
+	    workflow using the current validated Document Q&A source selection.
 	
 	Args:
-	    prompt: Question or summarization instruction submitted against the active document
-	        source.
+	    prompt: Question or summarization instruction submitted against the active source.
 	
 	Returns:
 	    str: Answer returned by the active Document Q&A execution path.
@@ -9546,11 +10203,18 @@ def route_document_query( prompt: str ) -> str:
 	"""
 	try:
 		query = str( prompt or '' ).strip( )
+		
 		if not query:
-			raise ValueError( 'Enter a question about the active document source.' )
+			raise ValueError(
+				'Enter a question about the active document source.'
+			)
 		
 		source = str(
-			st.session_state.get( 'docqna_source', 'Local Upload', ) or 'Local Upload' ).strip( )
+			st.session_state.get(
+				'docqna_source',
+				'Local Upload',
+			) or 'Local Upload'
+		).strip( )
 		
 		if source == 'Local Upload':
 			st.session_state[ 'doc_source' ] = 'uploadlocal'
@@ -9618,31 +10282,6 @@ def render_hits( ) -> None:
 			df_sources = pd.DataFrame( sources )
 			st.data_editor( df_sources, use_container_width=True, hide_index=True )
 
-def get_docqna_avatar( provider_name: str ) -> str:
-	"""Get docqna avatar.
-	
-	Purpose:
-	    Retrieves get docqna avatar for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
-	
-	Args:
-	    provider_name: Provider name used to route the operation.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	if provider_name == 'GPT':
-		return getattr( cfg, 'GPT_AVATAR', getattr( cfg, 'BUDDY', '🧠' ) )
-	
-	if provider_name == 'Gemini':
-		return getattr( cfg, 'GEMINI_AVATAR', getattr( cfg, 'BUDDY', '🧠' ) )
-	
-	if provider_name == 'Grok':
-		return getattr( cfg, 'GROK_AVATAR', getattr( cfg, 'BUDDY', '🧠' ) )
-	
-	return getattr( cfg, 'BUDDY', '🧠' )
-
 # ======================================================================================
 # FILES MODE UTILITIES
 # ======================================================================================
@@ -9667,20 +10306,27 @@ def ensure_runtime_state( ) -> None:
 	ensure_key( 'files_system_instructions', '' )
 
 def clear_files_messages( ) -> None:
-	"""Clear files messages.
+	"""Clear Files Mode messages.
 	
 	Purpose:
-	    Maintains application runtime state for clear files messages by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears Files Mode conversation history without modifying provider files, operation
+	    results, analysis controls, file-management controls, or System Instructions.
+	
+	Returns:
+	    None: This function resets Files Mode message history.
 	"""
 	st.session_state[ 'files_messages' ] = [ ]
 
 def clear_files_outputs( ) -> None:
-	"""Clear files outputs.
+	"""Clear Files Mode outputs.
 	
 	Purpose:
-	    Maintains application runtime state for clear files outputs by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears file-list results, metadata, extracted content, deletion results, upload results,
+	    analysis output, operation state, usage state, and shared answer aliases without changing
+	    Files Mode controls or provider resources.
+	
+	Returns:
+	    None: This function resets Files Mode output state.
 	"""
 	st.session_state[ 'files_table_data' ] = [ ]
 	st.session_state[ 'files_metadata' ] = { }
@@ -9691,53 +10337,103 @@ def clear_files_outputs( ) -> None:
 	st.session_state[ 'files_last_list' ] = [ ]
 	st.session_state[ 'files_last_operation' ] = ''
 	st.session_state[ 'last_answer' ] = ''
+	st.session_state[ 'last_sources' ] = [ ]
+	st.session_state[ 'last_call_usage' ] = { 'prompt_tokens': 0, 'completion_tokens': 0,
+		'total_tokens': 0, }
+
+def reset_files_management_controls( ) -> None:
+	"""Reset Files Mode management controls.
+	
+	Purpose:
+	    Restores every control contained in the File Management expander to the initial values
+	    established by the Files Mode session-state contract.
+	
+	Returns:
+	    None: This function resets Files Mode file-management controls.
+	"""
+	st.session_state[ 'files_purpose' ] = ''
+	st.session_state[ 'files_filter_purpose' ] = ''
+	st.session_state[ 'files_id' ] = ''
+	st.session_state[ 'files_selected_option' ] = None
+
+def reset_files_analysis_controls( ) -> None:
+	"""Reset Files Mode analysis controls.
+	
+	Purpose:
+	    Restores every control contained in the Analysis Controls expander to the initial values
+	    established by the Files Mode session-state contract.
+	
+	Returns:
+	    None: This function resets Files Mode analysis controls.
+	"""
+	st.session_state[ 'files_model' ] = ''
+	st.session_state[ 'files_temperature' ] = 0.0
+	st.session_state[ 'files_top_percent' ] = 0.0
+	st.session_state[ 'files_frequency_penalty' ] = 0.0
+	st.session_state[ 'files_presence_penalty' ] = 0.0
+	st.session_state[ 'files_max_tokens' ] = 0
+	st.session_state[ 'files_response_format' ] = ''
+	st.session_state[ 'files_reasoning' ] = ''
+	st.session_state[ 'files_tool_choice' ] = ''
+	st.session_state[ 'files_store' ] = False
+	st.session_state[ 'files_stream' ] = False
+	st.session_state[ 'files_background' ] = False
+	st.session_state[ 'files_media_resolution' ] = ''
+	st.session_state[ 'files_stops' ] = [ ]
+	st.session_state[ 'files_include' ] = [ ]
+	st.session_state[ 'files_includes' ] = [ ]
+	st.session_state[ 'files_tools' ] = [ ]
+	st.session_state[ 'files_context' ] = [ ]
 
 def reset_files_controls( ) -> None:
-	"""Reset files controls.
+	"""Reset Files Mode controls.
 	
 	Purpose:
-	    Maintains application runtime state for reset files controls by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Restores File Management and Analysis Controls to their initial values without deleting
+	    provider files, clearing conversation history, or changing System Instructions.
+	
+	Returns:
+	    None: This function resets all Files Mode controls.
 	"""
-	for key in [ 'files_model', 'files_purpose', 'files_filter_purpose', 'files_id', 'files_url',
-		'files_type', 'files_table', 'files_temperature', 'files_top_percent', 'files_max_tokens',
-		'files_response_format', 'files_reasoning', 'files_tool_choice', 'files_store',
-		'files_stream', 'files_background' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	reset_files_management_controls( )
+	reset_files_analysis_controls( )
 
 def reset_files_all( ) -> None:
-	"""Reset files all.
+	"""Reset all Files Mode state.
 	
 	Purpose:
-	    Maintains application runtime state for reset files all by initializing, clearing, or
-	    restoring the session values used by the active Streamlit workflow.
+	    Restores Files Mode controls and clears operation results, analysis outputs, messages,
+	    and System Instructions without deleting provider-managed files.
+	
+	Returns:
+	    None: This function resets all Files Mode application state.
 	"""
 	reset_files_controls( )
 	clear_files_outputs( )
 	clear_files_messages( )
+	clear_files_instructions( )
 
 def clear_files_instructions( ) -> None:
-	"""Clear files instructions.
+	"""Clear Files Mode instructions.
 	
 	Purpose:
-	    Clears the Files Mode prompt category, selected prompt identifier, and editable System
-	    Instructions while preserving uploaded files, file metadata, operation results, provider
-	    settings, messages, and instruction state associated with other application modes.
+	    Resets the Files Mode prompt category, selected prompt identifier, and editable System
+	    Instructions without modifying provider files, operation results, analysis controls, or
+	    instruction state belonging to another application mode.
 	
 	Returns:
-	    None: This function resets the Files Mode instruction-template contract.
+	    None: This function resets the Files Mode instruction-template state.
 	"""
 	clear_instruction_template( category_key='files_instruction_category',
 		selector_key='files_instruction_prompt_id', instruction_key='files_system_instructions', )
 
 def change_files_instruction_category( ) -> None:
-	"""Change files instruction category.
+	"""Change Files Mode instruction category.
 	
 	Purpose:
 	    Clears the selected Files Mode prompt identifier when the active prompt category changes
 	    so a template from the previous category cannot remain selected under an incompatible
-	    option collection.
+	    prompt collection.
 	
 	Returns:
 	    None: This function resets the Files Mode prompt selection.
@@ -9745,36 +10441,66 @@ def change_files_instruction_category( ) -> None:
 	st.session_state[ 'files_instruction_prompt_id' ] = None
 
 def load_files_instruction( ) -> None:
-	"""Load files instruction.
+	"""Load Files Mode instruction.
 	
 	Purpose:
 	    Loads the Files Mode instruction template identified by the selected Prompts table
-	    primary key into the editable Files Mode System Instructions state.
+	    integer primary key into the editable Files Mode System Instructions state.
 	
 	Returns:
-	    None: This function updates the Files Mode System Instructions state.
+	    None: This function updates Files Mode System Instructions.
+	
+	Raises:
+	    Error: Raised when the selected prompt cannot be retrieved or loaded.
 	"""
-	load_instruction_template( selector_key='files_instruction_prompt_id',
-		instruction_key='files_system_instructions', )
+	try:
+		load_instruction_template( selector_key='files_instruction_prompt_id',
+			instruction_key='files_system_instructions', )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'load_files_instruction'
+		exception.method = 'load_files_instruction( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def convert_files_instructions( ) -> None:
-	"""Convert files instructions.
+	"""Convert Files Mode instructions.
 	
 	Purpose:
-	    Transforms convert files instructions inputs into a normalized representation used by
-	    provider calls, document retrieval, data management, or UI rendering.
+	    Converts the editable Files Mode System Instructions between supported XML-like section
+	    markup and Markdown heading markup.
+	
+	Returns:
+	    None: This function updates Files Mode System Instructions.
+	
+	Raises:
+	    Error: Raised when instruction conversion fails.
 	"""
-	text_value = st.session_state.get( 'files_system_instructions', '' )
-	if not isinstance( text_value, str ) or not text_value.strip( ):
-		return
-	
-	source = text_value.strip( )
-	if cfg.XML_BLOCK_PATTERN.search( source ):
-		converted = convert_xml( source )
-	else:
-		converted = convert_markdown( source )
-	
-	st.session_state[ 'files_system_instructions' ] = converted
+	try:
+		text_value = st.session_state.get( 'files_system_instructions', '', )
+		
+		if not isinstance( text_value, str ) or not text_value.strip( ):
+			return
+		
+		source = text_value.strip( )
+		
+		if cfg.XML_BLOCK_PATTERN.search( source ):
+			converted = convert_xml( source )
+		else:
+			converted = convert_markdown( source )
+		
+		st.session_state[ 'files_system_instructions' ] = converted
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'convert_files_instructions'
+		exception.method = 'convert_files_instructions( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def clear_stores_instructions( ) -> None:
 	"""Clear vector-store instructions.
@@ -11436,193 +12162,6 @@ def embedding_model_options( embed: Any ) -> Any:
 	if _provider( ) == 'Gemini':
 		return _safe( 'gemini', 'embedding_model_options', embed.model_options )
 	return embed.model_options
-
-# -------------DOC Q&A ----------------------
-def route_document_query( prompt: str ) -> str:
-	"""Route document query.
-	
-	Purpose:
-	    Executes the route document query workflow using the current provider, document,
-	    prompt, and session-state configuration.
-	
-	Args:
-	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	source = st.session_state.get( 'doc_source' )
-	active_docs = st.session_state.get( 'docqna_active_docs', [ ] )
-	doc_bytes = st.session_state.get( 'doc_bytes', { } )
-	instructions = st.session_state.get( 'docqna_system_instructions' )
-	
-	if not source:
-		return 'No document source selected.'
-	
-	if not active_docs:
-		return 'No document selected.'
-	
-	# --------------------------------------------------
-	# LOCAL DOCUMENT → Chat (single or multi)
-	# --------------------------------------------------
-	if source == 'uploadlocal':
-		chat = get_chat_module( )
-		
-		# Single document
-		if len( active_docs ) == 1:
-			name = active_docs[ 0 ]
-			file_bytes = doc_bytes.get( name )
-			if not file_bytes:
-				return 'Document content not available.'
-			
-			text = extract_text_from_bytes( file_bytes )
-			full_prompt = f"""
-				{instructions}
-				
-				Use the following document to answer the question.
-				Be precise and cite relevant portions when possible.
-				
-				DOCUMENT:
-				{text}
-				
-				QUESTION:
-				{prompt}
-				"""
-			return chat.generate_text( prompt=full_prompt )
-		
-		# Multi-document injection
-		combined_text = ""
-		
-		for name in active_docs:
-			file_bytes = doc_bytes.get( name )
-			if not file_bytes:
-				continue
-			
-			text = extract_text_from_bytes( file_bytes )
-			combined_text += f"\n\n===== DOCUMENT: {name} =====\n\n{text}\n"
-		
-		if not combined_text.strip( ):
-			return 'No readable document content available.'
-		
-		full_prompt = f"""
-			{instructions}
-			
-			You are analyzing multiple documents.
-			
-			Use the content below to answer the question.
-			If multiple documents are relevant, compare them.
-			Cite document names when possible.
-			
-			DOCUMENT SET:
-			{combined_text}
-			
-			QUESTION:
-			{prompt}
-			"""
-		
-		return chat.generate_text( prompt=full_prompt )
-	
-	# --------------------------------------------------
-	# FILES API → Files class
-	# --------------------------------------------------
-	if source == "filesapi":
-		files = get_files_module( )
-		
-		# Single file search
-		if len( active_docs ) == 1:
-			return files.search( prompt, active_docs[ 0 ] )
-		
-		# Multi-file survey
-		return files.survey( prompt )
-	
-	# --------------------------------------------------
-	# VECTOR STORE → VectorStores class
-	# --------------------------------------------------
-	if source == 'vectorstore':
-		vectorstores = get_vectorstores_module( )
-		
-		# Single store
-		if len( active_docs ) == 1:
-			return vectorstores.search( prompt, active_docs[ 0 ] )
-		
-		# Multi-store aggregation
-		responses = [ ]
-		for store_id in active_docs:
-			result = vectorstores.search( prompt, store_id )
-			if result:
-				responses.append( result )
-		
-		if not responses:
-			return 'No results found across selected vector stores.'
-		
-		return "\n\n".join( responses )
-	
-	return 'Unsupported document source.'
-
-def extract_text_from_bytes( file_bytes: bytes ) -> str:
-	"""Extract text from bytes.
-	
-	Purpose:
-	    Transforms extract text from bytes inputs into a normalized representation used by
-	    provider calls, document retrieval, data management, or UI rendering.
-	
-	Args:
-	    file_bytes: File, upload, or path value used by the document or storage workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	try:
-		import fitz  # PyMuPDF
-		
-		doc = fitz.open( stream=file_bytes, filetype="pdf" )
-		text = ""
-		for page in doc:
-			text += page.get_text( )
-		return text.strip( )
-	
-	except Exception as e:
-		exception = Error( e )
-		exception.module = 'app'
-		exception.cause = 'extract_text_from_bytes'
-		exception.method = 'extract_text_from_bytes( file_bytes ) -> str'
-		Logger( ).write( exception )
-		try:
-			return file_bytes.decode( errors="ignore" )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'extract_text_from_bytes'
-			exception.method = 'extract_text_from_bytes( file_bytes ) -> str'
-			Logger( ).write( exception )
-			return ""
-
-def summarize_document( ) -> str:
-	"""Summarize document.
-	
-	Purpose:
-	    Executes the summarize document workflow using the current provider, document, prompt,
-	    and session-state configuration.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	doc_instructions = st.session_state.get( "doc_instructions", "" )
-	summary_prompt = """
-		Provide a clear, structured summary of this document.
-		Include:
-		- Purpose
-		- Key themes
-		- Major conclusions
-		- Important data points (if any)
-		- Policy implications (if applicable)
-		
-		Be precise and concise.
-		"""
-	if doc_instructions:
-		summary_prompt = f"{doc_instructions}\n\n{summary_prompt}"
-	
-	return route_document_query( summary_prompt.strip( ) )
 
 # ==============================================================================
 # Page Setup
@@ -14533,7 +15072,6 @@ elif mode == 'Embeddings':
 # ======================================================================================
 elif mode == 'Document Q&A':
 	ensure_docqna_mode_state( )
-	
 	if not isinstance( st.session_state.get( 'docqna_messages' ), list ):
 		st.session_state[ 'docqna_messages' ] = [ ]
 	
@@ -14694,9 +15232,9 @@ elif mode == 'Document Q&A':
 			
 			with model_c5:
 				st.toggle( label='Store', key='docqna_store', help=cfg.STORE )
-		
-			st.button( label='Reset Controls', key='docqna_reset_model_controls',
-				width='stretch'  )
+			
+			st.button( label='Reset Controls', key='docqna_reset_model_controls', width='stretch',
+				on_click=reset_docqna_model_controls, )
 			
 		# ------------------------------------------------------------------
 		# System Instructions
