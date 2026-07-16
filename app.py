@@ -5629,12 +5629,18 @@ def clear_text_messages( ) -> None:
 	"""Clear text messages.
 	
 	Purpose:
-	    Maintains application runtime state for clear text messages by initializing, clearing,
-	    or restoring the session values used by the active Streamlit workflow.
+	    Clears the Text Mode conversation, provider-specific history, retrieval context, response
+	    identifiers, answer state, and source state without modifying Text Mode configuration or
+	    System Instructions.
+	
+	Returns:
+	    None: This function resets the Text Mode conversation state.
 	"""
 	st.session_state[ 'text_messages' ] = [ ]
 	st.session_state[ 'text_context' ] = [ ]
 	st.session_state[ 'text_gemini_history' ] = [ ]
+	st.session_state[ 'text_previous_response_id' ] = ''
+	st.session_state[ 'text_conversation_id' ] = ''
 	st.session_state[ 'last_answer' ] = ''
 	st.session_state[ 'last_sources' ] = [ ]
 
@@ -5642,12 +5648,12 @@ def clear_text_instructions( ) -> None:
 	"""Clear text instructions.
 	
 	Purpose:
-	    Clears the Text Mode prompt category, selected prompt identifier, and editable System
-	    Instructions while preserving all instruction state associated with other application
-	    modes.
+	    Resets the Text Mode prompt category, selected prompt identifier, and editable System
+	    Instructions to their initial values without modifying any other Text Mode controls or
+	    instruction state belonging to another application mode.
 	
 	Returns:
-	    None: This function resets the Text Mode instruction-template contract.
+	    None: This function resets the Text Mode instruction-template state.
 	"""
 	clear_instruction_template( category_key='text_instruction_category',
 		selector_key='text_instruction_prompt_id', instruction_key='text_system_instructions', )
@@ -5656,8 +5662,8 @@ def change_text_instruction_category( ) -> None:
 	"""Change text instruction category.
 	
 	Purpose:
-	    Clears the selected Text Mode prompt identifier when the user changes the active prompt
-	    category so a template from the previous category cannot remain selected under an
+	    Clears the selected Text Mode prompt identifier when the active category changes so a
+	    template associated with the previous category cannot remain selected under an
 	    incompatible option collection.
 	
 	Returns:
@@ -5669,100 +5675,168 @@ def load_text_instruction_template( ) -> None:
 	"""Load text instruction template.
 	
 	Purpose:
-	    Loads the Text Mode instruction template identified by the selected Prompts table primary
-	    key into the editable Text Mode System Instructions state.
+	    Loads the Text Mode instruction template identified by the selected Prompts table integer
+	    primary key into the editable Text Mode System Instructions state.
 	
 	Returns:
 	    None: This function updates the Text Mode System Instructions state.
-	"""
-	load_instruction_template( selector_key='text_instruction_prompt_id',
-		instruction_key='text_system_instructions', )
-
-def load_text_instruction_template( ) -> None:
-	"""Load text instruction template.
 	
-	Purpose:
-	    Retrieves load text instruction template for the Streamlit application workflow and
-	    returns the normalized value used by downstream UI, provider, database, or document-
-	    processing steps.
+	Raises:
+	    Error: Raised when the selected prompt cannot be retrieved or loaded.
 	"""
-	name = st.session_state.get( 'instructions' )
-	if name and name != 'No Templates Found':
-		prompt_text = fetch_prompt_text( cfg.DB_PATH, name )
-		if prompt_text is not None:
-			st.session_state[ 'text_system_instructions' ] = prompt_text
+	try:
+		load_instruction_template( selector_key='text_instruction_prompt_id',
+			instruction_key='text_system_instructions', )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'load_text_instruction_template'
+		exception.method = 'load_text_instruction_template( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def convert_text_system_instructions( ) -> None:
 	"""Convert text system instructions.
 	
 	Purpose:
-	    Transforms convert text system instructions inputs into a normalized representation
-	    used by provider calls, document retrieval, data management, or UI rendering.
+	    Converts the editable Text Mode System Instructions between supported XML-like section
+	    markup and Markdown heading markup while preserving the instruction state key used by
+	    provider execution.
+	
+	Returns:
+	    None: This function updates the Text Mode System Instructions state.
+	
+	Raises:
+	    Error: Raised when instruction conversion fails.
 	"""
-	text_value = st.session_state.get( 'text_system_instructions', '' )
-	if not isinstance( text_value, str ) or not text_value.strip( ):
-		return
-	
-	source = text_value.strip( )
-	if cfg.XML_BLOCK_PATTERN.search( source ):
-		converted = convert_xml( source )
-	else:
-		converted = convert_markdown( source )
-	
-	st.session_state[ 'text_system_instructions' ] = converted
+	try:
+		text_value = st.session_state.get( 'text_system_instructions', '' )
+		
+		if not isinstance( text_value, str ) or not text_value.strip( ):
+			return
+		
+		source = text_value.strip( )
+		
+		if cfg.XML_BLOCK_PATTERN.search( source ):
+			converted = convert_xml( source )
+		else:
+			converted = convert_markdown( source )
+		
+		st.session_state[ 'text_system_instructions' ] = converted
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'convert_text_system_instructions'
+		exception.method = 'convert_text_system_instructions( ) -> None'
+		Logger( ).write( exception )
+		raise exception
 
 def reset_text_model_settings( ) -> None:
 	"""Reset text model settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset text model settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Text Mode LLM Settings expander to the initial
+	    values established by the Text Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Text Mode model controls.
 	"""
-	for key in [ 'text_model', 'text_reasoning', 'text_modalities', 'text_media_resolution',
-		'text_number' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'text_model' ] = ''
+	st.session_state[ 'text_reasoning' ] = ''
+	st.session_state[ 'text_modalities' ] = [ ]
+	st.session_state[ 'text_media_resolution' ] = ''
+	st.session_state[ 'text_number' ] = 0
+	st.session_state[ 'text_input' ] = ''
+	st.session_state[ 'text_response_format' ] = ''
 
 def reset_text_inference_settings( ) -> None:
 	"""Reset text inference settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset text inference settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Text Mode Inference Settings expander to the
+	    initial values established by the Text Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Text Mode inference controls.
 	"""
-	for key in [ 'text_temperature', 'text_top_percent', 'text_top_k', 'text_frequency_penalty',
-		'text_presence_penalty', 'text_presense_penalty' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'text_temperature' ] = 0.0
+	st.session_state[ 'text_top_percent' ] = 0.0
+	st.session_state[ 'text_top_k' ] = 0
+	st.session_state[ 'text_frequency_penalty' ] = 0.0
+	st.session_state[ 'text_presence_penalty' ] = 0.0
+	st.session_state[ 'text_presense_penalty' ] = 0.0
 
 def reset_text_tool_settings( ) -> None:
 	"""Reset text tool settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset text tool settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Text Mode Tool Settings expander to the initial
+	    values established by the Text Mode session-state contract without clearing resources
+	    managed by the Vector Stores modes.
+	
+	Returns:
+	    None: This function resets the Text Mode tool controls.
 	"""
-	for key in [ 'text_max_calls', 'text_tool_choice', 'text_include', 'text_includes',
-		'text_tools', 'text_domains_input', 'text_domains', 'text_urls_input', 'text_urls',
-		'text_parallel_tools', 'text_parallel_calls', 'text_vector_store_ids',
-		'text_google_grounding', 'text_file_search_store_names', 'selected_filestore_id',
-		'selected_filestore_label' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'text_max_calls' ] = 0
+	st.session_state[ 'text_max_urls' ] = 0
+	st.session_state[ 'text_max_searches' ] = 0
+	st.session_state[ 'text_tool_choice' ] = ''
+	st.session_state[ 'text_include' ] = [ ]
+	st.session_state[ 'text_includes' ] = [ ]
+	st.session_state[ 'text_tools' ] = [ ]
+	st.session_state[ 'text_domains_input' ] = ''
+	st.session_state[ 'text_domains' ] = [ ]
+	st.session_state[ 'text_urls_input' ] = ''
+	st.session_state[ 'text_urls' ] = [ ]
+	st.session_state[ 'text_parallel_tools' ] = False
+	st.session_state[ 'text_parallel_calls' ] = False
+	st.session_state[ 'text_google_grounding' ] = False
+	st.session_state[ 'text_vector_store_ids' ] = ''
+	st.session_state[ 'text_file_search_store_names_input' ] = ''
+	st.session_state[ 'text_file_search_store_names' ] = [ ]
 
 def reset_text_response_settings( ) -> None:
 	"""Reset text response settings.
 	
 	Purpose:
-	    Maintains application runtime state for reset text response settings by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
+	    Restores every control contained in the Text Mode Response Settings expander to the
+	    initial values established by the Text Mode session-state contract.
+	
+	Returns:
+	    None: This function resets the Text Mode response controls.
 	"""
-	for key in [ 'text_stream', 'text_store', 'text_max_tokens', 'text_background',
-		'text_response_format', 'text_input', 'text_previous_response_id', 'text_conversation_id',
-		'text_json_schema_name', 'text_json_schema', 'text_json_schema_strict',
-		'text_response_schema', 'text_stops_input', 'text_stops', 'text_safety_profile' ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
+	st.session_state[ 'text_stream' ] = False
+	st.session_state[ 'text_store' ] = False
+	st.session_state[ 'text_max_tokens' ] = 0
+	st.session_state[ 'text_background' ] = False
+	st.session_state[ 'text_stops_input' ] = ''
+	st.session_state[ 'text_stops' ] = [ ]
+	st.session_state[ 'text_json_schema_name' ] = 'structured_response'
+	st.session_state[ 'text_json_schema' ] = ''
+	st.session_state[ 'text_json_schema_strict' ] = True
+	st.session_state[ 'text_response_schema' ] = ''
+	st.session_state[ 'text_safety_profile' ] = ''
+	st.session_state[ 'text_previous_response_id' ] = ''
+	st.session_state[ 'text_conversation_id' ] = ''
+
+def reset_text_mind_controls( ) -> None:
+	"""Reset text mind controls.
+	
+	Purpose:
+	    Restores every control contained in the Text Mode Mind Controls expander and its nested
+	    configuration expanders to the initial values established by the Text Mode session-state
+	    contract.
+	
+	Returns:
+	    None: This function resets all Text Mode generation controls.
+	"""
+	reset_text_model_settings( )
+	reset_text_inference_settings( )
+	reset_text_tool_settings( )
+	reset_text_response_settings( )
 
 def split_text_values( value: Any, delimiter: str = ',' ) -> List[ str ]:
 	"""Split text values.
@@ -10001,9 +10075,8 @@ def list_google_cloud_buckets( buckets: Any ) -> List[ Dict[ str, Any ] ]:
 	
 	raise AttributeError( 'CloudBuckets wrapper does not expose a list method.' )
 
-def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str, object_name: str, path: str ) \
-		-> \
-Dict[ str, Any ]:
+def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
+	object_name: str, path: str ) -> Dict[ str, Any ]:
 	"""Upload to google cloud bucket.
 	
 	Purpose:
@@ -10050,8 +10123,8 @@ Dict[ str, Any ]:
 	
 	raise AttributeError( 'CloudBuckets wrapper does not expose an upload method.' )
 
-def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str, object_name: str ) -> Dict[
-	str, Any ]:
+def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str,
+	object_name: str ) -> Dict[ str, Any ]:
 	"""Delete google cloud bucket object.
 	
 	Purpose:
@@ -11326,8 +11399,7 @@ elif mode == 'Text':
 				if provider_name == 'GPT' and st.session_state.get(
 						'text_response_format' ) == 'json_schema':
 					schema_c1, schema_c2, schema_c3 = st.columns( [ 0.25, 0.55, 0.20 ],
-						border=True,
-						gap='xxsmall' )
+						border=True, gap='xxsmall' )
 					
 					with schema_c1:
 						st.text_input( label='Schema Name', key='text_json_schema_name',
@@ -11356,6 +11428,9 @@ elif mode == 'Text':
 							key='text_safety_profile',
 							help='Optional. Gemini safety profile for the request.', index=None,
 							placeholder='Options' )
+			
+			st.button( label='Reset All', key='text_mind_controls_reset', width='stretch',
+				on_click=reset_text_mind_controls )
 		
 		# ------------------------------------------------------------------
 		# System Instructions
@@ -11473,6 +11548,68 @@ elif mode == 'Text':
 							st.session_state.get( 'text_stops_input', '' ), delimiter=',' )
 						
 						if provider_name == 'GPT':
+							model_name = str(
+								st.session_state.get( 'text_model', '' ) or '' ).strip( )
+							
+							if not model_name:
+								raise ValueError(
+									'Select a GPT text-generation model before submitting a '
+									'prompt.' )
+							
+							input_mode = str(
+								st.session_state.get( 'text_input', '' ) or '' ).strip( )
+							
+							if input_mode not in [
+								'single_turn',
+								'response_chain',
+								'conversation',
+							]:
+								input_mode = 'single_turn'
+							
+							stream_enabled = bool(
+								st.session_state.get( 'text_stream', False ) )
+							
+							background_enabled = bool(
+								st.session_state.get( 'text_background', False ) )
+							
+							if stream_enabled and background_enabled:
+								raise ValueError(
+									'GPT streaming and background execution cannot be enabled '
+									'at the same time.' )
+							
+							max_tokens_value = int(
+								st.session_state.get( 'text_max_tokens', 0 ) or 0 )
+							
+							max_tools_value = int(
+								st.session_state.get( 'text_max_calls', 0 ) or 0 )
+							
+							temperature_value = float(
+								st.session_state.get( 'text_temperature', 0.0 ) or 0.0 )
+							
+							top_percent_value = float(
+								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0 )
+							
+							frequency_penalty_value = float(
+								st.session_state.get(
+									'text_frequency_penalty',
+									0.0,
+								) or 0.0 )
+							
+							presence_penalty_value = float(
+								st.session_state.get(
+									'text_presence_penalty',
+									0.0,
+								) or 0.0 )
+							
+							reasoning_value = str(
+								st.session_state.get( 'text_reasoning', '' ) or '' ).strip( )
+							
+							instruction_value = str(
+								st.session_state.get(
+									'text_system_instructions',
+									'',
+								) or '' ).strip( )
+							
 							manual_vector_store_ids = parse_text_vector_store_ids(
 								st.session_state.get( 'text_vector_store_ids', '' ) )
 							
@@ -11480,216 +11617,749 @@ elif mode == 'Text':
 							
 							vector_store_ids = merge_unique_strings(
 								primary=manual_vector_store_ids,
-								secondary=selected_vector_store_ids )
+								secondary=selected_vector_store_ids,
+							)
 							
 							text_tools = build_text_tools(
 								selected_tools=st.session_state.get( 'text_tools', [ ] ),
-								vector_store_ids=vector_store_ids )
+								vector_store_ids=vector_store_ids,
+							)
 							
 							text_include = build_text_include(
 								selected_include=st.session_state.get( 'text_include', [ ] ),
-								selected_tools=text_tools )
+								selected_tools=text_tools,
+							)
 							
 							text_tool_choice = build_text_tool_choice(
 								tool_choice=st.session_state.get( 'text_tool_choice' ),
-								selected_tools=text_tools )
+								selected_tools=text_tools,
+							)
 							
 							text_format = build_text_response_format(
-								response_format=st.session_state.get( 'text_response_format' ),
-								schema_name=st.session_state.get( 'text_json_schema_name' ),
-								schema_text=st.session_state.get( 'text_json_schema' ),
-								strict=st.session_state.get( 'text_json_schema_strict', True ) )
+								response_format=st.session_state.get(
+									'text_response_format'
+								),
+								schema_name=st.session_state.get(
+									'text_json_schema_name'
+								),
+								schema_text=st.session_state.get(
+									'text_json_schema'
+								),
+								strict=bool(
+									st.session_state.get(
+										'text_json_schema_strict',
+										True,
+									)
+								),
+							)
 							
-							if st.session_state.get( 'text_input' ) != 'single_turn':
-								text_context = build_text_context(
-									messages=st.session_state.get( 'text_messages', [ ] ),
-									include_last_message=False )
+							if input_mode == 'single_turn':
+								text_context: List[ Dict[ str, str ] ] = [ ]
 							else:
-								text_context = [ ]
+								text_context = build_text_context(
+									messages=st.session_state.get(
+										'text_messages',
+										[ ],
+									),
+									include_last_message=False,
+								)
 							
 							st.session_state[ 'text_context' ] = text_context
+							
 							text_previous_id = get_text_previous_response_id(
-								input_mode=st.session_state.get( 'text_input' ),
-								previous_id=st.session_state.get( 'text_previous_response_id' ) )
+								input_mode=input_mode,
+								previous_id=st.session_state.get(
+									'text_previous_response_id'
+								),
+							)
 							
 							text_conversation_id = get_text_conversation_id(
-								input_mode=st.session_state.get( 'text_input' ),
-								conversation_id=st.session_state.get( 'text_conversation_id' ) )
+								input_mode=input_mode,
+								conversation_id=st.session_state.get(
+									'text_conversation_id'
+								),
+							)
 							
-							response_text = text.generate_text( prompt=prompt,
-								model=st.session_state.get( 'text_model' ),
-								temperature=st.session_state.get( 'text_temperature' ),
+							response_text = text.generate_text(
+								prompt=prompt,
+								model=model_name,
+								temperature=temperature_value,
 								format=text_format,
-								top_p=st.session_state.get( 'text_top_percent' ),
-								frequency=st.session_state.get( 'text_frequency_penalty' ),
-								max_tools=st.session_state.get( 'text_max_calls' ),
-								presence=st.session_state.get( 'text_presence_penalty' ),
-								max_tokens=st.session_state.get( 'text_max_tokens' ),
-								store=st.session_state.get( 'text_store' ), stream=False,
-								instruct=st.session_state.get( 'text_system_instructions' ),
-								background=False,
-								reasoning=st.session_state.get( 'text_reasoning' ),
-								include=text_include, tools=text_tools,
-								allowed_domains=st.session_state.get( 'text_domains', [ ] ),
-								previous_id=text_previous_id, tool_choice=text_tool_choice,
-								is_parallel=st.session_state.get( 'text_parallel_tools' ),
-								context=text_context, vector_store_ids=vector_store_ids,
-								conversation_id=text_conversation_id )
+								top_p=top_percent_value,
+								frequency=frequency_penalty_value,
+								max_tools=max_tools_value if max_tools_value > 0 else None,
+								presence=presence_penalty_value,
+								max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+								store=bool(
+									st.session_state.get( 'text_store', False )
+								),
+								stream=stream_enabled,
+								instruct=instruction_value or None,
+								background=background_enabled,
+								reasoning=reasoning_value or None,
+								include=text_include,
+								tools=text_tools,
+								allowed_domains=st.session_state.get(
+									'text_domains',
+									[ ],
+								),
+								previous_id=text_previous_id,
+								tool_choice=text_tool_choice,
+								is_parallel=bool(
+									st.session_state.get(
+										'text_parallel_tools',
+										False,
+									)
+								),
+								context=text_context,
+								vector_store_ids=vector_store_ids,
+								conversation_id=text_conversation_id,
+							)
 							
 							response_obj = getattr( text, 'response', None )
+							
+							response_id = getattr( response_obj, 'id', '' )
+							
+							st.session_state[ 'text_previous_response_id' ] = (
+								str( response_id ).strip( )
+								if response_id is not None
+								else ''
+							)
+							
+							conversation = getattr( response_obj, 'conversation', None )
+							returned_conversation_id = getattr(
+								conversation,
+								'id',
+								'',
+							)
+							
+							if returned_conversation_id:
+								st.session_state[ 'text_conversation_id' ] = str(
+									returned_conversation_id
+								).strip( )
+							
+							if (
+								not response_text
+								and response_obj is not None
+								and not background_enabled
+							):
+								response_text = (
+									getattr( response_obj, 'output_text', None )
+									or extract_response_text( response_obj )
+									or ''
+								)
+							
+							if background_enabled and not response_text:
+								response_status = str(
+									getattr( response_obj, 'status', '' ) or ''
+								).strip( )
+								
+								response_identifier = str(
+									getattr( response_obj, 'id', '' ) or ''
+								).strip( )
+								
+								if response_identifier:
+									response_text = (
+										'Background response submitted successfully.\n\n'
+										f'**Response ID:** `{response_identifier}`'
+									)
+									
+									if response_status:
+										response_text += (
+											'\n\n'
+											f'**Status:** {response_status}'
+										)
 						
 						elif provider_name == 'Gemini':
 							apply_gemini_runtime_config( )
 							
-							structured_context = st.session_state.get( 'text_gemini_history', [ ] )
-							if not isinstance( structured_context, list ) or len(
-									structured_context ) == 0:
-								structured_context = st.session_state.get( 'text_messages', [ ] )[
-									:-1 ]
+							model_name = str(
+								st.session_state.get( 'text_model', '' ) or '' ).strip( )
+							
+							if not model_name:
+								raise ValueError(
+									'Select a Gemini text-generation model before submitting a '
+									'prompt.' )
+							
+							input_mode = str(
+								st.session_state.get( 'text_input', '' ) or '' ).strip( )
+							
+							if input_mode not in [
+								'single_turn',
+								'response_chain',
+								'conversation',
+							]:
+								input_mode = 'single_turn'
+							
+							stream_enabled = bool(
+								st.session_state.get( 'text_stream', False ) )
+							
+							number_value = int(
+								st.session_state.get( 'text_number', 0 ) or 0 )
+							
+							max_tokens_value = int(
+								st.session_state.get( 'text_max_tokens', 0 ) or 0 )
+							
+							top_k_value = int(
+								st.session_state.get( 'text_top_k', 0 ) or 0 )
+							
+							max_urls_value = int(
+								st.session_state.get( 'text_max_urls', 0 ) or 0 )
+							
+							temperature_value = float(
+								st.session_state.get( 'text_temperature', 0.0 ) or 0.0 )
+							
+							top_percent_value = float(
+								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0 )
+							
+							frequency_penalty_value = float(
+								st.session_state.get(
+									'text_frequency_penalty',
+									0.0,
+								) or 0.0 )
+							
+							presence_penalty_value = float(
+								st.session_state.get(
+									'text_presence_penalty',
+									0.0,
+								) or 0.0 )
+							
+							instruction_value = str(
+								st.session_state.get(
+									'text_system_instructions',
+									'',
+								) or '' ).strip( )
+							
+							reasoning_value = str(
+								st.session_state.get( 'text_reasoning', '' ) or '' ).strip( )
+							
+							response_format_value = str(
+								st.session_state.get(
+									'text_response_format',
+									'',
+								) or '' ).strip( )
+							
+							response_schema_value = str(
+								st.session_state.get(
+									'text_response_schema',
+									'',
+								) or '' ).strip( )
+							
+							safety_profile_value = str(
+								st.session_state.get(
+									'text_safety_profile',
+									'',
+								) or '' ).strip( )
+							
+							media_resolution_value = str(
+								st.session_state.get(
+									'text_media_resolution',
+									'',
+								) or '' ).strip( )
+							
+							if response_format_value == 'json_schema':
+								if not response_schema_value:
+									raise ValueError(
+										'Enter a Gemini response schema before using the '
+										'JSON-schema response format.' )
+								
+								try:
+									parsed_response_schema = json.loads(
+										response_schema_value
+									)
+								except json.JSONDecodeError as e:
+									raise ValueError(
+										f'The Gemini response schema is not valid JSON: {e}'
+									) from e
+								
+								if not isinstance( parsed_response_schema, dict ):
+									raise ValueError(
+										'The Gemini response schema must contain a JSON '
+										'object.' )
+							else:
+								parsed_response_schema = None
+							
+							structured_history = st.session_state.get(
+								'text_gemini_history',
+								[ ],
+							)
+							
+							if not isinstance( structured_history, list ):
+								structured_history = [ ]
+							
+							if input_mode == 'single_turn':
+								structured_context: List[ Any ] = [ ]
+							elif len( structured_history ) > 0:
+								structured_context = structured_history
+							else:
+								structured_context = st.session_state.get(
+									'text_messages',
+									[ ],
+								)[ :-1 ]
+							
+							if not isinstance( structured_context, list ):
+								structured_context = [ ]
+							
+							st.session_state[ 'text_context' ] = structured_context
 							
 							grounding_enabled = bool(
-								st.session_state.get( 'text_google_grounding', False ) )
+								st.session_state.get(
+									'text_google_grounding',
+									False,
+								)
+							)
 							
-							selected_tools = [ str( item ).strip( ) for item in
-								st.session_state.get( 'text_tools', [ ] ) if str( item ).strip( ) ]
+							selected_tools: List[ str ] = [ ]
 							
-							if grounding_enabled and 'google_search' not in selected_tools:
+							for item in st.session_state.get( 'text_tools', [ ] ):
+								if not isinstance( item, str ):
+									continue
+								
+								tool_name = item.strip( )
+								
+								if tool_name and tool_name not in selected_tools:
+									selected_tools.append( tool_name )
+							
+							if (
+								grounding_enabled
+								and 'google_search' not in selected_tools
+							):
 								selected_tools.append( 'google_search' )
 							
 							st.session_state[ 'text_urls' ] = split_text_values(
-								st.session_state.get( 'text_urls_input', '' ), delimiter=';' )
+								st.session_state.get( 'text_urls_input', '' ),
+								delimiter=';',
+							)
 							
 							manual_file_search_store_names = split_text_values(
-								st.session_state.get( 'text_file_search_store_names_input', '' ),
-								delimiter=',' )
+								st.session_state.get(
+									'text_file_search_store_names_input',
+									'',
+								),
+								delimiter=',',
+							)
 							
-							selected_file_search_store_names = get_active_gemini_file_search_store_names( 'Gemini' )
+							selected_file_search_store_names = (
+								get_active_gemini_file_search_store_names(
+									'Gemini'
+								)
+							)
+							
+							file_search_store_names = merge_unique_strings(
+								primary=manual_file_search_store_names,
+								secondary=selected_file_search_store_names,
+							)
 							
 							st.session_state[
-								'text_file_search_store_names' ] = merge_unique_strings(
-								primary=manual_file_search_store_names,
-								secondary=selected_file_search_store_names )
+								'text_file_search_store_names'
+							] = file_search_store_names
 							
-							response_text = text.generate_text( prompt=prompt,
-								model=st.session_state.get( 'text_model' ),
-								number=st.session_state.get( 'text_number' ),
-								temperature=st.session_state.get( 'text_temperature' ),
-								top_p=st.session_state.get( 'text_top_percent' ),
-								top_k=st.session_state.get( 'text_top_k' ),
-								frequency=st.session_state.get( 'text_frequency_penalty' ),
-								presence=st.session_state.get( 'text_presence_penalty' ),
-								max_tokens=st.session_state.get( 'text_max_tokens' ),
-								stops=st.session_state.get( 'text_stops', [ ] ),
-								instruct=st.session_state.get( 'text_system_instructions' ),
-								response_format=st.session_state.get( 'text_response_format' ),
+							selected_modalities = st.session_state.get(
+								'text_modalities',
+								[ ],
+							)
+							
+							if not isinstance( selected_modalities, list ):
+								selected_modalities = [ ]
+							
+							stop_sequences = st.session_state.get(
+								'text_stops',
+								[ ],
+							)
+							
+							if not isinstance( stop_sequences, list ):
+								stop_sequences = [ ]
+							
+							content_value = st.session_state.get(
+								'text_content'
+							)
+							
+							response_text = text.generate_text(
+								prompt=prompt,
+								model=model_name,
+								number=number_value if number_value > 0 else None,
+								temperature=temperature_value,
+								top_p=top_percent_value,
+								top_k=top_k_value if top_k_value > 0 else None,
+								frequency=frequency_penalty_value,
+								presence=presence_penalty_value,
+								max_tokens=max_tokens_value
+								if max_tokens_value > 0
+								else None,
+								stops=stop_sequences,
+								instruct=instruction_value or None,
+								response_format=response_format_value or None,
 								tools=selected_tools,
-								tool_choice=st.session_state.get( 'text_tool_choice' ),
-								reasoning=st.session_state.get( 'text_reasoning' ),
-								modalities=st.session_state.get( 'text_modalities', [ ] ),
-								media_resolution=st.session_state.get( 'text_media_resolution' ),
+								tool_choice=st.session_state.get(
+									'text_tool_choice'
+								) or None,
+								reasoning=reasoning_value or None,
+								modalities=selected_modalities,
+								media_resolution=media_resolution_value or None,
 								context=structured_context,
-								content=st.session_state.get( 'text_content' ),
+								content=content_value,
 								urls=st.session_state.get( 'text_urls', [ ] ),
-								max_urls=st.session_state.get( 'text_max_urls' ),
-								response_schema=st.session_state.get( 'text_response_schema' ),
-								safety_profile=st.session_state.get( 'text_safety_profile' ),
-								file_search_store_names=st.session_state.get(
-									'text_file_search_store_names', [ ] ),
-								stream=st.session_state.get( 'text_stream', False ),
-								stream_handler=on_stream_chunk if st.session_state.get(
-									'text_stream', False ) else None )
+								max_urls=max_urls_value if max_urls_value > 0 else None,
+								response_schema=parsed_response_schema,
+								safety_profile=safety_profile_value or None,
+								file_search_store_names=file_search_store_names,
+								stream=stream_enabled,
+								stream_handler=on_stream_chunk
+								if stream_enabled
+								else None,
+							)
 							
-							response_obj = getattr( text, 'content_response', None )
-							if st.session_state.get( 'text_stream', False ):
-								st.session_state[ 'text_gemini_history' ] = [ ]
-							else:
-								structured_history = text.get_structured_history( ) if hasattr(
-									text, 'get_structured_history' ) else [ ]
+							response_obj = (
+								getattr( text, 'content_response', None )
+								or getattr( text, 'response', None )
+							)
+							
+							if stream_enabled:
+								streamed_text = ''.join( stream_buffer ).strip( )
 								
-								if structured_history is not None and len( structured_history ) > 0:
-									st.session_state[ 'text_gemini_history' ] = structured_history
-						elif provider_name == 'Grok':
-							grok_collection_ids = get_active_grok_collection_ids( 'Grok' )
-							if len( grok_collection_ids ) > 0 and provider_supports(
-									'VectorStores',
-									'Grok' ):
-								try:
-									grok_vectorstores = get_vectorstores_module( 'Grok' )
-									search_result = grok_vectorstores.search( prompt=prompt,
-										store_id=grok_collection_ids[ 0 ] )
-									
-									if isinstance( search_result, str ) and search_result.strip( ):
-										prompt = ('Use xAI Collection search result as retrieval '
-										          'context.\n\n'
-										          f'{search_result.strip( )}\n\n'
-										          f'User Question:\n{prompt}')
-								except Exception as exc:
-									exception = Error( exc )
-									exception.module = 'app'
-									exception.cause = 'app'
-									exception.method = 'module initialization'
-									Logger( ).write( exception )
-									st.warning( f'Grok collection search was skipped: {exc}' )
+								if streamed_text:
+									response_text = streamed_text
+									stream_placeholder.markdown( streamed_text )
 							
-							if hasattr( text, 'user' ):
-								text.user = prompt
+							if (
+								not response_text
+								and response_obj is not None
+							):
+								response_text = (
+									getattr( response_obj, 'text', None )
+									or getattr( response_obj, 'output_text', None )
+									or extract_response_text( response_obj )
+									or ''
+								)
 							
-							if st.session_state.get( 'text_input' ) != 'single_turn':
-								text_context = build_text_context(
-									messages=st.session_state.get( 'text_messages', [ ] ),
-									include_last_message=False )
+							updated_history: List[ Any ] = [ ]
+							
+							if hasattr( text, 'get_structured_history' ):
+								history_result = text.get_structured_history( )
+								
+								if isinstance( history_result, list ):
+									updated_history = history_result
+							
+							if len( updated_history ) > 0:
+								st.session_state[
+									'text_gemini_history'
+								] = updated_history
+							elif input_mode == 'single_turn':
+								st.session_state[
+									'text_gemini_history'
+								] = [ ]
 							else:
-								text_context = [ ]
+								fallback_history = list( structured_context )
+								
+								fallback_history.append(
+									{
+										'role': 'user',
+										'content': prompt,
+									}
+								)
+								
+								if response_text:
+									fallback_history.append(
+										{
+											'role': 'assistant',
+											'content': str(
+												response_text
+											).strip( ),
+										}
+									)
+								
+								st.session_state[
+									'text_gemini_history'
+								] = fallback_history
+						
+						elif provider_name == 'Grok':
+							model_name = str(
+								st.session_state.get( 'text_model', '' ) or ''
+							).strip( )
+							
+							if not model_name:
+								raise ValueError(
+									'Select a Grok text-generation model before submitting a '
+									'prompt.'
+								)
+							
+							input_mode = str(
+								st.session_state.get( 'text_input', '' ) or ''
+							).strip( )
+							
+							if input_mode not in [
+								'single_turn',
+								'response_chain',
+								'conversation',
+							]:
+								input_mode = 'single_turn'
+							
+							stream_enabled = bool(
+								st.session_state.get( 'text_stream', False )
+							)
+							
+							background_enabled = bool(
+								st.session_state.get( 'text_background', False )
+							)
+							
+							if stream_enabled and background_enabled:
+								raise ValueError(
+									'Grok streaming and background execution cannot be enabled '
+									'at the same time.'
+								)
+							
+							max_tokens_value = int(
+								st.session_state.get( 'text_max_tokens', 0 ) or 0
+							)
+							
+							max_tools_value = int(
+								st.session_state.get( 'text_max_calls', 0 ) or 0
+							)
+							
+							temperature_value = float(
+								st.session_state.get( 'text_temperature', 0.0 ) or 0.0
+							)
+							
+							top_percent_value = float(
+								st.session_state.get( 'text_top_percent', 0.0 ) or 0.0
+							)
+							
+							frequency_penalty_value = float(
+								st.session_state.get(
+									'text_frequency_penalty',
+									0.0,
+								) or 0.0
+							)
+							
+							presence_penalty_value = float(
+								st.session_state.get(
+									'text_presence_penalty',
+									0.0,
+								) or 0.0
+							)
+							
+							instruction_value = str(
+								st.session_state.get(
+									'text_system_instructions',
+									'',
+								) or ''
+							).strip( )
+							
+							reasoning_value = str(
+								st.session_state.get( 'text_reasoning', '' ) or ''
+							).strip( )
+							
+							response_format_value = st.session_state.get(
+								'text_response_format'
+							)
+							
+							if isinstance( response_format_value, str ):
+								response_format_value = response_format_value.strip( )
+								
+								if not response_format_value:
+									response_format_value = 'text'
+							elif not isinstance( response_format_value, dict ):
+								response_format_value = 'text'
+							
+							if input_mode == 'single_turn':
+								text_context: List[ Dict[ str, str ] ] = [ ]
+							else:
+								text_context = build_text_context(
+									messages=st.session_state.get(
+										'text_messages',
+										[ ],
+									),
+									include_last_message=False,
+								)
 							
 							st.session_state[ 'text_context' ] = text_context
 							
 							text_previous_id = get_text_previous_response_id(
-								input_mode=st.session_state.get( 'text_input' ),
-								previous_id=st.session_state.get( 'text_previous_response_id' ) )
+								input_mode=input_mode,
+								previous_id=st.session_state.get(
+									'text_previous_response_id'
+								),
+							)
 							
 							text_conversation_id = get_text_conversation_id(
-								input_mode=st.session_state.get( 'text_input' ),
-								conversation_id=st.session_state.get( 'text_conversation_id' ) )
+								input_mode=input_mode,
+								conversation_id=st.session_state.get(
+									'text_conversation_id'
+								),
+							)
 							
-							grok_tools = [ ]
-							selected_tools = st.session_state.get( 'text_tools', [ ] )
+							grok_collection_ids = get_active_grok_collection_ids(
+								'Grok'
+							)
+							
+							grok_collection_ids = merge_unique_strings(
+								primary=grok_collection_ids,
+								secondary=[ ],
+							)
+							
+							grok_tools: List[ Dict[ str, Any ] ] = [ ]
+							selected_tools = st.session_state.get(
+								'text_tools',
+								[ ],
+							)
 							
 							if isinstance( selected_tools, list ):
 								for selected_tool in selected_tools:
 									if isinstance( selected_tool, dict ):
-										grok_tools.append( selected_tool )
+										tool_payload = dict( selected_tool )
+										
+										if (
+											tool_payload
+											and tool_payload not in grok_tools
+										):
+											grok_tools.append( tool_payload )
+										
 										continue
 									
-									if isinstance( selected_tool, str ) and selected_tool.strip( ):
-										grok_tools.append( { 'type': selected_tool.strip( ) } )
+									if not isinstance( selected_tool, str ):
+										continue
+									
+									tool_name = selected_tool.strip( )
+									
+									if not tool_name:
+										continue
+									
+									tool_payload = { 'type': tool_name }
+									
+									if tool_payload not in grok_tools:
+										grok_tools.append( tool_payload )
 							
-							response_text = text.generate_text( prompt=prompt,
-								model=st.session_state.get( 'text_model' ) or 'grok-4',
-								temperature=st.session_state.get( 'text_temperature' ),
-								format=st.session_state.get( 'text_response_format' ) or 'text',
-								top_p=st.session_state.get( 'text_top_percent' ),
-								frequency=st.session_state.get( 'text_frequency_penalty' ),
-								max_tools=st.session_state.get( 'text_max_calls' ),
-								presence=st.session_state.get( 'text_presence_penalty' ),
-								max_tokens=st.session_state.get( 'text_max_tokens' ) or 10000,
-								store=bool( st.session_state.get( 'text_store', True ) ),
-								stream=False,
-								instruct=st.session_state.get( 'text_system_instructions' ),
-								background=False,
-								reasoning=st.session_state.get( 'text_reasoning' ) or 'high',
-								include=st.session_state.get( 'text_include', [ ] ),
+							selected_include = st.session_state.get(
+								'text_include',
+								[ ],
+							)
+							
+							if not isinstance( selected_include, list ):
+								selected_include = [ ]
+							
+							grok_include: List[ str ] = [ ]
+							
+							for include_value in selected_include:
+								if not isinstance( include_value, str ):
+									continue
+								
+								include_name = include_value.strip( )
+								
+								if (
+									include_name
+									and include_name not in grok_include
+								):
+									grok_include.append( include_name )
+							
+							st.session_state[ 'text_domains' ] = split_text_values(
+								st.session_state.get( 'text_domains_input', '' ),
+								delimiter=',',
+							)
+							
+							if hasattr( text, 'user' ):
+								text.user = prompt
+							
+							response_text = text.generate_text(
+								prompt=prompt,
+								model=model_name,
+								temperature=temperature_value,
+								format=response_format_value,
+								top_p=top_percent_value,
+								frequency=frequency_penalty_value,
+								max_tools=max_tools_value
+								if max_tools_value > 0
+								else None,
+								presence=presence_penalty_value,
+								max_tokens=max_tokens_value
+								if max_tokens_value > 0
+								else None,
+								store=bool(
+									st.session_state.get( 'text_store', False )
+								),
+								stream=stream_enabled,
+								instruct=instruction_value or None,
+								background=background_enabled,
+								reasoning=reasoning_value or None,
+								include=grok_include,
 								tools=grok_tools,
-								allowed_domains=st.session_state.get( 'text_domains', [ ] ),
+								allowed_domains=st.session_state.get(
+									'text_domains',
+									[ ],
+								),
 								previous_id=text_previous_id,
-								tool_choice=st.session_state.get( 'text_tool_choice' ),
-								is_parallel=st.session_state.get( 'text_parallel_tools' ),
-								context=text_context, vector_store_ids=grok_collection_ids,
-								conversation_id=text_conversation_id )
+								tool_choice=st.session_state.get(
+									'text_tool_choice'
+								) or None,
+								is_parallel=bool(
+									st.session_state.get(
+										'text_parallel_tools',
+										False,
+									)
+								),
+								context=text_context,
+								vector_store_ids=grok_collection_ids,
+								conversation_id=text_conversation_id,
+							)
 							
 							response_obj = getattr( text, 'response', None )
-							st.session_state[ 'text_previous_response_id' ] = getattr(
+							
+							response_id = getattr( response_obj, 'id', '' )
+							
+							st.session_state[ 'text_previous_response_id' ] = (
+								str( response_id ).strip( )
+								if response_id is not None
+								else ''
+							)
+							
+							conversation = getattr(
 								response_obj,
-								'id', '' ) or ''
+								'conversation',
+								None,
+							)
+							
+							returned_conversation_id = getattr(
+								conversation,
+								'id',
+								'',
+							)
+							
+							if returned_conversation_id:
+								st.session_state[ 'text_conversation_id' ] = str(
+									returned_conversation_id
+								).strip( )
+							
+							if (
+								not response_text
+								and response_obj is not None
+								and not background_enabled
+							):
+								response_text = (
+									getattr( response_obj, 'output_text', None )
+									or getattr( response_obj, 'text', None )
+									or extract_response_text( response_obj )
+									or ''
+								)
+							
+							if background_enabled and not response_text:
+								response_identifier = str(
+									getattr( response_obj, 'id', '' ) or ''
+								).strip( )
+								
+								response_status = str(
+									getattr( response_obj, 'status', '' ) or ''
+								).strip( )
+								
+								if response_identifier:
+									response_text = (
+										'Background response submitted successfully.\n\n'
+										f'**Response ID:** `{response_identifier}`'
+									)
+									
+									if response_status:
+										response_text += (
+											'\n\n'
+											f'**Status:** {response_status}'
+										)
 						
 						else:
 							response_text = ''
@@ -13124,7 +13794,7 @@ elif mode == 'Document Q&A':
 		st.subheader( '📖 Document Q & A' )
 		st.divider( )
 		
-				# ------------------------------------------------------------------
+		# ------------------------------------------------------------------
 		# Document Controls
 		# ------------------------------------------------------------------
 		with st.expander( label='Document Controls', icon='📚', expanded=False,
