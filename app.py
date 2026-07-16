@@ -10972,87 +10972,232 @@ def delete_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
 	return normalize_files_object( result )
 
 def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
-	model: str | None = None ) -> str:
+	model: str | None = None, ) -> str:
 	"""Analyze provider file.
 	
 	Purpose:
-	    Executes the analyze provider file workflow using the current provider, document,
-	    prompt, and session-state configuration.
+	    Retrieves readable content from a selected provider file, constructs a bounded
+	    file-grounded request, executes the active provider Chat capability, and persists
+	    response, source, context, and token-usage state.
 	
 	Args:
-	    files: File, upload, or path value used by the document or storage workflow.
-	    prompt: Text value supplied to the prompt, conversion, retrieval, or provider workflow.
-	    file_id: File, upload, or path value used by the document or storage workflow.
-	    model: Provider model identifier selected for the active workflow.
+	    files: Active provider Files capability.
+	    prompt: User request submitted against the selected file.
+	    file_id: Provider identifier of the selected file.
+	    model: Provider Chat model used for file analysis.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
+	    str: Provider answer grounded in the selected file content.
+	
+	Raises:
+	    Error: Raised when the prompt, file identifier, file content, provider capability,
+	        model configuration, or provider response is invalid.
 	"""
-	if not isinstance( prompt, str ) or not prompt.strip( ):
-		return ''
-	
-	provider_name = get_provider_name( )
-	clean_prompt = prompt.strip( )
-	clean_file_id = file_id.strip( ) if isinstance( file_id, str ) and file_id.strip( ) else None
-	
-	if provider_name == 'GPT':
-		selected_model = model or st.session_state.get( 'files_model' ) or 'gpt-5-nano'
-	elif provider_name == 'Gemini':
-		selected_model = model or st.session_state.get( 'files_model' ) or 'gemini-2.5-flash-lite'
-	elif provider_name == 'Grok':
-		selected_model = model or st.session_state.get( 'files_model' ) or 'grok-4.3'
-	else:
-		selected_model = model or st.session_state.get( 'files_model' )
-	
-	if clean_file_id and hasattr( files, 'summarize' ):
+	try:
+		question = str( prompt or '' ).strip( )
+		
+		if not question:
+			raise ValueError( 'Enter a question about the selected provider file.' )
+		
+		selected_file_id = str( file_id or '' ).strip( )
+		
+		if not selected_file_id:
+			raise ValueError( 'Enter or select a provider file ID before analyzing a file.' )
+		
+		if files is None:
+			raise AttributeError( 'The active provider does not expose the Files capability.' )
+		
+		provider_name = get_provider_name( )
+		
+		if not provider_supports( 'Chat', provider_name ):
+			raise AttributeError(
+				f'{provider_name} does not expose the Chat capability required for file '
+				'analysis.' )
+		
+		chat = get_chat_module( provider_name )
+		
+		model_name = str( model or st.session_state.get( 'files_model', '' ) or '' ).strip( )
+		
+		if not model_name:
+			raise ValueError( f'Select a {provider_name} analysis model before analyzing a file.' )
+		
+		model_options = get_text_option_list( chat, 'model_options', [ ], )
+		
+		valid_models = [ str( option ).strip( ) for option in model_options if
+			isinstance( option, str ) and option.strip( ) ]
+		
+		if valid_models and model_name not in valid_models:
+			raise ValueError( f'The selected analysis model is not available for {provider_name}: '
+			                  f'{model_name}.' )
+		
+		metadata = retrieve_provider_file( files=files, file_id=selected_file_id, )
+		
+		content = extract_file_content( files=files, file_id=selected_file_id, )
+		
+		if not isinstance( content, str ) or not content.strip( ):
+			raise ValueError(
+				f'No readable content could be extracted from file `{selected_file_id}`.' )
+		
+		file_name = str(
+			metadata.get( 'filename', '' ) or metadata.get( 'display_name', '' ) or metadata.get(
+				'name', '' ) or selected_file_id ).strip( )
+		
+		content_limit = 120000
+		bounded_content = content.strip( )[ :content_limit ]
+		
+		instruction_value = str(
+			st.session_state.get( 'files_system_instructions', '', ) or '' ).strip( )
+		
+		request_prompt = ('Use only the provider file content below to answer the user request.\n'
+		                  'Do not invent information or rely on unsupported external '
+		                  'assumptions.\n'
+		                  'When the file does not contain enough information, state that '
+		                  'limitation '
+		                  'clearly.\n\n'
+		                  f'File ID: {selected_file_id}\n'
+		                  f'File Name: {file_name}\n\n'
+		                  f'File Content:\n{bounded_content}\n\n'
+		                  f'User Request:\n{question}')
+		
+		temperature_value = float( st.session_state.get( 'files_temperature', 0.0, ) or 0.0 )
+		
+		top_percent_value = float( st.session_state.get( 'files_top_percent', 0.0, ) or 0.0 )
+		
+		frequency_penalty_value = float(
+			st.session_state.get( 'files_frequency_penalty', 0.0, ) or 0.0 )
+		
+		presence_penalty_value = float(
+			st.session_state.get( 'files_presence_penalty', 0.0, ) or 0.0 )
+		
+		max_tokens_value = int( st.session_state.get( 'files_max_tokens', 0, ) or 0 )
+		
+		response_format_value = str(
+			st.session_state.get( 'files_response_format', '', ) or '' ).strip( )
+		
+		reasoning_value = str( st.session_state.get( 'files_reasoning', '', ) or '' ).strip( )
+		
+		store_enabled = bool( st.session_state.get( 'files_store', False, ) )
+		
+		stream_enabled = bool( st.session_state.get( 'files_stream', False, ) )
+		
+		background_enabled = bool( st.session_state.get( 'files_background', False, ) )
+		
+		if stream_enabled and background_enabled:
+			raise ValueError(
+				'Files Mode streaming and background execution cannot be enabled at the '
+				'same time.' )
+		
+		if provider_name == 'GPT':
+			result = chat.generate_text( prompt=request_prompt, model=model_name,
+				temperature=temperature_value, top_p=top_percent_value,
+				frequency=frequency_penalty_value, presence=presence_penalty_value,
+				max_tokens=max_tokens_value if max_tokens_value > 0 else None, store=store_enabled,
+				stream=stream_enabled, background=background_enabled,
+				instruct=instruction_value or None, reasoning=reasoning_value or None,
+				format=response_format_value or 'text', )
+		
+		elif provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			
+			if stream_enabled:
+				raise ValueError(
+					'Streaming is not supported by the current Gemini Files analysis path.' )
+			
+			if background_enabled:
+				raise ValueError(
+					'Background execution is not supported by the current Gemini Files '
+					'analysis path.' )
+			
+			result = chat.generate_text( prompt=request_prompt, model=model_name,
+				temperature=temperature_value, top_p=top_percent_value,
+				max_tokens=max_tokens_value if max_tokens_value > 0 else None,
+				instruct=instruction_value or None, response_format=response_format_value or None,
+				stream=False, )
+		
+		elif provider_name == 'Grok':
+			result = chat.generate_text( prompt=request_prompt, model=model_name,
+				temperature=temperature_value, top_p=top_percent_value,
+				frequency=frequency_penalty_value, presence=presence_penalty_value,
+				max_tokens=max_tokens_value if max_tokens_value > 0 else None, store=store_enabled,
+				stream=stream_enabled, background=background_enabled,
+				instruct=instruction_value or None, reasoning=reasoning_value or None,
+				format=response_format_value or 'text', )
+		
+		else:
+			raise ValueError( f'Unsupported Files Mode analysis provider: {provider_name}.' )
+		
+		response_obj = (
+				getattr( chat, 'response', None ) or getattr( chat, 'content_response', None ))
+		
+		if isinstance( result, str ):
+			answer = result.strip( )
+		else:
+			answer = str( getattr( result, 'output_text', None ) or getattr( result, 'text',
+				None ) or extract_response_text( result ) or '' ).strip( )
+		
+		if not answer and response_obj is not None:
+			answer = str(
+				getattr( response_obj, 'output_text', None ) or getattr( response_obj, 'text',
+					None ) or extract_response_text( response_obj ) or '' ).strip( )
+		
+		if background_enabled and not answer:
+			response_id = str( getattr( response_obj, 'id', '' ) or '' ).strip( )
+			
+			response_status = str( getattr( response_obj, 'status', '' ) or '' ).strip( )
+			
+			if response_id:
+				answer = ('Background file-analysis request submitted successfully.\n\n'
+				          f'**Response ID:** `{response_id}`')
+				
+				if response_status:
+					answer += f'\n\n**Status:** {response_status}'
+		
+		if not answer:
+			raise ValueError( f'{provider_name} returned no file-analysis answer.' )
+		
+		source_rows: List[ Dict[ str, Any ] ] = [
+			{ 'type': f'{provider_name} File', 'file_id': selected_file_id, 'filename': file_name,
+				'characters_used': len( bounded_content ), 'characters_available': len( content ),
+				'truncated': len( content ) > len( bounded_content ), }, ]
+		
+		provider_sources = extract_sources( response_obj )
+		
+		if isinstance( provider_sources, list ):
+			for provider_source in provider_sources:
+				if (isinstance( provider_source, dict ) and provider_source not in source_rows):
+					source_rows.append( provider_source )
+		
+		st.session_state[ 'files_context' ] = [ { 'role': 'user', 'content': request_prompt, }, ]
+		st.session_state[ 'files_metadata' ] = metadata
+		st.session_state[ 'files_content' ] = content
+		st.session_state[ 'files_last_answer' ] = answer
+		st.session_state[ 'files_last_operation' ] = 'analyze'
+		st.session_state[ 'last_answer' ] = answer
+		st.session_state[ 'last_sources' ] = source_rows
+		
 		try:
-			return str( files.summarize( id=clean_file_id, prompt=clean_prompt,
-				model=selected_model ) or '' ).strip( )
-		except TypeError:
-			try:
-				return str( files.summarize( file_id=clean_file_id, prompt=clean_prompt,
-					model=selected_model ) or '' ).strip( )
-			except TypeError:
-				pass
-	
-	if clean_file_id and hasattr( files, 'survey' ):
-		try:
-			result = files.survey( id=clean_file_id )
-			return json.dumps( result, indent=2, default=str )
+			update_token_counters( response_obj )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'app'
 			exception.cause = 'analyze_provider_file'
-			exception.method = 'analyze_provider_file( *args ) -> str'
+			exception.method = ('analyze_provider_file( files: Any, prompt: str, '
+			                    'file_id: str | None = None, model: str | None = None ) -> str')
 			Logger( ).write( exception )
 			pass
-	
-	if clean_file_id:
-		content = extract_file_content( files=files, file_id=clean_file_id )
-		if content:
-			query = (f'{st.session_state.get( "files_system_instructions", "" )}\n\n'
-			         f'Use the following file content to answer the user request.\n\n'
-			         f'File Content:\n{content[ :12000 ]}\n\n'
-			         f'User Request:\n{clean_prompt}').strip( )
-			
-			chat = get_chat_module( )
-			
-			try:
-				answer = chat.generate_text( prompt=query, model=selected_model,
-					temperature=st.session_state.get( 'files_temperature' ),
-					top_p=st.session_state.get( 'files_top_percent' ),
-					max_tokens=st.session_state.get( 'files_max_tokens' ),
-					instruct=st.session_state.get( 'files_system_instructions' ) )
-				return str( answer or '' ).strip( )
-			except Exception as e:
-				exception = Error( e )
-				exception.module = 'app'
-				exception.cause = 'analyze_provider_file'
-				exception.method = 'analyze_provider_file( *args ) -> str'
-				Logger( ).write( exception )
-				return content[ :12000 ]
-	
-	return ''
+		
+		return answer
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'analyze_provider_file'
+		exception.method = ('analyze_provider_file( files: Any, prompt: str, '
+		                    'file_id: str | None = None, model: str | None = None ) -> str')
+		Logger( ).write( exception )
+		raise exception
 
 # ======================================================================================
 # VECTOR STORE / FILE SEARCH / CLOUD BUCKET UTILITIES
