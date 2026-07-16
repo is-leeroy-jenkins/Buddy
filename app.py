@@ -15619,7 +15619,16 @@ elif mode == 'Files':
 		st.session_state[ 'clear_instructions' ] = False
 	
 	provider_name = get_provider_name( )
-	files = get_files_module( )
+	if not provider_supports( 'Files', provider_name ):
+		left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+		with center:
+			st.subheader( '📁 Files API', help=cfg.FILES_API )
+			st.divider( )
+			st.warning( f'{provider_name} does not expose a Files capability')
+		
+		st.stop( )
+	
+	files = get_files_module( provider_name )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		st.subheader( '📁 Files API', help=cfg.FILES_API )
