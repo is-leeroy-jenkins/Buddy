@@ -13820,7 +13820,6 @@ if mode == 'Chat':
 					
 					sources = [ ]
 					analysis = { 'tables': [ ], 'files': [ ], 'text': [ ] }
-					
 					if response is not None:
 						try:
 							for item in getattr( response, 'output', [ ] ):
@@ -13933,7 +13932,6 @@ if mode == 'Chat':
 # ======================================================================================
 elif mode == 'Text':
 	ensure_text_mode_state( )
-	
 	provider_name = get_provider_name( )
 	text = get_chat_module( )
 	text_avatar = get_text_avatar( provider_name )
@@ -14220,7 +14218,6 @@ elif mode == 'Text':
 			
 			with in_right:
 				category_options = [ '' ] + text_categories
-				
 				st.selectbox( label='Category', options=category_options,
 					key='text_instruction_category', on_change=change_text_instruction_category,
 					format_func=lambda category: ('Select Category' if category == '' and len(
@@ -14230,7 +14227,6 @@ elif mode == 'Text':
 					help='Select a Text Mode prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
-				
 				st.selectbox( label='Use Template', options=template_options,
 					key='text_instruction_prompt_id', on_change=load_text_instruction_template,
 					format_func=lambda prompt_id: (
@@ -14384,9 +14380,7 @@ elif mode == 'Text':
 									include_last_message=False, )
 							
 							st.session_state[ 'text_context' ] = text_context
-							
-							text_previous_id = get_text_previous_response_id(
-								input_mode=input_mode,
+							text_previous_id = get_text_previous_response_id( input_mode=input_mode,
 								previous_id=st.session_state.get( 'text_previous_response_id' ), )
 							
 							text_conversation_id = get_text_conversation_id( input_mode=input_mode,
@@ -14410,15 +14404,12 @@ elif mode == 'Text':
 								conversation_id=text_conversation_id, )
 							
 							response_obj = getattr( text, 'response', None )
-							
 							response_id = getattr( response_obj, 'id', '' )
-							
 							st.session_state[ 'text_previous_response_id' ] = (
 								str( response_id ).strip( ) if response_id is not None else '')
 							
 							conversation = getattr( response_obj, 'conversation', None )
 							returned_conversation_id = getattr( conversation, 'id', '', )
-							
 							if returned_conversation_id:
 								st.session_state[ 'text_conversation_id' ] = str(
 									returned_conversation_id ).strip( )
@@ -14464,14 +14455,12 @@ elif mode == 'Text':
 								input_mode = 'single_turn'
 							
 							stream_enabled = bool( st.session_state.get( 'text_stream', False ) )
-							
 							number_value = int( st.session_state.get( 'text_number', 0 ) or 0 )
 							
 							max_tokens_value = int(
 								st.session_state.get( 'text_max_tokens', 0 ) or 0 )
 							
 							top_k_value = int( st.session_state.get( 'text_top_k', 0 ) or 0 )
-							
 							max_urls_value = int( st.session_state.get( 'text_max_urls', 0 ) or 0 )
 							
 							temperature_value = float(
@@ -14704,7 +14693,6 @@ elif mode == 'Text':
 								st.session_state.get( 'text_reasoning', '' ) or '' ).strip( )
 							
 							response_format_value = st.session_state.get( 'text_response_format' )
-							
 							if isinstance( response_format_value, str ):
 								response_format_value = response_format_value.strip( )
 								
@@ -14721,7 +14709,6 @@ elif mode == 'Text':
 									include_last_message=False, )
 							
 							st.session_state[ 'text_context' ] = text_context
-							
 							text_previous_id = get_text_previous_response_id(
 								input_mode=input_mode,
 								previous_id=st.session_state.get( 'text_previous_response_id' ), )
@@ -14737,7 +14724,6 @@ elif mode == 'Text':
 							
 							grok_tools: List[ Dict[ str, Any ] ] = [ ]
 							selected_tools = st.session_state.get( 'text_tools', [ ], )
-							
 							if isinstance( selected_tools, list ):
 								for selected_tool in selected_tools:
 									if isinstance( selected_tool, dict ):
@@ -14752,28 +14738,23 @@ elif mode == 'Text':
 										continue
 									
 									tool_name = selected_tool.strip( )
-									
 									if not tool_name:
 										continue
 									
 									tool_payload = { 'type': tool_name }
-									
 									if tool_payload not in grok_tools:
 										grok_tools.append( tool_payload )
 							
 							selected_include = st.session_state.get( 'text_include', [ ], )
-							
 							if not isinstance( selected_include, list ):
 								selected_include = [ ]
 							
 							grok_include: List[ str ] = [ ]
-							
 							for include_value in selected_include:
 								if not isinstance( include_value, str ):
 									continue
 								
 								include_name = include_value.strip( )
-								
 								if (include_name and include_name not in grok_include):
 									grok_include.append( include_name )
 							
@@ -14802,16 +14783,13 @@ elif mode == 'Text':
 								conversation_id=text_conversation_id, )
 							
 							response_obj = getattr( text, 'response', None )
-							
 							response_id = getattr( response_obj, 'id', '' )
 							
 							st.session_state[ 'text_previous_response_id' ] = (
 								str( response_id ).strip( ) if response_id is not None else '')
 							
 							conversation = getattr( response_obj, 'conversation', None, )
-							
 							returned_conversation_id = getattr( conversation, 'id', '', )
-							
 							if returned_conversation_id:
 								st.session_state[ 'text_conversation_id' ] = str(
 									returned_conversation_id ).strip( )
@@ -15196,7 +15174,6 @@ elif mode == 'Images':
 						st.warning( 'Enter a prompt before generating an image.' )
 					else:
 						append_image_message( 'user', prompt_value )
-						
 						with st.spinner( 'Generating…' ):
 							try:
 								if provider_name == 'Gemini':
@@ -15378,7 +15355,6 @@ elif mode == 'Images':
 			
 			prompt = st.chat_input( 'Enter image analysis prompt...', key='image_analyze_prompt' )
 			ana_c1, ana_c2 = st.columns( [ 0.5, 0.5 ] )
-			
 			with ana_c1:
 				if st.button( 'Analyze Image', key='analyze_image', width='stretch' ):
 					prompt_value = get_image_prompt( prompt )
@@ -15389,7 +15365,6 @@ elif mode == 'Images':
 						st.warning( 'Enter a prompt before analyzing an image.' )
 					else:
 						append_image_message( 'user', prompt_value )
-						
 						with st.spinner( 'Analyzing image…' ):
 							try:
 								if provider_name == 'Gemini':
@@ -15489,7 +15464,6 @@ elif mode == 'Images':
 			
 			prompt = st.chat_input( 'Enter image editing prompt...', key='image_edit_prompt' )
 			edit_c1, edit_c2 = st.columns( [ 0.5, 0.5 ] )
-			
 			with edit_c1:
 				if st.button( 'Edit Image', key='edit_image', width='stretch' ):
 					prompt_value = get_image_prompt( prompt )
@@ -15500,7 +15474,6 @@ elif mode == 'Images':
 						st.warning( 'Enter a prompt before editing an image.' )
 					else:
 						append_image_message( 'user', prompt_value )
-						
 						with st.spinner( 'Editing image…' ):
 							try:
 								if provider_name == 'Gemini':
@@ -15550,7 +15523,6 @@ elif mode == 'Images':
 										'', ) or '' ).strip( )
 									
 									modality_value = st.session_state.get( 'image_modality' )
-									
 									if isinstance( modality_value, str ):
 										modality_value = modality_value.strip( )
 									
@@ -15818,7 +15790,6 @@ elif mode == 'Audio':
 			active_audio_task = str( st.session_state.get( 'audio_task', '' ) or '' ).strip( )
 			
 			allowed_categories = resolve_audio_prompt_categories( audio_task=active_audio_task, )
-			
 			audio_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 				allowed_categories=allowed_categories, )
 			
@@ -15843,7 +15814,6 @@ elif mode == 'Audio':
 					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
-			
 			synchronize_instruction_prompt_selection( selector_key='audio_instruction_prompt_id',
 				valid_prompt_ids=prompt_ids, )
 			
@@ -16063,7 +16033,6 @@ elif mode == 'Audio':
 			render_audio_bytes( st.session_state.get( 'audio_output_bytes' ), response_format )
 		
 		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-		
 		if isinstance( st.session_state.get( 'audio_messages' ), list ):
 			for msg in st.session_state.audio_messages:
 				with st.chat_message( msg.get( 'role', 'assistant' ), avatar='' ):
@@ -16693,7 +16662,6 @@ elif mode == 'Document Q&A':
 		# ------------------------------------------------------------------
 		with st.expander( label='Document Loading', icon='📥', expanded=False, width='stretch' ):
 			load_left, load_right = st.columns( [ 0.25, 0.75 ], border=True, gap='small' )
-			
 			with load_left:
 				source_value = st.session_state.get( 'docqna_source', 'Local Upload' )
 				
@@ -16827,7 +16795,6 @@ elif mode == 'Document Q&A':
 		# Reset Buttons
 		# ------------------------------------------------------------------
 		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ]  )
-		
 		with reset_c1:
 			st.button( label='Clear Messages', key='docqna_clear_messages', width='stretch',
 				on_click=clear_docqna_messages )
@@ -16887,8 +16854,7 @@ elif mode == 'Files':
 			# ------------------------------------------------------------------
 			# File Management Controls
 			# ------------------------------------------------------------------
-			with st.expander( label='File Management', icon='📂', expanded=False,
-					width='stretch' ):
+			with st.expander( label='File Management', icon='📂', expanded=False, width='stretch' ):
 				mgmt_c1, mgmt_c2, mgmt_c3, mgmt_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25 ],
 					border=True, gap='xxsmall' )
 				
@@ -16924,8 +16890,7 @@ elif mode == 'Files':
 			# ------------------------------------------------------------------
 			# Analysis Controls
 			# ------------------------------------------------------------------
-			with st.expander( label='Analysis Controls', icon='🧊', expanded=False,
-					width='stretch', ):
+			with st.expander( label='Analysis Controls', icon='🧊', expanded=False, width='stretch', ):
 				if provider_supports( 'Chat', provider_name ):
 					chat = get_chat_module( provider_name )
 					model_options = get_text_option_list( chat, 'model_options', [ ], )
@@ -16940,33 +16905,33 @@ elif mode == 'Files':
 				if selected_model and selected_model not in valid_models:
 					st.session_state[ 'files_model' ] = ''
 				
-				analysis_c1, analysis_c2, analysis_c3, analysis_c4, analysis_c5 = (
-					st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall', ))
+				ana_c1, ana_c2, ana_c3, ana_c4, ana_c5 = st.columns( [ 0.20, 0.20, 0.20, 0.20, 0.20 ],
+					border=True, gap='xxsmall', )
 				
-				with analysis_c1:
+				with ana_c1:
 					st.selectbox( label='Model', options=valid_models, key='files_model',
 						help='Model used for optional file analysis.', index=None,
 						placeholder='Options' if valid_models else 'Unavailable',
 						disabled=chat is None or len( valid_models ) == 0, )
 				
-				with analysis_c2:
+				with ana_c2:
 					st.slider( label='Temperature', min_value=-2.0, max_value=2.0,
 						value=float( st.session_state.get( 'files_temperature', 0.0, ) ),
 						step=0.01,
 						key='files_temperature', help=cfg.TEMPERATURE, )
 				
-				with analysis_c3:
+				with ana_c3:
 					st.slider( label='Top-P', min_value=0.0, max_value=1.0,
 						value=float( st.session_state.get( 'files_top_percent', 0.0, ) ),
 						step=0.01,
 						key='files_top_percent', help=cfg.TOP_P, )
 				
-				with analysis_c4:
+				with ana_c4:
 					st.slider( label='Max Tokens', min_value=0, max_value=100000,
 						value=int( st.session_state.get( 'files_max_tokens', 0, ) ), step=500,
 						key='files_max_tokens', help=cfg.MAX_OUTPUT_TOKENS, )
 				
-				with analysis_c5:
+				with ana_c5:
 					st.toggle( label='Store', key='files_store', help=cfg.STORE, )
 				
 				st.button( label='Reset Controls', key='files_reset_analysis_controls',
@@ -16978,8 +16943,7 @@ elif mode == 'Files':
 		# ------------------------------------------------------------------
 		# System Instructions
 		# ------------------------------------------------------------------
-		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-				width='stretch' ):
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch' ):
 			files_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 				allowed_categories=PROMPT_FILES_CATEGORIES, )
 			
@@ -17000,29 +16964,24 @@ elif mode == 'Files':
 					int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 			
 			prompt_ids = list( prompt_lookup.keys( ) )
-			
 			synchronize_instruction_prompt_selection( selector_key='files_instruction_prompt_id',
 				valid_prompt_ids=prompt_ids, )
 			
 			in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-			
 			with in_left:
 				st.text_area( label='Enter Text', height=90, width='stretch',
 					help=cfg.SYSTEM_INSTRUCTIONS, key='files_system_instructions', )
 			
 			with in_right:
 				category_options = [ '' ] + files_categories
-				
 				st.selectbox( label='Category', options=category_options,
 					key='files_instruction_category', on_change=change_files_instruction_category,
 					format_func=lambda category: ('Select Category' if category == '' and len(
 						files_categories ) > 0 else 'No Categories Found' if category == '' else
-					category),
-					disabled=len( files_categories ) == 0,
+					category), disabled=len( files_categories ) == 0,
 					help='Select a Files Mode prompt category.', )
 				
 				template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
-				
 				st.selectbox( label='Use Template', options=template_options,
 					key='files_instruction_prompt_id', on_change=load_files_instruction,
 					format_func=lambda prompt_id: (
@@ -17044,138 +17003,137 @@ elif mode == 'Files':
 		# ------------------------------------------------------------------
 		# File Operations
 		# ------------------------------------------------------------------
-		ops_left, ops_right = st.columns( [ 0.45, 0.55 ], border=True, gap='small', )
-		with ops_left:
-			st.caption( 'Upload' )
-			uploaded_file = st.file_uploader( label='Upload file to provider Files API',
-				type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml', 'png', 'jpg', 'jpeg',
-					'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts', ],
-				accept_multiple_files=False, key='files_api_file_uploader', )
-			
-			if uploaded_file is not None:
-				tmp_path = save_temp( uploaded_file )
+		with st.expander( label='File Operations', icon='📂', expanded=False, width='stretch', ):
+			ops_left, ops_right = st.columns( [ 0.45, 0.55 ], border=True, gap='small', )
+			with ops_left:
+				st.caption( 'Upload' )
+				uploaded_file = st.file_uploader( label='Upload file to provider Files API',
+					type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml', 'png', 'jpg', 'jpeg',
+						'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts', ],
+					accept_multiple_files=False, key='files_api_file_uploader', )
 				
-				if st.button( label='Upload File', key='files_upload_button', width='stretch', ):
-					if not tmp_path:
-						st.warning( 'Could not save the uploaded file for provider upload.' )
-					else:
-						with st.spinner( 'Uploading file…' ):
+				if uploaded_file is not None:
+					tmp_path = save_temp( uploaded_file )
+					if st.button( label='Upload File', key='files_upload_button', width='stretch', ):
+						if not tmp_path:
+							st.warning( 'Could not save the uploaded file for provider upload.' )
+						else:
+							with st.spinner( 'Uploading file…' ):
+								try:
+									result = upload_provider_file( files=files, path=tmp_path,
+										purpose=st.session_state.get( 'files_purpose' ), )
+									
+									metadata = normalize_files_object( result )
+									st.session_state[ 'files_last_upload' ] = metadata
+									st.session_state[ 'files_metadata' ] = metadata
+									st.session_state[ 'files_last_operation' ] = 'upload'
+									file_id = get_files_id( metadata )
+									if file_id:
+										st.session_state[ 'files_id' ] = file_id
+									
+									st.success( f'Uploaded file: {file_id or uploaded_file.name}' )
+								except Exception as exc:
+									st.error( f'Upload failed: {exc}' )
+				
+				st.caption( 'Operations' )
+				op_c1, op_c2 = st.columns( [ 0.5, 0.5 ], gap='xxsmall', )
+				with op_c1:
+					if st.button( label='List Files', key='files_list_button', width='stretch', ):
+						with st.spinner( 'Listing files…' ):
 							try:
-								result = upload_provider_file( files=files, path=tmp_path,
-									purpose=st.session_state.get( 'files_purpose' ), )
+								rows = list_provider_files( files=files,
+									purpose=st.session_state.get( 'files_filter_purpose' ), )
 								
-								metadata = normalize_files_object( result )
-								st.session_state[ 'files_last_upload' ] = metadata
-								st.session_state[ 'files_metadata' ] = metadata
-								st.session_state[ 'files_last_operation' ] = 'upload'
-								file_id = get_files_id( metadata )
-								if file_id:
-									st.session_state[ 'files_id' ] = file_id
-								
-								st.success( f'Uploaded file: '
-								            f'{file_id or uploaded_file.name}' )
+								st.session_state[ 'files_table_data' ] = rows
+								st.session_state[ 'files_last_list' ] = rows
+								st.session_state[ 'files_last_operation' ] = 'list'
+								st.success( f'Found {len( rows ):,} file(s).' )
 							except Exception as exc:
-								st.error( f'Upload failed: {exc}' )
-			
-			st.caption( 'Operations' )
-			
-			op_c1, op_c2 = st.columns( [ 0.5, 0.5 ], gap='xxsmall', )
-			with op_c1:
-				if st.button( label='List Files', key='files_list_button', width='stretch', ):
-					with st.spinner( 'Listing files…' ):
-						try:
-							rows = list_provider_files( files=files,
-								purpose=st.session_state.get( 'files_filter_purpose' ), )
-							
-							st.session_state[ 'files_table_data' ] = rows
-							st.session_state[ 'files_last_list' ] = rows
-							st.session_state[ 'files_last_operation' ] = 'list'
-							st.success( f'Found {len( rows ):,} file(s).' )
-						except Exception as exc:
-							st.error( f'List failed: {exc}' )
-				
-				if st.button( label='Retrieve Metadata', key='files_retrieve_button',
-						width='stretch', ):
-					file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
+								st.error( f'List failed: {exc}' )
 					
-					if not file_id:
-						st.warning( 'Enter or select a file ID before retrieving metadata.' )
-					else:
-						with st.spinner( 'Retrieving file metadata…' ):
-							try:
-								metadata = retrieve_provider_file( files=files, file_id=file_id, )
-								st.session_state[ 'files_metadata' ] = metadata
-								st.session_state[ 'files_last_operation' ] = 'retrieve'
-								st.success( 'File metadata retrieved.' )
-							except Exception as exc:
-								st.error( f'Retrieve failed: {exc}' )
-			
-			with op_c2:
-				if st.button( label='Extract Content', key='files_extract_button',
-						width='stretch', ):
-					file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
-					
-					if not file_id:
-						st.warning( 'Enter or select a file ID before extracting content.' )
-					else:
-						with st.spinner( 'Extracting file content…' ):
-							try:
-								content = extract_file_content( files=files, file_id=file_id, )
-								st.session_state[ 'files_content' ] = content
-								st.session_state[ 'files_last_operation' ] = 'extract'
-								st.success( 'File content extracted.' )
-							except Exception as exc:
-								st.error( f'Extract failed: {exc}' )
+					if st.button( label='Retrieve Metadata', key='files_retrieve_button',
+							width='stretch', ):
+						file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
+						
+						if not file_id:
+							st.warning( 'Enter or select a file ID before retrieving metadata.' )
+						else:
+							with st.spinner( 'Retrieving file metadata…' ):
+								try:
+									metadata = retrieve_provider_file( files=files, file_id=file_id, )
+									st.session_state[ 'files_metadata' ] = metadata
+									st.session_state[ 'files_last_operation' ] = 'retrieve'
+									st.success( 'File metadata retrieved.' )
+								except Exception as exc:
+									st.error( f'Retrieve failed: {exc}' )
 				
-				if st.button( label='Delete File', key='files_delete_button', width='stretch', ):
-					file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
-					if not file_id:
-						st.warning( 'Enter or select a file ID before deleting.' )
-					else:
-						with st.spinner( 'Deleting file…' ):
-							try:
-								result = delete_provider_file( files=files, file_id=file_id, )
-								st.session_state[ 'files_delete_result' ] = result
-								st.session_state[ 'files_last_operation' ] = 'delete'
-								st.session_state[ 'files_id' ] = ''
-								st.session_state[ 'files_selected_option' ] = None
-								st.success( 'Delete request completed.' )
-							except Exception as exc:
-								st.error( f'Delete failed: {exc}' )
+				with op_c2:
+					if st.button( label='Extract Content', key='files_extract_button',
+							width='stretch', ):
+						file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
+						
+						if not file_id:
+							st.warning( 'Enter or select a file ID before extracting content.' )
+						else:
+							with st.spinner( 'Extracting file content…' ):
+								try:
+									content = extract_file_content( files=files, file_id=file_id, )
+									st.session_state[ 'files_content' ] = content
+									st.session_state[ 'files_last_operation' ] = 'extract'
+									st.success( 'File content extracted.' )
+								except Exception as exc:
+									st.error( f'Extract failed: {exc}' )
+					
+					if st.button( label='Delete File', key='files_delete_button', width='stretch', ):
+						file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
+						if not file_id:
+							st.warning( 'Enter or select a file ID before deleting.' )
+						else:
+							with st.spinner( 'Deleting file…' ):
+								try:
+									result = delete_provider_file( files=files, file_id=file_id, )
+									st.session_state[ 'files_delete_result' ] = result
+									st.session_state[ 'files_last_operation' ] = 'delete'
+									st.session_state[ 'files_id' ] = ''
+									st.session_state[ 'files_selected_option' ] = None
+									st.success( 'Delete request completed.' )
+								except Exception as exc:
+									st.error( f'Delete failed: {exc}' )
+			
+			with ops_right:
+				st.caption( 'Results' )
+				rows = st.session_state.get( 'files_table_data', [ ], )
+				if isinstance( rows, list ) and len( rows ) > 0:
+					df_files = pd.DataFrame( rows )
+					st.data_editor( df_files, use_container_width=True, hide_index=True, )
+					options = build_selector_options( rows )
+					if len( options ) > 0:
+						selected_file = st.selectbox( label='Select Listed File', options=options,
+							key='files_selected_option', index=None, placeholder='Options', )
+						
+						selected_id = get_option_id( selected_file )
+						if selected_id:
+							st.session_state[ 'files_id' ] = selected_id
+				
+				metadata = st.session_state.get( 'files_metadata', { }, )
+				if isinstance( metadata, dict ) and len( metadata ) > 0:
+					with st.expander( label='Metadata', icon='🧾', expanded=False, width='stretch', ):
+						st.json( metadata )
+				
+				content = st.session_state.get( 'files_content', '', )
+				if isinstance( content, str ) and content.strip( ):
+					with st.expander( label='Extracted Content', icon='📄', expanded=False,
+							width='stretch', ):
+						st.text_area( label='Content', value=content[ :20000 ], height=360,
+							width='stretch', disabled=True, )
+				
+				delete_result = st.session_state.get( 'files_delete_result', { }, )
+				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
+					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
+							width='stretch', ):
+						st.json( delete_result )
 		
-		with ops_right:
-			st.caption( 'Results' )
-			rows = st.session_state.get( 'files_table_data', [ ], )
-			if isinstance( rows, list ) and len( rows ) > 0:
-				df_files = pd.DataFrame( rows )
-				st.data_editor( df_files, use_container_width=True, hide_index=True, )
-				options = build_selector_options( rows )
-				if len( options ) > 0:
-					selected_file = st.selectbox( label='Select Listed File', options=options,
-						key='files_selected_option', index=None, placeholder='Options', )
-					
-					selected_id = get_option_id( selected_file )
-					if selected_id:
-						st.session_state[ 'files_id' ] = selected_id
-			
-			metadata = st.session_state.get( 'files_metadata', { }, )
-			if isinstance( metadata, dict ) and len( metadata ) > 0:
-				with st.expander( label='Metadata', icon='🧾', expanded=False, width='stretch', ):
-					st.json( metadata )
-			
-			content = st.session_state.get( 'files_content', '', )
-			if isinstance( content, str ) and content.strip( ):
-				with st.expander( label='Extracted Content', icon='📄', expanded=False,
-						width='stretch', ):
-					st.text_area( label='Content', value=content[ :20000 ], height=360,
-						width='stretch', disabled=True, )
-			
-			delete_result = st.session_state.get( 'files_delete_result', { }, )
-			
-			if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
-				with st.expander( label='Delete Result', icon='🗑️', expanded=False,
-						width='stretch', ):
-					st.json( delete_result )
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ------------------------------------------------------------------
 		# File Analysis Chat
@@ -17185,9 +17143,7 @@ elif mode == 'Files':
 				continue
 			
 			role = str( message.get( 'role', 'assistant' ) or 'assistant' ).strip( )
-			
 			content = str( message.get( 'content', '' ) or '' )
-			
 			with st.chat_message( role ):
 				st.markdown( content )
 		
@@ -17196,13 +17152,9 @@ elif mode == 'Files':
 			         'capability required for file analysis.' )
 		else:
 			prompt = st.chat_input( 'Ask a question about the selected file …' )
-			
 			if prompt is not None and str( prompt ).strip( ):
 				prompt_value = str( prompt ).strip( )
-				
-				st.session_state[ 'files_messages' ].append(
-					{ 'role': 'user', 'content': prompt_value, } )
-				
+				st.session_state[ 'files_messages' ].append( { 'role': 'user', 'content': prompt_value, } )
 				with st.chat_message( 'assistant' ):
 					with st.spinner( 'Analyzing selected file…' ):
 						try:
@@ -17226,12 +17178,10 @@ elif mode == 'Files':
 		
 		last_answer = st.session_state.get( 'files_last_answer', '' )
 		if isinstance( last_answer, str ) and last_answer.strip( ):
-			with st.expander( label='Last File Analysis', icon='🧠', expanded=False,
-					width='stretch' ):
+			with st.expander( label='Last File Analysis', icon='🧠', expanded=False, width='stretch' ):
 				st.markdown( last_answer )
 		
-		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ], border=True,
-			gap='xxsmall' )
+		reset_c1, reset_c2, reset_c3 = st.columns( [ 0.34, 0.33, 0.33 ], gap='xxsmall' )
 		with reset_c1:
 			st.button( label='Clear Messages', key='clear_files_messages', width='stretch',
 				on_click=clear_files_messages )
@@ -17253,7 +17203,6 @@ elif mode == 'Vector Stores':
 	if provider_name in [ 'GPT', 'Grok' ]:
 		if not provider_supports( 'VectorStores', provider_name ):
 			left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-			
 			with center:
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
@@ -17264,13 +17213,10 @@ elif mode == 'Vector Stores':
 	
 	elif provider_name == 'Gemini':
 		apply_gemini_runtime_config( )
-		
 		selected_backend = get_gemini_vector_backend( )
-		
 		if (selected_backend == 'File Search Stores' and not provider_supports( 'FileSearch',
 			provider_name )):
 			left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-			
 			with center:
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
@@ -17282,7 +17228,6 @@ elif mode == 'Vector Stores':
 		if (selected_backend == 'Cloud Buckets' and not provider_supports( 'CloudBuckets',
 			provider_name )):
 			left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-			
 			with center:
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
@@ -17293,7 +17238,6 @@ elif mode == 'Vector Stores':
 	
 	else:
 		left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-		
 		with center:
 			st.subheader( '🧠 Vector Stores' )
 			st.divider( )
@@ -17303,7 +17247,6 @@ elif mode == 'Vector Stores':
 	
 	backend_name = get_vectorstores_backend_name( provider_name )
 	backend_summary = get_storage_backend_summary( provider_name )
-	
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		st.subheader( '🧠 Vector Stores' )
@@ -17334,8 +17277,7 @@ elif mode == 'Vector Stores':
 				st.markdown( f'**Concrete Backend:** {backend_name}' )
 			
 			with route_c4:
-				st.button( label='Reset Routing', key='vectorstores_reset_routing',
-					width='stretch',
+				st.button( label='Reset Routing', key='vectorstores_reset_routing', width='stretch',
 					on_click=reset_vectorstore_routing_controls, )
 			
 			st.json( backend_summary )
@@ -17369,32 +17311,26 @@ elif mode == 'Vector Stores':
 						int ) and not isinstance( prompt.get( 'ID' ), bool ) }
 				
 				prompt_ids = list( prompt_lookup.keys( ) )
-				
 				synchronize_instruction_prompt_selection(
 					selector_key='stores_instruction_prompt_id', valid_prompt_ids=prompt_ids, )
 				
 				in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-				
 				with in_left:
 					st.text_area( label='Enter Text', height=90, width='stretch',
 						help=cfg.SYSTEM_INSTRUCTIONS, key='stores_system_instructions', )
 				
 				with in_right:
 					category_options = [ '' ] + stores_categories
-					
 					st.selectbox( label='Category', options=category_options,
 						key='stores_instruction_category',
 						on_change=change_stores_instruction_category, format_func=lambda
-							category: (
-							'Select Category' if category == '' and len(
-								stores_categories ) > 0 else 'No Categories Found' if category ==
-							                                                          '' else
-							category),
+							category: ( 'Select Category' if category == '' and len(
+								stores_categories ) > 0 else 'No Categories Found'
+						if category == '' else category),
 						disabled=len( stores_categories ) == 0,
 						help='Select a Vector Stores prompt category.', )
 					
 					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
-					
 					st.selectbox( label='Use Template', options=template_options,
 						key='stores_instruction_prompt_id', on_change=load_stores_instruction,
 						format_func=lambda prompt_id: (
@@ -17405,7 +17341,6 @@ elif mode == 'Vector Stores':
 						help='Load a System Instructions template for Vector Stores Mode.', )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-				
 				with btn_c1:
 					st.button( label='Clear Instructions', width='stretch',
 						on_click=clear_stores_instructions, )
@@ -17421,14 +17356,10 @@ elif mode == 'Vector Stores':
 		# ------------------------------------------------------------------
 		if provider_name == 'GPT':
 			vectorstores = get_vectorstores_module( provider_name )
-			
 			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
-			
 			with ops_left:
 				st.caption( 'OpenAI Vector Store Controls' )
-				
 				store_c1, store_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
-				
 				with store_c1:
 					st.text_input( label='Vector Store Name', key='stores_name', width='stretch',
 						placeholder='Federal Financial Regulations', )
@@ -17447,7 +17378,6 @@ elif mode == 'Vector Stores':
 						width='stretch', placeholder='file-a, file-b, file-c', )
 				
 				list_c1, list_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
-				
 				with list_c1:
 					st.number_input( label='List Limit', min_value=1, max_value=100, step=1,
 						key='stores_limit',
@@ -17464,7 +17394,6 @@ elif mode == 'Vector Stores':
 					accept_multiple_files=False, key='stores_file_upload', )
 				
 				action_c1, action_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall', )
-				
 				with action_c1:
 					if st.button( label='Create Store', key='gpt_stores_create',
 							width='stretch', ):
@@ -17482,10 +17411,8 @@ elif mode == 'Vector Stores':
 									result_key='stores_store_metadata', )
 								
 								identifier = get_storage_identifier( result )
-								
 								if identifier:
 									st.session_state[ 'stores_id' ] = identifier
-									
 									st.session_state[ 'stores_selected_id' ] = identifier
 								
 								st.success( f'Created Vector Store: '
@@ -17537,13 +17464,8 @@ elif mode == 'Vector Stores':
 										'desc', ) or 'desc' ), )
 								
 								set_storage_rows( rows=rows, table_key='stores_table', )
-								
-								st.session_state[
-									'storage_last_operation' ] = 'list_openai_vector_stores'
-								
-								st.session_state[
-									'stores_last_operation' ] = 'list_openai_vector_stores'
-								
+								st.session_state[ 'storage_last_operation' ] = 'list_openai_vector_stores'
+								st.session_state[ 'stores_last_operation' ] = 'list_openai_vector_stores'
 								st.success( f'Found {len( rows ):,} Vector Store(s).' )
 							except Exception as exc:
 								st.error( f'List failed: {exc}' )
@@ -17553,7 +17475,6 @@ elif mode == 'Vector Stores':
 						with st.spinner( 'Deleting OpenAI Vector Store…' ):
 							try:
 								store_id = get_vectorstores_selected_id( )
-								
 								result = delete_gpt_vectorstore( vectorstores=vectorstores,
 									store_id=store_id, )
 								
@@ -17562,15 +17483,10 @@ elif mode == 'Vector Stores':
 									result_key='stores_delete_result', )
 								
 								st.session_state[ 'stores_id' ] = ''
-								
 								st.session_state[ 'stores_manual_id' ] = ''
-								
 								st.session_state[ 'stores_selected_id' ] = ''
-								
 								st.session_state[ 'stores_selected_label' ] = ''
-								
 								st.session_state[ 'storage_selected_option' ] = ''
-								
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
 								st.error( f'Delete failed: {exc}' )
@@ -17615,15 +17531,12 @@ elif mode == 'Vector Stores':
 			
 			with ops_right:
 				st.caption( 'OpenAI Vector Store Results' )
-				
 				rows = st.session_state.get( 'stores_table', [ ], )
-				
 				if isinstance( rows, list ) and len( rows ) > 0:
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True, )
 					
 					options = build_storage_selectors( rows )
-					
 					if len( options ) > 0:
 						selected = st.selectbox( label='Select Vector Store', options=options,
 							key='storage_selected_option', index=None, placeholder='Options', )
@@ -17631,35 +17544,30 @@ elif mode == 'Vector Stores':
 						sync_storage_selection( selected_option=selected, provider_name='GPT', )
 				
 				store_metadata = st.session_state.get( 'stores_store_metadata', { }, )
-				
 				if (isinstance( store_metadata, dict ) and len( store_metadata ) > 0):
 					with st.expander( label='Vector Store', icon='🧠', expanded=True,
 							width='stretch', ):
 						st.json( store_metadata )
 				
 				file_metadata = st.session_state.get( 'stores_file_metadata', { }, )
-				
 				if (isinstance( file_metadata, dict ) and len( file_metadata ) > 0):
 					with st.expander( label='Vector Store File', icon='📄', expanded=False,
 							width='stretch', ):
 						st.json( file_metadata )
 				
 				batch_result = st.session_state.get( 'stores_batch_result', { }, )
-				
 				if (isinstance( batch_result, dict ) and len( batch_result ) > 0):
 					with st.expander( label='File Batch', icon='📚', expanded=False,
 							width='stretch', ):
 						st.json( batch_result )
 				
 				upload_result = st.session_state.get( 'stores_upload_result', { }, )
-				
 				if (isinstance( upload_result, dict ) and len( upload_result ) > 0):
 					with st.expander( label='Upload Result', icon='⬆️', expanded=False,
 							width='stretch', ):
 						st.json( upload_result )
 				
 				delete_result = st.session_state.get( 'stores_delete_result', { }, )
-				
 				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
 					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
 							width='stretch', ):
@@ -17672,12 +17580,10 @@ elif mode == 'Vector Stores':
 			vectorstores = get_vectorstores_module( provider_name )
 			
 			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
-			
 			with ops_left:
 				st.caption( 'xAI Collection Controls' )
 				
 				control_c1, control_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
-				
 				with control_c1:
 					st.text_input( label='Manual Collection ID', key='stores_manual_id',
 						width='stretch', placeholder='collection_...', )
@@ -17700,14 +17606,12 @@ elif mode == 'Vector Stores':
 					                             'collections...', )
 				
 				grok_c1, grok_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall', )
-				
 				with grok_c1:
 					if st.button( label='List Collections', key='grok_stores_list',
 							width='stretch', ):
 						with st.spinner( 'Listing configured xAI Collections…' ):
 							try:
 								rows = get_grok_collections( vectorstores )
-								
 								limit_value = int(
 									st.session_state.get( 'stores_limit', 100, ) or 100 )
 								
@@ -17718,17 +17622,12 @@ elif mode == 'Vector Stores':
 									'desc', ) or 'desc' ).strip( ).lower( )
 								
 								rows = rows[ :limit_value ]
-								
 								if order_value == 'asc':
 									rows = list( reversed( rows ) )
 								
 								set_storage_rows( rows=rows, table_key='stores_table', )
-								
-								st.session_state[
-									'stores_last_operation' ] = 'list_grok_collections'
-								
-								st.session_state[
-									'storage_last_operation' ] = 'list_grok_collections'
+								st.session_state[ 'stores_last_operation' ] = 'list_grok_collections'
+								st.session_state[ 'storage_last_operation' ] = 'list_grok_collections'
 								
 								st.success( f'Found {len( rows ):,} configured collection(s).' )
 							except Exception as exc:
@@ -17763,12 +17662,10 @@ elif mode == 'Vector Stores':
 									query=st.session_state.get( 'stores_query', '', ), )
 								
 								answer = str( result.get( 'answer', '' ) or '' ).strip( )
-								
 								if answer:
 									st.session_state[ 'stores_answer' ] = answer
 								
 								search_rows = result.get( 'rows', [ ], )
-								
 								if (isinstance( search_rows, list ) and len( search_rows ) > 0):
 									st.session_state[ 'stores_files_table' ] = search_rows
 								
@@ -17788,7 +17685,6 @@ elif mode == 'Vector Stores':
 									st.session_state.get( 'stores_file_ids_text', '', ) )
 								
 								selected_id = get_vectorstores_selected_id( )
-								
 								if selected_id:
 									collection_ids = merge_unique_strings( primary=collection_ids,
 										secondary=[ selected_id ], )
@@ -17798,12 +17694,10 @@ elif mode == 'Vector Stores':
 									query=st.session_state.get( 'stores_query', '', ), )
 								
 								answer = str( result.get( 'answer', '' ) or '' ).strip( )
-								
 								if answer:
 									st.session_state[ 'stores_answer' ] = answer
 								
 								survey_rows = result.get( 'rows', [ ], )
-								
 								if (isinstance( survey_rows, list ) and len( survey_rows ) > 0):
 									st.session_state[ 'stores_files_table' ] = survey_rows
 								
@@ -17828,15 +17722,12 @@ elif mode == 'Vector Stores':
 			
 			with ops_right:
 				st.caption( 'xAI Collection Results' )
-				
 				rows = st.session_state.get( 'stores_table', [ ], )
-				
 				if isinstance( rows, list ) and len( rows ) > 0:
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True, )
 					
 					options = build_storage_selectors( rows )
-					
 					if len( options ) > 0:
 						selected = st.selectbox( label='Select Collection', options=options,
 							key='storage_selected_option', index=None, placeholder='Options', )
@@ -17844,14 +17735,12 @@ elif mode == 'Vector Stores':
 						sync_storage_selection( selected_option=selected, provider_name='Grok', )
 				
 				answer = st.session_state.get( 'stores_answer', '', )
-				
 				if isinstance( answer, str ) and answer.strip( ):
 					with st.expander( label='Search / Survey Answer', icon='🧠', expanded=True,
 							width='stretch', ):
 						st.markdown( answer )
 				
 				search_rows = st.session_state.get( 'stores_files_table', [ ], )
-				
 				if (isinstance( search_rows, list ) and len( search_rows ) > 0):
 					with st.expander( label='Search / Survey Results', icon='📚', expanded=False,
 							width='stretch', ):
@@ -17859,21 +17748,18 @@ elif mode == 'Vector Stores':
 							hide_index=True, )
 				
 				store_metadata = st.session_state.get( 'stores_store_metadata', { }, )
-				
 				if (isinstance( store_metadata, dict ) and len( store_metadata ) > 0):
 					with st.expander( label='Collection Metadata', icon='🧾', expanded=False,
 							width='stretch', ):
 						st.json( store_metadata )
 				
 				search_result = st.session_state.get( 'stores_search_result', { }, )
-				
 				if (isinstance( search_result, dict ) and len( search_result ) > 0):
 					with st.expander( label='Search Result', icon='🔎', expanded=False,
 							width='stretch', ):
 						st.json( search_result )
 				
 				survey_result = st.session_state.get( 'stores_survey_result', { }, )
-				
 				if (isinstance( survey_result, dict ) and len( survey_result ) > 0):
 					with st.expander( label='Survey Result', icon='📊', expanded=False,
 							width='stretch', ):
@@ -17884,14 +17770,12 @@ elif mode == 'Vector Stores':
 		# ------------------------------------------------------------------
 		elif (provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'File Search Stores'):
 			apply_gemini_runtime_config( )
-			
 			filestore = get_vectorstores_module( provider_name, backend='File Search Stores', )
 			
 			# ------------------------------------------------------------------
 			# System Instructions
 			# ------------------------------------------------------------------
-			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-					width='stretch', ):
+			with st.expander( label='System Instructions', icon='🖥️', expanded=False, width='stretch', ):
 				filestore_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 					allowed_categories=PROMPT_FILESTORE_CATEGORIES, )
 				
@@ -18031,7 +17915,6 @@ elif mode == 'Vector Stores':
 						with st.spinner( 'Deleting Gemini File Search Store…' ):
 							try:
 								resource_name = get_vectorstores_selected_id( )
-								
 								result = delete_gemini_file_search_store( filestore=filestore,
 									store_id=resource_name, )
 								
@@ -18040,13 +17923,9 @@ elif mode == 'Vector Stores':
 									result_key='filestore_delete_result', )
 								
 								st.session_state[ 'filestore_id' ] = ''
-								
 								st.session_state[ 'filestore_selected_id' ] = ''
-								
 								st.session_state[ 'filestore_selected_label' ] = ''
-								
 								st.session_state[ 'storage_selected_option' ] = ''
-								
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
 								st.error( f'Delete failed: {exc}' )
@@ -18057,15 +17936,10 @@ elif mode == 'Vector Stores':
 			
 			with ops_right:
 				st.caption( 'Gemini File Search Store Results' )
-				
 				rows = st.session_state.get( 'filestore_table', [ ], )
-				
 				if (isinstance( rows, list ) and len( rows ) > 0):
-					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
-						hide_index=True, )
-					
+					st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True, )
 					options = build_storage_selectors( rows )
-					
 					if len( options ) > 0:
 						selected = st.selectbox( label='Select File Search Store', options=options,
 							key='storage_selected_option', index=None, placeholder='Options', )
@@ -18074,21 +17948,18 @@ elif mode == 'Vector Stores':
 							backend='File Search Stores', )
 				
 				metadata = st.session_state.get( 'filestore_metadata', { }, )
-				
 				if (isinstance( metadata, dict ) and len( metadata ) > 0):
 					with st.expander( label='File Search Store Metadata', icon='🧾', expanded=True,
 							width='stretch', ):
 						st.json( metadata )
 				
 				operation_result = st.session_state.get( 'filestore_operation_result', { }, )
-				
 				if (isinstance( operation_result, dict ) and len( operation_result ) > 0):
 					with st.expander( label='Operation Result', icon='⚙️', expanded=False,
 							width='stretch', ):
 						st.json( operation_result )
 				
 				delete_result = st.session_state.get( 'filestore_delete_result', { }, )
-				
 				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
 					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
 							width='stretch', ):
@@ -18099,7 +17970,6 @@ elif mode == 'Vector Stores':
 		# ------------------------------------------------------------------
 		elif (provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'Cloud Buckets'):
 			apply_gemini_runtime_config( )
-			
 			buckets = get_vectorstores_module( provider_name, backend='Cloud Buckets', )
 			
 			# ------------------------------------------------------------------
@@ -18133,14 +18003,12 @@ elif mode == 'Vector Stores':
 					selector_key='bucket_instruction_prompt_id', valid_prompt_ids=prompt_ids, )
 				
 				in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-				
 				with in_left:
 					st.text_area( label='Enter Text', height=90, width='stretch',
 						help=cfg.SYSTEM_INSTRUCTIONS, key='bucket_system_instructions', )
 				
 				with in_right:
 					category_options = [ '', *bucket_categories, ]
-					
 					st.selectbox( label='Category', options=category_options,
 						key='bucket_instruction_category',
 						on_change=change_bucket_instruction_category, format_func=lambda
@@ -18153,7 +18021,6 @@ elif mode == 'Vector Stores':
 						help=('Select a Google Cloud Buckets prompt category.'), )
 					
 					template_options: List[ Optional[ int ] ] = [ None, *prompt_ids, ]
-					
 					st.selectbox( label='Use Template', options=template_options,
 						key='bucket_instruction_prompt_id', on_change=load_bucket_instruction,
 						format_func=lambda prompt_id: (
@@ -18165,7 +18032,6 @@ elif mode == 'Vector Stores':
 						      'Cloud Buckets.'), )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-				
 				with btn_c1:
 					st.button( label='Reset Instructions', key='bucket_reset_instructions',
 						width='stretch', on_click=clear_bucket_instructions, )
@@ -18175,9 +18041,7 @@ elif mode == 'Vector Stores':
 						width='stretch', on_click=convert_bucket_instructions, )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
-			
 			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
-			
 			with ops_left:
 				st.caption( 'Gemini Cloud Bucket Object Controls' )
 				
@@ -18204,9 +18068,7 @@ elif mode == 'Vector Stores':
 						with st.spinner( 'Listing Google Cloud buckets…' ):
 							try:
 								rows = list_google_cloud_buckets( buckets=buckets )
-								
 								set_storage_rows( rows=rows, table_key='bucket_table', )
-								
 								st.session_state[ 'bucket_operation_result' ] = {
 									'operation': ('list_google_cloud_buckets'),
 									'count': len( rows ), }
@@ -18229,7 +18091,6 @@ elif mode == 'Vector Stores':
 									bucket_name=st.session_state.get( 'bucket_name', '', ), )
 								
 								set_storage_rows( rows=rows, table_key='bucket_table', )
-								
 								st.session_state[ 'bucket_operation_result' ] = {
 									'operation': ('list_google_cloud_bucket_objects'),
 									'bucket_name': st.session_state.get( 'bucket_name', '', ),
@@ -18275,7 +18136,6 @@ elif mode == 'Vector Stores':
 										'', ) or '' ).strip( )
 								
 								path = save_uploaded_storage_file( uploaded_bucket_file )
-								
 								result = upload_to_google_cloud_bucket( buckets=buckets,
 									bucket_name=st.session_state.get( 'bucket_name', '', ),
 									object_name=object_name, path=path, )
@@ -18285,7 +18145,6 @@ elif mode == 'Vector Stores':
 									result_key='bucket_upload_result', )
 								
 								st.session_state[ 'bucket_object_name' ] = object_name
-								
 								st.success( 'Object upload completed.' )
 							except Exception as exc:
 								st.error( f'Upload failed: {exc}' )
@@ -18308,13 +18167,9 @@ elif mode == 'Vector Stores':
 									result_key='bucket_delete_result', )
 								
 								st.session_state[ 'bucket_object_name' ] = ''
-								
 								st.session_state[ 'bucket_selected_id' ] = ''
-								
 								st.session_state[ 'bucket_selected_label' ] = ''
-								
 								st.session_state[ 'storage_selected_option' ] = ''
-								
 								st.success( 'Object delete request completed.' )
 							except Exception as exc:
 								st.error( f'Delete failed: {exc}' )
@@ -18326,13 +18181,11 @@ elif mode == 'Vector Stores':
 				st.caption( 'Gemini Cloud Bucket Results' )
 				
 				rows = st.session_state.get( 'bucket_table', [ ], )
-				
 				if (isinstance( rows, list ) and len( rows ) > 0):
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
 						hide_index=True, )
 					
 					options = build_storage_selectors( rows )
-					
 					if len( options ) > 0:
 						selected = st.selectbox( label='Select Bucket or Object', options=options,
 							key='storage_selected_option', index=None, placeholder='Options', )
@@ -18341,14 +18194,11 @@ elif mode == 'Vector Stores':
 							backend='Cloud Buckets', )
 				
 				metadata = st.session_state.get( 'bucket_metadata', { }, )
-				
 				if (isinstance( metadata, dict ) and len( metadata ) > 0):
 					with st.expander( label='Bucket Object Metadata', icon='🧾', expanded=True,
 							width='stretch', ):
 						metadata_display = dict( metadata )
-						
 						content_value = metadata_display.get( 'content' )
-						
 						if isinstance( content_value, (bytes, bytearray), ):
 							metadata_display[ 'content' ] = (
 								f'<{len( content_value ):,} binary bytes>')
@@ -18356,21 +18206,18 @@ elif mode == 'Vector Stores':
 						st.json( metadata_display )
 				
 				upload_result = st.session_state.get( 'bucket_upload_result', { }, )
-				
 				if (isinstance( upload_result, dict ) and len( upload_result ) > 0):
 					with st.expander( label='Upload Result', icon='⬆️', expanded=False,
 							width='stretch', ):
 						st.json( upload_result )
 				
 				delete_result = st.session_state.get( 'bucket_delete_result', { }, )
-				
 				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
 					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
 							width='stretch', ):
 						st.json( delete_result )
 				
 				operation_result = st.session_state.get( 'bucket_operation_result', { }, )
-				
 				if (isinstance( operation_result, dict ) and len( operation_result ) > 0):
 					with st.expander( label='Operation Result', icon='⚙️', expanded=False,
 							width='stretch', ):
