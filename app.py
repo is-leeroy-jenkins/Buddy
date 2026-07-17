@@ -10496,7 +10496,6 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 		Logger( ).write( exception )
 		raise exception
 
-
 # ======================================================================================
 # VECTOR STORES/FILE STORES/COLLECTIONS UTILITIES
 # ======================================================================================
@@ -10872,294 +10871,591 @@ def attach_file_to_openai_vector_store( vectorstores: Any,
 	
 	raise AttributeError( 'VectorStores wrapper does not expose a file attachment method.' )
 
-def create_gemini_file_search_store( filestore: Any, name: str ) -> Dict[ str, Any ]:
-	"""Create gemini file search store.
+def get_gemini_filestore_method( filestore: Any, method_names: List[ str ],
+	operation_name: str, ) -> Any:
+	"""Get Gemini File Search Store method.
 	
 	Purpose:
-	    Builds create gemini file search store from validated runtime inputs and prepares the
-	    resulting object, payload, table, or display structure for later application
-	    processing.
+	    Resolves a callable Gemini File Search Store operation without using exception-driven
+	    signature retries.
 	
 	Args:
-	    filestore: File, upload, or path value used by the document or storage workflow.
-	    name: Name value used by the application workflow.
+	    filestore: Active Gemini File Search Store capability.
+	    method_names: Ordered method names accepted for the requested operation.
+	    operation_name: User-facing name of the requested operation.
 	
 	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	    Any: Callable provider method implementing the requested operation.
 	
 	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
+	    Error: Raised when the capability does not expose the requested operation.
 	"""
-	if not isinstance( name, str ) or not name.strip( ):
-		raise ValueError( 'File Search Store name is required.' )
-	
-	apply_gemini_runtime_config( )
-	for method_name in [ 'create', 'create_store', 'create_file_search_store' ]:
-		if hasattr( filestore, method_name ):
-			method = getattr( filestore, method_name )
-			try:
-				result = method( name=name.strip( ) )
-			except TypeError:
-				result = method( name.strip( ) )
+	try:
+		if filestore is None:
+			raise AttributeError( 'Gemini does not expose the File Search Store capability.' )
+		
+		for method_name in method_names:
+			if not isinstance( method_name, str ):
+				continue
 			
-			return normalize_storage_object( result )
-	
-	raise AttributeError( 'Gemini FileSearch wrapper does not expose a create method.' )
-
-def list_gemini_file_search_stores( filestore: Any ) -> List[ Dict[ str, Any ] ]:
-	"""List gemini file search stores.
-	
-	Purpose:
-	    Retrieves list gemini file search stores for the Streamlit application workflow and
-	    returns the normalized value used by downstream UI, provider, database, or document-
-	    processing steps.
-	
-	Args:
-	    filestore: File, upload, or path value used by the document or storage workflow.
-	
-	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	apply_gemini_runtime_config( )
-	for method_name in [ 'list', 'list_stores', 'list_file_search_stores' ]:
-		if hasattr( filestore, method_name ):
-			result = getattr( filestore, method_name )( )
-			return normalize_storage_list( result )
-	
-	raise AttributeError( 'Gemini FileSearch wrapper does not expose a list method.' )
-
-def retrieve_gemini_file_search_store( filestore: Any, store_id: str ) -> Dict[ str, Any ]:
-	"""Retrieve gemini file search store.
-	
-	Purpose:
-	    Retrieves retrieve gemini file search store for the Streamlit application workflow and
-	    returns the normalized value used by downstream UI, provider, database, or document-
-	    processing steps.
-	
-	Args:
-	    filestore: File, upload, or path value used by the document or storage workflow.
-	    store_id: Store Id value used by the application workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if not isinstance( store_id, str ) or not store_id.strip( ):
-		raise ValueError( 'File Search Store ID or resource name is required.' )
-	
-	apply_gemini_runtime_config( )
-	for method_name in [ 'retrieve', 'get', 'get_store', 'get_file_search_store' ]:
-		if hasattr( filestore, method_name ):
-			method = getattr( filestore, method_name )
-			try:
-				result = method( name=store_id.strip( ) )
-			except TypeError:
-				try:
-					result = method( id=store_id.strip( ) )
-				except TypeError:
-					result = method( store_id.strip( ) )
+			normalized_name = method_name.strip( )
 			
-			return normalize_storage_object( result )
-	
-	raise AttributeError( 'Gemini FileSearch wrapper does not expose a retrieve method.' )
-
-def delete_gemini_file_search_store( filestore: Any, store_id: str ) -> Dict[ str, Any ]:
-	"""Delete gemini file search store.
-	
-	Purpose:
-	    Applies the delete gemini file search store operation to application-managed data,
-	    files, prompts, or provider resources while preserving the surrounding workflow state.
-	
-	Args:
-	    filestore: File, upload, or path value used by the document or storage workflow.
-	    store_id: Store Id value used by the application workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if not isinstance( store_id, str ) or not store_id.strip( ):
-		raise ValueError( 'File Search Store ID or resource name is required.' )
-	
-	apply_gemini_runtime_config( )
-	for method_name in [ 'delete', 'delete_store', 'delete_file_search_store' ]:
-		if hasattr( filestore, method_name ):
-			method = getattr( filestore, method_name )
-			try:
-				result = method( name=store_id.strip( ) )
-			except TypeError:
-				try:
-					result = method( id=store_id.strip( ) )
-				except TypeError:
-					result = method( store_id.strip( ) )
+			if not normalized_name:
+				continue
 			
-			return normalize_storage_object( result )
-	
-	raise AttributeError( 'Gemini FileSearch wrapper does not expose a delete method.' )
-
-def create_google_cloud_bucket( buckets: Any, bucket_name: str ) -> Dict[ str, Any ]:
-	"""Create google cloud bucket.
-	
-	Purpose:
-	    Builds create google cloud bucket from validated runtime inputs and prepares the
-	    resulting object, payload, table, or display structure for later application
-	    processing.
-	
-	Args:
-	    buckets: Buckets value used by the application workflow.
-	    bucket_name: Bucket Name value used by the application workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if not isinstance( bucket_name, str ) or not bucket_name.strip( ):
-		raise ValueError( 'Bucket name is required.' )
-	
-	apply_gemini_runtime_config( )
-	for method_name in [ 'create', 'create_bucket' ]:
-		if hasattr( buckets, method_name ):
-			method = getattr( buckets, method_name )
-			try:
-				result = method( name=bucket_name.strip( ) )
-			except TypeError:
-				try:
-					result = method( bucket_name=bucket_name.strip( ) )
-				except TypeError:
-					result = method( bucket_name.strip( ) )
+			method = getattr( filestore, normalized_name, None, )
 			
-			return normalize_storage_object( result )
-	
-	raise AttributeError( 'CloudBuckets wrapper does not expose a create method.' )
+			if callable( method ):
+				return method
+		
+		raise AttributeError( f'The Gemini File Search wrapper does not expose {operation_name}. '
+		                      f'Expected one of: {", ".join( method_names )}.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_gemini_filestore_method'
+		exception.method = ('get_gemini_filestore_method( filestore: Any, '
+		                    'method_names: List[str], operation_name: str ) -> Any')
+		Logger( ).write( exception )
+		raise exception
 
-def list_google_cloud_buckets( buckets: Any ) -> List[ Dict[ str, Any ] ]:
-	"""List google cloud buckets.
+def create_gemini_file_search_store( filestore: Any, name: str, ) -> Dict[ str, Any ]:
+	"""Create Gemini File Search Store.
 	
 	Purpose:
-	    Retrieves list google cloud buckets for the Streamlit application workflow and returns
-	    the normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
+	    Creates a Gemini File Search Store using a validated display name and normalizes the
+	    returned provider resource.
 	
 	Args:
-	    buckets: Buckets value used by the application workflow.
+	    filestore: Active Gemini File Search Store capability.
+	    name: Display name assigned to the new File Search Store.
 	
 	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	    Dict[str, Any]: Normalized Gemini File Search Store resource.
 	
 	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
+	    Error: Raised when validation, provider execution, or resource normalization fails.
 	"""
-	apply_gemini_runtime_config( )
-	for method_name in [ 'list', 'list_buckets' ]:
-		if hasattr( buckets, method_name ):
-			result = getattr( buckets, method_name )( )
-			return normalize_storage_list( result )
+	try:
+		store_name = require_storage_value( 'File Search Store Name', name, )
+		
+		apply_gemini_runtime_config( )
+		
+		create_method = get_gemini_filestore_method( filestore=filestore,
+			method_names=[ 'create', 'create_store', 'create_file_search_store', ],
+			operation_name='File Search Store creation', )
+		
+		result = create_method( name=store_name, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( 'Gemini returned no File Search Store resource after creation.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'create_gemini_file_search_store'
+		exception.method = ('create_gemini_file_search_store( filestore: Any, '
+		                    'name: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def list_gemini_file_search_stores( filestore: Any, ) -> List[ Dict[ str, Any ] ]:
+	"""List Gemini File Search Stores.
 	
-	raise AttributeError( 'CloudBuckets wrapper does not expose a list method.' )
+	Purpose:
+	    Lists Gemini File Search Stores and normalizes the returned resources for display,
+	    selection, and downstream Document Q&A integration.
+	
+	Args:
+	    filestore: Active Gemini File Search Store capability.
+	
+	Returns:
+	    List[Dict[str, Any]]: Normalized Gemini File Search Store resources.
+	
+	Raises:
+	    Error: Raised when provider execution or resource normalization fails.
+	"""
+	try:
+		apply_gemini_runtime_config( )
+		
+		list_method = get_gemini_filestore_method( filestore=filestore,
+			method_names=[ 'list', 'list_stores', 'list_file_search_stores', ],
+			operation_name='File Search Store listing', )
+		
+		result = list_method( )
+		rows = normalize_storage_rows( result )
+		
+		if not isinstance( rows, list ):
+			raise ValueError( 'Gemini returned an invalid File Search Store list.' )
+		
+		return rows
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'list_gemini_file_search_stores'
+		exception.method = ('list_gemini_file_search_stores( filestore: Any ) '
+		                    '-> List[Dict[str, Any]]')
+		Logger( ).write( exception )
+		raise exception
+
+def retrieve_gemini_file_search_store( filestore: Any, store_id: str, ) -> Dict[ str, Any ]:
+	"""Retrieve Gemini File Search Store.
+	
+	Purpose:
+	    Retrieves one Gemini File Search Store by resource name and normalizes the returned
+	    provider resource.
+	
+	Args:
+	    filestore: Active Gemini File Search Store capability.
+	    store_id: Gemini File Search Store resource name.
+	
+	Returns:
+	    Dict[str, Any]: Normalized Gemini File Search Store resource.
+	
+	Raises:
+	    Error: Raised when validation, provider execution, or resource normalization fails.
+	"""
+	try:
+		resource_name = require_storage_value( 'File Search Store Resource Name', store_id, )
+		
+		apply_gemini_runtime_config( )
+		
+		retrieve_method = get_gemini_filestore_method( filestore=filestore,
+			method_names=[ 'retrieve', 'get', 'get_store', 'get_file_search_store', ],
+			operation_name='File Search Store retrieval', )
+		
+		result = retrieve_method( name=resource_name, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError(
+				f'Gemini returned no File Search Store resource for `{resource_name}`.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'retrieve_gemini_file_search_store'
+		exception.method = ('retrieve_gemini_file_search_store( filestore: Any, '
+		                    'store_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def delete_gemini_file_search_store( filestore: Any, store_id: str, ) -> Dict[ str, Any ]:
+	"""Delete Gemini File Search Store.
+	
+	Purpose:
+	    Deletes one Gemini File Search Store by resource name and normalizes the deletion
+	    acknowledgement.
+	
+	Args:
+	    filestore: Active Gemini File Search Store capability.
+	    store_id: Gemini File Search Store resource name.
+	
+	Returns:
+	    Dict[str, Any]: Normalized Gemini deletion acknowledgement.
+	
+	Raises:
+	    Error: Raised when validation or provider execution fails.
+	"""
+	try:
+		resource_name = require_storage_value( 'File Search Store Resource Name', store_id, )
+		
+		apply_gemini_runtime_config( )
+		
+		delete_method = get_gemini_filestore_method( filestore=filestore,
+			method_names=[ 'delete', 'delete_store', 'delete_file_search_store', ],
+			operation_name='File Search Store deletion', )
+		
+		result = delete_method( name=resource_name, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			normalized = { 'name': resource_name, 'deleted': True, 'provider': 'Gemini',
+				'backend': 'File Search Stores', }
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'delete_gemini_file_search_store'
+		exception.method = ('delete_gemini_file_search_store( filestore: Any, '
+		                    'store_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def get_google_cloud_bucket_method( buckets: Any, method_names: List[ str ],
+	operation_name: str, ) -> Any:
+	"""Get Google Cloud Bucket method.
+	
+	Purpose:
+	    Resolves a callable Google Cloud Bucket object operation without using exception-driven
+	    signature retries that can conceal provider implementation errors.
+	
+	Args:
+	    buckets: Active Gemini Cloud Buckets capability.
+	    method_names: Ordered provider method names accepted for the requested operation.
+	    operation_name: User-facing name of the requested bucket operation.
+	
+	Returns:
+	    Any: Callable provider method implementing the requested operation.
+	
+	Raises:
+	    Error: Raised when the capability does not expose the requested operation.
+	"""
+	try:
+		if buckets is None:
+			raise AttributeError( 'Gemini does not expose the Cloud Buckets capability.' )
+		
+		for method_name in method_names:
+			if not isinstance( method_name, str ):
+				continue
+			
+			normalized_name = method_name.strip( )
+			
+			if not normalized_name:
+				continue
+			
+			method = getattr( buckets, normalized_name, None, )
+			
+			if callable( method ):
+				return method
+		
+		raise AttributeError( f'The Gemini Cloud Buckets wrapper does not expose '
+		                      f'{operation_name}. '
+		                      f'Expected one of: {", ".join( method_names )}.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_google_cloud_bucket_method'
+		exception.method = ('get_google_cloud_bucket_method( buckets: Any, '
+		                    'method_names: List[str], operation_name: str ) -> Any')
+		Logger( ).write( exception )
+		raise exception
+
+def create_google_cloud_bucket( buckets: Any, bucket_name: str, ) -> Dict[ str, Any ]:
+	"""Create Google Cloud Bucket.
+	
+	Purpose:
+	    Creates a Google Cloud Bucket through a verified provider bucket-creation operation and
+	    normalizes the returned provider resource.
+	
+	Args:
+	    buckets: Active Gemini Cloud Buckets capability.
+	    bucket_name: Globally unique Google Cloud Bucket name.
+	
+	Returns:
+	    Dict[str, Any]: Normalized Google Cloud Bucket resource.
+	
+	Raises:
+	    Error: Raised when validation, provider execution, or resource normalization fails.
+	"""
+	try:
+		selected_bucket_name = require_storage_value( 'Bucket Name', bucket_name, )
+		
+		apply_gemini_runtime_config( )
+		
+		create_method = get_google_cloud_bucket_method( buckets=buckets,
+			method_names=[ 'create_bucket', ], operation_name='bucket creation', )
+		
+		result = create_method( bucket_name=selected_bucket_name, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( 'Gemini returned no Cloud Bucket resource after creation.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'create_google_cloud_bucket'
+		exception.method = ('create_google_cloud_bucket( buckets: Any, '
+		                    'bucket_name: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def list_google_cloud_buckets( buckets: Any, ) -> List[ Dict[ str, Any ] ]:
+	"""List Google Cloud Buckets.
+	
+	Purpose:
+	    Lists Google Cloud Buckets available through the active Gemini Cloud Buckets capability
+	    and normalizes the returned resources for display and selection.
+	
+	Args:
+	    buckets: Active Gemini Cloud Buckets capability.
+	
+	Returns:
+	    List[Dict[str, Any]]: Normalized Google Cloud Bucket resources.
+	
+	Raises:
+	    Error: Raised when provider execution or resource normalization fails.
+	"""
+	try:
+		apply_gemini_runtime_config( )
+		
+		list_method = get_google_cloud_bucket_method( buckets=buckets,
+			method_names=[ 'list_buckets', ], operation_name='bucket listing', )
+		
+		result = list_method( )
+		rows = normalize_storage_rows( result )
+		
+		if not isinstance( rows, list ):
+			raise ValueError( 'Gemini returned an invalid Cloud Bucket list.' )
+		
+		return rows
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'list_google_cloud_buckets'
+		exception.method = ('list_google_cloud_buckets( buckets: Any ) '
+		                    '-> List[Dict[str, Any]]')
+		Logger( ).write( exception )
+		raise exception
+
+def list_google_cloud_bucket_objects( buckets: Any, bucket_name: str, ) -> List[ Dict[ str, Any ] ]:
+	"""List Google Cloud Bucket objects.
+	
+	Purpose:
+	    Lists objects contained in one Google Cloud Bucket and normalizes the returned resources
+	    for display, selection, retrieval, and deletion.
+	
+	Args:
+	    buckets: Active Gemini Cloud Buckets capability.
+	    bucket_name: Google Cloud Bucket containing the requested objects.
+	
+	Returns:
+	    List[Dict[str, Any]]: Normalized Google Cloud Bucket object resources.
+	
+	Raises:
+	    Error: Raised when validation, provider execution, or resource normalization fails.
+	"""
+	try:
+		selected_bucket_name = require_storage_value( 'Bucket Name', bucket_name, )
+		
+		apply_gemini_runtime_config( )
+		
+		list_method = get_google_cloud_bucket_method( buckets=buckets,
+			method_names=[ 'list_objects', 'list_blobs', 'list_files', ],
+			operation_name='bucket-object listing', )
+		
+		result = list_method( bucket_name=selected_bucket_name, )
+		
+		rows = normalize_storage_rows( result )
+		
+		if not isinstance( rows, list ):
+			raise ValueError( 'Gemini returned an invalid Cloud Bucket object list.' )
+		
+		return rows
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'list_google_cloud_bucket_objects'
+		exception.method = ('list_google_cloud_bucket_objects( buckets: Any, '
+		                    'bucket_name: str ) -> List[Dict[str, Any]]')
+		Logger( ).write( exception )
+		raise exception
+
+def retrieve_google_cloud_bucket_object( buckets: Any,
+	bucket_name: str, object_name: str, ) ->  Dict[ str, Any ]:
+	"""Retrieve Google Cloud Bucket object.
+	
+	Purpose:
+	    Retrieves metadata or content for one object in a Google Cloud Bucket and normalizes the
+	    returned provider resource.
+	
+	Args:
+	    buckets: Active Gemini Cloud Buckets capability.
+	    bucket_name: Google Cloud Bucket containing the object.
+	    object_name: Full object name within the selected bucket.
+	
+	Returns:
+	    Dict[str, Any]: Normalized Google Cloud Bucket object resource.
+	
+	Raises:
+	    Error: Raised when validation, provider execution, or resource normalization fails.
+	"""
+	try:
+		selected_bucket_name = require_storage_value( 'Bucket Name', bucket_name, )
+		
+		selected_object_name = require_storage_value( 'Object Name', object_name, )
+		
+		apply_gemini_runtime_config( )
+		
+		retrieve_method = get_google_cloud_bucket_method( buckets=buckets,
+			method_names=[ 'retrieve', 'get_object', 'get_blob', 'download_object',
+				'download_blob', ], operation_name='bucket-object retrieval', )
+		
+		result = retrieve_method( bucket_name=selected_bucket_name,
+			object_name=selected_object_name, )
+		
+		if isinstance( result, bytes ):
+			return { 'bucket_name': selected_bucket_name, 'object_name': selected_object_name,
+				'content': result, 'size_bytes': len( result ), }
+		
+		if isinstance( result, bytearray ):
+			content = bytes( result )
+			
+			return { 'bucket_name': selected_bucket_name, 'object_name': selected_object_name,
+				'content': content, 'size_bytes': len( content ), }
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( f'Gemini returned no Cloud Bucket object resource for '
+			                  f'`{selected_object_name}`.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'retrieve_google_cloud_bucket_object'
+		exception.method = ('retrieve_google_cloud_bucket_object( buckets: Any, '
+		                    'bucket_name: str, object_name: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
 
 def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
-	object_name: str, path: str ) -> Dict[ str, Any ]:
-	"""Upload to google cloud bucket.
+	object_name: str, path: str, ) -> Dict[ str, Any ]:
+	"""Upload to Google Cloud Bucket.
 	
 	Purpose:
-	    Applies the upload to google cloud bucket operation to application-managed data, files,
-	    prompts, or provider resources while preserving the surrounding workflow state.
+	    Uploads one validated local file to a specific object name within an existing Google
+	    Cloud Bucket and normalizes the returned provider resource.
 	
 	Args:
-	    buckets: Buckets value used by the application workflow.
-	    bucket_name: Bucket Name value used by the application workflow.
-	    object_name: Object Name value used by the application workflow.
-	    path: File, upload, or path value used by the document or storage workflow.
+	    buckets: Active Gemini Cloud Buckets capability.
+	    bucket_name: Existing Google Cloud Bucket receiving the object.
+	    object_name: Full destination object name within the bucket.
+	    path: Local temporary path containing the uploaded file.
 	
 	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	    Dict[str, Any]: Normalized uploaded Cloud Bucket object resource.
 	
 	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
+	    Error: Raised when validation, provider execution, or resource normalization fails.
 	"""
-	if not isinstance( bucket_name, str ) or not bucket_name.strip( ):
-		raise ValueError( 'Bucket name is required.' )
-	
-	if not isinstance( object_name, str ) or not object_name.strip( ):
-		raise ValueError( 'Object name is required.' )
-	
-	if not isinstance( path, str ) or not path.strip( ):
-		raise ValueError( 'Upload path is required.' )
-	
-	apply_gemini_runtime_config( )
-	for method_name in [ 'upload', 'upload_file', 'upload_blob' ]:
-		if hasattr( buckets, method_name ):
-			method = getattr( buckets, method_name )
-			try:
-				result = method( bucket_name=bucket_name.strip( ),
-					object_name=object_name.strip( ),
-					path=path.strip( ) )
-			except TypeError:
-				try:
-					result = method( bucket_name.strip( ), object_name.strip( ), path.strip( ) )
-				except TypeError:
-					result = method( bucket_name.strip( ), path.strip( ) )
-			
-			return normalize_storage_object( result )
-	
-	raise AttributeError( 'CloudBuckets wrapper does not expose an upload method.' )
+	try:
+		selected_bucket_name = require_storage_value( 'Bucket Name', bucket_name, )
+		selected_object_name = require_storage_value( 'Object Name', object_name, )
+		file_path = require_storage_value( 'Upload Path', path, )
+		if not os.path.isfile( file_path ):
+			raise FileNotFoundError( f'The uploaded temporary file does not exist: {file_path}' )
+		
+		apply_gemini_runtime_config( )
+		upload_method = get_google_cloud_bucket_method( buckets=buckets,
+			method_names=[ 'upload', 'upload_file', 'upload_blob', 'upload_object', ],
+			operation_name='bucket-object upload', )
+		
+		result = upload_method( bucket_name=selected_bucket_name, object_name=selected_object_name,
+			path=file_path, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			normalized = { 'bucket_name': selected_bucket_name, 'object_name':
+				selected_object_name,
+				'uploaded': True, 'provider': 'Gemini', 'backend': 'Cloud Buckets', }
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'upload_to_google_cloud_bucket'
+		exception.method = ('upload_to_google_cloud_bucket( buckets: Any, bucket_name: str, '
+		                    'object_name: str, path: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
 
 def delete_google_cloud_bucket_object( buckets: Any,
-	bucket_name: str, object_name: str ) -> Dict[ str, Any ]:
-	"""Delete google cloud bucket object.
+	bucket_name: str, object_name: str, ) -> Dict[ str, Any ]:
+	"""Delete Google Cloud Bucket object.
 	
 	Purpose:
-	    Applies the delete google cloud bucket object operation to application-managed data,
-	    files, prompts, or provider resources while preserving the surrounding workflow state.
+	    Deletes one object from an existing Google Cloud Bucket and normalizes the provider
+	    deletion acknowledgement.
 	
 	Args:
-	    buckets: Buckets value used by the application workflow.
-	    bucket_name: Bucket Name value used by the application workflow.
-	    object_name: Object Name value used by the application workflow.
+	    buckets: Active Gemini Cloud Buckets capability.
+	    bucket_name: Google Cloud Bucket containing the object.
+	    object_name: Full object name deleted from the selected bucket.
 	
 	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	    Dict[str, Any]: Normalized Cloud Bucket object-deletion acknowledgement.
 	
 	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
+	    Error: Raised when validation or provider execution fails.
 	"""
-	if not isinstance( bucket_name, str ) or not bucket_name.strip( ):
-		raise ValueError( 'Bucket name is required.' )
+	try:
+		selected_bucket_name = require_storage_value( 'Bucket Name', bucket_name, )
+		selected_object_name = require_storage_value( 'Object Name', object_name, )
+		apply_gemini_runtime_config( )
+		
+		delete_method = get_google_cloud_bucket_method( buckets=buckets,
+			method_names=[ 'delete_object', 'delete_blob', 'delete_file', ],
+			operation_name='bucket-object deletion', )
+		
+		result = delete_method( bucket_name=selected_bucket_name,
+			object_name=selected_object_name, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			normalized = { 'bucket_name': selected_bucket_name, 'object_name':
+				selected_object_name,
+				'deleted': True, 'provider': 'Gemini', 'backend': 'Cloud Buckets', }
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'delete_google_cloud_bucket_object'
+		exception.method = ('delete_google_cloud_bucket_object( buckets: Any, '
+		                    'bucket_name: str, object_name: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
 	
-	if not isinstance( object_name, str ) or not object_name.strip( ):
-		raise ValueError( 'Object name is required.' )
-	
-	apply_gemini_runtime_config( )
-	for method_name in [ 'delete_object', 'delete_blob', 'delete_file' ]:
-		if hasattr( buckets, method_name ):
-			method = getattr( buckets, method_name )
-			try:
-				result = method( bucket_name=bucket_name.strip( ),
-					object_name=object_name.strip( ) )
-			except TypeError:
-				result = method( bucket_name.strip( ), object_name.strip( ) )
-			
-			return normalize_storage_object( result )
-	
-	raise AttributeError( 'CloudBuckets wrapper does not expose an object delete method.' )
-
 def clear_filestore_instructions( ) -> None:
 	"""Clear File Search Store instructions.
 	
@@ -11879,8 +12175,8 @@ def save_uploaded_storage_file( uploaded_file: Any ) -> str:
 		
 		return tmp.name
 
-def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List[
-	Dict[ str, Any ] ]:
+def set_storage_rows( rows: Any,
+	table_key: str = 'storage_table_data' ) -> List[ Dict[ str, Any ] ]:
 	"""Set storage rows.
 	
 	Purpose:
@@ -12152,8 +12448,8 @@ def create_gpt_vectorstore( vectorstores: Any, name: str,
 		Logger( ).write( exception )
 		raise exception
 
-def list_gpt_vectorstores( vectorstores: Any, limit: int = 100, order: str = 'desc', ) -> List[
-	Dict[ str, Any ] ]:
+def list_gpt_vectorstores( vectorstores: Any, limit: int = 100,
+	order: str = 'desc', ) -> List[ Dict[ str, Any ] ]:
 	"""List GPT Vector Stores.
 	
 	Purpose:
@@ -12344,7 +12640,7 @@ def attach_gpt_vectorstore_file( vectorstores: Any,
 		raise exception
 
 def create_gpt_vectorstore_file_batch( vectorstores: Any,
-	store_id: str, file_ids: List[ str ],  ) -> Dict[ str, Any ]:
+	store_id: str, file_ids: List[ str ] ) ->  Dict[ str, Any ]:
 	"""Create GPT Vector Store file batch.
 	
 	Purpose:
@@ -12446,57 +12742,318 @@ def upload_and_attach_gpt_vectorstore_file( vectorstores: Any,
 		Logger( ).write( exception )
 		raise exception
 
-def get_grok_collections( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
-	"""Get grok collections.
+def get_grok_vectorstore_method( vectorstores: Any, method_names: List[ str ],
+	operation_name: str, ) -> Any:
+	"""Get Grok Vector Stores method.
 	
 	Purpose:
-	    Retrieves get grok collections for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
+	    Resolves a callable xAI Collection operation from the active Grok Vector Stores
+	    capability without using exception-driven signature retries.
 	
 	Args:
-	    vectorstores: Vectorstores value used by the application workflow.
+	    vectorstores: Active Grok Vector Stores capability.
+	    method_names: Ordered provider method names accepted for the operation.
+	    operation_name: User-facing name of the requested xAI Collection operation.
 	
 	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	    Any: Callable provider method implementing the requested operation.
+	
+	Raises:
+	    Error: Raised when the Grok capability does not expose the requested operation.
 	"""
-	for method_names in [ [ 'list_collections', 'list_stores', 'list' ],
-		[ 'survey_collections', 'survey' ], ]:
-		try:
-			result = call_storage_method( vectorstores, method_names )
-			rows = normalize_storage_rows( result )
-			if len( rows ) > 0:
-				return rows
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'get_grok_collections'
-			exception.method = 'get_grok_collections( vectorstores ) -> List[Dict[str, Any]]'
-			Logger( ).write( exception )
-			continue
-	
-	collections = getattr( vectorstores, 'collections', None )
-	if isinstance( collections, dict ):
-		return [ { 'name': name, 'id': collection_id, 'type': 'xAI Collection', } for
-			name, collection_id in collections.items( ) ]
-	
-	return [ ]
+	try:
+		if vectorstores is None:
+			raise AttributeError( 'Grok does not expose the Vector Stores capability.' )
+		
+		for method_name in method_names:
+			if not isinstance( method_name, str ):
+				continue
+			
+			normalized_name = method_name.strip( )
+			
+			if not normalized_name:
+				continue
+			
+			candidate = getattr( vectorstores, normalized_name, None, )
+			
+			if callable( candidate ):
+				return candidate
+		
+		raise AttributeError( f'The Grok Vector Stores wrapper does not expose {operation_name}. '
+		                      f'Expected one of: {", ".join( method_names )}.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_grok_vectorstore_method'
+		exception.method = ('get_grok_vectorstore_method( vectorstores: Any, '
+		                    'method_names: List[str], operation_name: str ) -> Any')
+		Logger( ).write( exception )
+		raise exception
 
-def warn_grok_unsupported_operation( operation_name: str ) -> None:
-	"""Warn grok unsupported operation.
+def get_grok_collections( vectorstores: Any, ) -> List[ Dict[ str, Any ] ]:
+	"""Get Grok collections.
 	
 	Purpose:
-	    Supports the warn grok unsupported operation application workflow by coordinating
-	    validated inputs, Streamlit session state, provider configuration, and local data
-	    processing.
+	    Lists configured xAI Collections through the Grok Vector Stores capability or its
+	    declared collection mapping and normalizes the resources for display and selection.
 	
 	Args:
-	    operation_name: Operation Name value used by the application workflow.
+	    vectorstores: Active Grok Vector Stores capability.
+	
+	Returns:
+	    List[Dict[str, Any]]: Normalized xAI Collection resources.
+	
+	Raises:
+	    Error: Raised when the provider operation returns an invalid collection result.
 	"""
-	st.warning( f'Grok {operation_name} requires xAI collection-management capability. '
-	            f'This Buddy integration currently supports configured collection list, '
-	            f'retrieve, search, and survey operations.' )
+	try:
+		if vectorstores is None:
+			raise AttributeError( 'Grok does not expose the Vector Stores capability.' )
+		
+		list_method = None
+		
+		for method_name in [ 'list_collections', 'list_stores', 'list', ]:
+			candidate = getattr( vectorstores, method_name, None, )
+			
+			if callable( candidate ):
+				list_method = candidate
+				break
+		
+		if list_method is not None:
+			result = list_method( )
+			rows = normalize_storage_rows( result )
+			
+			if not isinstance( rows, list ):
+				raise ValueError( 'Grok returned an invalid xAI Collection list.' )
+			
+			return rows
+		
+		collections = getattr( vectorstores, 'collections', None, )
+		
+		if isinstance( collections, dict ):
+			return [ { 'name': str( name ), 'id': str( collection_id ), 'type': 'xAI Collection', }
+				for name, collection_id in collections.items( ) if
+				str( collection_id or '' ).strip( ) ]
+		
+		raise AttributeError(
+			'The Grok Vector Stores wrapper exposes neither a collection-listing method '
+			'nor a configured collections mapping.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_grok_collections'
+		exception.method = ('get_grok_collections( vectorstores: Any ) '
+		                    '-> List[Dict[str, Any]]')
+		Logger( ).write( exception )
+		raise exception
 
+def retrieve_grok_collection( vectorstores: Any, collection_id: str, ) -> Dict[ str, Any ]:
+	"""Retrieve Grok collection.
+	
+	Purpose:
+	    Retrieves metadata for one configured xAI Collection and normalizes the returned
+	    provider resource.
+	
+	Args:
+	    vectorstores: Active Grok Vector Stores capability.
+	    collection_id: xAI Collection identifier.
+	
+	Returns:
+	    Dict[str, Any]: Normalized xAI Collection metadata.
+	
+	Raises:
+	    Error: Raised when the identifier, provider operation, or returned resource is invalid.
+	"""
+	try:
+		selected_collection_id = require_storage_value( 'Collection ID', collection_id, )
+		
+		retrieve_method = get_grok_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'retrieve', 'retrieve_collection', 'get_collection', 'get', ],
+			operation_name='xAI Collection retrieval', )
+		
+		result = retrieve_method( store_id=selected_collection_id, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( f'Grok returned no metadata for xAI Collection '
+			                  f'`{selected_collection_id}`.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'retrieve_grok_collection'
+		exception.method = ('retrieve_grok_collection( vectorstores: Any, '
+		                    'collection_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def search_grok_collection( vectorstores: Any,
+	collection_id: str, query: str, ) -> Dict[ str, Any ]:
+	"""Search Grok collection.
+	
+	Purpose:
+	    Searches one xAI Collection using a validated prompt and normalizes text, structured
+	    rows, and provider metadata into a stable application result.
+	
+	Args:
+	    vectorstores: Active Grok Vector Stores capability.
+	    collection_id: xAI Collection identifier.
+	    query: Search prompt submitted against the collection.
+	
+	Returns:
+	    Dict[str, Any]: Normalized xAI Collection search result.
+	
+	Raises:
+	    Error: Raised when required values, provider execution, or returned results are invalid.
+	"""
+	try:
+		selected_collection_id = require_storage_value( 'Collection ID', collection_id, )
+		
+		search_query = require_storage_value( 'Search Prompt', query, )
+		
+		search_method = get_grok_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'search', 'search_collection', 'query_collection', ],
+			operation_name='xAI Collection search', )
+		
+		result = search_method( prompt=search_query, store_id=selected_collection_id, )
+		
+		if isinstance( result, str ):
+			answer = result.strip( )
+			
+			if not answer:
+				raise ValueError( 'Grok returned an empty xAI Collection search result.' )
+			
+			return { 'answer': answer, 'collection_id': selected_collection_id,
+				'query': search_query, }
+		
+		rows = normalize_storage_rows( result )
+		normalized = normalize_storage_object( result )
+		
+		if len( rows ) == 0 and len( normalized ) == 0:
+			raise ValueError( 'Grok returned no usable xAI Collection search result.' )
+		
+		search_result = { 'collection_id': selected_collection_id, 'query': search_query,
+			'rows': rows, 'result': normalized, }
+		
+		answer = str(
+			normalized.get( 'answer', '' ) or normalized.get( 'text', '' ) or normalized.get(
+				'content', '' ) or '' ).strip( )
+		
+		if answer:
+			search_result[ 'answer' ] = answer
+		
+		return search_result
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'search_grok_collection'
+		exception.method = ('search_grok_collection( vectorstores: Any, collection_id: str, '
+		                    'query: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def survey_grok_collections( vectorstores: Any,
+	collection_ids: List[ str ], query: str, ) -> Dict[ str, Any ]:
+	"""Survey Grok collections.
+	
+	Purpose:
+	    Surveys multiple xAI Collections with one validated prompt and normalizes the aggregate
+	    response, collection identifiers, structured rows, and answer text.
+	
+	Args:
+	    vectorstores: Active Grok Vector Stores capability.
+	    collection_ids: xAI Collection identifiers included in the survey.
+	    query: Survey prompt submitted against the selected collections.
+	
+	Returns:
+	    Dict[str, Any]: Normalized aggregate xAI Collection survey result.
+	
+	Raises:
+	    Error: Raised when required values, provider execution, or returned results are invalid.
+	"""
+	try:
+		normalized_ids = merge_unique_strings( primary=collection_ids, secondary=[ ], )
+		
+		if len( normalized_ids ) == 0:
+			raise ValueError( 'At least one xAI Collection ID is required for survey.' )
+		
+		survey_query = require_storage_value( 'Survey Prompt', query, )
+		
+		survey_method = get_grok_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'survey', 'survey_collections', ],
+			operation_name='xAI Collection survey', )
+		
+		result = survey_method( prompt=survey_query, store_ids=normalized_ids, )
+		
+		if isinstance( result, str ):
+			answer = result.strip( )
+			
+			if not answer:
+				raise ValueError( 'Grok returned an empty xAI Collection survey result.' )
+			
+			return { 'answer': answer, 'store_ids': normalized_ids, 'query': survey_query, }
+		
+		rows = normalize_storage_rows( result )
+		normalized = normalize_storage_object( result )
+		
+		if len( rows ) == 0 and len( normalized ) == 0:
+			raise ValueError( 'Grok returned no usable xAI Collection survey result.' )
+		
+		survey_result = { 'store_ids': normalized_ids, 'query': survey_query, 'rows': rows,
+			'result': normalized, }
+		
+		answer = str(
+			normalized.get( 'answer', '' ) or normalized.get( 'text', '' ) or normalized.get(
+				'content', '' ) or '' ).strip( )
+		
+		if answer:
+			survey_result[ 'answer' ] = answer
+		
+		return survey_result
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'survey_grok_collections'
+		exception.method = ('survey_grok_collections( vectorstores: Any, '
+		                    'collection_ids: List[str], query: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def warn_grok_unsupported_operation( operation_name: str, ) -> None:
+	"""Warn Grok unsupported operation.
+	
+	Purpose:
+	    Displays a controlled warning for xAI Collection operations that are not exposed by the
+	    current Grok Vector Stores wrapper.
+	
+	Args:
+	    operation_name: User-facing name of the unsupported collection operation.
+	
+	Returns:
+	    None: This function renders the unsupported-operation warning.
+	"""
+	st.warning( f'Grok {operation_name} is not exposed by the current xAI Collection wrapper. '
+	            'This integration supports listing, retrieving, searching, and surveying '
+	            'configured '
+	            'collections.' )
+	
 def get_storage_backend_summary( provider_name: Optional[ str ] = None,
 	backend: Optional[ str ] = None ) -> Dict[ str, Any ]:
 	"""Get storage backend summary.
@@ -16697,20 +17254,15 @@ elif mode == 'Files':
 elif mode == 'Vector Stores':
 	ensure_vectorstores_mode_state( )
 	provider_name = get_provider_name( )
-	
 	if provider_name in [ 'GPT', 'Grok' ]:
 		if not provider_supports( 'VectorStores', provider_name ):
-			left, center, right = st.columns(
-				[ 0.05, 0.90, 0.05 ]
-			)
+			left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 			
 			with center:
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
-				st.warning(
-					f'{provider_name} does not expose a Vector Stores capability in the '
-					'current provider module.'
-				)
+				st.warning( f'{provider_name} does not expose a Vector Stores capability in the '
+					'current provider module.' )
 			
 			st.stop( )
 	
@@ -16721,8 +17273,7 @@ elif mode == 'Vector Stores':
 		
 		if (
 			selected_backend == 'File Search Stores'
-			and not provider_supports( 'FileSearch', provider_name )
-		):
+			and not provider_supports( 'FileSearch', provider_name ) ):
 			left, center, right = st.columns(
 				[ 0.05, 0.90, 0.05 ]
 			)
@@ -17415,189 +17966,448 @@ elif mode == 'Vector Stores':
 		# Grok: xAI Collections
 		# ------------------------------------------------------------------
 		elif provider_name == 'Grok':
-			vectorstores = get_vectorstores_module( provider_name )
+			vectorstores = get_vectorstores_module(
+				provider_name
+			)
 			
-			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small' )
+			ops_left, ops_right = st.columns(
+				[ 0.42, 0.58 ],
+				border=True,
+				gap='small',
+			)
 			
 			with ops_left:
 				st.caption( 'xAI Collection Controls' )
 				
-				st.text_input( label='Manual Collection ID', key='stores_manual_id',
-					width='stretch', placeholder='collection_...' )
+				control_c1, control_c2 = st.columns(
+					[ 0.50, 0.50 ],
+					border=True,
+					gap='xxsmall',
+				)
 				
-				st.text_area( label='Search / Survey Prompt', key='stores_query', height=110,
-					width='stretch', placeholder='Search or survey configured xAI collections...' )
+				with control_c1:
+					st.text_input(
+						label='Manual Collection ID',
+						key='stores_manual_id',
+						width='stretch',
+						placeholder='collection_...',
+					)
+					
+					st.number_input(
+						label='List Limit',
+						min_value=1,
+						max_value=100,
+						step=1,
+						key='stores_limit',
+						help='Maximum number of configured collections displayed.',
+					)
 				
-				st.text_area( label='Survey Collection IDs', key='stores_file_ids_text', height=70,
-					width='stretch', placeholder='collection-a, collection-b, collection-c' )
+				with control_c2:
+					st.text_area(
+						label='Survey Collection IDs',
+						key='stores_file_ids_text',
+						height=92,
+						width='stretch',
+						placeholder='collection-a, collection-b, collection-c',
+					)
+					
+					st.selectbox(
+						label='List Order',
+						options=[ 'desc', 'asc' ],
+						key='stores_order',
+						help='Display order applied to normalized collection results.',
+					)
 				
-				grok_c1, grok_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall' )
+				st.text_area(
+					label='Search / Survey Prompt',
+					key='stores_query',
+					height=110,
+					width='stretch',
+					placeholder='Search or survey configured xAI collections...',
+				)
+				
+				grok_c1, grok_c2 = st.columns(
+					[ 0.50, 0.50 ],
+					gap='xxsmall',
+				)
 				
 				with grok_c1:
-					if st.button( label='List Collections', key='grok_stores_list',
-							width='stretch' ):
-						with st.spinner( 'Listing configured xAI collections…' ):
+					if st.button(
+						label='List Collections',
+						key='grok_stores_list',
+						width='stretch',
+					):
+						with st.spinner(
+							'Listing configured xAI Collections…'
+						):
 							try:
-								rows = get_grok_collections( vectorstores )
-								set_storage_rows( rows, table_key='stores_table' )
-								st.success( f'Found {len( rows )} configured collection(s).' )
+								rows = get_grok_collections(
+									vectorstores
+								)
+								
+								limit_value = int(
+									st.session_state.get(
+										'stores_limit',
+										100,
+									) or 100
+								)
+								
+								if limit_value < 1:
+									limit_value = 1
+								
+								order_value = str(
+									st.session_state.get(
+										'stores_order',
+										'desc',
+									) or 'desc'
+								).strip( ).lower( )
+								
+								rows = rows[ :limit_value ]
+								
+								if order_value == 'asc':
+									rows = list(
+										reversed( rows )
+									)
+								
+								set_storage_rows(
+									rows=rows,
+									table_key='stores_table',
+								)
+								
+								st.session_state[
+									'stores_last_operation'
+								] = 'list_grok_collections'
+								
+								st.session_state[
+									'storage_last_operation'
+								] = 'list_grok_collections'
+								
+								st.success(
+									f'Found {len(rows):,} configured collection(s).'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'List failed: {exc}' )
+								st.error(
+									f'List failed: {exc}'
+								)
 					
-					if st.button( label='Retrieve Collection', key='grok_stores_retrieve',
-							width='stretch' ):
-						with st.spinner( 'Retrieving xAI collection metadata…' ):
+					if st.button(
+						label='Retrieve Collection',
+						key='grok_stores_retrieve',
+						width='stretch',
+					):
+						with st.spinner(
+							'Retrieving xAI Collection metadata…'
+						):
 							try:
-								collection_id = require_storage_value( 'Collection ID',
-									get_vectorstores_selected_id( ) )
+								result = retrieve_grok_collection(
+									vectorstores=vectorstores,
+									collection_id=get_vectorstores_selected_id( ),
+								)
 								
-								result = call_storage_method( vectorstores,
-									[ 'retrieve', 'retrieve_collection', 'get_collection', 'get' ],
-									collection_id )
+								set_storage_result(
+									result=result,
+									operation='retrieve_grok_collection',
+									result_key='stores_store_metadata',
+								)
 								
-								set_storage_result( result, operation='retrieve_grok_collection',
-									result_key='stores_store_metadata' )
+								st.success(
+									'Collection metadata retrieved.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Retrieve failed: {exc}' )
+								st.error(
+									f'Retrieve failed: {exc}'
+								)
 					
-					if st.button( label='Create Collection', key='grok_stores_create',
-							width='stretch' ):
-						warn_grok_unsupported_operation( 'collection creation' )
+					if st.button(
+						label='Create Collection',
+						key='grok_stores_create',
+						width='stretch',
+					):
+						warn_grok_unsupported_operation(
+							'collection creation'
+						)
 				
 				with grok_c2:
-					if st.button( label='Search Collection', key='grok_stores_search',
-							width='stretch' ):
-						with st.spinner( 'Searching xAI collection…' ):
+					if st.button(
+						label='Search Collection',
+						key='grok_stores_search',
+						width='stretch',
+					):
+						with st.spinner(
+							'Searching xAI Collection…'
+						):
 							try:
-								collection_id = require_storage_value( 'Collection ID',
-									get_vectorstores_selected_id( ) )
-								query = require_storage_value( 'Search / Survey Prompt',
-									st.session_state.get( 'stores_query', '' ) )
+								result = search_grok_collection(
+									vectorstores=vectorstores,
+									collection_id=get_vectorstores_selected_id( ),
+									query=st.session_state.get(
+										'stores_query',
+										'',
+									),
+								)
 								
-								result = call_storage_method( vectorstores,
-									[ 'search', 'search_collection', 'query_collection' ],
-									prompt=query, store_id=collection_id )
+								answer = str(
+									result.get( 'answer', '' ) or ''
+								).strip( )
 								
-								if isinstance( result, str ):
-									st.session_state[ 'stores_answer' ] = result
-									set_storage_result( { 'answer': result },
-										operation='search_grok_collection',
-										result_key='stores_search_result' )
-								else:
-									set_storage_result( result, operation='search_grok_collection',
-										result_key='stores_search_result' )
+								if answer:
+									st.session_state[
+										'stores_answer'
+									] = answer
 								
-								st.success( 'Search request completed.' )
+								search_rows = result.get(
+									'rows',
+									[ ],
+								)
+								
+								if (
+									isinstance( search_rows, list )
+									and len( search_rows ) > 0
+								):
+									st.session_state[
+										'stores_files_table'
+									] = search_rows
+								
+								set_storage_result(
+									result=result,
+									operation='search_grok_collection',
+									result_key='stores_search_result',
+								)
+								
+								st.success(
+									'Search request completed.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Search failed: {exc}' )
+								st.error(
+									f'Search failed: {exc}'
+								)
 					
-					if st.button( label='Survey Collections', key='grok_stores_survey',
-							width='stretch' ):
-						with st.spinner( 'Surveying xAI collections…' ):
+					if st.button(
+						label='Survey Collections',
+						key='grok_stores_survey',
+						width='stretch',
+					):
+						with st.spinner(
+							'Surveying xAI Collections…'
+						):
 							try:
-								query = require_storage_value( 'Search / Survey Prompt',
-									st.session_state.get( 'stores_query', '' ) )
+								collection_ids = parse_storage_ids(
+									st.session_state.get(
+										'stores_file_ids_text',
+										'',
+									)
+								)
 								
-								store_ids = parse_storage_ids(
-									st.session_state.get( 'stores_file_ids_text', '' ) )
+								selected_id = get_vectorstores_selected_id( )
 								
-								if len( store_ids ) == 0:
-									selected_id = get_vectorstores_selected_id( )
-									if selected_id:
-										store_ids = [ selected_id ]
+								if selected_id:
+									collection_ids = merge_unique_strings(
+										primary=collection_ids,
+										secondary=[ selected_id ],
+									)
 								
-								if len( store_ids ) == 0:
-									raise ValueError(
-										'At least one collection ID is required for survey.' )
+								result = survey_grok_collections(
+									vectorstores=vectorstores,
+									collection_ids=collection_ids,
+									query=st.session_state.get(
+										'stores_query',
+										'',
+									),
+								)
 								
-								result = call_storage_method( vectorstores,
-									[ 'survey', 'survey_collections' ], prompt=query,
-									store_ids=store_ids )
+								answer = str(
+									result.get( 'answer', '' ) or ''
+								).strip( )
 								
-								if isinstance( result, str ):
-									st.session_state[ 'stores_answer' ] = result
-									set_storage_result(
-										{ 'answer': result, 'store_ids': store_ids, },
-										operation='survey_grok_collections',
-										result_key='stores_survey_result' )
-								else:
-									rows = normalize_storage_rows( result )
-									if len( rows ) > 0:
-										set_storage_rows( rows, table_key='stores_table' )
-									
-									set_storage_result( result,
-										operation='survey_grok_collections',
-										result_key='stores_survey_result' )
+								if answer:
+									st.session_state[
+										'stores_answer'
+									] = answer
 								
-								st.success( 'Survey completed.' )
+								survey_rows = result.get(
+									'rows',
+									[ ],
+								)
+								
+								if (
+									isinstance( survey_rows, list )
+									and len( survey_rows ) > 0
+								):
+									st.session_state[
+										'stores_files_table'
+									] = survey_rows
+								
+								set_storage_result(
+									result=result,
+									operation='survey_grok_collections',
+									result_key='stores_survey_result',
+								)
+								
+								st.success(
+									'Survey completed.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Survey failed: {exc}' )
+								st.error(
+									f'Survey failed: {exc}'
+								)
 					
-					if st.button( label='Upload / Attach', key='grok_stores_upload',
-							width='stretch' ):
-						warn_grok_unsupported_operation( 'upload-to-collection' )
+					if st.button(
+						label='Upload / Attach',
+						key='grok_stores_upload',
+						width='stretch',
+					):
+						warn_grok_unsupported_operation(
+							'upload-to-collection'
+						)
 					
-					if st.button( label='Delete Collection', key='grok_stores_delete',
-							width='stretch' ):
-						warn_grok_unsupported_operation( 'collection deletion' )
+					if st.button(
+						label='Delete Collection',
+						key='grok_stores_delete',
+						width='stretch',
+					):
+						warn_grok_unsupported_operation(
+							'collection deletion'
+						)
+				
+				st.button(
+					label='Reset xAI Collection Controls',
+					key='grok_stores_reset_controls',
+					width='stretch',
+					on_click=reset_vectorstore_grok_controls,
+				)
 			
 			with ops_right:
 				st.caption( 'xAI Collection Results' )
 				
-				rows = st.session_state.get( 'stores_table', [ ] )
-				if isinstance( rows, list ) and len( rows ) > 0:
-					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
-						hide_index=True )
-					
-					options = build_storage_selectors( rows )
-					if len( options ) > 0:
-						selected = st.selectbox( label='Select Collection', options=options,
-							key='storage_selected_option', index=None, placeholder='Options' )
-						sync_storage_selection( selected, provider_name='Grok' )
+				rows = st.session_state.get(
+					'stores_table',
+					[ ],
+				)
 				
-				answer = st.session_state.get( 'stores_answer', '' )
+				if isinstance( rows, list ) and len( rows ) > 0:
+					st.data_editor(
+						pd.DataFrame( rows ),
+						use_container_width=True,
+						hide_index=True,
+					)
+					
+					options = build_storage_selectors(
+						rows
+					)
+					
+					if len( options ) > 0:
+						selected = st.selectbox(
+							label='Select Collection',
+							options=options,
+							key='storage_selected_option',
+							index=None,
+							placeholder='Options',
+						)
+						
+						sync_storage_selection(
+							selected_option=selected,
+							provider_name='Grok',
+						)
+				
+				answer = st.session_state.get(
+					'stores_answer',
+					'',
+				)
+				
 				if isinstance( answer, str ) and answer.strip( ):
-					with st.expander( label='Search / Survey Answer', icon='🧠', expanded=True,
-							width='stretch' ):
+					with st.expander(
+						label='Search / Survey Answer',
+						icon='🧠',
+						expanded=True,
+						width='stretch',
+					):
 						st.markdown( answer )
 				
-				result = st.session_state.get( 'storage_operation_result', { } )
-				if isinstance( result, dict ) and len( result ) > 0:
-					with st.expander( label='Operation Result', icon='🧾', expanded=True,
-							width='stretch' ):
-						st.json( result )
+				search_rows = st.session_state.get(
+					'stores_files_table',
+					[ ],
+				)
+				
+				if (
+					isinstance( search_rows, list )
+					and len( search_rows ) > 0
+				):
+					with st.expander(
+						label='Search / Survey Results',
+						icon='📚',
+						expanded=False,
+						width='stretch',
+					):
+						st.data_editor(
+							pd.DataFrame( search_rows ),
+							use_container_width=True,
+							hide_index=True,
+						)
+				
+				store_metadata = st.session_state.get(
+					'stores_store_metadata',
+					{ },
+				)
+				
+				if (
+					isinstance( store_metadata, dict )
+					and len( store_metadata ) > 0
+				):
+					with st.expander(
+						label='Collection Metadata',
+						icon='🧾',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( store_metadata )
+				
+				search_result = st.session_state.get(
+					'stores_search_result',
+					{ },
+				)
+				
+				if (
+					isinstance( search_result, dict )
+					and len( search_result ) > 0
+				):
+					with st.expander(
+						label='Search Result',
+						icon='🔎',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( search_result )
+				
+				survey_result = st.session_state.get(
+					'stores_survey_result',
+					{ },
+				)
+				
+				if (
+					isinstance( survey_result, dict )
+					and len( survey_result ) > 0
+				):
+					with st.expander(
+						label='Survey Result',
+						icon='📊',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( survey_result )
 		
 		# ------------------------------------------------------------------
 		# Gemini: File Search Stores
 		# ------------------------------------------------------------------
-		elif provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'File Search Stores':
-			filestore = get_vectorstores_module( provider_name, backend='File Search Stores' )
+		elif (provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'File Search Stores'):
+			apply_gemini_runtime_config( )
+			
+			filestore = get_vectorstores_module( provider_name, backend='File Search Stores', )
 			
 			# ------------------------------------------------------------------
 			# System Instructions
 			# ------------------------------------------------------------------
 			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-					width='stretch' ):
+					width='stretch', ):
 				filestore_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 					allowed_categories=PROMPT_FILESTORE_CATEGORIES, )
 				
@@ -17609,7 +18419,6 @@ elif mode == 'Vector Stores':
 					st.session_state.get( 'filestore_instruction_category', '', ) or '' ).strip( )
 				
 				selected_categories = ([ selected_category ] if selected_category else [ ])
-				
 				prompt_options = fetch_prompt_options( db_path=cfg.DB_PATH,
 					categories=selected_categories, )
 				
@@ -17624,26 +18433,21 @@ elif mode == 'Vector Stores':
 					selector_key='filestore_instruction_prompt_id', valid_prompt_ids=prompt_ids, )
 				
 				in_left, in_right = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-				
 				with in_left:
 					st.text_area( label='Enter Text', height=90, width='stretch',
 						help=cfg.SYSTEM_INSTRUCTIONS, key='filestore_system_instructions', )
 				
 				with in_right:
-					category_options = [ '' ] + filestore_categories
-					
+					category_options = [ '', *filestore_categories, ]
 					st.selectbox( label='Category', options=category_options,
 						key='filestore_instruction_category',
 						on_change=change_filestore_instruction_category,
 						format_func=lambda category: ('Select Category' if category == '' and len(
-							filestore_categories ) > 0 else 'No Categories Found' if category ==
-						                                                             '' else
-						category),
+							filestore_categories ) > 0 else 'No Categories Found' if category ==   '' else category),
 						disabled=len( filestore_categories ) == 0,
-						help='Select a Gemini File Search Stores prompt category.', )
+						help=('Select a Gemini File Search Stores prompt category.'), )
 					
-					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
-					
+					template_options: List[ Optional[ int ] ] = [ None, *prompt_ids, ]
 					st.selectbox( label='Use Template', options=template_options,
 						key='filestore_instruction_prompt_id',
 						on_change=load_filestore_instruction,
@@ -17651,162 +18455,172 @@ elif mode == 'Vector Stores':
 							'Select Template' if prompt_id is None and selected_category else
 							'Select Category First' if prompt_id is None else format_prompt_option(
 								prompt_id=prompt_id, prompts=prompt_lookup, )),
-						disabled=not selected_category or len( prompt_ids ) == 0, help=(
-							'Load a System Instructions template for Gemini File Search '
-							'Stores.'), )
+						disabled=(not selected_category or len( prompt_ids ) == 0),
+						help=('Load a System Instructions template for Gemini '
+						      'File Search Stores.'), )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-				
 				with btn_c1:
-					st.button( label='Clear Instructions', width='stretch',
-						on_click=clear_filestore_instructions, )
+					st.button( label='Reset Instructions', key='filestore_reset_instructions',
+						width='stretch', on_click=clear_filestore_instructions, )
 				
 				with btn_c2:
-					st.button( label='XML <-> Markdown', width='stretch',
-						on_click=convert_filestore_instructions, )
+					st.button( label='XML <-> Markdown', key='filestore_convert_instructions',
+						width='stretch', on_click=convert_filestore_instructions, )
 			
-			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
 			
-			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small' )
-			
+			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
 			with ops_left:
 				st.caption( 'Gemini File Search Store Controls' )
-				
 				st.text_input( label='File Search Store Name', key='filestore_name',
-					width='stretch', placeholder='Federal Financial Regulations' )
+					width='stretch', placeholder='Federal Financial Regulations', )
 				
 				st.text_input( label='File Search Store Resource Name', key='filestore_id',
-					width='stretch', placeholder='fileSearchStores/...' )
+					width='stretch', placeholder='fileSearchStores/...', )
 				
-				st.info( 'The current Gemini FileSearch wrapper exposes create, list, retrieve, '
-				         'and delete. File upload/import is intentionally disabled here until '
-				         'the wrapper adds a media.uploadToFileSearchStore method.' )
+				st.info( 'The current Gemini File Search wrapper exposes store creation, '
+				         'listing, retrieval, and deletion. File import remains unavailable '
+				         'until the provider wrapper exposes a verified File Search Store '
+				         'import operation.' )
 				
-				fs_c1, fs_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall' )
-				
+				fs_c1, fs_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall', )
 				with fs_c1:
-					if st.button( label='Create Store', key='gemini_fs_create', width='stretch' ):
+					if st.button( label='Create Store', key='gemini_fs_create', width='stretch', ):
 						with st.spinner( 'Creating Gemini File Search Store…' ):
 							try:
-								name = require_storage_value( 'File Search Store Name',
-									st.session_state.get( 'filestore_name', '' ) )
+								result = create_gemini_file_search_store( filestore=filestore,
+									name=st.session_state.get( 'filestore_name', '', ), )
 								
-								result = call_storage_method( filestore,
-									[ 'create', 'create_store', 'create_file_search_store' ],
-									name )
-								
-								normalized = set_storage_result( result,
+								set_storage_result( result=result,
 									operation='create_gemini_file_search_store',
-									result_key='filestore_operation_result' )
+									result_key='filestore_operation_result', )
 								
-								identifier = get_storage_identifier( normalized )
+								identifier = get_storage_identifier( result )
 								if identifier:
 									st.session_state[ 'filestore_id' ] = identifier
+									st.session_state[ 'filestore_selected_id' ] = identifier
 								
-								st.success( f'Created File Search Store: {identifier or name}' )
+								st.success( f'Created File Search Store: '
+								            f'{identifier or result.get( "name", "" )}' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Create failed: {exc}' )
 					
 					if st.button( label='Retrieve Store', key='gemini_fs_retrieve',
-							width='stretch' ):
+							width='stretch', ):
 						with st.spinner( 'Retrieving Gemini File Search Store…' ):
 							try:
-								store_id = require_storage_value( 'File Search Store Resource '
-								                                  'Name',
-									get_vectorstores_selected_id( ) )
+								result = retrieve_gemini_file_search_store( filestore=filestore,
+									store_id=get_vectorstores_selected_id( ), )
 								
-								result = call_storage_method( filestore,
-									[ 'retrieve', 'get', 'get_store', 'get_file_search_store' ],
-									store_id )
-								
-								set_storage_result( result,
+								set_storage_result( result=result,
 									operation='retrieve_gemini_file_search_store',
-									result_key='filestore_metadata' )
+									result_key='filestore_metadata', )
+								
+								st.success( 'File Search Store retrieved.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 				
 				with fs_c2:
-					if st.button( label='List Stores', key='gemini_fs_list', width='stretch' ):
+					if st.button( label='List Stores', key='gemini_fs_list', width='stretch', ):
 						with st.spinner( 'Listing Gemini File Search Stores…' ):
 							try:
-								result = call_storage_method( filestore,
-									[ 'list', 'list_stores', 'list_file_search_stores' ] )
+								rows = list_gemini_file_search_stores( filestore=filestore )
+								set_storage_rows( rows=rows, table_key='filestore_table', )
+								st.session_state[ 'filestore_operation_result' ] = {
+									'operation': ('list_gemini_file_search_stores'),
+									'count': len( rows ), }
 								
-								rows = set_storage_rows( result, table_key='filestore_table' )
-								st.success( f'Found {len( rows )} File Search Store(s).' )
+								st.session_state[ 'stores_last_operation' ] = (
+									'list_gemini_file_search_stores')
+								
+								st.session_state[ 'storage_last_operation' ] = (
+									'list_gemini_file_search_stores')
+								
+								st.success( f'Found {len( rows ):,} File Search Store(s).' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'List failed: {exc}' )
 					
-					if st.button( label='Delete Store', key='gemini_fs_delete', width='stretch' ):
+					if st.button( label='Delete Store', key='gemini_fs_delete', width='stretch', ):
 						with st.spinner( 'Deleting Gemini File Search Store…' ):
 							try:
-								store_id = require_storage_value( 'File Search Store Resource '
-								                                  'Name',
-									get_vectorstores_selected_id( ) )
+								resource_name = get_vectorstores_selected_id( )
 								
-								result = call_storage_method( filestore,
-									[ 'delete', 'delete_store', 'delete_file_search_store' ],
-									store_id )
+								result = delete_gemini_file_search_store( filestore=filestore,
+									store_id=resource_name, )
 								
-								set_storage_result( result,
+								set_storage_result( result=result,
 									operation='delete_gemini_file_search_store',
-									result_key='filestore_delete_result' )
+									result_key='filestore_delete_result', )
+								
+								st.session_state[ 'filestore_id' ] = ''
+								
+								st.session_state[ 'filestore_selected_id' ] = ''
+								
+								st.session_state[ 'filestore_selected_label' ] = ''
+								
+								st.session_state[ 'storage_selected_option' ] = ''
+								
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
+				
+				st.button( label='Reset File Search Store Controls',
+					key='gemini_fs_reset_controls',
+					width='stretch', on_click=reset_vectorstore_gemini_filestore_controls, )
 			
 			with ops_right:
 				st.caption( 'Gemini File Search Store Results' )
 				
-				rows = st.session_state.get( 'filestore_table', [ ] )
-				if isinstance( rows, list ) and len( rows ) > 0:
+				rows = st.session_state.get( 'filestore_table', [ ], )
+				
+				if (isinstance( rows, list ) and len( rows ) > 0):
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
-						hide_index=True )
+						hide_index=True, )
 					
 					options = build_storage_selectors( rows )
+					
 					if len( options ) > 0:
 						selected = st.selectbox( label='Select File Search Store', options=options,
-							key='storage_selected_option', index=None, placeholder='Options' )
-						sync_storage_selection( selected, provider_name='Gemini',
-							backend='File Search Stores' )
+							key='storage_selected_option', index=None, placeholder='Options', )
+						
+						sync_storage_selection( selected_option=selected, provider_name='Gemini',
+							backend='File Search Stores', )
 				
-				result = st.session_state.get( 'storage_operation_result', { } )
-				if isinstance( result, dict ) and len( result ) > 0:
-					with st.expander( label='Operation Result', icon='🧾', expanded=True,
-							width='stretch' ):
-						st.json( result )
+				metadata = st.session_state.get( 'filestore_metadata', { }, )
+				
+				if (isinstance( metadata, dict ) and len( metadata ) > 0):
+					with st.expander( label='File Search Store Metadata', icon='🧾', expanded=True,
+							width='stretch', ):
+						st.json( metadata )
+				
+				operation_result = st.session_state.get( 'filestore_operation_result', { }, )
+				
+				if (isinstance( operation_result, dict ) and len( operation_result ) > 0):
+					with st.expander( label='Operation Result', icon='⚙️', expanded=False,
+							width='stretch', ):
+						st.json( operation_result )
+				
+				delete_result = st.session_state.get( 'filestore_delete_result', { }, )
+				
+				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
+					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
+							width='stretch', ):
+						st.json( delete_result )
 		
 		# ------------------------------------------------------------------
 		# Gemini: Cloud Buckets
 		# ------------------------------------------------------------------
-		elif provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'Cloud Buckets':
-			buckets = get_vectorstores_module( provider_name, backend='Cloud Buckets' )
+		elif (provider_name == 'Gemini' and get_gemini_vector_backend( ) == 'Cloud Buckets'):
+			apply_gemini_runtime_config( )
+			
+			buckets = get_vectorstores_module( provider_name, backend='Cloud Buckets', )
 			
 			# ------------------------------------------------------------------
 			# System Instructions
 			# ------------------------------------------------------------------
 			with st.expander( label='System Instructions', icon='🖥️', expanded=False,
-					width='stretch' ):
+					width='stretch', ):
 				bucket_categories = fetch_prompt_categories( db_path=cfg.DB_PATH,
 					allowed_categories=PROMPT_BUCKET_CATEGORIES, )
 				
@@ -17839,7 +18653,7 @@ elif mode == 'Vector Stores':
 						help=cfg.SYSTEM_INSTRUCTIONS, key='bucket_system_instructions', )
 				
 				with in_right:
-					category_options = [ '' ] + bucket_categories
+					category_options = [ '', *bucket_categories, ]
 					
 					st.selectbox( label='Category', options=category_options,
 						key='bucket_instruction_category',
@@ -17850,9 +18664,9 @@ elif mode == 'Vector Stores':
 							                                                          '' else
 							category),
 						disabled=len( bucket_categories ) == 0,
-						help='Select a Google Cloud Buckets prompt category.', )
+						help=('Select a Google Cloud Buckets prompt category.'), )
 					
-					template_options: List[ Optional[ int ] ] = [ None ] + prompt_ids
+					template_options: List[ Optional[ int ] ] = [ None, *prompt_ids, ]
 					
 					st.selectbox( label='Use Template', options=template_options,
 						key='bucket_instruction_prompt_id', on_change=load_bucket_instruction,
@@ -17860,167 +18674,221 @@ elif mode == 'Vector Stores':
 							'Select Template' if prompt_id is None and selected_category else
 							'Select Category First' if prompt_id is None else format_prompt_option(
 								prompt_id=prompt_id, prompts=prompt_lookup, )),
-						disabled=not selected_category or len( prompt_ids ) == 0,
-						help=('Load a System Instructions template for Google Cloud Buckets.'), )
+						disabled=(not selected_category or len( prompt_ids ) == 0),
+						help=('Load a System Instructions template for Google '
+						      'Cloud Buckets.'), )
 				
 				btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
 				
 				with btn_c1:
-					st.button( label='Clear Instructions', width='stretch',
-						on_click=clear_bucket_instructions, )
+					st.button( label='Reset Instructions', key='bucket_reset_instructions',
+						width='stretch', on_click=clear_bucket_instructions, )
 				
 				with btn_c2:
-					st.button( label='XML <-> Markdown', width='stretch',
-						on_click=convert_bucket_instructions, )
+					st.button( label='XML <-> Markdown', key='bucket_convert_instructions',
+						width='stretch', on_click=convert_bucket_instructions, )
 			
-			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
 			
-			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small' )
+			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
 			
 			with ops_left:
 				st.caption( 'Gemini Cloud Bucket Object Controls' )
 				
 				st.text_input( label='Bucket Name', key='bucket_name', width='stretch',
-					placeholder='my-bucket-name' )
+					placeholder='my-bucket-name', )
 				
 				st.text_input( label='Object Name', key='bucket_object_name', width='stretch',
-					placeholder='folder/document.pdf' )
+					placeholder='folder/document.pdf', )
 				
 				uploaded_bucket_file = st.file_uploader( label='Upload Object',
 					type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml', 'png', 'jpg', 'jpeg',
-						'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts' ],
-					accept_multiple_files=False, key='bucket_file_upload' )
+						'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts', ],
+					accept_multiple_files=False, key='bucket_file_upload', )
 				
-				st.info( 'Bucket creation is intentionally not exposed here because the current '
-				         'CloudBuckets wrapper create(...) method is not a bucket-creation '
-				         'method. '
-				         'This backend manages objects inside an existing bucket.' )
+				st.info( 'Bucket creation remains unavailable because the current Cloud Buckets '
+				         'wrapper does not expose a verified create_bucket(...) operation. '
+				         'This workflow manages objects within an existing bucket.' )
 				
-				bucket_c1, bucket_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall' )
+				bucket_c1, bucket_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall', )
 				
 				with bucket_c1:
+					if st.button( label='List Buckets', key='gemini_bucket_list_buckets',
+							width='stretch', ):
+						with st.spinner( 'Listing Google Cloud buckets…' ):
+							try:
+								rows = list_google_cloud_buckets( buckets=buckets )
+								
+								set_storage_rows( rows=rows, table_key='bucket_table', )
+								
+								st.session_state[ 'bucket_operation_result' ] = {
+									'operation': ('list_google_cloud_buckets'),
+									'count': len( rows ), }
+								
+								st.session_state[ 'stores_last_operation' ] = (
+									'list_google_cloud_buckets')
+								
+								st.session_state[ 'storage_last_operation' ] = (
+									'list_google_cloud_buckets')
+								
+								st.success( f'Found {len( rows ):,} bucket(s).' )
+							except Exception as exc:
+								st.error( f'List buckets failed: {exc}' )
+					
 					if st.button( label='List Objects', key='gemini_bucket_list_objects',
-							width='stretch' ):
+							width='stretch', ):
 						with st.spinner( 'Listing Google Cloud bucket objects…' ):
 							try:
-								bucket_name = require_storage_value( 'Bucket Name',
-									st.session_state.get( 'bucket_name', '' ) )
+								rows = list_google_cloud_bucket_objects( buckets=buckets,
+									bucket_name=st.session_state.get( 'bucket_name', '', ), )
 								
-								result = call_storage_method( buckets,
-									[ 'list', 'list_objects', 'list_blobs' ], bucket_name )
+								set_storage_rows( rows=rows, table_key='bucket_table', )
 								
-								rows = set_storage_rows( result, table_key='bucket_table' )
-								st.success( f'Found {len( rows )} object(s).' )
+								st.session_state[ 'bucket_operation_result' ] = {
+									'operation': ('list_google_cloud_bucket_objects'),
+									'bucket_name': st.session_state.get( 'bucket_name', '', ),
+									'count': len( rows ), }
+								
+								st.session_state[ 'stores_last_operation' ] = (
+									'list_google_cloud_bucket_objects')
+								
+								st.session_state[ 'storage_last_operation' ] = (
+									'list_google_cloud_bucket_objects')
+								
+								st.success( f'Found {len( rows ):,} object(s).' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'List objects failed: {exc}' )
 					
 					if st.button( label='Retrieve Object', key='gemini_bucket_retrieve_object',
-							width='stretch' ):
+							width='stretch', ):
 						with st.spinner( 'Retrieving Google Cloud bucket object…' ):
 							try:
-								bucket_name = require_storage_value( 'Bucket Name',
-									st.session_state.get( 'bucket_name', '' ) )
-								object_name = require_storage_value( 'Object Name',
-									st.session_state.get( 'bucket_object_name', '' ) )
+								result = retrieve_google_cloud_bucket_object( buckets=buckets,
+									bucket_name=st.session_state.get( 'bucket_name', '', ),
+									object_name=st.session_state.get( 'bucket_object_name', '',
+									), )
 								
-								result = call_storage_method( buckets,
-									[ 'retrieve', 'get', 'download', 'get_object', 'get_blob' ],
-									bucket_name, object_name )
-								
-								set_storage_result( result,
+								set_storage_result( result=result,
 									operation='retrieve_gemini_cloud_object',
-									result_key='bucket_metadata' )
+									result_key='bucket_metadata', )
+								
+								st.success( 'Cloud Bucket object retrieved.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 				
 				with bucket_c2:
 					if st.button( label='Upload Object', key='gemini_bucket_upload_object',
-							width='stretch' ):
+							width='stretch', ):
 						with st.spinner( 'Uploading object to Google Cloud bucket…' ):
 							try:
-								bucket_name = require_storage_value( 'Bucket Name',
-									st.session_state.get( 'bucket_name', '' ) )
+								object_name = str( st.session_state.get( 'bucket_object_name',
+									'', ) or '' ).strip( )
 								
-								object_name = st.session_state.get( 'bucket_object_name', '' )
-								if not isinstance( object_name, str ) or not object_name.strip( ):
-									object_name = getattr( uploaded_bucket_file, 'name', '' )
+								if not object_name:
+									object_name = str( getattr( uploaded_bucket_file, 'name',
+										'', ) or '' ).strip( )
 								
-								object_name = require_storage_value( 'Object Name', object_name )
 								path = save_uploaded_storage_file( uploaded_bucket_file )
-								result = call_storage_method( buckets,
-									[ 'upload', 'upload_file', 'upload_blob', 'upload_object' ],
-									path=path, bucket=bucket_name, name=object_name )
 								
-								set_storage_result( result, operation='upload_gemini_cloud_object',
-									result_key='bucket_upload_result' )
+								result = upload_to_google_cloud_bucket( buckets=buckets,
+									bucket_name=st.session_state.get( 'bucket_name', '', ),
+									object_name=object_name, path=path, )
+								
+								set_storage_result( result=result,
+									operation='upload_gemini_cloud_object',
+									result_key='bucket_upload_result', )
+								
+								st.session_state[ 'bucket_object_name' ] = object_name
 								
 								st.success( 'Object upload completed.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Upload failed: {exc}' )
 					
 					if st.button( label='Delete Object', key='gemini_bucket_delete_object',
-							width='stretch' ):
+							width='stretch', ):
 						with st.spinner( 'Deleting Google Cloud bucket object…' ):
 							try:
-								bucket_name = require_storage_value( 'Bucket Name',
-									st.session_state.get( 'bucket_name', '' ) )
+								bucket_name = str(
+									st.session_state.get( 'bucket_name', '', ) or '' ).strip( )
 								
-								object_name = require_storage_value( 'Object Name',
-									st.session_state.get( 'bucket_object_name', '' ) )
+								object_name = str( st.session_state.get( 'bucket_object_name',
+									'', ) or '' ).strip( )
 								
-								result = call_storage_method( buckets,
-									[ 'delete', 'delete_object', 'delete_blob', 'delete_file' ],
-									bucket_name, object_name )
+								result = delete_google_cloud_bucket_object( buckets=buckets,
+									bucket_name=bucket_name, object_name=object_name, )
 								
-								set_storage_result( result, operation='delete_gemini_cloud_object',
-									result_key='bucket_delete_result' )
+								set_storage_result( result=result,
+									operation='delete_gemini_cloud_object',
+									result_key='bucket_delete_result', )
+								
+								st.session_state[ 'bucket_object_name' ] = ''
+								
+								st.session_state[ 'bucket_selected_id' ] = ''
+								
+								st.session_state[ 'bucket_selected_label' ] = ''
+								
+								st.session_state[ 'storage_selected_option' ] = ''
 								
 								st.success( 'Object delete request completed.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
+				
+				st.button( label='Reset Cloud Bucket Controls', key='gemini_bucket_reset_controls',
+					width='stretch', on_click=reset_vectorstore_gemini_bucket_controls, )
 			
 			with ops_right:
-				st.caption( 'Gemini Cloud Bucket Object Results' )
+				st.caption( 'Gemini Cloud Bucket Results' )
 				
-				rows = st.session_state.get( 'bucket_table', [ ] )
-				if isinstance( rows, list ) and len( rows ) > 0:
+				rows = st.session_state.get( 'bucket_table', [ ], )
+				
+				if (isinstance( rows, list ) and len( rows ) > 0):
 					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
-						hide_index=True )
+						hide_index=True, )
 					
 					options = build_storage_selectors( rows )
+					
 					if len( options ) > 0:
-						selected = st.selectbox( label='Select Object / Bucket Row',
-							options=options, key='storage_selected_option', index=None,
-							placeholder='Options' )
+						selected = st.selectbox( label='Select Bucket or Object', options=options,
+							key='storage_selected_option', index=None, placeholder='Options', )
 						
-						sync_storage_selection( selected, provider_name='Gemini',
-							backend='Cloud Buckets' )
+						sync_storage_selection( selected_option=selected, provider_name='Gemini',
+							backend='Cloud Buckets', )
 				
-				result = st.session_state.get( 'storage_operation_result', { } )
-				if isinstance( result, dict ) and len( result ) > 0:
-					with st.expander( label='Operation Result', icon='🧾', expanded=True,
-							width='stretch' ):
-						st.json( result )
+				metadata = st.session_state.get( 'bucket_metadata', { }, )
+				
+				if (isinstance( metadata, dict ) and len( metadata ) > 0):
+					with st.expander( label='Bucket Object Metadata', icon='🧾', expanded=True,
+							width='stretch', ):
+						metadata_display = dict( metadata )
+						
+						content_value = metadata_display.get( 'content' )
+						
+						if isinstance( content_value, (bytes, bytearray), ):
+							metadata_display[ 'content' ] = (
+								f'<{len( content_value ):,} binary bytes>')
+						
+						st.json( metadata_display )
+				
+				upload_result = st.session_state.get( 'bucket_upload_result', { }, )
+				
+				if (isinstance( upload_result, dict ) and len( upload_result ) > 0):
+					with st.expander( label='Upload Result', icon='⬆️', expanded=False,
+							width='stretch', ):
+						st.json( upload_result )
+				
+				delete_result = st.session_state.get( 'bucket_delete_result', { }, )
+				
+				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
+					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
+							width='stretch', ):
+						st.json( delete_result )
+				
+				operation_result = st.session_state.get( 'bucket_operation_result', { }, )
+				
+				if (isinstance( operation_result, dict ) and len( operation_result ) > 0):
+					with st.expander( label='Operation Result', icon='⚙️', expanded=False,
+							width='stretch', ):
+						st.json( operation_result )
 		
 		# ------------------------------------------------------------------
 		# Unsupported Branch
