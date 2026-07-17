@@ -17262,7 +17262,7 @@ elif mode == 'Vector Stores':
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
 				st.warning( f'{provider_name} does not expose a Vector Stores capability in the '
-					'current provider module.' )
+				            'current provider module.' )
 			
 			st.stop( )
 	
@@ -17271,52 +17271,37 @@ elif mode == 'Vector Stores':
 		
 		selected_backend = get_gemini_vector_backend( )
 		
-		if (
-			selected_backend == 'File Search Stores'
-			and not provider_supports( 'FileSearch', provider_name ) ):
-			left, center, right = st.columns(
-				[ 0.05, 0.90, 0.05 ]
-			)
+		if (selected_backend == 'File Search Stores' and not provider_supports( 'FileSearch',
+			provider_name )):
+			left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 			
 			with center:
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
-				st.warning(
-					'Gemini does not expose the File Search capability required by the '
-					'selected Vector Stores backend.'
-				)
+				st.warning( 'Gemini does not expose the File Search capability required by the '
+				            'selected Vector Stores backend.' )
 			
 			st.stop( )
 		
-		if (
-			selected_backend == 'Cloud Buckets'
-			and not provider_supports( 'CloudBuckets', provider_name )
-		):
-			left, center, right = st.columns(
-				[ 0.05, 0.90, 0.05 ]
-			)
+		if (selected_backend == 'Cloud Buckets' and not provider_supports( 'CloudBuckets',
+			provider_name )):
+			left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 			
 			with center:
 				st.subheader( '🧠 Vector Stores' )
 				st.divider( )
-				st.warning(
-					'Gemini does not expose the Cloud Buckets capability required by the '
-					'selected Vector Stores backend.'
-				)
+				st.warning( 'Gemini does not expose the Cloud Buckets capability required by the '
+				            'selected Vector Stores backend.' )
 			
 			st.stop( )
 	
 	else:
-		left, center, right = st.columns(
-			[ 0.05, 0.90, 0.05 ]
-		)
+		left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 		
 		with center:
 			st.subheader( '🧠 Vector Stores' )
 			st.divider( )
-			st.warning(
-				f'{provider_name} does not expose a supported Vector Stores backend.'
-			)
+			st.warning( f'{provider_name} does not expose a supported Vector Stores backend.' )
 		
 		st.stop( )
 	
@@ -17353,12 +17338,9 @@ elif mode == 'Vector Stores':
 				st.markdown( f'**Concrete Backend:** {backend_name}' )
 			
 			with route_c4:
-				st.button(
-					label='Reset Routing',
-					key='vectorstores_reset_routing',
+				st.button( label='Reset Routing', key='vectorstores_reset_routing',
 					width='stretch',
-					on_click=reset_vectorstore_routing_controls,
-				)
+					on_click=reset_vectorstore_routing_controls, )
 			
 			st.json( backend_summary )
 		
@@ -17442,957 +17424,463 @@ elif mode == 'Vector Stores':
 		# GPT: OpenAI Vector Stores
 		# ------------------------------------------------------------------
 		if provider_name == 'GPT':
-			vectorstores = get_vectorstores_module(
-				provider_name
-			)
+			vectorstores = get_vectorstores_module( provider_name )
 			
-			ops_left, ops_right = st.columns(
-				[ 0.42, 0.58 ],
-				border=True,
-				gap='small',
-			)
+			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
 			
 			with ops_left:
 				st.caption( 'OpenAI Vector Store Controls' )
 				
-				store_c1, store_c2 = st.columns(
-					[ 0.50, 0.50 ],
-					border=True,
-					gap='xxsmall',
-				)
+				store_c1, store_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 				
 				with store_c1:
-					st.text_input(
-						label='Vector Store Name',
-						key='stores_name',
-						width='stretch',
-						placeholder='Federal Financial Regulations',
-					)
+					st.text_input( label='Vector Store Name', key='stores_name', width='stretch',
+						placeholder='Federal Financial Regulations', )
 					
-					st.text_input(
-						label='Manual Vector Store ID',
-						key='stores_manual_id',
-						width='stretch',
-						placeholder='vs_...',
-					)
+					st.text_input( label='Manual Vector Store ID', key='stores_manual_id',
+						width='stretch', placeholder='vs_...', )
 					
-					st.text_input(
-						label='File ID',
-						key='stores_file_id',
-						width='stretch',
-						placeholder='file-...',
-					)
+					st.text_input( label='File ID', key='stores_file_id', width='stretch',
+						placeholder='file-...', )
 				
 				with store_c2:
-					st.text_area(
-						label='Metadata JSON',
-						key='stores_metadata',
-						height=90,
-						width='stretch',
-						placeholder='{ "domain": "appropriations" }',
-					)
+					st.text_area( label='Metadata JSON', key='stores_metadata', height=90,
+						width='stretch', placeholder='{ "domain": "appropriations" }', )
 					
-					st.text_area(
-						label='Batch File IDs',
-						key='stores_file_ids_text',
-						height=70,
-						width='stretch',
-						placeholder='file-a, file-b, file-c',
-					)
+					st.text_area( label='Batch File IDs', key='stores_file_ids_text', height=70,
+						width='stretch', placeholder='file-a, file-b, file-c', )
 				
-				list_c1, list_c2 = st.columns(
-					[ 0.50, 0.50 ],
-					border=True,
-					gap='xxsmall',
-				)
+				list_c1, list_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 				
 				with list_c1:
-					st.number_input(
-						label='List Limit',
-						min_value=1,
-						max_value=100,
-						step=1,
+					st.number_input( label='List Limit', min_value=1, max_value=100, step=1,
 						key='stores_limit',
-						help='Maximum number of OpenAI Vector Stores returned.',
-					)
+						help='Maximum number of OpenAI Vector Stores returned.', )
 				
 				with list_c2:
-					st.selectbox(
-						label='List Order',
-						options=[ 'desc', 'asc' ],
+					st.selectbox( label='List Order', options=[ 'desc', 'asc' ],
 						key='stores_order',
-						help='OpenAI Vector Store result order.',
-					)
+						help='OpenAI Vector Store result order.', )
 				
-				uploaded_store_file = st.file_uploader(
-					label='Upload File and Attach',
-					type=[
-						'pdf',
-						'txt',
-						'md',
-						'docx',
-						'csv',
-						'json',
-						'xml',
-						'png',
-						'jpg',
-						'jpeg',
-						'webp',
-						'py',
-						'cs',
-						'sql',
-						'yaml',
-						'yml',
-						'html',
-						'css',
-						'js',
-						'ts',
-					],
-					accept_multiple_files=False,
-					key='stores_file_upload',
-				)
+				uploaded_store_file = st.file_uploader( label='Upload File and Attach',
+					type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml', 'png', 'jpg', 'jpeg',
+						'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts', ],
+					accept_multiple_files=False, key='stores_file_upload', )
 				
-				action_c1, action_c2 = st.columns(
-					[ 0.50, 0.50 ],
-					gap='xxsmall',
-				)
+				action_c1, action_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall', )
 				
 				with action_c1:
-					if st.button(
-						label='Create Store',
-						key='gpt_stores_create',
-						width='stretch',
-					):
-						with st.spinner(
-							'Creating OpenAI Vector Store…'
-						):
+					if st.button( label='Create Store', key='gpt_stores_create',
+							width='stretch', ):
+						with st.spinner( 'Creating OpenAI Vector Store…' ):
 							try:
 								metadata = parse_storage_json(
-									st.session_state.get(
-										'stores_metadata',
-										'',
-									)
-								)
+									st.session_state.get( 'stores_metadata', '', ) )
 								
-								result = create_gpt_vectorstore(
-									vectorstores=vectorstores,
-									name=st.session_state.get(
-										'stores_name',
-										'',
-									),
-									metadata=metadata or None,
-								)
+								result = create_gpt_vectorstore( vectorstores=vectorstores,
+									name=st.session_state.get( 'stores_name', '', ),
+									metadata=metadata or None, )
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='create_openai_vector_store',
-									result_key='stores_store_metadata',
-								)
+									result_key='stores_store_metadata', )
 								
-								identifier = get_storage_identifier(
-									result
-								)
+								identifier = get_storage_identifier( result )
 								
 								if identifier:
-									st.session_state[
-										'stores_id'
-									] = identifier
+									st.session_state[ 'stores_id' ] = identifier
 									
-									st.session_state[
-										'stores_selected_id'
-									] = identifier
+									st.session_state[ 'stores_selected_id' ] = identifier
 								
-								st.success(
-									f'Created Vector Store: '
-									f'{identifier or result.get("name", "")}'
-								)
+								st.success( f'Created Vector Store: '
+								            f'{identifier or result.get( "name", "" )}' )
 							except Exception as exc:
-								st.error(
-									f'Create failed: {exc}'
-								)
+								st.error( f'Create failed: {exc}' )
 					
-					if st.button(
-						label='Retrieve Store',
-						key='gpt_stores_retrieve',
-						width='stretch',
-					):
-						with st.spinner(
-							'Retrieving OpenAI Vector Store…'
-						):
+					if st.button( label='Retrieve Store', key='gpt_stores_retrieve',
+							width='stretch', ):
+						with st.spinner( 'Retrieving OpenAI Vector Store…' ):
 							try:
-								result = retrieve_gpt_vectorstore(
-									vectorstores=vectorstores,
-									store_id=get_vectorstores_selected_id( ),
-								)
+								result = retrieve_gpt_vectorstore( vectorstores=vectorstores,
+									store_id=get_vectorstores_selected_id( ), )
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='retrieve_openai_vector_store',
-									result_key='stores_store_metadata',
-								)
+									result_key='stores_store_metadata', )
 								
-								st.success(
-									'Vector Store retrieved.'
-								)
+								st.success( 'Vector Store retrieved.' )
 							except Exception as exc:
-								st.error(
-									f'Retrieve failed: {exc}'
-								)
+								st.error( f'Retrieve failed: {exc}' )
 					
-					if st.button(
-						label='Create File Batch',
-						key='gpt_stores_batch',
-						width='stretch',
-					):
-						with st.spinner(
-							'Creating OpenAI Vector Store file batch…'
-						):
+					if st.button( label='Create File Batch', key='gpt_stores_batch',
+							width='stretch', ):
+						with st.spinner( 'Creating OpenAI Vector Store file batch…' ):
 							try:
 								file_ids = parse_storage_ids(
-									st.session_state.get(
-										'stores_file_ids_text',
-										'',
-									)
-								)
+									st.session_state.get( 'stores_file_ids_text', '', ) )
 								
 								result = create_gpt_vectorstore_file_batch(
 									vectorstores=vectorstores,
-									store_id=get_vectorstores_selected_id( ),
-									file_ids=file_ids,
-								)
+									store_id=get_vectorstores_selected_id( ), file_ids=file_ids, )
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='create_openai_file_batch',
-									result_key='stores_batch_result',
-								)
+									result_key='stores_batch_result', )
 								
-								st.success(
-									'File batch created.'
-								)
+								st.success( 'File batch created.' )
 							except Exception as exc:
-								st.error(
-									f'Batch failed: {exc}'
-								)
+								st.error( f'Batch failed: {exc}' )
 				
 				with action_c2:
-					if st.button(
-						label='List Stores',
-						key='gpt_stores_list',
-						width='stretch',
-					):
-						with st.spinner(
-							'Listing OpenAI Vector Stores…'
-						):
+					if st.button( label='List Stores', key='gpt_stores_list', width='stretch', ):
+						with st.spinner( 'Listing OpenAI Vector Stores…' ):
 							try:
-								rows = list_gpt_vectorstores(
-									vectorstores=vectorstores,
-									limit=int(
-										st.session_state.get(
-											'stores_limit',
-											100,
-										) or 100
-									),
-									order=str(
-										st.session_state.get(
-											'stores_order',
-											'desc',
-										) or 'desc'
-									),
-								)
+								rows = list_gpt_vectorstores( vectorstores=vectorstores, limit=int(
+									st.session_state.get( 'stores_limit', 100, ) or 100 ),
+									order=str( st.session_state.get( 'stores_order',
+										'desc', ) or 'desc' ), )
 								
-								set_storage_rows(
-									rows=rows,
-									table_key='stores_table',
-								)
+								set_storage_rows( rows=rows, table_key='stores_table', )
 								
 								st.session_state[
-									'storage_last_operation'
-								] = 'list_openai_vector_stores'
+									'storage_last_operation' ] = 'list_openai_vector_stores'
 								
 								st.session_state[
-									'stores_last_operation'
-								] = 'list_openai_vector_stores'
+									'stores_last_operation' ] = 'list_openai_vector_stores'
 								
-								st.success(
-									f'Found {len(rows):,} Vector Store(s).'
-								)
+								st.success( f'Found {len( rows ):,} Vector Store(s).' )
 							except Exception as exc:
-								st.error(
-									f'List failed: {exc}'
-								)
+								st.error( f'List failed: {exc}' )
 					
-					if st.button(
-						label='Delete Store',
-						key='gpt_stores_delete',
-						width='stretch',
-					):
-						with st.spinner(
-							'Deleting OpenAI Vector Store…'
-						):
+					if st.button( label='Delete Store', key='gpt_stores_delete',
+							width='stretch', ):
+						with st.spinner( 'Deleting OpenAI Vector Store…' ):
 							try:
 								store_id = get_vectorstores_selected_id( )
 								
-								result = delete_gpt_vectorstore(
-									vectorstores=vectorstores,
-									store_id=store_id,
-								)
+								result = delete_gpt_vectorstore( vectorstores=vectorstores,
+									store_id=store_id, )
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='delete_openai_vector_store',
-									result_key='stores_delete_result',
-								)
+									result_key='stores_delete_result', )
 								
-								st.session_state[
-									'stores_id'
-								] = ''
+								st.session_state[ 'stores_id' ] = ''
 								
-								st.session_state[
-									'stores_manual_id'
-								] = ''
+								st.session_state[ 'stores_manual_id' ] = ''
 								
-								st.session_state[
-									'stores_selected_id'
-								] = ''
+								st.session_state[ 'stores_selected_id' ] = ''
 								
-								st.session_state[
-									'stores_selected_label'
-								] = ''
+								st.session_state[ 'stores_selected_label' ] = ''
 								
-								st.session_state[
-									'storage_selected_option'
-								] = ''
+								st.session_state[ 'storage_selected_option' ] = ''
 								
-								st.success(
-									'Delete request completed.'
-								)
+								st.success( 'Delete request completed.' )
 							except Exception as exc:
-								st.error(
-									f'Delete failed: {exc}'
-								)
+								st.error( f'Delete failed: {exc}' )
 					
-					if st.button(
-						label='Attach Existing File',
-						key='gpt_stores_attach_file',
-						width='stretch',
-					):
-						with st.spinner(
-							'Attaching file to OpenAI Vector Store…'
-						):
+					if st.button( label='Attach Existing File', key='gpt_stores_attach_file',
+							width='stretch', ):
+						with st.spinner( 'Attaching file to OpenAI Vector Store…' ):
 							try:
-								result = attach_gpt_vectorstore_file(
-									vectorstores=vectorstores,
+								result = attach_gpt_vectorstore_file( vectorstores=vectorstores,
 									store_id=get_vectorstores_selected_id( ),
-									file_id=st.session_state.get(
-										'stores_file_id',
-										'',
-									),
-								)
+									file_id=st.session_state.get( 'stores_file_id', '', ), )
 								
-								set_storage_result(
-									result=result,
-									operation='attach_openai_file',
-									result_key='stores_file_metadata',
-								)
+								set_storage_result( result=result, operation='attach_openai_file',
+									result_key='stores_file_metadata', )
 								
-								st.success(
-									'File attachment completed.'
-								)
+								st.success( 'File attachment completed.' )
 							except Exception as exc:
-								st.error(
-									f'Attach failed: {exc}'
-								)
+								st.error( f'Attach failed: {exc}' )
 				
-				if st.button(
-					label='Upload and Attach File',
-					key='gpt_stores_upload_attach',
-					width='stretch',
-				):
-					with st.spinner(
-						'Uploading and attaching file…'
-					):
+				if st.button( label='Upload and Attach File', key='gpt_stores_upload_attach',
+						width='stretch', ):
+					with st.spinner( 'Uploading and attaching file…' ):
 						try:
-							path = save_uploaded_storage_file(
-								uploaded_store_file
-							)
+							path = save_uploaded_storage_file( uploaded_store_file )
 							
 							result = upload_and_attach_gpt_vectorstore_file(
 								vectorstores=vectorstores,
 								store_id=get_vectorstores_selected_id( ),
-								path=path,
-							)
+								path=path, )
 							
-							set_storage_result(
-								result=result,
+							set_storage_result( result=result,
 								operation='upload_attach_openai_file',
-								result_key='stores_upload_result',
-							)
+								result_key='stores_upload_result', )
 							
-							st.success(
-								'Upload and attachment completed.'
-							)
+							st.success( 'Upload and attachment completed.' )
 						except Exception as exc:
-							st.error(
-								f'Upload and attach failed: {exc}'
-							)
+							st.error( f'Upload and attach failed: {exc}' )
 				
-				st.button(
-					label='Reset OpenAI Vector Store Controls',
-					key='gpt_stores_reset_controls',
-					width='stretch',
-					on_click=reset_vectorstore_gpt_controls,
-				)
+				st.button( label='Reset OpenAI Vector Store Controls',
+					key='gpt_stores_reset_controls', width='stretch',
+					on_click=reset_vectorstore_gpt_controls, )
 			
 			with ops_right:
 				st.caption( 'OpenAI Vector Store Results' )
 				
-				rows = st.session_state.get(
-					'stores_table',
-					[ ],
-				)
+				rows = st.session_state.get( 'stores_table', [ ], )
 				
 				if isinstance( rows, list ) and len( rows ) > 0:
-					st.data_editor(
-						pd.DataFrame( rows ),
-						use_container_width=True,
-						hide_index=True,
-					)
+					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
+						hide_index=True, )
 					
-					options = build_storage_selectors(
-						rows
-					)
+					options = build_storage_selectors( rows )
 					
 					if len( options ) > 0:
-						selected = st.selectbox(
-							label='Select Vector Store',
-							options=options,
-							key='storage_selected_option',
-							index=None,
-							placeholder='Options',
-						)
+						selected = st.selectbox( label='Select Vector Store', options=options,
+							key='storage_selected_option', index=None, placeholder='Options', )
 						
-						sync_storage_selection(
-							selected_option=selected,
-							provider_name='GPT',
-						)
+						sync_storage_selection( selected_option=selected, provider_name='GPT', )
 				
-				store_metadata = st.session_state.get(
-					'stores_store_metadata',
-					{ },
-				)
+				store_metadata = st.session_state.get( 'stores_store_metadata', { }, )
 				
-				if (
-					isinstance( store_metadata, dict )
-					and len( store_metadata ) > 0
-				):
-					with st.expander(
-						label='Vector Store',
-						icon='🧠',
-						expanded=True,
-						width='stretch',
-					):
+				if (isinstance( store_metadata, dict ) and len( store_metadata ) > 0):
+					with st.expander( label='Vector Store', icon='🧠', expanded=True,
+							width='stretch', ):
 						st.json( store_metadata )
 				
-				file_metadata = st.session_state.get(
-					'stores_file_metadata',
-					{ },
-				)
+				file_metadata = st.session_state.get( 'stores_file_metadata', { }, )
 				
-				if (
-					isinstance( file_metadata, dict )
-					and len( file_metadata ) > 0
-				):
-					with st.expander(
-						label='Vector Store File',
-						icon='📄',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( file_metadata, dict ) and len( file_metadata ) > 0):
+					with st.expander( label='Vector Store File', icon='📄', expanded=False,
+							width='stretch', ):
 						st.json( file_metadata )
 				
-				batch_result = st.session_state.get(
-					'stores_batch_result',
-					{ },
-				)
+				batch_result = st.session_state.get( 'stores_batch_result', { }, )
 				
-				if (
-					isinstance( batch_result, dict )
-					and len( batch_result ) > 0
-				):
-					with st.expander(
-						label='File Batch',
-						icon='📚',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( batch_result, dict ) and len( batch_result ) > 0):
+					with st.expander( label='File Batch', icon='📚', expanded=False,
+							width='stretch', ):
 						st.json( batch_result )
 				
-				upload_result = st.session_state.get(
-					'stores_upload_result',
-					{ },
-				)
+				upload_result = st.session_state.get( 'stores_upload_result', { }, )
 				
-				if (
-					isinstance( upload_result, dict )
-					and len( upload_result ) > 0
-				):
-					with st.expander(
-						label='Upload Result',
-						icon='⬆️',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( upload_result, dict ) and len( upload_result ) > 0):
+					with st.expander( label='Upload Result', icon='⬆️', expanded=False,
+							width='stretch', ):
 						st.json( upload_result )
 				
-				delete_result = st.session_state.get(
-					'stores_delete_result',
-					{ },
-				)
+				delete_result = st.session_state.get( 'stores_delete_result', { }, )
 				
-				if (
-					isinstance( delete_result, dict )
-					and len( delete_result ) > 0
-				):
-					with st.expander(
-						label='Delete Result',
-						icon='🗑️',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
+					with st.expander( label='Delete Result', icon='🗑️', expanded=False,
+							width='stretch', ):
 						st.json( delete_result )
 		
 		# ------------------------------------------------------------------
 		# Grok: xAI Collections
 		# ------------------------------------------------------------------
 		elif provider_name == 'Grok':
-			vectorstores = get_vectorstores_module(
-				provider_name
-			)
+			vectorstores = get_vectorstores_module( provider_name )
 			
-			ops_left, ops_right = st.columns(
-				[ 0.42, 0.58 ],
-				border=True,
-				gap='small',
-			)
+			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small', )
 			
 			with ops_left:
 				st.caption( 'xAI Collection Controls' )
 				
-				control_c1, control_c2 = st.columns(
-					[ 0.50, 0.50 ],
-					border=True,
-					gap='xxsmall',
-				)
+				control_c1, control_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 				
 				with control_c1:
-					st.text_input(
-						label='Manual Collection ID',
-						key='stores_manual_id',
-						width='stretch',
-						placeholder='collection_...',
-					)
+					st.text_input( label='Manual Collection ID', key='stores_manual_id',
+						width='stretch', placeholder='collection_...', )
 					
-					st.number_input(
-						label='List Limit',
-						min_value=1,
-						max_value=100,
-						step=1,
+					st.number_input( label='List Limit', min_value=1, max_value=100, step=1,
 						key='stores_limit',
-						help='Maximum number of configured collections displayed.',
-					)
+						help='Maximum number of configured collections displayed.', )
 				
 				with control_c2:
-					st.text_area(
-						label='Survey Collection IDs',
-						key='stores_file_ids_text',
-						height=92,
-						width='stretch',
-						placeholder='collection-a, collection-b, collection-c',
-					)
+					st.text_area( label='Survey Collection IDs', key='stores_file_ids_text',
+						height=92, width='stretch',
+						placeholder='collection-a, collection-b, collection-c', )
 					
-					st.selectbox(
-						label='List Order',
-						options=[ 'desc', 'asc' ],
+					st.selectbox( label='List Order', options=[ 'desc', 'asc' ],
 						key='stores_order',
-						help='Display order applied to normalized collection results.',
-					)
+						help='Display order applied to normalized collection results.', )
 				
-				st.text_area(
-					label='Search / Survey Prompt',
-					key='stores_query',
-					height=110,
-					width='stretch',
-					placeholder='Search or survey configured xAI collections...',
-				)
+				st.text_area( label='Search / Survey Prompt', key='stores_query', height=110,
+					width='stretch', placeholder='Search or survey configured xAI '
+					                             'collections...', )
 				
-				grok_c1, grok_c2 = st.columns(
-					[ 0.50, 0.50 ],
-					gap='xxsmall',
-				)
+				grok_c1, grok_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall', )
 				
 				with grok_c1:
-					if st.button(
-						label='List Collections',
-						key='grok_stores_list',
-						width='stretch',
-					):
-						with st.spinner(
-							'Listing configured xAI Collections…'
-						):
+					if st.button( label='List Collections', key='grok_stores_list',
+							width='stretch', ):
+						with st.spinner( 'Listing configured xAI Collections…' ):
 							try:
-								rows = get_grok_collections(
-									vectorstores
-								)
+								rows = get_grok_collections( vectorstores )
 								
 								limit_value = int(
-									st.session_state.get(
-										'stores_limit',
-										100,
-									) or 100
-								)
+									st.session_state.get( 'stores_limit', 100, ) or 100 )
 								
 								if limit_value < 1:
 									limit_value = 1
 								
-								order_value = str(
-									st.session_state.get(
-										'stores_order',
-										'desc',
-									) or 'desc'
-								).strip( ).lower( )
+								order_value = str( st.session_state.get( 'stores_order',
+									'desc', ) or 'desc' ).strip( ).lower( )
 								
 								rows = rows[ :limit_value ]
 								
 								if order_value == 'asc':
-									rows = list(
-										reversed( rows )
-									)
+									rows = list( reversed( rows ) )
 								
-								set_storage_rows(
-									rows=rows,
-									table_key='stores_table',
-								)
+								set_storage_rows( rows=rows, table_key='stores_table', )
 								
 								st.session_state[
-									'stores_last_operation'
-								] = 'list_grok_collections'
+									'stores_last_operation' ] = 'list_grok_collections'
 								
 								st.session_state[
-									'storage_last_operation'
-								] = 'list_grok_collections'
+									'storage_last_operation' ] = 'list_grok_collections'
 								
-								st.success(
-									f'Found {len(rows):,} configured collection(s).'
-								)
+								st.success( f'Found {len( rows ):,} configured collection(s).' )
 							except Exception as exc:
-								st.error(
-									f'List failed: {exc}'
-								)
+								st.error( f'List failed: {exc}' )
 					
-					if st.button(
-						label='Retrieve Collection',
-						key='grok_stores_retrieve',
-						width='stretch',
-					):
-						with st.spinner(
-							'Retrieving xAI Collection metadata…'
-						):
+					if st.button( label='Retrieve Collection', key='grok_stores_retrieve',
+							width='stretch', ):
+						with st.spinner( 'Retrieving xAI Collection metadata…' ):
 							try:
-								result = retrieve_grok_collection(
-									vectorstores=vectorstores,
-									collection_id=get_vectorstores_selected_id( ),
-								)
+								result = retrieve_grok_collection( vectorstores=vectorstores,
+									collection_id=get_vectorstores_selected_id( ), )
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='retrieve_grok_collection',
-									result_key='stores_store_metadata',
-								)
+									result_key='stores_store_metadata', )
 								
-								st.success(
-									'Collection metadata retrieved.'
-								)
+								st.success( 'Collection metadata retrieved.' )
 							except Exception as exc:
-								st.error(
-									f'Retrieve failed: {exc}'
-								)
+								st.error( f'Retrieve failed: {exc}' )
 					
-					if st.button(
-						label='Create Collection',
-						key='grok_stores_create',
-						width='stretch',
-					):
-						warn_grok_unsupported_operation(
-							'collection creation'
-						)
+					if st.button( label='Create Collection', key='grok_stores_create',
+							width='stretch', ):
+						warn_grok_unsupported_operation( 'collection creation' )
 				
 				with grok_c2:
-					if st.button(
-						label='Search Collection',
-						key='grok_stores_search',
-						width='stretch',
-					):
-						with st.spinner(
-							'Searching xAI Collection…'
-						):
+					if st.button( label='Search Collection', key='grok_stores_search',
+							width='stretch', ):
+						with st.spinner( 'Searching xAI Collection…' ):
 							try:
-								result = search_grok_collection(
-									vectorstores=vectorstores,
+								result = search_grok_collection( vectorstores=vectorstores,
 									collection_id=get_vectorstores_selected_id( ),
-									query=st.session_state.get(
-										'stores_query',
-										'',
-									),
-								)
+									query=st.session_state.get( 'stores_query', '', ), )
 								
-								answer = str(
-									result.get( 'answer', '' ) or ''
-								).strip( )
+								answer = str( result.get( 'answer', '' ) or '' ).strip( )
 								
 								if answer:
-									st.session_state[
-										'stores_answer'
-									] = answer
+									st.session_state[ 'stores_answer' ] = answer
 								
-								search_rows = result.get(
-									'rows',
-									[ ],
-								)
+								search_rows = result.get( 'rows', [ ], )
 								
-								if (
-									isinstance( search_rows, list )
-									and len( search_rows ) > 0
-								):
-									st.session_state[
-										'stores_files_table'
-									] = search_rows
+								if (isinstance( search_rows, list ) and len( search_rows ) > 0):
+									st.session_state[ 'stores_files_table' ] = search_rows
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='search_grok_collection',
-									result_key='stores_search_result',
-								)
+									result_key='stores_search_result', )
 								
-								st.success(
-									'Search request completed.'
-								)
+								st.success( 'Search request completed.' )
 							except Exception as exc:
-								st.error(
-									f'Search failed: {exc}'
-								)
+								st.error( f'Search failed: {exc}' )
 					
-					if st.button(
-						label='Survey Collections',
-						key='grok_stores_survey',
-						width='stretch',
-					):
-						with st.spinner(
-							'Surveying xAI Collections…'
-						):
+					if st.button( label='Survey Collections', key='grok_stores_survey',
+							width='stretch', ):
+						with st.spinner( 'Surveying xAI Collections…' ):
 							try:
 								collection_ids = parse_storage_ids(
-									st.session_state.get(
-										'stores_file_ids_text',
-										'',
-									)
-								)
+									st.session_state.get( 'stores_file_ids_text', '', ) )
 								
 								selected_id = get_vectorstores_selected_id( )
 								
 								if selected_id:
-									collection_ids = merge_unique_strings(
-										primary=collection_ids,
-										secondary=[ selected_id ],
-									)
+									collection_ids = merge_unique_strings( primary=collection_ids,
+										secondary=[ selected_id ], )
 								
-								result = survey_grok_collections(
-									vectorstores=vectorstores,
+								result = survey_grok_collections( vectorstores=vectorstores,
 									collection_ids=collection_ids,
-									query=st.session_state.get(
-										'stores_query',
-										'',
-									),
-								)
+									query=st.session_state.get( 'stores_query', '', ), )
 								
-								answer = str(
-									result.get( 'answer', '' ) or ''
-								).strip( )
+								answer = str( result.get( 'answer', '' ) or '' ).strip( )
 								
 								if answer:
-									st.session_state[
-										'stores_answer'
-									] = answer
+									st.session_state[ 'stores_answer' ] = answer
 								
-								survey_rows = result.get(
-									'rows',
-									[ ],
-								)
+								survey_rows = result.get( 'rows', [ ], )
 								
-								if (
-									isinstance( survey_rows, list )
-									and len( survey_rows ) > 0
-								):
-									st.session_state[
-										'stores_files_table'
-									] = survey_rows
+								if (isinstance( survey_rows, list ) and len( survey_rows ) > 0):
+									st.session_state[ 'stores_files_table' ] = survey_rows
 								
-								set_storage_result(
-									result=result,
+								set_storage_result( result=result,
 									operation='survey_grok_collections',
-									result_key='stores_survey_result',
-								)
+									result_key='stores_survey_result', )
 								
-								st.success(
-									'Survey completed.'
-								)
+								st.success( 'Survey completed.' )
 							except Exception as exc:
-								st.error(
-									f'Survey failed: {exc}'
-								)
+								st.error( f'Survey failed: {exc}' )
 					
-					if st.button(
-						label='Upload / Attach',
-						key='grok_stores_upload',
-						width='stretch',
-					):
-						warn_grok_unsupported_operation(
-							'upload-to-collection'
-						)
+					if st.button( label='Upload / Attach', key='grok_stores_upload',
+							width='stretch', ):
+						warn_grok_unsupported_operation( 'upload-to-collection' )
 					
-					if st.button(
-						label='Delete Collection',
-						key='grok_stores_delete',
-						width='stretch',
-					):
-						warn_grok_unsupported_operation(
-							'collection deletion'
-						)
+					if st.button( label='Delete Collection', key='grok_stores_delete',
+							width='stretch', ):
+						warn_grok_unsupported_operation( 'collection deletion' )
 				
-				st.button(
-					label='Reset xAI Collection Controls',
-					key='grok_stores_reset_controls',
-					width='stretch',
-					on_click=reset_vectorstore_grok_controls,
-				)
+				st.button( label='Reset xAI Collection Controls', key='grok_stores_reset_controls',
+					width='stretch', on_click=reset_vectorstore_grok_controls, )
 			
 			with ops_right:
 				st.caption( 'xAI Collection Results' )
 				
-				rows = st.session_state.get(
-					'stores_table',
-					[ ],
-				)
+				rows = st.session_state.get( 'stores_table', [ ], )
 				
 				if isinstance( rows, list ) and len( rows ) > 0:
-					st.data_editor(
-						pd.DataFrame( rows ),
-						use_container_width=True,
-						hide_index=True,
-					)
+					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
+						hide_index=True, )
 					
-					options = build_storage_selectors(
-						rows
-					)
+					options = build_storage_selectors( rows )
 					
 					if len( options ) > 0:
-						selected = st.selectbox(
-							label='Select Collection',
-							options=options,
-							key='storage_selected_option',
-							index=None,
-							placeholder='Options',
-						)
+						selected = st.selectbox( label='Select Collection', options=options,
+							key='storage_selected_option', index=None, placeholder='Options', )
 						
-						sync_storage_selection(
-							selected_option=selected,
-							provider_name='Grok',
-						)
+						sync_storage_selection( selected_option=selected, provider_name='Grok', )
 				
-				answer = st.session_state.get(
-					'stores_answer',
-					'',
-				)
+				answer = st.session_state.get( 'stores_answer', '', )
 				
 				if isinstance( answer, str ) and answer.strip( ):
-					with st.expander(
-						label='Search / Survey Answer',
-						icon='🧠',
-						expanded=True,
-						width='stretch',
-					):
+					with st.expander( label='Search / Survey Answer', icon='🧠', expanded=True,
+							width='stretch', ):
 						st.markdown( answer )
 				
-				search_rows = st.session_state.get(
-					'stores_files_table',
-					[ ],
-				)
+				search_rows = st.session_state.get( 'stores_files_table', [ ], )
 				
-				if (
-					isinstance( search_rows, list )
-					and len( search_rows ) > 0
-				):
-					with st.expander(
-						label='Search / Survey Results',
-						icon='📚',
-						expanded=False,
-						width='stretch',
-					):
-						st.data_editor(
-							pd.DataFrame( search_rows ),
-							use_container_width=True,
-							hide_index=True,
-						)
+				if (isinstance( search_rows, list ) and len( search_rows ) > 0):
+					with st.expander( label='Search / Survey Results', icon='📚', expanded=False,
+							width='stretch', ):
+						st.data_editor( pd.DataFrame( search_rows ), use_container_width=True,
+							hide_index=True, )
 				
-				store_metadata = st.session_state.get(
-					'stores_store_metadata',
-					{ },
-				)
+				store_metadata = st.session_state.get( 'stores_store_metadata', { }, )
 				
-				if (
-					isinstance( store_metadata, dict )
-					and len( store_metadata ) > 0
-				):
-					with st.expander(
-						label='Collection Metadata',
-						icon='🧾',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( store_metadata, dict ) and len( store_metadata ) > 0):
+					with st.expander( label='Collection Metadata', icon='🧾', expanded=False,
+							width='stretch', ):
 						st.json( store_metadata )
 				
-				search_result = st.session_state.get(
-					'stores_search_result',
-					{ },
-				)
+				search_result = st.session_state.get( 'stores_search_result', { }, )
 				
-				if (
-					isinstance( search_result, dict )
-					and len( search_result ) > 0
-				):
-					with st.expander(
-						label='Search Result',
-						icon='🔎',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( search_result, dict ) and len( search_result ) > 0):
+					with st.expander( label='Search Result', icon='🔎', expanded=False,
+							width='stretch', ):
 						st.json( search_result )
 				
-				survey_result = st.session_state.get(
-					'stores_survey_result',
-					{ },
-				)
+				survey_result = st.session_state.get( 'stores_survey_result', { }, )
 				
-				if (
-					isinstance( survey_result, dict )
-					and len( survey_result ) > 0
-				):
-					with st.expander(
-						label='Survey Result',
-						icon='📊',
-						expanded=False,
-						width='stretch',
-					):
+				if (isinstance( survey_result, dict ) and len( survey_result ) > 0):
+					with st.expander( label='Survey Result', icon='📊', expanded=False,
+							width='stretch', ):
 						st.json( survey_result )
 		
 		# ------------------------------------------------------------------
@@ -18443,7 +17931,9 @@ elif mode == 'Vector Stores':
 						key='filestore_instruction_category',
 						on_change=change_filestore_instruction_category,
 						format_func=lambda category: ('Select Category' if category == '' and len(
-							filestore_categories ) > 0 else 'No Categories Found' if category ==   '' else category),
+							filestore_categories ) > 0 else 'No Categories Found' if category ==
+						                                                             '' else
+						category),
 						disabled=len( filestore_categories ) == 0,
 						help=('Select a Gemini File Search Stores prompt category.'), )
 					
