@@ -981,11 +981,11 @@ def convert_xml( text: str ) -> str:
 	"""
 	markdown_blocks: List[ str ] = [ ]
 	for match in cfg.XML_BLOCK_PATTERN.finditer( text ):
-		raw_tag: str=match.group( "tag" )
-		body: str=match.group( "body" ).strip( )
+		raw_tag: str = match.group( "tag" )
+		body: str = match.group( "body" ).strip( )
 		
 		# Humanize tag name for Markdown heading
-		heading: str=raw_tag.replace( "_", " " ).replace( "-", " " ).title( )
+		heading: str = raw_tag.replace( "_", " " ).replace( "-", " " ).title( )
 		markdown_blocks.append( f"## {heading}" )
 		if body:
 			markdown_blocks.append( body )
@@ -1118,7 +1118,7 @@ def normalize_text( text: str ) -> str:
 	
 	return text
 
-def chunk_text( text: str, max_tokens: int=400 ) -> list[ str ]:
+def chunk_text( text: str, max_tokens: int = 400 ) -> list[ str ]:
 	"""Chunk text.
 	
 	Purpose:
@@ -2156,8 +2156,8 @@ def format_prompt_option( prompt_id: int, prompts: Dict[ int, Dict[ str, Any ] ]
 	
 	return f'Prompt ID {prompt_id}'
 
-def fetch_prompts_df( search_text: str='', category: str='', sort_column: str='ID',
-	sort_direction: str='ASC' ) -> pd.DataFrame:
+def fetch_prompts_df( search_text: str = '', category: str = '', sort_column: str = 'ID',
+	sort_direction: str = 'ASC' ) -> pd.DataFrame:
 	"""Fetch prompts dataframe.
 	
 	Purpose:
@@ -2680,7 +2680,7 @@ def synchronize_instruction_category_selection( category_key: str,
 	selected_category = st.session_state.get( category_key.strip( ), '' )
 	
 	if (isinstance( selected_category,
-		str ) and selected_category.strip( ) and selected_category.strip( ) not in categories):
+			str ) and selected_category.strip( ) and selected_category.strip( ) not in categories):
 		st.session_state[ category_key.strip( ) ] = ''
 
 def build_prompt( user_input: str ) -> str:
@@ -2700,12 +2700,12 @@ def build_prompt( user_input: str ) -> str:
 	system_instructions = st.session_state.get( 'system_instructions', '' )
 	use_semantic = bool( st.session_state.get( 'use_semantic', False ) )
 	basic_docs = st.session_state.get( 'basic_docs', [ ] )
-	messages = st.session_state.get( 'messages', [ ] )	
+	messages = st.session_state.get( 'messages', [ ] )
 	top_k_value = int( st.session_state.get( 'top_k', 0 ) )
 	if top_k_value <= 0:
 		top_k_value = 4
 	
-	prompt = f"<|system|>\n{system_instructions}\n</s>\n"	
+	prompt = f"<|system|>\n{system_instructions}\n</s>\n"
 	if use_semantic:
 		with sqlite3.connect( cfg.DB_PATH ) as conn:
 			rows = conn.execute( "SELECT chunk, vector FROM embeddings" ).fetchall( )
@@ -2722,7 +2722,7 @@ def build_prompt( user_input: str ) -> str:
 	if isinstance( messages, list ):
 		for msg in messages:
 			role = ''
-			content = ''			
+			content = ''
 			if isinstance( msg, tuple ) or isinstance( msg, list ):
 				if len( msg ) == 2:
 					role = str( msg[ 0 ] or '' ).strip( )
@@ -2854,7 +2854,7 @@ def create_schema( table: str ) -> List[ Tuple ]:
 	with create_connection( ) as conn:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
-def read_table( table: str, limit: int=None, offset: int=0 ) -> pd.DataFrame:
+def read_table( table: str, limit: int = None, offset: int = 0 ) -> pd.DataFrame:
 	"""Read table.
 	
 	Purpose:
@@ -4072,859 +4072,6 @@ def _safe( module_name: str, attr_name: str, fallback: Any ) -> Any:
 	return getattr( provider_module, attr_name, fallback )
 
 # ======================================================================================
-# VECTOR STORES STATE UTILITIES
-# ======================================================================================
-
-def ensure_vectorstores_mode_state( ) -> None:
-	"""Ensure vectorstores mode state.
-	
-	Purpose:
-	    Maintains application runtime state for ensure vectorstores mode state by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
-	"""
-	# ------------------------------------------------------------------
-	# Shared Vector Stores alias keys
-	# ------------------------------------------------------------------
-	ensure_session_key( 'stores_backend', 'File Search Stores' )
-	ensure_session_key( 'stores_id', '' )
-	ensure_session_key( 'stores_name', '' )
-	ensure_session_key( 'stores_description', '' )
-	ensure_session_key( 'stores_metadata', '' )
-	ensure_session_key( 'stores_manual_id', '' )
-	ensure_session_key( 'stores_selected_id', '' )
-	ensure_session_key( 'stores_selected_label', '' )
-	ensure_session_key( 'stores_table', [ ] )
-	ensure_session_key( 'stores_files_table', [ ] )
-	ensure_session_key( 'stores_store_metadata', { } )
-	ensure_session_key( 'stores_file_metadata', { } )
-	ensure_session_key( 'stores_operation_result', { } )
-	ensure_session_key( 'stores_batch_result', { } )
-	ensure_session_key( 'stores_upload_result', { } )
-	ensure_session_key( 'stores_delete_result', { } )
-	ensure_session_key( 'stores_search_result', { } )
-	ensure_session_key( 'stores_survey_result', { } )
-	ensure_session_key( 'stores_query', '' )
-	ensure_session_key( 'stores_answer', '' )
-	ensure_session_key( 'stores_last_operation', '' )
-	ensure_session_key( 'stores_file_id', '' )
-	ensure_session_key( 'stores_file_ids', [ ] )
-	ensure_session_key( 'stores_file_ids_text', '' )
-	ensure_session_key( 'stores_batch_id', '' )
-	ensure_session_key( 'stores_content', '' )
-	ensure_session_key( 'stores_limit', 100 )
-	ensure_session_key( 'stores_order', 'desc' )
-	
-	# ------------------------------------------------------------------
-	# Gemini File Search backend keys
-	# ------------------------------------------------------------------
-	ensure_session_key( 'filestore_id', '' )
-	ensure_session_key( 'filestore_name', '' )
-	ensure_session_key( 'filestore_selected_id', '' )
-	ensure_session_key( 'filestore_selected_label', '' )
-	ensure_session_key( 'filestore_metadata', { } )
-	ensure_session_key( 'filestore_table', [ ] )
-	ensure_session_key( 'filestore_upload_result', { } )
-	ensure_session_key( 'filestore_delete_result', { } )
-	ensure_session_key( 'filestore_operation_result', { } )
-	
-	# ------------------------------------------------------------------
-	# Gemini Cloud Bucket backend keys
-	# ------------------------------------------------------------------
-	ensure_session_key( 'bucket_name', '' )
-	ensure_session_key( 'bucket_object_name', '' )
-	ensure_session_key( 'bucket_selected_id', '' )
-	ensure_session_key( 'bucket_selected_label', '' )
-	ensure_session_key( 'bucket_metadata', { } )
-	ensure_session_key( 'bucket_table', [ ] )
-	ensure_session_key( 'bucket_upload_result', { } )
-	ensure_session_key( 'bucket_delete_result', { } )
-	ensure_session_key( 'bucket_operation_result', { } )
-	ensure_session_key( 'bucket_results', { } )
-	
-	# ------------------------------------------------------------------
-	# Shared storage display keys
-	# ------------------------------------------------------------------
-	ensure_session_key( 'storage_operation_result', { } )
-	ensure_session_key( 'storage_table_data', [ ] )
-	ensure_session_key( 'storage_last_operation', '' )
-	ensure_session_key( 'storage_selected_option', '' )
-	ensure_session_key( 'storage_last_answer', '' )
-	
-	# ------------------------------------------------------------------
-	# Defensive type normalization for non-widget keys only
-	# ------------------------------------------------------------------
-	if not isinstance( st.session_state.get( 'stores_table' ), list ):
-		st.session_state[ 'stores_table' ] = [ ]
-	
-	if not isinstance( st.session_state.get( 'stores_files_table' ), list ):
-		st.session_state[ 'stores_files_table' ] = [ ]
-	
-	if not isinstance( st.session_state.get( 'stores_store_metadata' ), dict ):
-		st.session_state[ 'stores_store_metadata' ] = { }
-	
-	if not isinstance( st.session_state.get( 'stores_file_metadata' ), dict ):
-		st.session_state[ 'stores_file_metadata' ] = { }
-	
-	if not isinstance( st.session_state.get( 'stores_operation_result' ), dict ):
-		st.session_state[ 'stores_operation_result' ] = { }
-	
-	if not isinstance( st.session_state.get( 'filestore_table' ), list ):
-		st.session_state[ 'filestore_table' ] = [ ]
-	
-	if not isinstance( st.session_state.get( 'filestore_metadata' ), dict ):
-		st.session_state[ 'filestore_metadata' ] = { }
-	
-	if not isinstance( st.session_state.get( 'bucket_table' ), list ):
-		st.session_state[ 'bucket_table' ] = [ ]
-	
-	if not isinstance( st.session_state.get( 'bucket_metadata' ), dict ):
-		st.session_state[ 'bucket_metadata' ] = { }
-	
-	if not isinstance( st.session_state.get( 'storage_operation_result' ), dict ):
-		st.session_state[ 'storage_operation_result' ] = { }
-	
-	if not isinstance( st.session_state.get( 'storage_table_data' ), list ):
-		st.session_state[ 'storage_table_data' ] = [ ]
-	
-	if st.session_state.get( 'stores_backend' ) not in [ 'File Search Stores', 'Cloud Buckets' ]:
-		st.session_state[ 'stores_backend' ] = 'File Search Stores'
-
-def ensure_storage_mode_state( ) -> None:
-	"""Ensure storage mode state.
-	
-	Purpose:
-	    Maintains application runtime state for ensure storage mode state by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
-	"""
-	ensure_vectorstores_mode_state( )
-
-# ======================================================================================
-# VECTOR STORES STORAGE UTILITIES
-# ======================================================================================
-
-def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
-	"""Normalize storage object.
-	
-	Purpose:
-	    Transforms normalize storage object inputs into a normalized representation used by
-	    provider calls, document retrieval, data management, or UI rendering.
-	
-	Args:
-	    value: Value value used by the application workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	"""
-	if value is None:
-		return { }
-	
-	if isinstance( value, dict ):
-		return value
-	
-	if hasattr( value, 'model_dump' ):
-		try:
-			return value.model_dump( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'normalize_storage_object'
-			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
-			Logger( ).write( exception )
-			pass
-	
-	if hasattr( value, 'to_dict' ):
-		try:
-			result = value.to_dict( )
-			if isinstance( result, dict ):
-				return result
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'normalize_storage_object'
-			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
-			Logger( ).write( exception )
-			pass
-	
-	if hasattr( value, '__dict__' ):
-		try:
-			row: Dict[ str, Any ] = { }
-			
-			for key, item in vars( value ).items( ):
-				if str( key ).startswith( '_' ):
-					continue
-				
-				if item is None or isinstance( item, (str, int, float, bool) ):
-					row[ key ] = item
-					continue
-				
-				if isinstance( item, (list, tuple, set) ):
-					row[ key ] = list( item )
-					continue
-				
-				if isinstance( item, dict ):
-					row[ key ] = item
-					continue
-				
-				row[ key ] = str( item )
-			
-			return row
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'normalize_storage_object'
-			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
-			Logger( ).write( exception )
-			pass
-	
-	return { 'value': str( value ) }
-
-def normalize_storage_rows( value: Any ) -> List[ Dict[ str, Any ] ]:
-	"""Normalize storage rows.
-	
-	Purpose:
-	    Transforms normalize storage rows inputs into a normalized representation used by
-	    provider calls, document retrieval, data management, or UI rendering.
-	
-	Args:
-	    value: Value value used by the application workflow.
-	
-	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
-	"""
-	if value is None:
-		return [ ]
-	
-	if isinstance( value, list ):
-		return [ normalize_storage_object( item ) for item in value ]
-	
-	if isinstance( value, tuple ):
-		return [ normalize_storage_object( item ) for item in value ]
-	
-	if isinstance( value, dict ):
-		for key in [ 'data', 'items', 'files', 'buckets', 'collections', 'stores',
-			'file_search_stores', 'vector_stores', 'results' ]:
-			items = value.get( key )
-			if isinstance( items, list ):
-				return [ normalize_storage_object( item ) for item in items ]
-		
-		return [ normalize_storage_object( value ) ]
-	
-	for attr_name in [ 'data', 'items', 'files', 'buckets', 'collections', 'stores',
-		'file_search_stores', 'vector_stores', 'results' ]:
-		try:
-			items = getattr( value, attr_name, None )
-			if isinstance( items, list ):
-				return [ normalize_storage_object( item ) for item in items ]
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'normalize_storage_rows'
-			exception.method = 'normalize_storage_rows( value ) -> List[Dict[str, Any]]'
-			Logger( ).write( exception )
-			continue
-	
-	try:
-		return [ normalize_storage_object( item ) for item in value ]
-	except Exception as e:
-		exception = Error( e )
-		exception.module = 'app'
-		exception.cause = 'normalize_storage_rows'
-		exception.method = 'normalize_storage_rows( value ) -> List[Dict[str, Any]]'
-		Logger( ).write( exception )
-		return [ normalize_storage_object( value ) ]
-
-def parse_storage_ids( value: Any ) -> List[ str ]:
-	"""Parse storage ids.
-	
-	Purpose:
-	    Transforms parse storage ids inputs into a normalized representation used by provider
-	    calls, document retrieval, data management, or UI rendering.
-	
-	Args:
-	    value: Value value used by the application workflow.
-	
-	Returns:
-	    List[str]: List of normalized values used by the application workflow.
-	"""
-	if value is None:
-		return [ ]
-	
-	if isinstance( value, (list, tuple, set) ):
-		return [ str( item ).strip( ) for item in value if str( item ).strip( ) ]
-	
-	if not isinstance( value, str ):
-		return [ str( value ).strip( ) ] if str( value ).strip( ) else [ ]
-	
-	text = value.strip( )
-	if not text:
-		return [ ]
-	
-	parts = re.split( r'[,;\n\r\t]+', text )
-	
-	return [ part.strip( ) for part in parts if part.strip( ) ]
-
-def parse_storage_json( value: Any ) -> Dict[ str, Any ]:
-	"""Parse storage json.
-	
-	Purpose:
-	    Transforms parse storage json inputs into a normalized representation used by provider
-	    calls, document retrieval, data management, or UI rendering.
-	
-	Args:
-	    value: Value value used by the application workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if value is None:
-		return { }
-	
-	if isinstance( value, dict ):
-		return value
-	
-	if not isinstance( value, str ) or not value.strip( ):
-		return { }
-	
-	try:
-		result = json.loads( value.strip( ) )
-		return result if isinstance( result, dict ) else { 'value': result }
-	except Exception as exc:
-		exception = Error( exc )
-		exception.module = 'app'
-		exception.cause = 'parse_storage_json'
-		exception.method = 'parse_storage_json( value ) -> Dict[str, Any]'
-		Logger( ).write( exception )
-		raise ValueError( f'Invalid JSON metadata: {exc}' ) from exc
-
-def get_storage_identifier( row: Dict[ str, Any ] ) -> str:
-	"""Get storage identifier.
-	
-	Purpose:
-	    Retrieves get storage identifier for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
-	
-	Args:
-	    row: Row value used by the application workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	if not isinstance( row, dict ):
-		return ''
-	
-	for key in [ 'id', 'name', 'resource_name', 'resourceName', 'uri', 'file_id', 'store_id',
-		'vector_store_id', 'collection_id', 'bucket', 'bucket_name', 'bucketName', ]:
-		value = row.get( key )
-		if isinstance( value, str ) and value.strip( ):
-			return value.strip( )
-	
-	return ''
-
-def get_storage_display_name( row: Dict[ str, Any ] ) -> str:
-	"""Get storage display name.
-	
-	Purpose:
-	    Retrieves get storage display name for the Streamlit application workflow and returns
-	    the normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
-	
-	Args:
-	    row: Row value used by the application workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	if not isinstance( row, dict ):
-		return 'resource'
-	
-	for key in [ 'display_name', 'displayName', 'filename', 'file_name', 'name', 'id',
-		'bucket_name', 'bucketName', 'collection', 'title', ]:
-		value = row.get( key )
-		if isinstance( value, str ) and value.strip( ):
-			return value.strip( )
-	
-	return 'resource'
-
-def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
-	"""Build storage selectors.
-	
-	Purpose:
-	    Builds build storage selectors from validated runtime inputs and prepares the resulting
-	    object, payload, table, or display structure for later application processing.
-	
-	Args:
-	    rows: Rows value used by the application workflow.
-	
-	Returns:
-	    List[str]: List of normalized values used by the application workflow.
-	"""
-	if not isinstance( rows, list ):
-		return [ ]
-	
-	options: List[ str ] = [ ]
-	
-	for row in rows:
-		if not isinstance( row, dict ):
-			continue
-		
-		identifier = get_storage_identifier( row )
-		display_name = get_storage_display_name( row )
-		
-		if identifier:
-			options.append( f'{display_name} — {identifier}' )
-	
-	return options
-
-def get_storage_id_from_option( option: Optional[ str ] ) -> str:
-	"""Get storage id from option.
-	
-	Purpose:
-	    Retrieves get storage id from option for the Streamlit application workflow and returns
-	    the normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
-	
-	Args:
-	    option: Option value used by the application workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	if not isinstance( option, str ) or not option.strip( ):
-		return ''
-	
-	text = option.strip( )
-	if ' — ' in text:
-		return text.rsplit( ' — ', 1 )[ 1 ].strip( )
-	
-	return text
-
-def get_selected_store_id( manual_key: str='stores_manual_id',
-	selected_key: str='stores_selected_id', fallback_key: str='stores_id' ) -> str:
-	"""Get selected store id.
-	
-	Purpose:
-	    Retrieves get selected store id for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
-	
-	Args:
-	    manual_key: Session-state key or state value used by the Streamlit workflow.
-	    selected_key: Session-state key or state value used by the Streamlit workflow.
-	    fallback_key: Session-state key or state value used by the Streamlit workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	for key in [ manual_key, selected_key, fallback_key ]:
-		value = st.session_state.get( key, '' )
-		if isinstance( value, str ) and value.strip( ):
-			return value.strip( )
-	
-	return ''
-
-def get_vectorstores_selected_id( ) -> str:
-	"""Get vectorstores selected id.
-	
-	Purpose:
-	    Retrieves get vectorstores selected id for the Streamlit application workflow and
-	    returns the normalized value used by downstream UI, provider, database, or document-
-	    processing steps.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	provider_name = get_provider_name( )
-	
-	if provider_name == 'Gemini':
-		backend = get_gemini_vector_backend( )
-		
-		if backend == 'Cloud Buckets':
-			return get_selected_store_id( manual_key='bucket_name',
-				selected_key='bucket_selected_id', fallback_key='bucket_name' )
-		
-		return get_selected_store_id( manual_key='filestore_id',
-			selected_key='filestore_selected_id', fallback_key='filestore_id' )
-	
-	return get_selected_store_id( manual_key='stores_manual_id', selected_key='stores_selected_id',
-		fallback_key='stores_id' )
-
-def call_storage_method( target: Any, method_names: List[ str ], *args: Any, **kwargs: Any ) -> Any:
-	"""Call storage method.
-	
-	Purpose:
-	    Executes the call storage method workflow using the current provider, document, prompt,
-	    and session-state configuration.
-	
-	Args:
-	    target: Target value used by the application workflow.
-	    method_names: Method Names value used by the application workflow.
-	    args: Args value used by the application workflow.
-	    kwargs: Kwargs value used by the application workflow.
-	
-	Returns:
-	    Any: Normalized result produced for the active application workflow.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if target is None:
-		raise ValueError( 'Storage target cannot be None.' )
-	
-	if not isinstance( method_names, list ) or len( method_names ) == 0:
-		raise ValueError( 'At least one storage method name is required.' )
-	
-	last_error: Optional[ Exception ] = None
-	for method_name in method_names:
-		if not isinstance( method_name, str ) or not method_name.strip( ):
-			continue
-		
-		name = method_name.strip( )
-		
-		if not hasattr( target, name ):
-			continue
-		
-		method = getattr( target, name )
-		
-		if not callable( method ):
-			continue
-		
-		try:
-			return method( *args, **kwargs )
-		except TypeError as exc:
-			last_error = exc
-			
-			if len( kwargs ) > 0 and len( args ) > 0:
-				try:
-					return method( *args )
-				except TypeError as inner_exc:
-					last_error = inner_exc
-			
-			if len( kwargs ) > 0:
-				try:
-					return method( **kwargs )
-				except TypeError as inner_exc:
-					last_error = inner_exc
-			
-			continue
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'call_storage_method'
-			exception.method = 'call_storage_method( *args ) -> Any'
-			Logger( ).write( exception )
-			raise
-	
-	if last_error is not None:
-		raise AttributeError(
-			f'No compatible storage method was callable. Last error: {last_error}' )
-	
-	raise AttributeError(
-		f'Target does not expose any of these methods: {", ".join( method_names )}' )
-
-def save_uploaded_storage_file( uploaded_file: Any ) -> str:
-	"""Save uploaded storage file.
-	
-	Purpose:
-	    Applies the save uploaded storage file operation to application-managed data, files,
-	    prompts, or provider resources while preserving the surrounding workflow state.
-	
-	Args:
-	    uploaded_file: File, upload, or path value used by the document or storage workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if uploaded_file is None:
-		raise ValueError( 'An uploaded file is required.' )
-	
-	name = getattr( uploaded_file, 'name', 'uploaded_file' )
-	suffix = Path( name ).suffix
-	if not suffix:
-		suffix = '.bin'
-	
-	with tempfile.NamedTemporaryFile( delete=False, suffix=suffix ) as tmp:
-		if hasattr( uploaded_file, 'getbuffer' ):
-			tmp.write( uploaded_file.getbuffer( ) )
-		elif hasattr( uploaded_file, 'read' ):
-			tmp.write( uploaded_file.read( ) )
-		else:
-			raise ValueError( 'Uploaded file object does not expose getbuffer() or read().' )
-		
-		return tmp.name
-
-def set_storage_rows( rows: Any, table_key: str='storage_table_data' ) -> List[ Dict[ str, Any ] ]:
-	"""Set storage rows.
-	
-	Purpose:
-	    Supports the set storage rows application workflow by coordinating validated inputs,
-	    Streamlit session state, provider configuration, and local data processing.
-	
-	Args:
-	    rows: Rows value used by the application workflow.
-	    table_key: SQLite table name used by the data-management workflow.
-	
-	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
-	"""
-	normalized_rows = normalize_storage_rows( rows )
-	st.session_state[ 'storage_table_data' ] = normalized_rows
-	st.session_state[ table_key ] = normalized_rows
-	
-	return normalized_rows
-
-def set_storage_result( result: Any, operation: str,
-	result_key: str='storage_operation_result' ) -> Dict[ str, Any ]:
-	"""Set storage result.
-	
-	Purpose:
-	    Supports the set storage result application workflow by coordinating validated inputs,
-	    Streamlit session state, provider configuration, and local data processing.
-	
-	Args:
-	    result: Result value used by the application workflow.
-	    operation: Operation value used by the application workflow.
-	    result_key: Session-state key or state value used by the Streamlit workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	"""
-	normalized = normalize_storage_object( result )
-	st.session_state[ 'storage_operation_result' ] = normalized
-	st.session_state[ result_key ] = normalized
-	st.session_state[ 'storage_last_operation' ] = operation
-	st.session_state[ 'stores_last_operation' ] = operation
-	
-	return normalized
-
-def sync_storage_selection( selected_option: Optional[ str ], provider_name: Optional[ str ] = None,
-	backend: Optional[ str ] = None ) -> str:
-	"""Sync storage selection.
-	
-	Purpose:
-	    Supports the sync storage selection application workflow by coordinating validated
-	    inputs, Streamlit session state, provider configuration, and local data processing.
-	
-	Args:
-	    selected_option: Selected Option value used by the application workflow.
-	    provider_name: Provider name used to route the operation.
-	    backend: Backend value used by the application workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	"""
-	selected_id = get_storage_id_from_option( selected_option )
-	
-	if not selected_id:
-		return ''
-	
-	provider = get_provider_name( provider_name )
-	
-	if provider == 'Gemini':
-		selected_backend = backend if backend is not None else get_gemini_vector_backend( )
-		
-		if selected_backend == 'Cloud Buckets':
-			st.session_state[ 'bucket_selected_id' ] = selected_id
-			st.session_state[ 'bucket_selected_label' ] = selected_option or ''
-			st.session_state[ 'bucket_name' ] = selected_id
-		else:
-			st.session_state[ 'filestore_selected_id' ] = selected_id
-			st.session_state[ 'filestore_selected_label' ] = selected_option or ''
-			st.session_state[ 'filestore_id' ] = selected_id
-		
-		return selected_id
-	
-	st.session_state[ 'stores_selected_id' ] = selected_id
-	st.session_state[ 'stores_selected_label' ] = selected_option or ''
-	st.session_state[ 'stores_id' ] = selected_id
-	
-	return selected_id
-
-def clear_vectorstore_outputs( ) -> None:
-	"""Clear vectorstore outputs.
-	
-	Purpose:
-	    Maintains application runtime state for clear vectorstore outputs by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
-	"""
-	st.session_state[ 'stores_table' ] = [ ]
-	st.session_state[ 'stores_files_table' ] = [ ]
-	st.session_state[ 'stores_store_metadata' ] = { }
-	st.session_state[ 'stores_file_metadata' ] = { }
-	st.session_state[ 'stores_operation_result' ] = { }
-	st.session_state[ 'stores_batch_result' ] = { }
-	st.session_state[ 'stores_upload_result' ] = { }
-	st.session_state[ 'stores_delete_result' ] = { }
-	st.session_state[ 'stores_search_result' ] = { }
-	st.session_state[ 'stores_survey_result' ] = { }
-	st.session_state[ 'stores_answer' ] = ''
-	st.session_state[ 'stores_content' ] = ''
-	st.session_state[ 'stores_last_operation' ] = ''
-	
-	st.session_state[ 'filestore_metadata' ] = { }
-	st.session_state[ 'filestore_table' ] = [ ]
-	st.session_state[ 'filestore_upload_result' ] = { }
-	st.session_state[ 'filestore_delete_result' ] = { }
-	st.session_state[ 'filestore_operation_result' ] = { }
-	
-	st.session_state[ 'bucket_metadata' ] = { }
-	st.session_state[ 'bucket_table' ] = [ ]
-	st.session_state[ 'bucket_upload_result' ] = { }
-	st.session_state[ 'bucket_delete_result' ] = { }
-	st.session_state[ 'bucket_operation_result' ] = { }
-	st.session_state[ 'bucket_results' ] = { }
-	
-	st.session_state[ 'storage_operation_result' ] = { }
-	st.session_state[ 'storage_table_data' ] = [ ]
-	st.session_state[ 'storage_last_operation' ] = ''
-	st.session_state[ 'storage_last_answer' ] = ''
-
-def reset_vectorstore_controls( ) -> None:
-	"""Reset vectorstore controls.
-	
-	Purpose:
-	    Maintains application runtime state for reset vectorstore controls by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
-	"""
-	for key in [ 'stores_backend', 'stores_id', 'stores_name', 'stores_description',
-		'stores_metadata', 'stores_manual_id', 'stores_selected_id', 'stores_selected_label',
-		'stores_query', 'stores_file_id', 'stores_file_ids', 'stores_file_ids_text',
-		'stores_batch_id', 'stores_limit', 'stores_order', 'filestore_id', 'filestore_name',
-		'filestore_selected_id', 'filestore_selected_label', 'bucket_name', 'bucket_object_name',
-		'bucket_selected_id', 'bucket_selected_label', 'storage_selected_option', ]:
-		if key in st.session_state:
-			del st.session_state[ key ]
-
-def reset_vectorstore_all( ) -> None:
-	"""Reset vectorstore all.
-	
-	Purpose:
-	    Maintains application runtime state for reset vectorstore all by initializing,
-	    clearing, or restoring the session values used by the active Streamlit workflow.
-	"""
-	reset_vectorstore_controls( )
-	clear_vectorstore_outputs( )
-	ensure_vectorstores_mode_state( )
-
-def require_storage_value( name: str, value: Any ) -> str:
-	"""Require storage value.
-	
-	Purpose:
-	    Supports the require storage value application workflow by coordinating validated
-	    inputs, Streamlit session state, provider configuration, and local data processing.
-	
-	Args:
-	    name: Name value used by the application workflow.
-	    value: Value value used by the application workflow.
-	
-	Returns:
-	    str: Text value produced for the active application workflow.
-	
-	Raises:
-	    Exception: Raised when validation, provider execution, file processing, or database
-	        handling fails.
-	"""
-	if value is None:
-		raise ValueError( f'{name} is required.' )
-	
-	text = str( value ).strip( )
-	
-	if not text:
-		raise ValueError( f'{name} is required.' )
-	
-	return text
-
-def get_grok_collections( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
-	"""Get grok collections.
-	
-	Purpose:
-	    Retrieves get grok collections for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
-	
-	Args:
-	    vectorstores: Vectorstores value used by the application workflow.
-	
-	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
-	"""
-	for method_names in [ [ 'list_collections', 'list_stores', 'list' ],
-		[ 'survey_collections', 'survey' ], ]:
-		try:
-			result = call_storage_method( vectorstores, method_names )
-			rows = normalize_storage_rows( result )
-			if len( rows ) > 0:
-				return rows
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'get_grok_collections'
-			exception.method = 'get_grok_collections( vectorstores ) -> List[Dict[str, Any]]'
-			Logger( ).write( exception )
-			continue
-	
-	collections = getattr( vectorstores, 'collections', None )
-	if isinstance( collections, dict ):
-		return [ { 'name': name, 'id': collection_id, 'type': 'xAI Collection', } for
-			name, collection_id in collections.items( ) ]
-	
-	return [ ]
-
-def warn_grok_unsupported_operation( operation_name: str ) -> None:
-	"""Warn grok unsupported operation.
-	
-	Purpose:
-	    Supports the warn grok unsupported operation application workflow by coordinating
-	    validated inputs, Streamlit session state, provider configuration, and local data
-	    processing.
-	
-	Args:
-	    operation_name: Operation Name value used by the application workflow.
-	"""
-	st.warning( f'Grok {operation_name} requires xAI collection-management capability. '
-	            f'This Buddy integration currently supports configured collection list, '
-	            f'retrieve, search, and survey operations.' )
-
-def get_storage_backend_summary( provider_name: Optional[ str ] = None,
-	backend: Optional[ str ] = None ) -> Dict[ str, Any ]:
-	"""Get storage backend summary.
-	
-	Purpose:
-	    Retrieves get storage backend summary for the Streamlit application workflow and
-	    returns the normalized value used by downstream UI, provider, database, or document-
-	    processing steps.
-	
-	Args:
-	    provider_name: Provider name used to route the operation.
-	    backend: Backend value used by the application workflow.
-	
-	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
-	"""
-	provider = get_provider_name( provider_name )
-	backend_name = get_vectorstores_backend_name( provider, backend )
-	supports_create = provider == 'GPT' or (
-			provider == 'Gemini' and get_gemini_vector_backend( ) in [ 'File Search Stores',
-		'Cloud Buckets', ])
-	
-	supports_upload = provider == 'GPT' or provider == 'Gemini'
-	supports_delete = provider == 'GPT' or provider == 'Gemini'
-	supports_search = provider in [ 'GPT', 'Grok', 'Gemini' ]
-	
-	return { 'provider': provider, 'backend': backend_name, 'supports_create': supports_create,
-		'supports_upload': supports_upload, 'supports_delete': supports_delete,
-		'supports_search': supports_search, }
-
-# ======================================================================================
 # MODE STATE UTILITIES
 # ======================================================================================
 
@@ -5834,7 +4981,7 @@ def reset_text_mind_controls( ) -> None:
 	reset_text_tool_settings( )
 	reset_text_response_settings( )
 
-def split_text_values( value: Any, delimiter: str=',' ) -> List[ str ]:
+def split_text_values( value: Any, delimiter: str = ',' ) -> List[ str ]:
 	"""Split text values.
 	
 	Purpose:
@@ -6194,11 +5341,8 @@ def clear_image_instructions( ) -> None:
 	Returns:
 	    None: This function resets the Images Mode instruction-template state.
 	"""
-	clear_instruction_template(
-		category_key='image_instruction_category',
-		selector_key='image_instruction_prompt_id',
-		instruction_key='image_system_instructions',
-	)
+	clear_instruction_template( category_key='image_instruction_category',
+		selector_key='image_instruction_prompt_id', instruction_key='image_system_instructions', )
 
 def append_image_message( role: str, content: str ) -> None:
 	"""Append image message.
@@ -6214,22 +5358,15 @@ def append_image_message( role: str, content: str ) -> None:
 	Returns:
 	    None: This function appends the message to Images Mode session state.
 	"""
-	if (
-		'image_input' not in st.session_state
-		or not isinstance( st.session_state[ 'image_input' ], list )
-	):
+	if ('image_input' not in st.session_state or not isinstance( st.session_state[ 'image_input' ],
+		list )):
 		st.session_state[ 'image_input' ] = [ ]
 	
-	if (
-		'image_messages' not in st.session_state
-		or not isinstance( st.session_state[ 'image_messages' ], list )
-	):
+	if ('image_messages' not in st.session_state or not isinstance(
+		st.session_state[ 'image_messages' ], list )):
 		st.session_state[ 'image_messages' ] = [ ]
 	
-	message = {
-		'role': str( role or '' ).strip( ),
-		'content': str( content or '' ),
-	}
+	message = { 'role': str( role or '' ).strip( ), 'content': str( content or '' ), }
 	
 	st.session_state[ 'image_input' ].append( message )
 	st.session_state[ 'image_messages' ].append( message )
@@ -6261,10 +5398,8 @@ def load_image_instruction_template( ) -> None:
 	    Error: Raised when the selected prompt cannot be retrieved or loaded.
 	"""
 	try:
-		load_instruction_template(
-			selector_key='image_instruction_prompt_id',
-			instruction_key='image_system_instructions',
-		)
+		load_instruction_template( selector_key='image_instruction_prompt_id',
+			instruction_key='image_system_instructions', )
 	except Exception as e:
 		if isinstance( e, Error ):
 			raise e
@@ -6644,7 +5779,7 @@ def get_image_modality_options( image: Any ) -> List[ str ]:
 	return [ '', 'text', 'image', 'auto' ]
 
 def render_image_output( image_result: str | bytes | List[ str | bytes ] | Any | None,
-	caption: str='Image output' ) -> bool:
+	caption: str = 'Image output' ) -> bool:
 	"""Render image output.
 	
 	Purpose:
@@ -6867,7 +6002,7 @@ def synchronize_audio_format_selection( valid_formats: List[ str ], ) -> None:
 	selected_format = str( st.session_state.get( 'audio_response_format', '' ) or '' ).strip( )
 	if selected_format and selected_format not in formats:
 		st.session_state[ 'audio_response_format' ] = ''
-		
+
 def get_audio_task_options( ) -> List[ str ]:
 	"""Get audio task options.
 	
@@ -6923,8 +6058,8 @@ def get_audio_option_list( source: Any, attr_name: str, fallback: List[ str ] ) 
 	
 	return fallback
 
-def get_audio_model_options( task: str | None, transcriber: Any,
-	translator: Any, tts: Any ) -> List[ str ]:
+def get_audio_model_options( task: str | None, transcriber: Any, translator: Any, tts: Any ) -> \
+List[ str ]:
 	"""Get audio model options.
 	
 	Purpose:
@@ -6961,8 +6096,8 @@ def get_audio_model_options( task: str | None, transcriber: Any,
 	
 	return [ '' ]
 
-def get_audio_language_options( task: str | None, transcriber: Any,
-	translator: Any ) -> List[ str ]:
+def get_audio_language_options( task: str | None, transcriber: Any, translator: Any ) -> List[
+	str ]:
 	"""Get audio language options.
 	
 	Purpose:
@@ -7311,7 +6446,7 @@ def save_audio_upload( upload: Any ) -> str | None:
 		exception.method = 'save_audio_upload( upload ) -> str | None'
 		Logger( ).write( exception )
 		return None
-	
+
 def run_audio_file_task( task: str | None, file_path: str | None, transcriber: Any,
 	translator: Any ) -> str | None:
 	"""Run audio file task.
@@ -7349,7 +6484,8 @@ def run_audio_file_task( task: str | None, file_path: str | None, transcriber: A
 		provider_name = get_provider_name( )
 		file_suffix = Path( source_path ).suffix.lower( ).replace( '.', '' )
 		if provider_name == 'GPT':
-			valid_extensions = [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm' ]
+			valid_extensions = [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav',
+				'webm' ]
 			
 			if file_suffix not in valid_extensions:
 				raise ValueError( 'GPT audio transcription and translation support flac, mp3, '
@@ -7632,8 +6768,8 @@ def get_embedding_encoding_options( embedding: Any ) -> List[ str ]:
 	
 	return [ 'float' ]
 
-def get_embedding_task_options( embedding: Any,
-	provider_name: Optional[ str ] = None, ) -> List[ str ]:
+def get_embedding_task_options( embedding: Any, provider_name: Optional[ str ] = None, ) -> List[
+	str ]:
 	"""Get embedding task options.
 	
 	Purpose:
@@ -7837,8 +6973,8 @@ def normalize_embedding_dimensions( model: str | None, dimensions: int | None,
 	
 	return value
 
-def normalize_embedding_chunk_settings( chunk_size: int | None,
-	overlap_amount: int | None ) -> Tuple[ int, int ]:
+def normalize_embedding_chunk_settings( chunk_size: int | None, overlap_amount: int | None ) -> \
+Tuple[ int, int ]:
 	"""Normalize embedding chunk settings.
 	
 	Purpose:
@@ -7888,8 +7024,8 @@ def normalize_embedding_chunk_settings( chunk_size: int | None,
 	
 	return chunk_value, overlap_value
 
-def chunk_text_for_embeddings( text: str, chunk_size: int=800, overlap_amount: int=0,
-	encoding_name: str='cl100k_base' ) -> List[ str ]:
+def chunk_text_for_embeddings( text: str, chunk_size: int = 800, overlap_amount: int = 0,
+	encoding_name: str = 'cl100k_base' ) -> List[ str ]:
 	"""Chunk text for embeddings.
 	
 	Purpose:
@@ -7967,7 +7103,7 @@ def normalize_embedding_vectors( vectors: Any ) -> List[ Any ]:
 	return [ vectors ]
 
 def build_embeddings_dataframe( chunks: List[ str ], vectors: Any,
-	encoding_format: str='float' ) -> pd.DataFrame:
+	encoding_format: str = 'float' ) -> pd.DataFrame:
 	"""Build embeddings dataframe.
 	
 	Purpose:
@@ -8369,7 +7505,7 @@ def create_provider_embeddings( embedding: Any, chunks: List[ str ], model: str,
 			request_arguments: Dict[ str, Any ] = { 'text': chunks, 'model': model_name, }
 			
 			if (dimensions is not None and embedding_model_supports_dimensions( model_name,
-				embedding, )):
+					embedding, )):
 				request_arguments[ 'dimensions' ] = dimensions
 			
 			return embedding.create( **request_arguments )
@@ -8387,7 +7523,7 @@ def create_provider_embeddings( embedding: Any, chunks: List[ str ], model: str,
 		                    'user_value: str | None, task_type: str | None = None ) -> Any')
 		Logger( ).write( exception )
 		raise exception
-	
+
 # ======================================================================================
 # DOCQNA UTILITIES
 # ======================================================================================
@@ -8446,11 +7582,8 @@ def clear_docqna_outputs( ) -> None:
 	st.session_state[ 'docqna_context' ] = ''
 	st.session_state[ 'last_answer' ] = ''
 	st.session_state[ 'last_sources' ] = [ ]
-	st.session_state[ 'last_call_usage' ] = {
-		'prompt_tokens': 0,
-		'completion_tokens': 0,
-		'total_tokens': 0,
-	}
+	st.session_state[ 'last_call_usage' ] = { 'prompt_tokens': 0, 'completion_tokens': 0,
+		'total_tokens': 0, }
 
 def unload_docqna_documents( ) -> None:
 	"""Unload Document Q&A documents.
@@ -8562,7 +7695,8 @@ def clear_docqna_instructions( ) -> None:
 	    None: This function resets the Document Q&A instruction-template contract.
 	"""
 	clear_instruction_template( category_key='docqna_instruction_category',
-		selector_key='docqna_instruction_prompt_id', instruction_key='docqna_system_instructions', )
+		selector_key='docqna_instruction_prompt_id',
+		instruction_key='docqna_system_instructions', )
 
 def change_docqna_instruction_category( ) -> None:
 	"""Change Document Q&A instruction category.
@@ -8869,8 +8003,8 @@ def normalize_docqna_text( text: str ) -> str:
 	value = re.sub( r'\n{3,}', '\n\n', value )
 	return value.strip( )
 
-def normalize_grok_collection_search_result( result: Any,
-	collection_id: str, ) -> List[ Dict[ str, Any ] ]:
+def normalize_grok_collection_search_result( result: Any, collection_id: str, ) -> List[
+	Dict[ str, Any ] ]:
 	"""Normalize Grok collection search result.
 	
 	Purpose:
@@ -8956,7 +8090,7 @@ def normalize_grok_collection_search_result( result: Any,
 	
 	return normalized_rows
 
-def chunk_docqna_text( text: str, chunk_size: int=900, chunk_overlap: int=150 ) -> List[ str ]:
+def chunk_docqna_text( text: str, chunk_size: int = 900, chunk_overlap: int = 150 ) -> List[ str ]:
 	"""Chunk docqna text.
 	
 	Purpose:
@@ -9235,7 +8369,7 @@ def score_chunk( query: str, chunk: str ) -> float:
 	
 	return float( density )
 
-def retrieve_chunks( query: str, top_k: int=6 ) -> List[ Dict[ str, Any ] ]:
+def retrieve_chunks( query: str, top_k: int = 6 ) -> List[ Dict[ str, Any ] ]:
 	"""Retrieve chunks.
 	
 	Purpose:
@@ -9892,7 +9026,7 @@ def run_gemini_remote_docqna_query( query: str, source: str, chat: Any, ) -> str
 		                    'chat: Any ) -> str')
 		Logger( ).write( exception )
 		raise exception
-	
+
 def run_grok_remote_docqna_query( query: str, source: str, chat: Any, ) -> str:
 	"""Run Grok remote Document Q&A query.
 	
@@ -9984,7 +9118,7 @@ def run_grok_remote_docqna_query( query: str, source: str, chat: Any, ) -> str:
 			if search_failures:
 				failure_details = '; '.join(
 					f"{failure[ 'collection_id' ]}: {failure[ 'error' ]}" for failure in
-					search_failures )
+						search_failures )
 				
 				raise ValueError( 'No xAI Collection content was retrieved. '
 				                  f'Collection search failures: {failure_details}' )
@@ -10091,7 +9225,7 @@ def run_grok_remote_docqna_query( query: str, source: str, chat: Any, ) -> str:
 		if search_failures:
 			source_rows.extend(
 				{ 'type': 'xAI Collection Search Failure', **failure, } for failure in
-				search_failures )
+					search_failures )
 		
 		st.session_state[ 'docqna_context' ] = request_prompt
 		st.session_state[ 'docqna_last_hits' ] = selected_rows
@@ -10205,16 +9339,10 @@ def route_document_query( prompt: str ) -> str:
 		query = str( prompt or '' ).strip( )
 		
 		if not query:
-			raise ValueError(
-				'Enter a question about the active document source.'
-			)
+			raise ValueError( 'Enter a question about the active document source.' )
 		
 		source = str(
-			st.session_state.get(
-				'docqna_source',
-				'Local Upload',
-			) or 'Local Upload'
-		).strip( )
+			st.session_state.get( 'docqna_source', 'Local Upload', ) or 'Local Upload' ).strip( )
 		
 		if source == 'Local Upload':
 			st.session_state[ 'doc_source' ] = 'uploadlocal'
@@ -10782,194 +9910,363 @@ def get_option_id( option: str | None ) -> str:
 	
 	return option.strip( )
 
-def upload_provider_file( files: Any, path: str, purpose: str | None = None ) -> Any:
+def upload_provider_file( files: Any, path: str, purpose: str | None = None, ) -> Any:
 	"""Upload provider file.
 	
 	Purpose:
-	    Applies the upload provider file operation to application-managed data, files, prompts,
-	    or provider resources while preserving the surrounding workflow state.
+	    Uploads a local file through the active provider Files capability using the
+	    provider-specific request contract and validates the local path, provider capability,
+	    upload purpose, and returned provider resource.
 	
 	Args:
-	    files: File, upload, or path value used by the document or storage workflow.
-	    path: File, upload, or path value used by the document or storage workflow.
-	    purpose: Purpose value used by the application workflow.
+	    files: Active provider Files capability.
+	    path: Local path containing the file uploaded to the provider.
+	    purpose: Optional provider file-purpose value.
 	
 	Returns:
-	    Any: Normalized result produced for the active application workflow.
+	    Any: Provider file resource returned by the upload operation.
+	
+	Raises:
+	    Error: Raised when the file path, provider capability, provider contract, or returned
+	        upload resource is invalid.
 	"""
-	provider_name = get_provider_name( )
-	
-	if provider_name == 'Gemini':
-		apply_gemini_runtime_config( )
-		
-		try:
-			return files.upload( path=path )
-		except TypeError:
-			try:
-				return files.upload( file_path=path )
-			except TypeError:
-				return files.upload( path )
-	
 	try:
-		return files.upload( path=path, purpose=purpose or 'user_data' )
-	except TypeError:
-		try:
-			return files.upload( filepath=path, purpose=purpose or 'user_data' )
-		except TypeError:
-			return files.upload( path, purpose or 'user_data' )
+		if files is None:
+			raise AttributeError( 'The active provider does not expose a Files capability.' )
+		
+		file_path = str( path or '' ).strip( )
+		
+		if not file_path:
+			raise ValueError( 'Select a local file before running the upload operation.' )
+		
+		if not os.path.isfile( file_path ):
+			raise FileNotFoundError( f'The local upload file does not exist: {file_path}' )
+		
+		provider_name = get_provider_name( )
+		purpose_value = str( purpose or '' ).strip( )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			
+			result = files.upload( path=file_path, )
+		
+		elif provider_name == 'GPT':
+			result = files.upload( path=file_path, purpose=purpose_value or 'user_data', )
+		
+		elif provider_name == 'Grok':
+			if not provider_supports( 'Files', provider_name ):
+				raise AttributeError(
+					'Grok does not expose a Files capability in the current provider module.' )
+			
+			result = files.upload( path=file_path, purpose=purpose_value or None, )
+		
+		else:
+			raise ValueError( f'Unsupported Files provider: {provider_name}.' )
+		
+		metadata = normalize_files_object( result )
+		
+		if len( metadata ) == 0:
+			raise ValueError( f'{provider_name} returned no file resource after upload.' )
+		
+		return result
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'upload_provider_file'
+		exception.method = ('upload_provider_file( files: Any, path: str, '
+		                    'purpose: str | None = None ) -> Any')
+		Logger( ).write( exception )
+		raise exception
 
-def list_provider_files( files: Any, purpose: str | None = None ) -> List[ Dict[ str, Any ] ]:
+def list_provider_files( files: Any, purpose: str | None = None, ) -> List[ Dict[ str, Any ] ]:
 	"""List provider files.
 	
 	Purpose:
-	    Retrieves list provider files for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
+	    Retrieves and normalizes files available through the active provider Files capability
+	    while applying provider-specific filtering and runtime configuration.
 	
 	Args:
-	    files: File, upload, or path value used by the document or storage workflow.
-	    purpose: Purpose value used by the application workflow.
+	    files: Active provider Files capability.
+	    purpose: Optional provider file-purpose filter.
 	
 	Returns:
-	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	    List[Dict[str, Any]]: Normalized provider file-resource rows.
+	
+	Raises:
+	    Error: Raised when the provider capability, listing operation, or returned collection is
+	        invalid.
 	"""
-	provider_name = get_provider_name( )
-	
-	if provider_name == 'Gemini':
-		apply_gemini_runtime_config( )
-		
-		if hasattr( files, 'list_files' ):
-			result = files.list_files( )
-		else:
-			result = files.list( )
-		
-		return normalize_files_list( result )
-	
 	try:
-		result = files.list( purpose=purpose if purpose else None )
-	except TypeError:
-		result = files.list( )
-	
-	return normalize_files_list( result )
+		if files is None:
+			raise AttributeError( 'The active provider does not expose a Files capability.' )
+		
+		provider_name = get_provider_name( )
+		purpose_value = str( purpose or '' ).strip( )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			
+			if hasattr( files, 'list_files' ):
+				result = files.list_files( )
+			elif hasattr( files, 'list' ):
+				result = files.list( )
+			else:
+				raise AttributeError( 'Gemini Files does not expose a file-listing operation.' )
+		
+		elif provider_name == 'GPT':
+			result = files.list( purpose=purpose_value or None, )
+		
+		elif provider_name == 'Grok':
+			if not provider_supports( 'Files', provider_name ):
+				raise AttributeError(
+					'Grok does not expose a Files capability in the current provider module.' )
+			
+			result = files.list( purpose=purpose_value or None, )
+		
+		else:
+			raise ValueError( f'Unsupported Files provider: {provider_name}.' )
+		
+		rows = normalize_files_list( result )
+		
+		if not isinstance( rows, list ):
+			raise ValueError( f'{provider_name} returned an invalid file-list response.' )
+		
+		return rows
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'list_provider_files'
+		exception.method = ('list_provider_files( files: Any, '
+		                    'purpose: str | None = None ) -> List[Dict[str, Any]]')
+		Logger( ).write( exception )
+		raise exception
 
-def retrieve_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
+def retrieve_provider_file( files: Any, file_id: str, ) -> Dict[ str, Any ]:
 	"""Retrieve provider file.
 	
 	Purpose:
-	    Retrieves retrieve provider file for the Streamlit application workflow and returns the
-	    normalized value used by downstream UI, provider, database, or document-processing
-	    steps.
+	    Retrieves and normalizes metadata for a single provider-managed file using the active
+	    provider Files contract.
 	
 	Args:
-	    files: File, upload, or path value used by the document or storage workflow.
-	    file_id: File, upload, or path value used by the document or storage workflow.
+	    files: Active provider Files capability.
+	    file_id: Provider identifier or resource name of the requested file.
 	
 	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	    Dict[str, Any]: Normalized metadata for the requested provider file.
+	
+	Raises:
+	    Error: Raised when the file identifier, provider capability, retrieval operation, or
+	        returned metadata is invalid.
 	"""
-	if not isinstance( file_id, str ) or not file_id.strip( ):
-		return { }
-	
-	provider_name = get_provider_name( )
-	
-	if provider_name == 'Gemini':
-		apply_gemini_runtime_config( )
-		
-		try:
-			result = files.retrieve( file_id=file_id.strip( ) )
-		except TypeError:
-			result = files.retrieve( file_id.strip( ) )
-		
-		return normalize_files_object( result )
-	
 	try:
-		result = files.retrieve( id=file_id.strip( ) )
-	except TypeError:
-		try:
-			result = files.retrieve( file_id=file_id.strip( ) )
-		except TypeError:
-			result = files.retrieve( file_id.strip( ) )
-	
-	return normalize_files_object( result )
+		if files is None:
+			raise AttributeError( 'The active provider does not expose a Files capability.' )
+		
+		selected_file_id = str( file_id or '' ).strip( )
+		
+		if not selected_file_id:
+			raise ValueError( 'Enter or select a provider file ID before retrieving metadata.' )
+		
+		provider_name = get_provider_name( )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			
+			result = files.retrieve( file_id=selected_file_id, )
+		
+		elif provider_name == 'GPT':
+			result = files.retrieve( id=selected_file_id, )
+		
+		elif provider_name == 'Grok':
+			if not provider_supports( 'Files', provider_name ):
+				raise AttributeError(
+					'Grok does not expose a Files capability in the current provider module.' )
+			
+			result = files.retrieve( id=selected_file_id, )
+		
+		else:
+			raise ValueError( f'Unsupported Files provider: {provider_name}.' )
+		
+		metadata = normalize_files_object( result )
+		
+		if len( metadata ) == 0:
+			raise ValueError(
+				f'{provider_name} returned no metadata for file `{selected_file_id}`.' )
+		
+		return metadata
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'retrieve_provider_file'
+		exception.method = ('retrieve_provider_file( files: Any, '
+		                    'file_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
 
-def extract_file_content( files: Any, file_id: str ) -> str:
-	"""Extract file content.
+def extract_file_content( files: Any, file_id: str, ) -> str:
+	"""Extract provider file content.
 	
 	Purpose:
-	    Transforms extract file content inputs into a normalized representation used by
-	    provider calls, document retrieval, data management, or UI rendering.
+	    Extracts and normalizes readable content from a provider-managed file while rejecting
+	    provider resources that expose metadata but no content-extraction operation.
 	
 	Args:
-	    files: File, upload, or path value used by the document or storage workflow.
-	    file_id: File, upload, or path value used by the document or storage workflow.
+	    files: Active provider Files capability.
+	    file_id: Provider identifier or resource name of the requested file.
 	
 	Returns:
-	    str: Text value produced for the active application workflow.
+	    str: Readable text extracted from the selected provider file.
+	
+	Raises:
+	    Error: Raised when the file identifier, provider capability, extraction operation, or
+	        returned content is invalid.
 	"""
-	if not isinstance( file_id, str ) or not file_id.strip( ):
-		return ''
-	
-	if not hasattr( files, 'extract' ):
-		return ''
-	
 	try:
-		result = files.extract( id=file_id.strip( ) )
-	except TypeError:
-		try:
-			result = files.extract( file_id=file_id.strip( ) )
-		except TypeError:
-			result = files.extract( file_id.strip( ) )
-	
-	if isinstance( result, bytes ):
-		try:
-			return result.decode( 'utf-8' )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'app'
-			exception.cause = 'extract_file_content'
-			exception.method = 'extract_file_content( files, file_id ) -> str'
-			Logger( ).write( exception )
-			return str( result )
-	
-	if isinstance( result, str ):
-		return result
-	
-	if isinstance( result, dict ):
-		return json.dumps( result, indent=2, default=str )
-	
-	return str( result )
+		if files is None:
+			raise AttributeError( 'The active provider does not expose a Files capability.' )
+		
+		selected_file_id = str( file_id or '' ).strip( )
+		
+		if not selected_file_id:
+			raise ValueError( 'Enter or select a provider file ID before extracting content.' )
+		
+		provider_name = get_provider_name( )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+		
+		if provider_name == 'Grok' and not provider_supports( 'Files', provider_name, ):
+			raise AttributeError(
+				'Grok does not expose a Files capability in the current provider module.' )
+		
+		if not hasattr( files, 'extract' ):
+			raise AttributeError( f'{provider_name} Files does not expose content extraction. '
+			                      'The selected resource can be managed as provider metadata but '
+			                      'cannot be '
+			                      'analyzed through the current local-content workflow.' )
+		
+		if provider_name == 'Gemini':
+			result = files.extract( file_id=selected_file_id, )
+		else:
+			result = files.extract( id=selected_file_id, )
+		
+		if isinstance( result, bytes ):
+			try:
+				content = result.decode( 'utf-8' )
+			except UnicodeDecodeError:
+				content = result.decode( 'utf-8', errors='replace', )
+		
+		elif isinstance( result, bytearray ):
+			try:
+				content = bytes( result ).decode( 'utf-8' )
+			except UnicodeDecodeError:
+				content = bytes( result ).decode( 'utf-8', errors='replace', )
+		
+		elif isinstance( result, str ):
+			content = result
+		
+		elif isinstance( result, dict ):
+			content = str( result.get( 'text' ) or result.get( 'content' ) or result.get(
+				'output_text' ) or json.dumps( result, indent=2, default=str, ) )
+		
+		else:
+			content = str(
+				getattr( result, 'text', None ) or getattr( result, 'content', None ) or getattr(
+					result, 'output_text', None ) or '' )
+		
+		content = content.strip( )
+		
+		if not content:
+			raise ValueError( f'{provider_name} returned no readable content for file '
+			                  f'`{selected_file_id}`.' )
+		
+		return content
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'extract_file_content'
+		exception.method = ('extract_file_content( files: Any, file_id: str ) -> str')
+		Logger( ).write( exception )
+		raise exception
 
-def delete_provider_file( files: Any, file_id: str ) -> Dict[ str, Any ]:
+def delete_provider_file( files: Any, file_id: str, ) -> Dict[ str, Any ]:
 	"""Delete provider file.
 	
 	Purpose:
-	    Applies the delete provider file operation to application-managed data, files, prompts,
-	    or provider resources while preserving the surrounding workflow state.
+	    Deletes a provider-managed file using the active provider Files contract and normalizes
+	    the deletion acknowledgement without treating an empty provider response as an
+	    unverified success.
 	
 	Args:
-	    files: File, upload, or path value used by the document or storage workflow.
-	    file_id: File, upload, or path value used by the document or storage workflow.
+	    files: Active provider Files capability.
+	    file_id: Provider identifier or resource name of the file deleted.
 	
 	Returns:
-	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	    Dict[str, Any]: Normalized provider deletion acknowledgement.
+	
+	Raises:
+	    Error: Raised when the file identifier, provider capability, deletion operation, or
+	        returned acknowledgement is invalid.
 	"""
-	if not isinstance( file_id, str ) or not file_id.strip( ):
-		return { }
-	
-	provider_name = get_provider_name( )
-	
-	if provider_name == 'Gemini':
-		apply_gemini_runtime_config( )
-	
 	try:
-		result = files.delete( id=file_id.strip( ) )
-	except TypeError:
-		try:
-			result = files.delete( file_id=file_id.strip( ) )
-		except TypeError:
-			result = files.delete( file_id.strip( ) )
-	
-	return normalize_files_object( result )
+		if files is None:
+			raise AttributeError( 'The active provider does not expose a Files capability.' )
+		
+		selected_file_id = str( file_id or '' ).strip( )
+		
+		if not selected_file_id:
+			raise ValueError( 'Enter or select a provider file ID before deleting a file.' )
+		
+		provider_name = get_provider_name( )
+		
+		if provider_name == 'Gemini':
+			apply_gemini_runtime_config( )
+			
+			result = files.delete( file_id=selected_file_id, )
+		
+		elif provider_name == 'GPT':
+			result = files.delete( id=selected_file_id, )
+		
+		elif provider_name == 'Grok':
+			if not provider_supports( 'Files', provider_name ):
+				raise AttributeError(
+					'Grok does not expose a Files capability in the current provider module.' )
+			
+			result = files.delete( id=selected_file_id, )
+		
+		else:
+			raise ValueError( f'Unsupported Files provider: {provider_name}.' )
+		
+		delete_result = normalize_files_object( result )
+		
+		if len( delete_result ) == 0:
+			delete_result = { 'id': selected_file_id, 'deleted': True, 'provider': provider_name, }
+		
+		return delete_result
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'delete_provider_file'
+		exception.method = ('delete_provider_file( files: Any, '
+		                    'file_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
 
 def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 	model: str | None = None, ) -> str:
@@ -11199,8 +10496,9 @@ def analyze_provider_file( files: Any, prompt: str, file_id: str | None = None,
 		Logger( ).write( exception )
 		raise exception
 
+
 # ======================================================================================
-# VECTOR STORE / FILE SEARCH / CLOUD BUCKET UTILITIES
+# VECTOR STORES/FILE STORES/COLLECTIONS UTILITIES
 # ======================================================================================
 
 def ensure_storage_state( ) -> None:
@@ -11533,8 +10831,8 @@ def delete_openai_vector_store( vectorstores: Any, store_id: str ) -> Dict[ str,
 	
 	return normalize_storage_object( result )
 
-def attach_file_to_openai_vector_store( vectorstores: Any, store_id: str,
-	file_id: str ) -> Dict[ str, Any ]:
+def attach_file_to_openai_vector_store( vectorstores: Any,
+	store_id: str, file_id: str ) -> Dict[ str, Any ]:
 	"""Attach file to openai vector store.
 	
 	Purpose:
@@ -11822,8 +11120,8 @@ def upload_to_google_cloud_bucket( buckets: Any, bucket_name: str,
 	
 	raise AttributeError( 'CloudBuckets wrapper does not expose an upload method.' )
 
-def delete_google_cloud_bucket_object( buckets: Any, bucket_name: str,
-	object_name: str ) -> Dict[ str, Any ]:
+def delete_google_cloud_bucket_object( buckets: Any,
+	bucket_name: str, object_name: str ) -> Dict[ str, Any ]:
 	"""Delete google cloud bucket object.
 	
 	Purpose:
@@ -11998,9 +11296,1236 @@ def convert_bucket_instructions( ) -> None:
 	
 	st.session_state[ 'bucket_system_instructions' ] = converted
 
-# ======================================================================================
-# VECTOR STORES RETRIEVAL HOOK UTILITIES
-# ======================================================================================
+def ensure_vectorstores_mode_state( ) -> None:
+	"""Ensure vectorstores mode state.
+	
+	Purpose:
+	    Maintains application runtime state for ensure vectorstores mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
+	"""
+	# ------------------------------------------------------------------
+	# Shared Vector Stores alias keys
+	# ------------------------------------------------------------------
+	ensure_session_key( 'stores_backend', 'File Search Stores' )
+	ensure_session_key( 'stores_id', '' )
+	ensure_session_key( 'stores_name', '' )
+	ensure_session_key( 'stores_description', '' )
+	ensure_session_key( 'stores_metadata', '' )
+	ensure_session_key( 'stores_manual_id', '' )
+	ensure_session_key( 'stores_selected_id', '' )
+	ensure_session_key( 'stores_selected_label', '' )
+	ensure_session_key( 'stores_table', [ ] )
+	ensure_session_key( 'stores_files_table', [ ] )
+	ensure_session_key( 'stores_store_metadata', { } )
+	ensure_session_key( 'stores_file_metadata', { } )
+	ensure_session_key( 'stores_operation_result', { } )
+	ensure_session_key( 'stores_batch_result', { } )
+	ensure_session_key( 'stores_upload_result', { } )
+	ensure_session_key( 'stores_delete_result', { } )
+	ensure_session_key( 'stores_search_result', { } )
+	ensure_session_key( 'stores_survey_result', { } )
+	ensure_session_key( 'stores_query', '' )
+	ensure_session_key( 'stores_answer', '' )
+	ensure_session_key( 'stores_last_operation', '' )
+	ensure_session_key( 'stores_file_id', '' )
+	ensure_session_key( 'stores_file_ids', [ ] )
+	ensure_session_key( 'stores_file_ids_text', '' )
+	ensure_session_key( 'stores_batch_id', '' )
+	ensure_session_key( 'stores_content', '' )
+	ensure_session_key( 'stores_limit', 100 )
+	ensure_session_key( 'stores_order', 'desc' )
+	
+	# ------------------------------------------------------------------
+	# Gemini File Search backend keys
+	# ------------------------------------------------------------------
+	ensure_session_key( 'filestore_id', '' )
+	ensure_session_key( 'filestore_name', '' )
+	ensure_session_key( 'filestore_selected_id', '' )
+	ensure_session_key( 'filestore_selected_label', '' )
+	ensure_session_key( 'filestore_metadata', { } )
+	ensure_session_key( 'filestore_table', [ ] )
+	ensure_session_key( 'filestore_upload_result', { } )
+	ensure_session_key( 'filestore_delete_result', { } )
+	ensure_session_key( 'filestore_operation_result', { } )
+	
+	# ------------------------------------------------------------------
+	# Gemini Cloud Bucket backend keys
+	# ------------------------------------------------------------------
+	ensure_session_key( 'bucket_name', '' )
+	ensure_session_key( 'bucket_object_name', '' )
+	ensure_session_key( 'bucket_selected_id', '' )
+	ensure_session_key( 'bucket_selected_label', '' )
+	ensure_session_key( 'bucket_metadata', { } )
+	ensure_session_key( 'bucket_table', [ ] )
+	ensure_session_key( 'bucket_upload_result', { } )
+	ensure_session_key( 'bucket_delete_result', { } )
+	ensure_session_key( 'bucket_operation_result', { } )
+	ensure_session_key( 'bucket_results', { } )
+	
+	# ------------------------------------------------------------------
+	# Shared storage display keys
+	# ------------------------------------------------------------------
+	ensure_session_key( 'storage_operation_result', { } )
+	ensure_session_key( 'storage_table_data', [ ] )
+	ensure_session_key( 'storage_last_operation', '' )
+	ensure_session_key( 'storage_selected_option', '' )
+	ensure_session_key( 'storage_last_answer', '' )
+	
+	# ------------------------------------------------------------------
+	# Defensive type normalization for non-widget keys only
+	# ------------------------------------------------------------------
+	if not isinstance( st.session_state.get( 'stores_table' ), list ):
+		st.session_state[ 'stores_table' ] = [ ]
+	
+	if not isinstance( st.session_state.get( 'stores_files_table' ), list ):
+		st.session_state[ 'stores_files_table' ] = [ ]
+	
+	if not isinstance( st.session_state.get( 'stores_store_metadata' ), dict ):
+		st.session_state[ 'stores_store_metadata' ] = { }
+	
+	if not isinstance( st.session_state.get( 'stores_file_metadata' ), dict ):
+		st.session_state[ 'stores_file_metadata' ] = { }
+	
+	if not isinstance( st.session_state.get( 'stores_operation_result' ), dict ):
+		st.session_state[ 'stores_operation_result' ] = { }
+	
+	if not isinstance( st.session_state.get( 'filestore_table' ), list ):
+		st.session_state[ 'filestore_table' ] = [ ]
+	
+	if not isinstance( st.session_state.get( 'filestore_metadata' ), dict ):
+		st.session_state[ 'filestore_metadata' ] = { }
+	
+	if not isinstance( st.session_state.get( 'bucket_table' ), list ):
+		st.session_state[ 'bucket_table' ] = [ ]
+	
+	if not isinstance( st.session_state.get( 'bucket_metadata' ), dict ):
+		st.session_state[ 'bucket_metadata' ] = { }
+	
+	if not isinstance( st.session_state.get( 'storage_operation_result' ), dict ):
+		st.session_state[ 'storage_operation_result' ] = { }
+	
+	if not isinstance( st.session_state.get( 'storage_table_data' ), list ):
+		st.session_state[ 'storage_table_data' ] = [ ]
+	
+	if st.session_state.get( 'stores_backend' ) not in [ 'File Search Stores', 'Cloud Buckets' ]:
+		st.session_state[ 'stores_backend' ] = 'File Search Stores'
+
+def ensure_storage_mode_state( ) -> None:
+	"""Ensure storage mode state.
+	
+	Purpose:
+	    Maintains application runtime state for ensure storage mode state by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
+	"""
+	ensure_vectorstores_mode_state( )
+
+def normalize_storage_object( value: Any ) -> Dict[ str, Any ]:
+	"""Normalize storage object.
+	
+	Purpose:
+	    Transforms normalize storage object inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	"""
+	if value is None:
+		return { }
+	
+	if isinstance( value, dict ):
+		return value
+	
+	if hasattr( value, 'model_dump' ):
+		try:
+			return value.model_dump( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
+			pass
+	
+	if hasattr( value, 'to_dict' ):
+		try:
+			result = value.to_dict( )
+			if isinstance( result, dict ):
+				return result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
+			pass
+	
+	if hasattr( value, '__dict__' ):
+		try:
+			row: Dict[ str, Any ] = { }
+			
+			for key, item in vars( value ).items( ):
+				if str( key ).startswith( '_' ):
+					continue
+				
+				if item is None or isinstance( item, (str, int, float, bool) ):
+					row[ key ] = item
+					continue
+				
+				if isinstance( item, (list, tuple, set) ):
+					row[ key ] = list( item )
+					continue
+				
+				if isinstance( item, dict ):
+					row[ key ] = item
+					continue
+				
+				row[ key ] = str( item )
+			
+			return row
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_object'
+			exception.method = 'normalize_storage_object( value ) -> Dict[str, Any]'
+			Logger( ).write( exception )
+			pass
+	
+	return { 'value': str( value ) }
+
+def normalize_storage_rows( value: Any ) -> List[ Dict[ str, Any ] ]:
+	"""Normalize storage rows.
+	
+	Purpose:
+	    Transforms normalize storage rows inputs into a normalized representation used by
+	    provider calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	"""
+	if value is None:
+		return [ ]
+	
+	if isinstance( value, list ):
+		return [ normalize_storage_object( item ) for item in value ]
+	
+	if isinstance( value, tuple ):
+		return [ normalize_storage_object( item ) for item in value ]
+	
+	if isinstance( value, dict ):
+		for key in [ 'data', 'items', 'files', 'buckets', 'collections', 'stores',
+			'file_search_stores', 'vector_stores', 'results' ]:
+			items = value.get( key )
+			if isinstance( items, list ):
+				return [ normalize_storage_object( item ) for item in items ]
+		
+		return [ normalize_storage_object( value ) ]
+	
+	for attr_name in [ 'data', 'items', 'files', 'buckets', 'collections', 'stores',
+		'file_search_stores', 'vector_stores', 'results' ]:
+		try:
+			items = getattr( value, attr_name, None )
+			if isinstance( items, list ):
+				return [ normalize_storage_object( item ) for item in items ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'normalize_storage_rows'
+			exception.method = 'normalize_storage_rows( value ) -> List[Dict[str, Any]]'
+			Logger( ).write( exception )
+			continue
+	
+	try:
+		return [ normalize_storage_object( item ) for item in value ]
+	except Exception as e:
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'normalize_storage_rows'
+		exception.method = 'normalize_storage_rows( value ) -> List[Dict[str, Any]]'
+		Logger( ).write( exception )
+		return [ normalize_storage_object( value ) ]
+
+def parse_storage_ids( value: Any ) -> List[ str ]:
+	"""Parse storage ids.
+	
+	Purpose:
+	    Transforms parse storage ids inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
+	"""
+	if value is None:
+		return [ ]
+	
+	if isinstance( value, (list, tuple, set) ):
+		return [ str( item ).strip( ) for item in value if str( item ).strip( ) ]
+	
+	if not isinstance( value, str ):
+		return [ str( value ).strip( ) ] if str( value ).strip( ) else [ ]
+	
+	text = value.strip( )
+	if not text:
+		return [ ]
+	
+	parts = re.split( r'[,;\n\r\t]+', text )
+	
+	return [ part.strip( ) for part in parts if part.strip( ) ]
+
+def parse_storage_json( value: Any ) -> Dict[ str, Any ]:
+	"""Parse storage json.
+	
+	Purpose:
+	    Transforms parse storage json inputs into a normalized representation used by provider
+	    calls, document retrieval, data management, or UI rendering.
+	
+	Args:
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
+	"""
+	if value is None:
+		return { }
+	
+	if isinstance( value, dict ):
+		return value
+	
+	if not isinstance( value, str ) or not value.strip( ):
+		return { }
+	
+	try:
+		result = json.loads( value.strip( ) )
+		return result if isinstance( result, dict ) else { 'value': result }
+	except Exception as exc:
+		exception = Error( exc )
+		exception.module = 'app'
+		exception.cause = 'parse_storage_json'
+		exception.method = 'parse_storage_json( value ) -> Dict[str, Any]'
+		Logger( ).write( exception )
+		raise ValueError( f'Invalid JSON metadata: {exc}' ) from exc
+
+def get_storage_identifier( row: Dict[ str, Any ] ) -> str:
+	"""Get storage identifier.
+	
+	Purpose:
+	    Retrieves get storage identifier for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    row: Row value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
+	if not isinstance( row, dict ):
+		return ''
+	
+	for key in [ 'id', 'name', 'resource_name', 'resourceName', 'uri', 'file_id', 'store_id',
+		'vector_store_id', 'collection_id', 'bucket', 'bucket_name', 'bucketName', ]:
+		value = row.get( key )
+		if isinstance( value, str ) and value.strip( ):
+			return value.strip( )
+	
+	return ''
+
+def get_storage_display_name( row: Dict[ str, Any ] ) -> str:
+	"""Get storage display name.
+	
+	Purpose:
+	    Retrieves get storage display name for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    row: Row value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
+	if not isinstance( row, dict ):
+		return 'resource'
+	
+	for key in [ 'display_name', 'displayName', 'filename', 'file_name', 'name', 'id',
+		'bucket_name', 'bucketName', 'collection', 'title', ]:
+		value = row.get( key )
+		if isinstance( value, str ) and value.strip( ):
+			return value.strip( )
+	
+	return 'resource'
+
+def build_storage_selectors( rows: List[ Dict[ str, Any ] ] ) -> List[ str ]:
+	"""Build storage selectors.
+	
+	Purpose:
+	    Builds build storage selectors from validated runtime inputs and prepares the resulting
+	    object, payload, table, or display structure for later application processing.
+	
+	Args:
+	    rows: Rows value used by the application workflow.
+	
+	Returns:
+	    List[str]: List of normalized values used by the application workflow.
+	"""
+	if not isinstance( rows, list ):
+		return [ ]
+	
+	options: List[ str ] = [ ]
+	
+	for row in rows:
+		if not isinstance( row, dict ):
+			continue
+		
+		identifier = get_storage_identifier( row )
+		display_name = get_storage_display_name( row )
+		
+		if identifier:
+			options.append( f'{display_name} — {identifier}' )
+	
+	return options
+
+def get_storage_id_from_option( option: Optional[ str ] ) -> str:
+	"""Get storage id from option.
+	
+	Purpose:
+	    Retrieves get storage id from option for the Streamlit application workflow and returns
+	    the normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    option: Option value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
+	if not isinstance( option, str ) or not option.strip( ):
+		return ''
+	
+	text = option.strip( )
+	if ' — ' in text:
+		return text.rsplit( ' — ', 1 )[ 1 ].strip( )
+	
+	return text
+
+def get_selected_store_id( manual_key: str = 'stores_manual_id',
+	selected_key: str = 'stores_selected_id', fallback_key: str = 'stores_id' ) -> str:
+	"""Get selected store id.
+	
+	Purpose:
+	    Retrieves get selected store id for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    manual_key: Session-state key or state value used by the Streamlit workflow.
+	    selected_key: Session-state key or state value used by the Streamlit workflow.
+	    fallback_key: Session-state key or state value used by the Streamlit workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
+	for key in [ manual_key, selected_key, fallback_key ]:
+		value = st.session_state.get( key, '' )
+		if isinstance( value, str ) and value.strip( ):
+			return value.strip( )
+	
+	return ''
+
+def get_vectorstores_selected_id( ) -> str:
+	"""Get vectorstores selected id.
+	
+	Purpose:
+	    Retrieves get vectorstores selected id for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
+	provider_name = get_provider_name( )
+	
+	if provider_name == 'Gemini':
+		backend = get_gemini_vector_backend( )
+		
+		if backend == 'Cloud Buckets':
+			return get_selected_store_id( manual_key='bucket_name',
+				selected_key='bucket_selected_id', fallback_key='bucket_name' )
+		
+		return get_selected_store_id( manual_key='filestore_id',
+			selected_key='filestore_selected_id', fallback_key='filestore_id' )
+	
+	return get_selected_store_id( manual_key='stores_manual_id', selected_key='stores_selected_id',
+		fallback_key='stores_id' )
+
+def call_storage_method( target: Any, method_names: List[ str ], *args: Any, **kwargs: Any ) -> Any:
+	"""Call storage method.
+	
+	Purpose:
+	    Executes the call storage method workflow using the current provider, document, prompt,
+	    and session-state configuration.
+	
+	Args:
+	    target: Target value used by the application workflow.
+	    method_names: Method Names value used by the application workflow.
+	    args: Args value used by the application workflow.
+	    kwargs: Kwargs value used by the application workflow.
+	
+	Returns:
+	    Any: Normalized result produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
+	"""
+	if target is None:
+		raise ValueError( 'Storage target cannot be None.' )
+	
+	if not isinstance( method_names, list ) or len( method_names ) == 0:
+		raise ValueError( 'At least one storage method name is required.' )
+	
+	last_error: Optional[ Exception ] = None
+	for method_name in method_names:
+		if not isinstance( method_name, str ) or not method_name.strip( ):
+			continue
+		
+		name = method_name.strip( )
+		
+		if not hasattr( target, name ):
+			continue
+		
+		method = getattr( target, name )
+		
+		if not callable( method ):
+			continue
+		
+		try:
+			return method( *args, **kwargs )
+		except TypeError as exc:
+			last_error = exc
+			
+			if len( kwargs ) > 0 and len( args ) > 0:
+				try:
+					return method( *args )
+				except TypeError as inner_exc:
+					last_error = inner_exc
+			
+			if len( kwargs ) > 0:
+				try:
+					return method( **kwargs )
+				except TypeError as inner_exc:
+					last_error = inner_exc
+			
+			continue
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'call_storage_method'
+			exception.method = 'call_storage_method( *args ) -> Any'
+			Logger( ).write( exception )
+			raise
+	
+	if last_error is not None:
+		raise AttributeError(
+			f'No compatible storage method was callable. Last error: {last_error}' )
+	
+	raise AttributeError(
+		f'Target does not expose any of these methods: {", ".join( method_names )}' )
+
+def save_uploaded_storage_file( uploaded_file: Any ) -> str:
+	"""Save uploaded storage file.
+	
+	Purpose:
+	    Applies the save uploaded storage file operation to application-managed data, files,
+	    prompts, or provider resources while preserving the surrounding workflow state.
+	
+	Args:
+	    uploaded_file: File, upload, or path value used by the document or storage workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
+	"""
+	if uploaded_file is None:
+		raise ValueError( 'An uploaded file is required.' )
+	
+	name = getattr( uploaded_file, 'name', 'uploaded_file' )
+	suffix = Path( name ).suffix
+	if not suffix:
+		suffix = '.bin'
+	
+	with tempfile.NamedTemporaryFile( delete=False, suffix=suffix ) as tmp:
+		if hasattr( uploaded_file, 'getbuffer' ):
+			tmp.write( uploaded_file.getbuffer( ) )
+		elif hasattr( uploaded_file, 'read' ):
+			tmp.write( uploaded_file.read( ) )
+		else:
+			raise ValueError( 'Uploaded file object does not expose getbuffer() or read().' )
+		
+		return tmp.name
+
+def set_storage_rows( rows: Any, table_key: str = 'storage_table_data' ) -> List[
+	Dict[ str, Any ] ]:
+	"""Set storage rows.
+	
+	Purpose:
+	    Supports the set storage rows application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    rows: Rows value used by the application workflow.
+	    table_key: SQLite table name used by the data-management workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	"""
+	normalized_rows = normalize_storage_rows( rows )
+	st.session_state[ 'storage_table_data' ] = normalized_rows
+	st.session_state[ table_key ] = normalized_rows
+	
+	return normalized_rows
+
+def set_storage_result( result: Any, operation: str,
+	result_key: str = 'storage_operation_result' ) -> Dict[ str, Any ]:
+	"""Set storage result.
+	
+	Purpose:
+	    Supports the set storage result application workflow by coordinating validated inputs,
+	    Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    result: Result value used by the application workflow.
+	    operation: Operation value used by the application workflow.
+	    result_key: Session-state key or state value used by the Streamlit workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	"""
+	normalized = normalize_storage_object( result )
+	st.session_state[ 'storage_operation_result' ] = normalized
+	st.session_state[ result_key ] = normalized
+	st.session_state[ 'storage_last_operation' ] = operation
+	st.session_state[ 'stores_last_operation' ] = operation
+	
+	return normalized
+
+def sync_storage_selection( selected_option: Optional[ str ], provider_name: Optional[ str ] = None,
+	backend: Optional[ str ] = None ) -> str:
+	"""Sync storage selection.
+	
+	Purpose:
+	    Supports the sync storage selection application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    selected_option: Selected Option value used by the application workflow.
+	    provider_name: Provider name used to route the operation.
+	    backend: Backend value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	"""
+	selected_id = get_storage_id_from_option( selected_option )
+	
+	if not selected_id:
+		return ''
+	
+	provider = get_provider_name( provider_name )
+	
+	if provider == 'Gemini':
+		selected_backend = backend if backend is not None else get_gemini_vector_backend( )
+		
+		if selected_backend == 'Cloud Buckets':
+			st.session_state[ 'bucket_selected_id' ] = selected_id
+			st.session_state[ 'bucket_selected_label' ] = selected_option or ''
+			st.session_state[ 'bucket_name' ] = selected_id
+		else:
+			st.session_state[ 'filestore_selected_id' ] = selected_id
+			st.session_state[ 'filestore_selected_label' ] = selected_option or ''
+			st.session_state[ 'filestore_id' ] = selected_id
+		
+		return selected_id
+	
+	st.session_state[ 'stores_selected_id' ] = selected_id
+	st.session_state[ 'stores_selected_label' ] = selected_option or ''
+	st.session_state[ 'stores_id' ] = selected_id
+	
+	return selected_id
+
+def clear_vectorstore_outputs( ) -> None:
+	"""Clear vectorstore outputs.
+	
+	Purpose:
+	    Maintains application runtime state for clear vectorstore outputs by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
+	"""
+	st.session_state[ 'stores_table' ] = [ ]
+	st.session_state[ 'stores_files_table' ] = [ ]
+	st.session_state[ 'stores_store_metadata' ] = { }
+	st.session_state[ 'stores_file_metadata' ] = { }
+	st.session_state[ 'stores_operation_result' ] = { }
+	st.session_state[ 'stores_batch_result' ] = { }
+	st.session_state[ 'stores_upload_result' ] = { }
+	st.session_state[ 'stores_delete_result' ] = { }
+	st.session_state[ 'stores_search_result' ] = { }
+	st.session_state[ 'stores_survey_result' ] = { }
+	st.session_state[ 'stores_answer' ] = ''
+	st.session_state[ 'stores_content' ] = ''
+	st.session_state[ 'stores_last_operation' ] = ''
+	
+	st.session_state[ 'filestore_metadata' ] = { }
+	st.session_state[ 'filestore_table' ] = [ ]
+	st.session_state[ 'filestore_upload_result' ] = { }
+	st.session_state[ 'filestore_delete_result' ] = { }
+	st.session_state[ 'filestore_operation_result' ] = { }
+	
+	st.session_state[ 'bucket_metadata' ] = { }
+	st.session_state[ 'bucket_table' ] = [ ]
+	st.session_state[ 'bucket_upload_result' ] = { }
+	st.session_state[ 'bucket_delete_result' ] = { }
+	st.session_state[ 'bucket_operation_result' ] = { }
+	st.session_state[ 'bucket_results' ] = { }
+	
+	st.session_state[ 'storage_operation_result' ] = { }
+	st.session_state[ 'storage_table_data' ] = [ ]
+	st.session_state[ 'storage_last_operation' ] = ''
+	st.session_state[ 'storage_last_answer' ] = ''
+
+def reset_vectorstore_controls( ) -> None:
+	"""Reset vectorstore controls.
+	
+	Purpose:
+	    Maintains application runtime state for reset vectorstore controls by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
+	"""
+	for key in [ 'stores_backend', 'stores_id', 'stores_name', 'stores_description',
+		'stores_metadata', 'stores_manual_id', 'stores_selected_id', 'stores_selected_label',
+		'stores_query', 'stores_file_id', 'stores_file_ids', 'stores_file_ids_text',
+		'stores_batch_id', 'stores_limit', 'stores_order', 'filestore_id', 'filestore_name',
+		'filestore_selected_id', 'filestore_selected_label', 'bucket_name', 'bucket_object_name',
+		'bucket_selected_id', 'bucket_selected_label', 'storage_selected_option', ]:
+		if key in st.session_state:
+			del st.session_state[ key ]
+
+def reset_vectorstore_all( ) -> None:
+	"""Reset vectorstore all.
+	
+	Purpose:
+	    Maintains application runtime state for reset vectorstore all by initializing,
+	    clearing, or restoring the session values used by the active Streamlit workflow.
+	"""
+	reset_vectorstore_controls( )
+	clear_vectorstore_outputs( )
+	ensure_vectorstores_mode_state( )
+
+def require_storage_value( name: str, value: Any ) -> str:
+	"""Require storage value.
+	
+	Purpose:
+	    Supports the require storage value application workflow by coordinating validated
+	    inputs, Streamlit session state, provider configuration, and local data processing.
+	
+	Args:
+	    name: Name value used by the application workflow.
+	    value: Value value used by the application workflow.
+	
+	Returns:
+	    str: Text value produced for the active application workflow.
+	
+	Raises:
+	    Exception: Raised when validation, provider execution, file processing, or database
+	        handling fails.
+	"""
+	if value is None:
+		raise ValueError( f'{name} is required.' )
+	
+	text = str( value ).strip( )
+	
+	if not text:
+		raise ValueError( f'{name} is required.' )
+	
+	return text
+
+def get_gpt_vectorstore_method( vectorstores: Any, method_names: List[ str ],
+	operation_name: str, ) -> Any:
+	"""Get GPT Vector Store method.
+	
+	Purpose:
+	    Resolves one callable operation from the active GPT Vector Stores wrapper without
+	    executing exception-driven cross-signature retries.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    method_names: Ordered method names accepted for the operation.
+	    operation_name: User-facing name of the requested operation.
+	
+	Returns:
+	    Any: Callable provider method implementing the requested operation.
+	
+	Raises:
+	    Error: Raised when the provider capability does not expose the operation.
+	"""
+	try:
+		if vectorstores is None:
+			raise AttributeError( 'GPT does not expose the Vector Stores capability.' )
+		
+		for method_name in method_names:
+			if not isinstance( method_name, str ) or not method_name.strip( ):
+				continue
+			
+			candidate = getattr( vectorstores, method_name.strip( ), None, )
+			
+			if callable( candidate ):
+				return candidate
+		
+		raise AttributeError( f'The GPT Vector Stores wrapper does not expose {operation_name}. '
+		                      f'Expected one of: {", ".join( method_names )}.' )
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'get_gpt_vectorstore_method'
+		exception.method = ('get_gpt_vectorstore_method( vectorstores: Any, '
+		                    'method_names: List[str], operation_name: str ) -> Any')
+		Logger( ).write( exception )
+		raise exception
+
+def create_gpt_vectorstore( vectorstores: Any, name: str,
+	metadata: Dict[ str, Any ] | None = None, ) -> Dict[ str, Any ]:
+	"""Create GPT Vector Store.
+	
+	Purpose:
+	    Creates an OpenAI Vector Store through the active GPT wrapper and normalizes the
+	    returned provider resource.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    name: Name assigned to the new OpenAI Vector Store.
+	    metadata: Optional metadata attached to the Vector Store.
+	
+	Returns:
+	    Dict[str, Any]: Normalized OpenAI Vector Store resource.
+	
+	Raises:
+	    Error: Raised when the name, provider operation, or returned resource is invalid.
+	"""
+	try:
+		store_name = require_storage_value( 'Vector Store Name', name, )
+		
+		create_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'create', 'create_store' ], operation_name='Vector Store creation', )
+		
+		result = create_method( name=store_name, metadata=metadata if metadata else None, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( 'GPT returned no Vector Store resource after creation.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'create_gpt_vectorstore'
+		exception.method = ('create_gpt_vectorstore( vectorstores: Any, name: str, '
+		                    'metadata: Dict[str, Any] | None = None ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def list_gpt_vectorstores( vectorstores: Any, limit: int = 100, order: str = 'desc', ) -> List[
+	Dict[ str, Any ] ]:
+	"""List GPT Vector Stores.
+	
+	Purpose:
+	    Lists OpenAI Vector Stores through the active GPT wrapper and normalizes the returned
+	    collection for display and selection.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    limit: Maximum number of Vector Stores requested.
+	    order: Provider-supported result order.
+	
+	Returns:
+	    List[Dict[str, Any]]: Normalized OpenAI Vector Store rows.
+	
+	Raises:
+	    Error: Raised when controls, provider execution, or returned rows are invalid.
+	"""
+	try:
+		limit_value = int( limit or 100 )
+		
+		if limit_value < 1:
+			limit_value = 1
+		
+		if limit_value > 100:
+			limit_value = 100
+		
+		order_value = str( order or 'desc' ).strip( ).lower( )
+		
+		if order_value not in [ 'asc', 'desc' ]:
+			order_value = 'desc'
+		
+		list_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'list_stores', 'list' ], operation_name='Vector Store listing', )
+		
+		result = list_method( limit=limit_value, order=order_value, )
+		
+		rows = normalize_storage_rows( result )
+		
+		if not isinstance( rows, list ):
+			raise ValueError( 'GPT returned an invalid Vector Store list.' )
+		
+		return rows
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'list_gpt_vectorstores'
+		exception.method = ('list_gpt_vectorstores( vectorstores: Any, limit: int = 100, '
+		                    'order: str = "desc" ) -> List[Dict[str, Any]]')
+		Logger( ).write( exception )
+		raise exception
+
+def retrieve_gpt_vectorstore( vectorstores: Any, store_id: str, ) -> Dict[ str, Any ]:
+	"""Retrieve GPT Vector Store.
+	
+	Purpose:
+	    Retrieves one OpenAI Vector Store through the active GPT wrapper and normalizes the
+	    returned provider resource.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    store_id: OpenAI Vector Store identifier.
+	
+	Returns:
+	    Dict[str, Any]: Normalized OpenAI Vector Store resource.
+	
+	Raises:
+	    Error: Raised when the identifier, provider operation, or returned resource is invalid.
+	"""
+	try:
+		selected_store_id = require_storage_value( 'Vector Store ID', store_id, )
+		
+		retrieve_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'retrieve', 'retrieve_store', 'get' ],
+			operation_name='Vector Store retrieval', )
+		
+		result = retrieve_method( vector_store_id=selected_store_id, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( f'GPT returned no Vector Store resource for `{selected_store_id}`.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'retrieve_gpt_vectorstore'
+		exception.method = ('retrieve_gpt_vectorstore( vectorstores: Any, '
+		                    'store_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def delete_gpt_vectorstore( vectorstores: Any, store_id: str, ) -> Dict[ str, Any ]:
+	"""Delete GPT Vector Store.
+	
+	Purpose:
+	    Deletes an OpenAI Vector Store through the active GPT wrapper and normalizes the
+	    provider deletion acknowledgement.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    store_id: OpenAI Vector Store identifier.
+	
+	Returns:
+	    Dict[str, Any]: Normalized deletion acknowledgement.
+	
+	Raises:
+	    Error: Raised when the identifier, provider operation, or deletion request is invalid.
+	"""
+	try:
+		selected_store_id = require_storage_value( 'Vector Store ID', store_id, )
+		
+		delete_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'delete', 'delete_store' ], operation_name='Vector Store deletion', )
+		
+		result = delete_method( vector_store_id=selected_store_id, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			normalized = { 'id': selected_store_id, 'deleted': True, 'provider': 'GPT', }
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'delete_gpt_vectorstore'
+		exception.method = ('delete_gpt_vectorstore( vectorstores: Any, '
+		                    'store_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def attach_gpt_vectorstore_file( vectorstores: Any,
+	store_id: str, file_id: str, ) -> Dict[ str, Any ]:
+	"""Attach GPT Vector Store file.
+	
+	Purpose:
+	    Attaches an existing OpenAI file to an OpenAI Vector Store and normalizes the returned
+	    Vector Store file resource.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    store_id: OpenAI Vector Store identifier.
+	    file_id: OpenAI file identifier attached to the Vector Store.
+	
+	Returns:
+	    Dict[str, Any]: Normalized Vector Store file resource.
+	
+	Raises:
+	    Error: Raised when identifiers, provider execution, or returned metadata are invalid.
+	"""
+	try:
+		selected_store_id = require_storage_value( 'Vector Store ID', store_id, )
+		
+		selected_file_id = require_storage_value( 'File ID', file_id, )
+		
+		attach_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'attach_file', 'add_file', 'create_file' ],
+			operation_name='Vector Store file attachment', )
+		
+		result = attach_method( vector_store_id=selected_store_id, file_id=selected_file_id, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( 'GPT returned no Vector Store file resource after attachment.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'attach_gpt_vectorstore_file'
+		exception.method = ('attach_gpt_vectorstore_file( vectorstores: Any, '
+		                    'store_id: str, file_id: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def create_gpt_vectorstore_file_batch( vectorstores: Any,
+	store_id: str, file_ids: List[ str ],  ) -> Dict[ str, Any ]:
+	"""Create GPT Vector Store file batch.
+	
+	Purpose:
+	    Attaches multiple existing OpenAI files to an OpenAI Vector Store through one batch
+	    request and normalizes the returned batch resource.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    store_id: OpenAI Vector Store identifier.
+	    file_ids: OpenAI file identifiers included in the batch.
+	
+	Returns:
+	    Dict[str, Any]: Normalized Vector Store file-batch resource.
+	
+	Raises:
+	    Error: Raised when identifiers, provider execution, or returned metadata are invalid.
+	"""
+	try:
+		selected_store_id = require_storage_value( 'Vector Store ID', store_id, )
+		
+		normalized_file_ids = merge_unique_strings( primary=file_ids, secondary=[ ], )
+		
+		if len( normalized_file_ids ) == 0:
+			raise ValueError( 'At least one OpenAI file ID is required.' )
+		
+		batch_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'create_file_batch', 'create_batch', 'attach_files' ],
+			operation_name='Vector Store file-batch creation', )
+		
+		result = batch_method( vector_store_id=selected_store_id, file_ids=normalized_file_ids, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( 'GPT returned no Vector Store file-batch resource.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'create_gpt_vectorstore_file_batch'
+		exception.method = ('create_gpt_vectorstore_file_batch( vectorstores: Any, '
+		                    'store_id: str, file_ids: List[str] ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def upload_and_attach_gpt_vectorstore_file( vectorstores: Any,
+	store_id: str, path: str, ) -> Dict[ str, Any ]:
+	"""Upload and attach GPT Vector Store file.
+	
+	Purpose:
+	    Uploads a local file through the GPT Vector Stores wrapper, attaches it to the selected
+	    OpenAI Vector Store, and normalizes the returned resource.
+	
+	Args:
+	    vectorstores: Active GPT Vector Stores capability.
+	    store_id: OpenAI Vector Store identifier.
+	    path: Local path containing the file uploaded and attached.
+	
+	Returns:
+	    Dict[str, Any]: Normalized upload or attachment resource.
+	
+	Raises:
+	    Error: Raised when the store, local file, provider operation, or returned resource is
+	        invalid.
+	"""
+	try:
+		selected_store_id = require_storage_value( 'Vector Store ID', store_id, )
+		
+		file_path = require_storage_value( 'Upload Path', path, )
+		
+		if not os.path.isfile( file_path ):
+			raise FileNotFoundError( f'The uploaded temporary file does not exist: {file_path}' )
+		
+		upload_method = get_gpt_vectorstore_method( vectorstores=vectorstores,
+			method_names=[ 'upload_and_attach', 'upload_file', 'attach_upload' ],
+			operation_name='Vector Store file upload and attachment', )
+		
+		result = upload_method( vector_store_id=selected_store_id, path=file_path, )
+		
+		normalized = normalize_storage_object( result )
+		
+		if len( normalized ) == 0:
+			raise ValueError( 'GPT returned no file resource after upload and attachment.' )
+		
+		return normalized
+	except Exception as e:
+		if isinstance( e, Error ):
+			raise e
+		
+		exception = Error( e )
+		exception.module = 'app'
+		exception.cause = 'upload_and_attach_gpt_vectorstore_file'
+		exception.method = ('upload_and_attach_gpt_vectorstore_file( vectorstores: Any, '
+		                    'store_id: str, path: str ) -> Dict[str, Any]')
+		Logger( ).write( exception )
+		raise exception
+
+def get_grok_collections( vectorstores: Any ) -> List[ Dict[ str, Any ] ]:
+	"""Get grok collections.
+	
+	Purpose:
+	    Retrieves get grok collections for the Streamlit application workflow and returns the
+	    normalized value used by downstream UI, provider, database, or document-processing
+	    steps.
+	
+	Args:
+	    vectorstores: Vectorstores value used by the application workflow.
+	
+	Returns:
+	    List[Dict[str, Any]]: List of normalized values used by the application workflow.
+	"""
+	for method_names in [ [ 'list_collections', 'list_stores', 'list' ],
+		[ 'survey_collections', 'survey' ], ]:
+		try:
+			result = call_storage_method( vectorstores, method_names )
+			rows = normalize_storage_rows( result )
+			if len( rows ) > 0:
+				return rows
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'app'
+			exception.cause = 'get_grok_collections'
+			exception.method = 'get_grok_collections( vectorstores ) -> List[Dict[str, Any]]'
+			Logger( ).write( exception )
+			continue
+	
+	collections = getattr( vectorstores, 'collections', None )
+	if isinstance( collections, dict ):
+		return [ { 'name': name, 'id': collection_id, 'type': 'xAI Collection', } for
+			name, collection_id in collections.items( ) ]
+	
+	return [ ]
+
+def warn_grok_unsupported_operation( operation_name: str ) -> None:
+	"""Warn grok unsupported operation.
+	
+	Purpose:
+	    Supports the warn grok unsupported operation application workflow by coordinating
+	    validated inputs, Streamlit session state, provider configuration, and local data
+	    processing.
+	
+	Args:
+	    operation_name: Operation Name value used by the application workflow.
+	"""
+	st.warning( f'Grok {operation_name} requires xAI collection-management capability. '
+	            f'This Buddy integration currently supports configured collection list, '
+	            f'retrieve, search, and survey operations.' )
+
+def get_storage_backend_summary( provider_name: Optional[ str ] = None,
+	backend: Optional[ str ] = None ) -> Dict[ str, Any ]:
+	"""Get storage backend summary.
+	
+	Purpose:
+	    Retrieves get storage backend summary for the Streamlit application workflow and
+	    returns the normalized value used by downstream UI, provider, database, or document-
+	    processing steps.
+	
+	Args:
+	    provider_name: Provider name used to route the operation.
+	    backend: Backend value used by the application workflow.
+	
+	Returns:
+	    Dict[str, Any]: Dictionary containing normalized workflow configuration or results.
+	"""
+	provider = get_provider_name( provider_name )
+	backend_name = get_vectorstores_backend_name( provider, backend )
+	supports_create = provider == 'GPT' or (
+			provider == 'Gemini' and get_gemini_vector_backend( ) in [ 'File Search Stores',
+		'Cloud Buckets', ])
+	
+	supports_upload = provider == 'GPT' or provider == 'Gemini'
+	supports_delete = provider == 'GPT' or provider == 'Gemini'
+	supports_search = provider in [ 'GPT', 'Grok', 'Gemini' ]
+	
+	return { 'provider': provider, 'backend': backend_name, 'supports_create': supports_create,
+		'supports_upload': supports_upload, 'supports_delete': supports_delete,
+		'supports_search': supports_search, }
 
 def get_retrieval_backend( provider_name: Optional[ str ] = None ) -> Dict[ str, Any ]:
 	"""Get retrieval backend.
@@ -12098,7 +12623,7 @@ def get_active_grok_collection_ids( provider_name: Optional[ str ] = None ) -> L
 	
 	return parse_storage_ids( resource_id )
 
-def get_active_gemini_file_search_store_names( provider_name: Optional[ str ] = None ) -> List[ str ]:
+def get_active_gemini_file_search_store_names( provider_name: Optional[ str ]=None ) -> List[ str ]:
 	"""Get active gemini file search store names.
 	
 	Purpose:
@@ -12182,6 +12707,170 @@ def build_provider_retrieval_summary( provider_name: Optional[ str ] = None ) ->
 	return (
 		f'{provider}: selected {backend_name} resource {resource_id}, but it is not a retrieval '
 		f'store.')
+
+def clear_vectorstore_outputs( ) -> None:
+	"""Clear Vector Stores outputs.
+	
+	Purpose:
+	    Clears Vector Stores operation results, store listings, file listings, metadata,
+	    search results, survey results, generated answers, and shared storage-display state
+	    without changing provider resources or configuration controls.
+	
+	Returns:
+	    None: This function resets Vector Stores output state.
+	"""
+	st.session_state[ 'stores_table' ] = [ ]
+	st.session_state[ 'stores_files_table' ] = [ ]
+	st.session_state[ 'stores_store_metadata' ] = { }
+	st.session_state[ 'stores_file_metadata' ] = { }
+	st.session_state[ 'stores_operation_result' ] = { }
+	st.session_state[ 'stores_batch_result' ] = { }
+	st.session_state[ 'stores_upload_result' ] = { }
+	st.session_state[ 'stores_delete_result' ] = { }
+	st.session_state[ 'stores_search_result' ] = { }
+	st.session_state[ 'stores_survey_result' ] = { }
+	st.session_state[ 'stores_answer' ] = ''
+	st.session_state[ 'stores_content' ] = ''
+	st.session_state[ 'stores_last_operation' ] = ''
+	
+	st.session_state[ 'filestore_metadata' ] = { }
+	st.session_state[ 'filestore_table' ] = [ ]
+	st.session_state[ 'filestore_upload_result' ] = { }
+	st.session_state[ 'filestore_delete_result' ] = { }
+	st.session_state[ 'filestore_operation_result' ] = { }
+	
+	st.session_state[ 'bucket_metadata' ] = { }
+	st.session_state[ 'bucket_table' ] = [ ]
+	st.session_state[ 'bucket_upload_result' ] = { }
+	st.session_state[ 'bucket_delete_result' ] = { }
+	st.session_state[ 'bucket_operation_result' ] = { }
+	st.session_state[ 'bucket_results' ] = { }
+	
+	st.session_state[ 'storage_operation_result' ] = { }
+	st.session_state[ 'storage_table_data' ] = [ ]
+	st.session_state[ 'storage_last_operation' ] = ''
+	st.session_state[ 'storage_last_answer' ] = ''
+
+def reset_vectorstore_routing_controls( ) -> None:
+	"""Reset Vector Stores routing controls.
+	
+	Purpose:
+	    Restores every selectable control contained in the Storage Routing expander to its
+	    initial value without clearing operation results or modifying provider-managed
+	    resources.
+	
+	Returns:
+	    None: This function resets Vector Stores routing state.
+	"""
+	st.session_state[ 'stores_backend' ] = 'File Search Stores'
+
+def reset_vectorstore_gpt_controls( ) -> None:
+	"""Reset GPT Vector Stores controls.
+	
+	Purpose:
+	    Restores every control contained in the OpenAI Vector Store Controls section to the
+	    initial values established by the Vector Stores session-state contract.
+	
+	Returns:
+	    None: This function resets OpenAI Vector Store control state.
+	"""
+	st.session_state[ 'stores_id' ] = ''
+	st.session_state[ 'stores_name' ] = ''
+	st.session_state[ 'stores_description' ] = ''
+	st.session_state[ 'stores_metadata' ] = ''
+	st.session_state[ 'stores_manual_id' ] = ''
+	st.session_state[ 'stores_selected_id' ] = ''
+	st.session_state[ 'stores_selected_label' ] = ''
+	st.session_state[ 'stores_file_id' ] = ''
+	st.session_state[ 'stores_file_ids' ] = [ ]
+	st.session_state[ 'stores_file_ids_text' ] = ''
+	st.session_state[ 'stores_batch_id' ] = ''
+	st.session_state[ 'stores_limit' ] = 100
+	st.session_state[ 'stores_order' ] = 'desc'
+	st.session_state[ 'storage_selected_option' ] = ''
+
+def reset_vectorstore_grok_controls( ) -> None:
+	"""Reset Grok Vector Stores controls.
+	
+	Purpose:
+	    Restores xAI Collection identifiers, search inputs, survey identifiers, list limits,
+	    ordering, and selection state to their initial values.
+	
+	Returns:
+	    None: This function resets Grok Vector Stores control state.
+	"""
+	st.session_state[ 'stores_id' ] = ''
+	st.session_state[ 'stores_manual_id' ] = ''
+	st.session_state[ 'stores_selected_id' ] = ''
+	st.session_state[ 'stores_selected_label' ] = ''
+	st.session_state[ 'stores_query' ] = ''
+	st.session_state[ 'stores_file_ids' ] = [ ]
+	st.session_state[ 'stores_file_ids_text' ] = ''
+	st.session_state[ 'stores_limit' ] = 100
+	st.session_state[ 'stores_order' ] = 'desc'
+	st.session_state[ 'storage_selected_option' ] = ''
+
+def reset_vectorstore_gemini_filestore_controls( ) -> None:
+	"""Reset Gemini File Search Store controls.
+	
+	Purpose:
+	    Restores Gemini File Search Store identifiers, names, selection values, and shared
+	    storage-selection state to their initial values.
+	
+	Returns:
+	    None: This function resets Gemini File Search Store controls.
+	"""
+	st.session_state[ 'filestore_id' ] = ''
+	st.session_state[ 'filestore_name' ] = ''
+	st.session_state[ 'filestore_selected_id' ] = ''
+	st.session_state[ 'filestore_selected_label' ] = ''
+	st.session_state[ 'storage_selected_option' ] = ''
+
+def reset_vectorstore_gemini_bucket_controls( ) -> None:
+	"""Reset Gemini Cloud Bucket controls.
+	
+	Purpose:
+	    Restores Gemini Cloud Bucket names, object names, selected-resource values, and shared
+	    storage-selection state to their initial values.
+	
+	Returns:
+	    None: This function resets Gemini Cloud Bucket controls.
+	"""
+	st.session_state[ 'bucket_name' ] = ''
+	st.session_state[ 'bucket_object_name' ] = ''
+	st.session_state[ 'bucket_selected_id' ] = ''
+	st.session_state[ 'bucket_selected_label' ] = ''
+	st.session_state[ 'storage_selected_option' ] = ''
+
+def reset_vectorstore_controls( ) -> None:
+	"""Reset Vector Stores controls.
+	
+	Purpose:
+	    Restores routing and provider-specific Vector Stores controls to their initial values
+	    without clearing results or deleting provider-managed resources.
+	
+	Returns:
+	    None: This function resets all Vector Stores control state.
+	"""
+	reset_vectorstore_routing_controls( )
+	reset_vectorstore_gpt_controls( )
+	reset_vectorstore_grok_controls( )
+	reset_vectorstore_gemini_filestore_controls( )
+	reset_vectorstore_gemini_bucket_controls( )
+
+def reset_vectorstore_all( ) -> None:
+	"""Reset all Vector Stores state.
+	
+	Purpose:
+	    Restores Vector Stores controls and clears application-managed operation results without
+	    deleting OpenAI Vector Stores, xAI Collections, Gemini File Search Stores, Cloud
+	    Buckets, or files contained by those resources.
+	
+	Returns:
+	    None: This function resets all Vector Stores application state.
+	"""
+	reset_vectorstore_controls( )
+	clear_vectorstore_outputs( )
 
 # ---------------- TEXT ----------------
 def text_model_options( chat: object ) -> List[ str ]:
@@ -15780,14 +16469,13 @@ elif mode == 'Files':
 				st.selectbox( label='Use Template', options=template_options,
 					key='files_instruction_prompt_id', on_change=load_files_instruction,
 					format_func=lambda prompt_id: (
-						'Select Template' if prompt_id is None and selected_category else 'Select '
-						                                                                  'Category First' if prompt_id is None else format_prompt_option(
-							prompt_id=prompt_id, prompts=prompt_lookup, )),
+						'Select Template' if prompt_id is None and selected_category else 'Select Category First'
+						if prompt_id is None else format_prompt_option( prompt_id=prompt_id,
+							prompts=prompt_lookup, )),
 					disabled=not selected_category or len( prompt_ids ) == 0,
 					help='Load a System Instructions template for Files Mode.', )
 			
 			btn_c1, btn_c2 = st.columns( [ 0.8, 0.2 ] )
-			
 			with btn_c1:
 				st.button( label='Clear Instructions', width='stretch',
 					on_click=clear_files_instructions, )
@@ -15799,24 +16487,25 @@ elif mode == 'Files':
 		# ------------------------------------------------------------------
 		# File Operations
 		# ------------------------------------------------------------------
-		ops_left, ops_right = st.columns( [ 0.45, 0.55 ], border=True, gap='small' )
+		ops_left, ops_right = st.columns( [ 0.45, 0.55 ], border=True, gap='small', )
 		with ops_left:
 			st.caption( 'Upload' )
 			uploaded_file = st.file_uploader( label='Upload file to provider Files API',
 				type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml', 'png', 'jpg', 'jpeg',
-					'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts' ],
-				accept_multiple_files=False, key='files_api_file_uploader' )
+					'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts', ],
+				accept_multiple_files=False, key='files_api_file_uploader', )
 			
 			if uploaded_file is not None:
 				tmp_path = save_temp( uploaded_file )
-				if st.button( label='Upload File', key='files_upload_button', width='stretch' ):
+				
+				if st.button( label='Upload File', key='files_upload_button', width='stretch', ):
 					if not tmp_path:
-						st.warning( 'Could not save uploaded file for provider upload.' )
+						st.warning( 'Could not save the uploaded file for provider upload.' )
 					else:
 						with st.spinner( 'Uploading file…' ):
 							try:
 								result = upload_provider_file( files=files, path=tmp_path,
-									purpose=st.session_state.get( 'files_purpose' ) )
+									purpose=st.session_state.get( 'files_purpose' ), )
 								
 								metadata = normalize_files_object( result )
 								st.session_state[ 'files_last_upload' ] = metadata
@@ -15826,134 +16515,110 @@ elif mode == 'Files':
 								if file_id:
 									st.session_state[ 'files_id' ] = file_id
 								
-								st.success( f'Uploaded file: {file_id or uploaded_file.name}' )
+								st.success( f'Uploaded file: '
+								            f'{file_id or uploaded_file.name}' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Upload failed: {exc}' )
 			
 			st.caption( 'Operations' )
-			op_c1, op_c2 = st.columns( [ 0.5, 0.5 ], gap='xxsmall' )
+			
+			op_c1, op_c2 = st.columns( [ 0.5, 0.5 ], gap='xxsmall', )
 			with op_c1:
-				if st.button( label='List Files', key='files_list_button', width='stretch' ):
+				if st.button( label='List Files', key='files_list_button', width='stretch', ):
 					with st.spinner( 'Listing files…' ):
 						try:
 							rows = list_provider_files( files=files,
-								purpose=st.session_state.get( 'files_filter_purpose' ) )
+								purpose=st.session_state.get( 'files_filter_purpose' ), )
 							
 							st.session_state[ 'files_table_data' ] = rows
 							st.session_state[ 'files_last_list' ] = rows
 							st.session_state[ 'files_last_operation' ] = 'list'
-							st.success( f'Found {len( rows )} file(s).' )
+							st.success( f'Found {len( rows ):,} file(s).' )
 						except Exception as exc:
-							exception = Error( exc )
-							exception.module = 'app'
-							exception.cause = 'app'
-							exception.method = 'module initialization'
-							Logger( ).write( exception )
 							st.error( f'List failed: {exc}' )
 				
 				if st.button( label='Retrieve Metadata', key='files_retrieve_button',
-						width='stretch' ):
-					file_id = st.session_state.get( 'files_id', '' )
-					if not isinstance( file_id, str ) or not file_id.strip( ):
+						width='stretch', ):
+					file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
+					
+					if not file_id:
 						st.warning( 'Enter or select a file ID before retrieving metadata.' )
 					else:
 						with st.spinner( 'Retrieving file metadata…' ):
 							try:
-								metadata = retrieve_provider_file( files=files, file_id=file_id )
-								
+								metadata = retrieve_provider_file( files=files, file_id=file_id, )
 								st.session_state[ 'files_metadata' ] = metadata
 								st.session_state[ 'files_last_operation' ] = 'retrieve'
+								st.success( 'File metadata retrieved.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Retrieve failed: {exc}' )
 			
 			with op_c2:
 				if st.button( label='Extract Content', key='files_extract_button',
-						width='stretch' ):
-					file_id = st.session_state.get( 'files_id', '' )
+						width='stretch', ):
+					file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
 					
-					if not isinstance( file_id, str ) or not file_id.strip( ):
+					if not file_id:
 						st.warning( 'Enter or select a file ID before extracting content.' )
 					else:
 						with st.spinner( 'Extracting file content…' ):
 							try:
-								content = extract_file_content( files=files, file_id=file_id )
-								
+								content = extract_file_content( files=files, file_id=file_id, )
 								st.session_state[ 'files_content' ] = content
 								st.session_state[ 'files_last_operation' ] = 'extract'
-								
-								if not content:
-									st.warning( 'No extractable content was returned.' )
+								st.success( 'File content extracted.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Extract failed: {exc}' )
 				
-				if st.button( label='Delete File', key='files_delete_button', width='stretch' ):
-					file_id = st.session_state.get( 'files_id', '' )
-					
-					if not isinstance( file_id, str ) or not file_id.strip( ):
+				if st.button( label='Delete File', key='files_delete_button', width='stretch', ):
+					file_id = str( st.session_state.get( 'files_id', '', ) or '' ).strip( )
+					if not file_id:
 						st.warning( 'Enter or select a file ID before deleting.' )
 					else:
 						with st.spinner( 'Deleting file…' ):
 							try:
-								result = delete_provider_file( files=files, file_id=file_id )
+								result = delete_provider_file( files=files, file_id=file_id, )
 								st.session_state[ 'files_delete_result' ] = result
 								st.session_state[ 'files_last_operation' ] = 'delete'
+								st.session_state[ 'files_id' ] = ''
+								st.session_state[ 'files_selected_option' ] = None
 								st.success( 'Delete request completed.' )
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
 								st.error( f'Delete failed: {exc}' )
 		
 		with ops_right:
 			st.caption( 'Results' )
-			rows = st.session_state.get( 'files_table_data', [ ] )
+			rows = st.session_state.get( 'files_table_data', [ ], )
 			if isinstance( rows, list ) and len( rows ) > 0:
 				df_files = pd.DataFrame( rows )
-				st.data_editor( df_files, use_container_width=True, hide_index=True )
+				st.data_editor( df_files, use_container_width=True, hide_index=True, )
 				options = build_selector_options( rows )
 				if len( options ) > 0:
 					selected_file = st.selectbox( label='Select Listed File', options=options,
-						key='files_selected_option', index=None, placeholder='Options' )
+						key='files_selected_option', index=None, placeholder='Options', )
 					
 					selected_id = get_option_id( selected_file )
 					if selected_id:
 						st.session_state[ 'files_id' ] = selected_id
 			
-			metadata = st.session_state.get( 'files_metadata', { } )
+			metadata = st.session_state.get( 'files_metadata', { }, )
 			if isinstance( metadata, dict ) and len( metadata ) > 0:
-				with st.expander( label='Metadata', icon='🧾', expanded=False, width='stretch' ):
+				with st.expander( label='Metadata', icon='🧾', expanded=False, width='stretch', ):
 					st.json( metadata )
 			
-			content = st.session_state.get( 'files_content', '' )
+			content = st.session_state.get( 'files_content', '', )
 			if isinstance( content, str ) and content.strip( ):
-				with st.expander( label='Extracted Content', icon='📄', expanded=False, width='stretch' ):
+				with st.expander( label='Extracted Content', icon='📄', expanded=False,
+						width='stretch', ):
 					st.text_area( label='Content', value=content[ :20000 ], height=360,
-						width='stretch', disabled=True )
+						width='stretch', disabled=True, )
 			
-			delete_result = st.session_state.get( 'files_delete_result', { } )
-			if isinstance( delete_result, dict ) and len( delete_result ) > 0:
+			delete_result = st.session_state.get( 'files_delete_result', { }, )
+			
+			if (isinstance( delete_result, dict ) and len( delete_result ) > 0):
 				with st.expander( label='Delete Result', icon='🗑️', expanded=False,
-						width='stretch' ):
+						width='stretch', ):
 					st.json( delete_result )
-		
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 		
 		# ------------------------------------------------------------------
 		# File Analysis Chat
@@ -16032,6 +16697,78 @@ elif mode == 'Files':
 elif mode == 'Vector Stores':
 	ensure_vectorstores_mode_state( )
 	provider_name = get_provider_name( )
+	
+	if provider_name in [ 'GPT', 'Grok' ]:
+		if not provider_supports( 'VectorStores', provider_name ):
+			left, center, right = st.columns(
+				[ 0.05, 0.90, 0.05 ]
+			)
+			
+			with center:
+				st.subheader( '🧠 Vector Stores' )
+				st.divider( )
+				st.warning(
+					f'{provider_name} does not expose a Vector Stores capability in the '
+					'current provider module.'
+				)
+			
+			st.stop( )
+	
+	elif provider_name == 'Gemini':
+		apply_gemini_runtime_config( )
+		
+		selected_backend = get_gemini_vector_backend( )
+		
+		if (
+			selected_backend == 'File Search Stores'
+			and not provider_supports( 'FileSearch', provider_name )
+		):
+			left, center, right = st.columns(
+				[ 0.05, 0.90, 0.05 ]
+			)
+			
+			with center:
+				st.subheader( '🧠 Vector Stores' )
+				st.divider( )
+				st.warning(
+					'Gemini does not expose the File Search capability required by the '
+					'selected Vector Stores backend.'
+				)
+			
+			st.stop( )
+		
+		if (
+			selected_backend == 'Cloud Buckets'
+			and not provider_supports( 'CloudBuckets', provider_name )
+		):
+			left, center, right = st.columns(
+				[ 0.05, 0.90, 0.05 ]
+			)
+			
+			with center:
+				st.subheader( '🧠 Vector Stores' )
+				st.divider( )
+				st.warning(
+					'Gemini does not expose the Cloud Buckets capability required by the '
+					'selected Vector Stores backend.'
+				)
+			
+			st.stop( )
+	
+	else:
+		left, center, right = st.columns(
+			[ 0.05, 0.90, 0.05 ]
+		)
+		
+		with center:
+			st.subheader( '🧠 Vector Stores' )
+			st.divider( )
+			st.warning(
+				f'{provider_name} does not expose a supported Vector Stores backend.'
+			)
+		
+		st.stop( )
+	
 	backend_name = get_vectorstores_backend_name( provider_name )
 	backend_summary = get_storage_backend_summary( provider_name )
 	
@@ -16065,8 +16802,12 @@ elif mode == 'Vector Stores':
 				st.markdown( f'**Concrete Backend:** {backend_name}' )
 			
 			with route_c4:
-				st.button( label='Reset All', key='vectorstores_reset_all', width='stretch',
-					on_click=reset_vectorstore_all )
+				st.button(
+					label='Reset Routing',
+					key='vectorstores_reset_routing',
+					width='stretch',
+					on_click=reset_vectorstore_routing_controls,
+				)
 			
 			st.json( backend_summary )
 		
@@ -16150,223 +16891,525 @@ elif mode == 'Vector Stores':
 		# GPT: OpenAI Vector Stores
 		# ------------------------------------------------------------------
 		if provider_name == 'GPT':
-			vectorstores = get_vectorstores_module( provider_name )
+			vectorstores = get_vectorstores_module(
+				provider_name
+			)
 			
-			ops_left, ops_right = st.columns( [ 0.42, 0.58 ], border=True, gap='small' )
+			ops_left, ops_right = st.columns(
+				[ 0.42, 0.58 ],
+				border=True,
+				gap='small',
+			)
 			
 			with ops_left:
 				st.caption( 'OpenAI Vector Store Controls' )
 				
-				st.text_input( label='Vector Store Name', key='stores_name', width='stretch',
-					placeholder='Federal Financial Regulations' )
+				store_c1, store_c2 = st.columns(
+					[ 0.50, 0.50 ],
+					border=True,
+					gap='xxsmall',
+				)
 				
-				st.text_area( label='Metadata JSON', key='stores_metadata', height=90,
-					width='stretch', placeholder='{ "domain": "appropriations" }' )
+				with store_c1:
+					st.text_input(
+						label='Vector Store Name',
+						key='stores_name',
+						width='stretch',
+						placeholder='Federal Financial Regulations',
+					)
+					
+					st.text_input(
+						label='Manual Vector Store ID',
+						key='stores_manual_id',
+						width='stretch',
+						placeholder='vs_...',
+					)
+					
+					st.text_input(
+						label='File ID',
+						key='stores_file_id',
+						width='stretch',
+						placeholder='file-...',
+					)
 				
-				st.text_input( label='Manual Vector Store ID', key='stores_manual_id',
-					width='stretch', placeholder='vs_...' )
+				with store_c2:
+					st.text_area(
+						label='Metadata JSON',
+						key='stores_metadata',
+						height=90,
+						width='stretch',
+						placeholder='{ "domain": "appropriations" }',
+					)
+					
+					st.text_area(
+						label='Batch File IDs',
+						key='stores_file_ids_text',
+						height=70,
+						width='stretch',
+						placeholder='file-a, file-b, file-c',
+					)
 				
-				st.text_input( label='File ID', key='stores_file_id', width='stretch',
-					placeholder='file-...' )
+				list_c1, list_c2 = st.columns(
+					[ 0.50, 0.50 ],
+					border=True,
+					gap='xxsmall',
+				)
 				
-				st.text_area( label='Batch File IDs', key='stores_file_ids_text', height=70,
-					width='stretch', placeholder='file-a, file-b, file-c' )
+				with list_c1:
+					st.number_input(
+						label='List Limit',
+						min_value=1,
+						max_value=100,
+						step=1,
+						key='stores_limit',
+						help='Maximum number of OpenAI Vector Stores returned.',
+					)
 				
-				uploaded_store_file = st.file_uploader( label='Upload File and Attach',
-					type=[ 'pdf', 'txt', 'md', 'docx', 'csv', 'json', 'xml', 'png', 'jpg', 'jpeg',
-						'webp', 'py', 'cs', 'sql', 'yaml', 'yml', 'html', 'css', 'js', 'ts' ],
-					accept_multiple_files=False, key='stores_file_upload' )
+				with list_c2:
+					st.selectbox(
+						label='List Order',
+						options=[ 'desc', 'asc' ],
+						key='stores_order',
+						help='OpenAI Vector Store result order.',
+					)
 				
-				action_c1, action_c2 = st.columns( [ 0.50, 0.50 ], gap='xxsmall' )
+				uploaded_store_file = st.file_uploader(
+					label='Upload File and Attach',
+					type=[
+						'pdf',
+						'txt',
+						'md',
+						'docx',
+						'csv',
+						'json',
+						'xml',
+						'png',
+						'jpg',
+						'jpeg',
+						'webp',
+						'py',
+						'cs',
+						'sql',
+						'yaml',
+						'yml',
+						'html',
+						'css',
+						'js',
+						'ts',
+					],
+					accept_multiple_files=False,
+					key='stores_file_upload',
+				)
+				
+				action_c1, action_c2 = st.columns(
+					[ 0.50, 0.50 ],
+					gap='xxsmall',
+				)
 				
 				with action_c1:
-					if st.button( label='Create Store', key='gpt_stores_create', width='stretch' ):
-						with st.spinner( 'Creating OpenAI vector store…' ):
+					if st.button(
+						label='Create Store',
+						key='gpt_stores_create',
+						width='stretch',
+					):
+						with st.spinner(
+							'Creating OpenAI Vector Store…'
+						):
 							try:
-								name = require_storage_value( 'Vector Store Name',
-									st.session_state.get( 'stores_name', '' ) )
 								metadata = parse_storage_json(
-									st.session_state.get( 'stores_metadata', '' ) )
+									st.session_state.get(
+										'stores_metadata',
+										'',
+									)
+								)
 								
-								try:
-									result = call_storage_method( vectorstores,
-										[ 'create', 'create_store' ], name=name,
-										metadata=metadata if metadata else None )
-								except AttributeError:
-									raise
-								except TypeError:
-									result = call_storage_method( vectorstores,
-										[ 'create', 'create_store' ], name )
+								result = create_gpt_vectorstore(
+									vectorstores=vectorstores,
+									name=st.session_state.get(
+										'stores_name',
+										'',
+									),
+									metadata=metadata or None,
+								)
 								
-								normalized = set_storage_result( result,
+								set_storage_result(
+									result=result,
 									operation='create_openai_vector_store',
-									result_key='stores_store_metadata' )
+									result_key='stores_store_metadata',
+								)
 								
-								identifier = get_storage_identifier( normalized )
+								identifier = get_storage_identifier(
+									result
+								)
+								
 								if identifier:
-									st.session_state[ 'stores_id' ] = identifier
+									st.session_state[
+										'stores_id'
+									] = identifier
+									
+									st.session_state[
+										'stores_selected_id'
+									] = identifier
 								
-								st.success( f'Created vector store: {identifier or name}' )
+								st.success(
+									f'Created Vector Store: '
+									f'{identifier or result.get("name", "")}'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Create failed: {exc}' )
+								st.error(
+									f'Create failed: {exc}'
+								)
 					
-					if st.button( label='Retrieve Store', key='gpt_stores_retrieve',
-							width='stretch' ):
-						with st.spinner( 'Retrieving OpenAI vector store…' ):
+					if st.button(
+						label='Retrieve Store',
+						key='gpt_stores_retrieve',
+						width='stretch',
+					):
+						with st.spinner(
+							'Retrieving OpenAI Vector Store…'
+						):
 							try:
-								store_id = require_storage_value( 'Vector Store ID',
-									get_vectorstores_selected_id( ) )
+								result = retrieve_gpt_vectorstore(
+									vectorstores=vectorstores,
+									store_id=get_vectorstores_selected_id( ),
+								)
 								
-								result = call_storage_method( vectorstores,
-									[ 'retrieve', 'retrieve_store', 'get' ], store_id )
-								
-								set_storage_result( result,
+								set_storage_result(
+									result=result,
 									operation='retrieve_openai_vector_store',
-									result_key='stores_store_metadata' )
+									result_key='stores_store_metadata',
+								)
+								
+								st.success(
+									'Vector Store retrieved.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Retrieve failed: {exc}' )
+								st.error(
+									f'Retrieve failed: {exc}'
+								)
 					
-					if st.button( label='Create File Batch', key='gpt_stores_batch',
-							width='stretch' ):
-						with st.spinner( 'Creating OpenAI vector store file batch…' ):
+					if st.button(
+						label='Create File Batch',
+						key='gpt_stores_batch',
+						width='stretch',
+					):
+						with st.spinner(
+							'Creating OpenAI Vector Store file batch…'
+						):
 							try:
-								store_id = require_storage_value( 'Vector Store ID',
-									get_vectorstores_selected_id( ) )
 								file_ids = parse_storage_ids(
-									st.session_state.get( 'stores_file_ids_text', '' ) )
+									st.session_state.get(
+										'stores_file_ids_text',
+										'',
+									)
+								)
 								
-								if len( file_ids ) == 0:
-									raise ValueError( 'At least one file ID is required.' )
+								result = create_gpt_vectorstore_file_batch(
+									vectorstores=vectorstores,
+									store_id=get_vectorstores_selected_id( ),
+									file_ids=file_ids,
+								)
 								
-								result = call_storage_method( vectorstores,
-									[ 'create_file_batch', 'batch', 'create_batch', 'attach_files',
-										'add_files' ], vector_store_id=store_id,
-									file_ids=file_ids )
+								set_storage_result(
+									result=result,
+									operation='create_openai_file_batch',
+									result_key='stores_batch_result',
+								)
 								
-								set_storage_result( result, operation='create_openai_file_batch',
-									result_key='stores_batch_result' )
-								st.success( 'File batch request completed.' )
+								st.success(
+									'File batch created.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Batch failed: {exc}' )
+								st.error(
+									f'Batch failed: {exc}'
+								)
 				
 				with action_c2:
-					if st.button( label='List Stores', key='gpt_stores_list', width='stretch' ):
-						with st.spinner( 'Listing OpenAI vector stores…' ):
+					if st.button(
+						label='List Stores',
+						key='gpt_stores_list',
+						width='stretch',
+					):
+						with st.spinner(
+							'Listing OpenAI Vector Stores…'
+						):
 							try:
-								result = call_storage_method( vectorstores,
-									[ 'list_stores', 'list', 'list_collections' ] )
+								rows = list_gpt_vectorstores(
+									vectorstores=vectorstores,
+									limit=int(
+										st.session_state.get(
+											'stores_limit',
+											100,
+										) or 100
+									),
+									order=str(
+										st.session_state.get(
+											'stores_order',
+											'desc',
+										) or 'desc'
+									),
+								)
 								
-								rows = set_storage_rows( result, table_key='stores_table' )
-								st.success( f'Found {len( rows )} vector store(s).' )
+								set_storage_rows(
+									rows=rows,
+									table_key='stores_table',
+								)
+								
+								st.session_state[
+									'storage_last_operation'
+								] = 'list_openai_vector_stores'
+								
+								st.session_state[
+									'stores_last_operation'
+								] = 'list_openai_vector_stores'
+								
+								st.success(
+									f'Found {len(rows):,} Vector Store(s).'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'List failed: {exc}' )
+								st.error(
+									f'List failed: {exc}'
+								)
 					
-					if st.button( label='Delete Store', key='gpt_stores_delete', width='stretch' ):
-						with st.spinner( 'Deleting OpenAI vector store…' ):
+					if st.button(
+						label='Delete Store',
+						key='gpt_stores_delete',
+						width='stretch',
+					):
+						with st.spinner(
+							'Deleting OpenAI Vector Store…'
+						):
 							try:
-								store_id = require_storage_value( 'Vector Store ID',
-									get_vectorstores_selected_id( ) )
+								store_id = get_vectorstores_selected_id( )
 								
-								result = call_storage_method( vectorstores,
-									[ 'delete', 'delete_store' ], store_id )
+								result = delete_gpt_vectorstore(
+									vectorstores=vectorstores,
+									store_id=store_id,
+								)
 								
-								set_storage_result( result, operation='delete_openai_vector_store',
-									result_key='stores_delete_result' )
-								st.success( 'Delete request completed.' )
+								set_storage_result(
+									result=result,
+									operation='delete_openai_vector_store',
+									result_key='stores_delete_result',
+								)
+								
+								st.session_state[
+									'stores_id'
+								] = ''
+								
+								st.session_state[
+									'stores_manual_id'
+								] = ''
+								
+								st.session_state[
+									'stores_selected_id'
+								] = ''
+								
+								st.session_state[
+									'stores_selected_label'
+								] = ''
+								
+								st.session_state[
+									'storage_selected_option'
+								] = ''
+								
+								st.success(
+									'Delete request completed.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Delete failed: {exc}' )
+								st.error(
+									f'Delete failed: {exc}'
+								)
 					
-					if st.button( label='Attach Existing File', key='gpt_stores_attach_file',
-							width='stretch' ):
-						with st.spinner( 'Attaching file to OpenAI vector store…' ):
+					if st.button(
+						label='Attach Existing File',
+						key='gpt_stores_attach_file',
+						width='stretch',
+					):
+						with st.spinner(
+							'Attaching file to OpenAI Vector Store…'
+						):
 							try:
-								store_id = require_storage_value( 'Vector Store ID',
-									get_vectorstores_selected_id( ) )
-								file_id = require_storage_value( 'File ID',
-									st.session_state.get( 'stores_file_id', '' ) )
+								result = attach_gpt_vectorstore_file(
+									vectorstores=vectorstores,
+									store_id=get_vectorstores_selected_id( ),
+									file_id=st.session_state.get(
+										'stores_file_id',
+										'',
+									),
+								)
 								
-								result = call_storage_method( vectorstores,
-									[ 'attach_file', 'add_file', 'create_file', 'upload_file' ],
-									vector_store_id=store_id, file_id=file_id )
+								set_storage_result(
+									result=result,
+									operation='attach_openai_file',
+									result_key='stores_file_metadata',
+								)
 								
-								set_storage_result( result, operation='attach_openai_file',
-									result_key='stores_file_metadata' )
-								st.success( 'File attachment request completed.' )
+								st.success(
+									'File attachment completed.'
+								)
 							except Exception as exc:
-								exception = Error( exc )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								st.error( f'Attach failed: {exc}' )
+								st.error(
+									f'Attach failed: {exc}'
+								)
 				
-				if st.button( label='Upload and Attach File', key='gpt_stores_upload_attach',
-						width='stretch' ):
-					with st.spinner( 'Uploading and attaching file…' ):
+				if st.button(
+					label='Upload and Attach File',
+					key='gpt_stores_upload_attach',
+					width='stretch',
+				):
+					with st.spinner(
+						'Uploading and attaching file…'
+					):
 						try:
-							store_id = require_storage_value( 'Vector Store ID',
-								get_vectorstores_selected_id( ) )
-							path = save_uploaded_storage_file( uploaded_store_file )
+							path = save_uploaded_storage_file(
+								uploaded_store_file
+							)
 							
-							result = call_storage_method( vectorstores,
-								[ 'upload_and_attach', 'upload_file', 'attach_upload', 'upload' ],
-								vector_store_id=store_id, path=path )
+							result = upload_and_attach_gpt_vectorstore_file(
+								vectorstores=vectorstores,
+								store_id=get_vectorstores_selected_id( ),
+								path=path,
+							)
 							
-							set_storage_result( result, operation='upload_attach_openai_file',
-								result_key='stores_upload_result' )
-							st.success( 'Upload and attach request completed.' )
+							set_storage_result(
+								result=result,
+								operation='upload_attach_openai_file',
+								result_key='stores_upload_result',
+							)
+							
+							st.success(
+								'Upload and attachment completed.'
+							)
 						except Exception as exc:
-							exception = Error( exc )
-							exception.module = 'app'
-							exception.cause = 'app'
-							exception.method = 'module initialization'
-							Logger( ).write( exception )
-							st.error( f'Upload and attach failed: {exc}' )
+							st.error(
+								f'Upload and attach failed: {exc}'
+							)
+				
+				st.button(
+					label='Reset OpenAI Vector Store Controls',
+					key='gpt_stores_reset_controls',
+					width='stretch',
+					on_click=reset_vectorstore_gpt_controls,
+				)
 			
 			with ops_right:
 				st.caption( 'OpenAI Vector Store Results' )
 				
-				rows = st.session_state.get( 'stores_table', [ ] )
-				if isinstance( rows, list ) and len( rows ) > 0:
-					st.data_editor( pd.DataFrame( rows ), use_container_width=True,
-						hide_index=True )
-					
-					options = build_storage_selectors( rows )
-					if len( options ) > 0:
-						selected = st.selectbox( label='Select Vector Store', options=options,
-							key='storage_selected_option', index=None, placeholder='Options' )
-						sync_storage_selection( selected, provider_name='GPT' )
+				rows = st.session_state.get(
+					'stores_table',
+					[ ],
+				)
 				
-				result = st.session_state.get( 'storage_operation_result', { } )
-				if isinstance( result, dict ) and len( result ) > 0:
-					with st.expander( label='Operation Result', icon='🧾', expanded=True,
-							width='stretch' ):
-						st.json( result )
+				if isinstance( rows, list ) and len( rows ) > 0:
+					st.data_editor(
+						pd.DataFrame( rows ),
+						use_container_width=True,
+						hide_index=True,
+					)
+					
+					options = build_storage_selectors(
+						rows
+					)
+					
+					if len( options ) > 0:
+						selected = st.selectbox(
+							label='Select Vector Store',
+							options=options,
+							key='storage_selected_option',
+							index=None,
+							placeholder='Options',
+						)
+						
+						sync_storage_selection(
+							selected_option=selected,
+							provider_name='GPT',
+						)
+				
+				store_metadata = st.session_state.get(
+					'stores_store_metadata',
+					{ },
+				)
+				
+				if (
+					isinstance( store_metadata, dict )
+					and len( store_metadata ) > 0
+				):
+					with st.expander(
+						label='Vector Store',
+						icon='🧠',
+						expanded=True,
+						width='stretch',
+					):
+						st.json( store_metadata )
+				
+				file_metadata = st.session_state.get(
+					'stores_file_metadata',
+					{ },
+				)
+				
+				if (
+					isinstance( file_metadata, dict )
+					and len( file_metadata ) > 0
+				):
+					with st.expander(
+						label='Vector Store File',
+						icon='📄',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( file_metadata )
+				
+				batch_result = st.session_state.get(
+					'stores_batch_result',
+					{ },
+				)
+				
+				if (
+					isinstance( batch_result, dict )
+					and len( batch_result ) > 0
+				):
+					with st.expander(
+						label='File Batch',
+						icon='📚',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( batch_result )
+				
+				upload_result = st.session_state.get(
+					'stores_upload_result',
+					{ },
+				)
+				
+				if (
+					isinstance( upload_result, dict )
+					and len( upload_result ) > 0
+				):
+					with st.expander(
+						label='Upload Result',
+						icon='⬆️',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( upload_result )
+				
+				delete_result = st.session_state.get(
+					'stores_delete_result',
+					{ },
+				)
+				
+				if (
+					isinstance( delete_result, dict )
+					and len( delete_result ) > 0
+				):
+					with st.expander(
+						label='Delete Result',
+						icon='🗑️',
+						expanded=False,
+						width='stretch',
+					):
+						st.json( delete_result )
 		
 		# ------------------------------------------------------------------
 		# Grok: xAI Collections
