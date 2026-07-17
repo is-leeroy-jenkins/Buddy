@@ -17180,53 +17180,49 @@ elif mode == 'Files':
 		# ------------------------------------------------------------------
 		# File Analysis Chat
 		# ------------------------------------------------------------------
-		for msg in st.session_state.get( 'files_messages', [ ] ):
-			if not isinstance( msg, dict ):
+		for message in st.session_state.get( 'files_messages', [ ], ):
+			if not isinstance( message, dict ):
 				continue
 			
-			with st.chat_message( msg.get( 'role', 'assistant' ) ):
-				st.markdown( msg.get( 'content', '' ) )
-		
-		prompt = st.chat_input( 'Ask a question about the selected file …' )
-		if prompt is not None and str( prompt ).strip( ):
-			prompt = str( prompt ).strip( )
-			st.session_state[ 'files_messages' ].append( { 'role': 'user', 'content': prompt, } )
+			role = str( message.get( 'role', 'assistant' ) or 'assistant' ).strip( )
 			
-			with st.chat_message( 'assistant' ):
-				with st.spinner( 'Analyzing selected file…' ):
-					try:
-						answer = analyze_provider_file( files=files, prompt=prompt,
-							file_id=st.session_state.get( 'files_id', '' ),
-							model=st.session_state.get( 'files_model' ) )
-						
-						if isinstance( answer, str ) and answer.strip( ):
-							st.markdown( answer )
-							st.session_state[ 'files_messages' ].append(
-								{ 'role': 'assistant', 'content': answer.strip( ), } )
-							st.session_state[ 'files_last_answer' ] = answer.strip( )
-							st.session_state[ 'last_answer' ] = answer.strip( )
+			content = str( message.get( 'content', '' ) or '' )
+			
+			with st.chat_message( role ):
+				st.markdown( content )
+		
+		if not provider_supports( 'Chat', provider_name ):
+			st.info( f'{provider_name} exposes Files management but does not expose the Chat '
+			         'capability required for file analysis.' )
+		else:
+			prompt = st.chat_input( 'Ask a question about the selected file …' )
+			
+			if prompt is not None and str( prompt ).strip( ):
+				prompt_value = str( prompt ).strip( )
+				
+				st.session_state[ 'files_messages' ].append(
+					{ 'role': 'user', 'content': prompt_value, } )
+				
+				with st.chat_message( 'assistant' ):
+					with st.spinner( 'Analyzing selected file…' ):
+						try:
+							answer = analyze_provider_file( files=files, prompt=prompt_value,
+								file_id=st.session_state.get( 'files_id', '', ),
+								model=st.session_state.get( 'files_model', '', ), )
 							
-							try:
-								update_token_counters( getattr( files, 'response', None ) )
-							except Exception as e:
-								exception = Error( e )
-								exception.module = 'app'
-								exception.cause = 'app'
-								exception.method = 'module initialization'
-								Logger( ).write( exception )
-								pass
-						else:
-							message = 'No file analysis response was returned.'
-							st.warning( message )
+							st.markdown( answer )
+							
 							st.session_state[ 'files_messages' ].append(
-								{ 'role': 'assistant', 'content': message, } )
-					except Exception as exc:
-						exception = Error( exc )
-						exception.module = 'app'
-						exception.cause = 'app'
-						exception.method = 'module initialization'
-						Logger( ).write( exception )
-						st.error( f'File analysis failed: {exc}' )
+								{ 'role': 'assistant', 'content': answer, } )
+						except Exception as exc:
+							if not isinstance( exc, Error ):
+								exception = Error( exc )
+								exception.module = 'app'
+								exception.cause = ('Files Mode analysis')
+								exception.method = ('Files Mode file-analysis execution')
+								Logger( ).write( exception )
+							
+							st.error( f'File analysis failed: {exc}' )
 		
 		last_answer = st.session_state.get( 'files_last_answer', '' )
 		if isinstance( last_answer, str ) and last_answer.strip( ):
