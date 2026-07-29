@@ -53,20 +53,23 @@ import config as cfg
 from openai import OpenAI
 from xai_sdk.aio.image import ImageResponse
 from xai_sdk import Client
+from xai_sdk.tools import web_search, x_search, collections_search, code_execution
 from xai_sdk.chat import user, system, image, file
 
 def encode_image( image_path: str ) -> str:
 	"""Encode image.
 	
 	Purpose:
-	    Encodes local binary content into a text representation required by xAI request payloads.
+	    Performs the encode_image workflow using the inputs supplied by the caller and the current
+	    runtime configuration. The function keeps this behavior isolated so related UI, provider,
+	    and
+	    data-processing paths can call it consistently.
 	
 	Args:
-	    image_path (str): Image path supplied to the xAI workflow.
+	    image_path (str): Image path value used by the operation.
 	
 	Returns:
-	    str: Result produced by the xAI workflow.
-	"""
+	    str: Return value produced by the operation."""
 	with open( image_path, "rb" ) as image_file:
 		return base64.b64encode( image_file.read( ) ).decode( 'utf-8' )
 
@@ -74,12 +77,17 @@ def throw_if( name: str, value: object ) -> None:
 	"""Throw if.
 	
 	Purpose:
-	    Validates required values before provider request construction.
+	    Validates that a required argument contains a usable value before the surrounding workflow
+	    continues. This guard centralizes early validation so provider wrappers and UI routines
+	    fail
+	    with consistent, readable error messages.
 	
 	Args:
-	    name (str): Name supplied to the xAI workflow.
-	    value (object): Value supplied to the xAI workflow.
-	"""
+	    name (str): Name value used by the operation.
+	    value (object): Value value used by the operation.
+	
+	Returns:
+	    None: This function performs its work through side effects and does not return a value."""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be None.' )
 	
@@ -87,32 +95,37 @@ def throw_if( name: str, value: object ) -> None:
 		raise ValueError( f'Argument "{name}" cannot be empty.' )
 
 class Grok( ):
-	"""Grok workflow wrapper.
+	"""Grok class.
 	
 	Purpose:
-	    Provides shared xAI configuration state, API-key storage, request defaults, and common runtime containers used by Grok provider workflows.
+	    Defines the Grok component used by the Boo application. The class groups related provider
+	    configuration, runtime state, helper methods, and API-facing behavior so Streamlit
+	    workflows can
+	    call a consistent interface.
 	
 	Attributes:
-	    api_key: Runtime attribute used by the Grok workflow.
-	    timeout: Runtime attribute used by the Grok workflow.
-	    base_url: Runtime attribute used by the Grok workflow.
-	    model: Runtime attribute used by the Grok workflow.
-	    store_messages: Runtime attribute used by the Grok workflow.
-	    response_format: Runtime attribute used by the Grok workflow.
-	    temperature: Runtime attribute used by the Grok workflow.
-	    top_percent: Runtime attribute used by the Grok workflow.
-	    frequency_penalty: Runtime attribute used by the Grok workflow.
-	    presence_penalty: Runtime attribute used by the Grok workflow.
-	    max_output_tokens: Runtime attribute used by the Grok workflow.
-	    tool_choice: Runtime attribute used by the Grok workflow.
-	    tools: Runtime attribute used by the Grok workflow.
-	    stops: Runtime attribute used by the Grok workflow.
-	    instructions: Runtime attribute used by the Grok workflow.
-	    content: Runtime attribute used by the Grok workflow.
-	    messages: Runtime attribute used by the Grok workflow.
-	    stores: Runtime attribute used by the Grok workflow.
-	    files: Runtime attribute used by the Grok workflow.
-	"""
+	    api_key (Optional[str]): Stores api key for the component runtime state.
+	    timeout (Optional[float]): Stores timeout for the component runtime state.
+	    base_url (Optional[str]): Stores base url for the component runtime state.
+	    model (Optional[str]): Stores model for the component runtime state.
+	    store_messages (Optional[bool]): Stores store messages for the component runtime state.
+	    response_format (Optional[str]): Stores response format for the component runtime state.
+	    temperature (Optional[float]): Stores temperature for the component runtime state.
+	    top_percent (Optional[float]): Stores top percent for the component runtime state.
+	    frequency_penalty (Optional[float]): Stores frequency penalty for the component runtime
+	    state.
+	    presence_penalty (Optional[float]): Stores presence penalty for the component runtime
+	    state.
+	    max_output_tokens (Optional[int]): Stores max output tokens for the component runtime
+	    state.
+	    tool_choice (Optional[str]): Stores tool choice for the component runtime state.
+	    tools (Optional[List[str]]): Stores tools for the component runtime state.
+	    stops (Optional[List[str]]): Stores stops for the component runtime state.
+	    instructions (Optional[str]): Stores instructions for the component runtime state.
+	    content (Optional[str]): Stores content for the component runtime state.
+	    messages (Optional[List[Dict[str, Any]]]): Stores messages for the component runtime state.
+	    stores (Optional[Dict[str, str]]): Stores stores for the component runtime state.
+	    files (Optional[Dict[str, str]]): Stores files for the component runtime state."""
 	api_key: Optional[ str ]
 	timeout: Optional[ float ]
 	base_url: Optional[ str ]
@@ -137,8 +150,11 @@ class Grok( ):
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Grok state with default configuration values and runtime attributes used by later xAI provider calls.
-		"""
+		    Initializes the Grok object with its default configuration, runtime state, provider
+		    settings,
+		    and compatibility fields. This constructor prepares the instance for later method
+		    calls without
+		    performing external work beyond local attribute assignment."""
 		self.api_key = cfg.XAI_API_KEY
 		self.base_url = cfg.XAI_BASE_URL
 		self.timeout = None
@@ -160,823 +176,689 @@ class Grok( ):
 		self.files = None
 
 class Chat( Grok ):
-	"""Chat workflow wrapper.
+	"""Provide xAI Grok text-generation workflow support.
 	
 	Purpose:
-	    Builds and executes xAI text, retrieval-augmented, collection-search, web-search, X-search, code-execution, and tool-enabled chat workflows.
+		Provides synchronous and streaming text generation through the xAI Python SDK. The
+		class builds provider-native chat, tool, conversation-history, structured-output, and
+		reasoning configuration from arguments assigned to object members before executing an
+		xAI request.
 	
 	Attributes:
-	    include: Runtime attribute used by the Chat workflow.
-	    tool_choice: Runtime attribute used by the Chat workflow.
-	    previous_id: Runtime attribute used by the Chat workflow.
-	    previous_response_id: Runtime attribute used by the Chat workflow.
-	    conversation_id: Runtime attribute used by the Chat workflow.
-	    parallel_tools: Runtime attribute used by the Chat workflow.
-	    max_tools: Runtime attribute used by the Chat workflow.
-	    input: Runtime attribute used by the Chat workflow.
-	    tools: Runtime attribute used by the Chat workflow.
-	    reasoning: Runtime attribute used by the Chat workflow.
-	    allowed_domains: Runtime attribute used by the Chat workflow.
-	    max_search_results: Runtime attribute used by the Chat workflow.
-	    output_text: Runtime attribute used by the Chat workflow.
-	    collections: Runtime attribute used by the Chat workflow.
-	    files: Runtime attribute used by the Chat workflow.
-	    content: Runtime attribute used by the Chat workflow.
-	    vector_store_ids: Runtime attribute used by the Chat workflow.
-	    file_ids: Runtime attribute used by the Chat workflow.
-	    response: Runtime attribute used by the Chat workflow.
-	    file_path: Runtime attribute used by the Chat workflow.
+		client (Optional[Client]): xAI SDK client.
+		chat (Any): Provider chat object used by the current request.
+		model (str): Grok model used by the current request.
+		prompt (str): User prompt used by the current request.
+		temperature (float): Sampling temperature.
+		top_percent (float): Nucleus-sampling value.
+		frequency_penalty (float): Frequency penalty.
+		presence_penalty (float): Presence penalty.
+		max_output_tokens (int): Maximum output-token count.
+		stops (List[str]): Stop sequences.
+		store_messages (bool): Indicates whether xAI stores request messages.
+		stream (bool): Indicates whether streaming is enabled.
+		response_format (Any): Provider structured-output configuration.
+		context (List[Dict[str, Any]]): Prior conversation messages.
+		instructions (str): Optional system instruction.
+		include (List[str]): Optional provider response inclusions.
+		tool_choice (str): Provider tool-selection mode.
+		previous_id (str): Previous stored response identifier.
+		previous_response_id (str): Previous stored response identifier.
+		parallel_tools (bool): Indicates whether parallel tool calls are enabled.
+		max_tools (int): Maximum server-side tool turns.
+		tools (List[Any]): Application-selected tool names or tool definitions.
+		tool_objects (List[Any]): Provider-ready tool objects.
+		reasoning (str): Requested reasoning-effort level.
+		allowed_domains (List[str]): Domains permitted for Web Search.
+		vector_store_ids (List[str]): Collection identifiers used by Collections Search.
+		output_text (str): Text extracted from the latest response.
+		response (Any): Latest xAI response.
+		usage (Any): Usage metadata from the latest response.
 	"""
-	include: Optional[ List[ str ] ]
-	tool_choice: Optional[ str ]
-	previous_id: Optional[ str ]
-	previous_response_id: Optional[ str ]
-	conversation_id: Optional[ str ]
-	parallel_tools: Optional[ bool ]
-	max_tools: Optional[ int ]
-	input: Optional[ List[ Dict[ str, Any ] ] | str ]
-	tools: Optional[ List[ Dict[ str, Any ] ] ]
-	reasoning: Optional[ Dict[ str, str ] ]
-	allowed_domains: Optional[ List[ str ] ]
-	max_search_results: Optional[ int ]
-	output_text: Optional[ str ]
-	collections: Optional[ Dict[ str, str ] ]
-	files: Optional[ Dict[ str, str ] ]
-	content: Optional[ str ]
-	vector_store_ids: Optional[ List[ str ] ]
-	file_ids: Optional[ List[ str ] ]
-	response: Optional[ Any ]
-	file_path: Optional[ str ]
+	client: Optional[ Client ]
+	chat: Any
+	model: str
+	prompt: str
+	temperature: float
+	top_percent: float
+	frequency_penalty: float
+	presence_penalty: float
+	max_output_tokens: int
+	stops: List[ str ]
+	store_messages: bool
+	stream: bool
+	response_format: Any
+	context: List[ Dict[ str, Any ] ]
+	instructions: str
+	include: List[ str ]
+	tool_choice: str
+	previous_id: str
+	previous_response_id: str
+	parallel_tools: bool
+	max_tools: int
+	tools: List[ Any ]
+	tool_objects: List[ Any ]
+	reasoning: str
+	allowed_domains: List[ str ]
+	vector_store_ids: List[ str ]
+	output_text: str
+	response: Any
+	usage: Any
 	
-	def __init__( self, model: str='grok-4.20', prompt: str=None, temperature: float=None,
-			top_p: float=None, presense: float=None, presence: float=None, store: bool = None,
-			stream: bool = None, stops: List[ str ]=None,
-			response_format: Dict[ str, Any ]=None,
-			number: int=None, instruct: str=None, context: List[ Dict[ str, str ] ]=None,
-			allowed_domains: List[ str ]=None, include: List[ str ]=None,
-			tools: List[ Dict[ str, Any ] ]=None, max_tools: int=None,
-			tool_choice: str=None, file_path: str=None, background: bool = None,
-			is_parallel: bool = None, max_tokens: int=None, frequency: float=None,
-			input: List[ Dict[ str, Any ] ]=None, file_ids: List[ str ]=None,
-			previous_id: str=None, conversation_id: str=None,
-			reasoning: Dict[ str, str ] | str = None, output_text: str=None,
-			max_search_results: int=None, content: str=None,
-			vector_store_ids: List[ str ]=None ):
+	def __init__( self, model: str = 'grok-4.20' ) -> None:
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Chat state with default configuration values and runtime attributes used by later xAI provider calls.
+			Initializes xAI Grok text-generation configuration and runtime state without
+			executing a provider request.
 		
 		Args:
-		    model (str): Model supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    presense (float): Presense supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    stops (List[str]): Stops supplied to the xAI workflow.
-		    response_format (Dict[str, Any]): Response format supplied to the xAI workflow.
-		    number (int): Number supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    context (List[Dict[str, str]]): Context supplied to the xAI workflow.
-		    allowed_domains (List[str]): Allowed domains supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    tools (List[Dict[str, Any]]): Tools supplied to the xAI workflow.
-		    max_tools (int): Max tools supplied to the xAI workflow.
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    file_path (str): File path supplied to the xAI workflow.
-		    background (bool): Background supplied to the xAI workflow.
-		    is_parallel (bool): Is parallel supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    input (List[Dict[str, Any]]): Input supplied to the xAI workflow.
-		    file_ids (List[str]): File ids supplied to the xAI workflow.
-		    previous_id (str): Previous id supplied to the xAI workflow.
-		    conversation_id (str): Conversation id supplied to the xAI workflow.
-		    reasoning (Dict[str, str] | str): Reasoning supplied to the xAI workflow.
-		    output_text (str): Output text supplied to the xAI workflow.
-		    max_search_results (int): Max search results supplied to the xAI workflow.
-		    content (str): Content supplied to the xAI workflow.
-		    vector_store_ids (List[str]): Vector store ids supplied to the xAI workflow.
+			model (str): Default Grok text-generation model.
+		
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
 		self.base_url = cfg.XAI_BASE_URL
+		self.timeout = 3600
 		self.client = None
+		self.chat = None
 		self.model = model
-		self.prompt = prompt
-		self.number = number
-		self.response_format = response_format if response_format is not None else { }
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence if presence is not None else presense
-		self.max_output_tokens = max_tokens
-		self.context = context if context is not None else [ ]
-		self.stream = stream
-		self.store_messages = store
-		self.instructions = instruct
-		self.stops = stops if stops is not None else [ ]
-		self.background = background
-		self.input = input if input is not None else [ ]
-		self.include = include if include is not None else [ ]
-		self.output_text = output_text
-		self.max_tools = max_tools
-		self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-		self.file_ids = file_ids if file_ids is not None else [ ]
-		self.tools = tools if tools is not None else [ ]
-		self.previous_id = previous_id
-		self.previous_response_id = previous_id
-		self.conversation_id = conversation_id
-		self.reasoning = reasoning
-		self.parallel_tools = is_parallel
-		self.tool_choice = tool_choice
+		self.prompt = ''
+		self.temperature = 0.0
+		self.top_percent = 0.0
+		self.frequency_penalty = 0.0
+		self.presence_penalty = 0.0
+		self.max_output_tokens = 0
+		self.stops = [ ]
+		self.store_messages = False
+		self.stream = False
+		self.response_format = None
+		self.response_schema = None
+		self.context = [ ]
+		self.instructions = ''
+		self.include = [ ]
+		self.tool_choice = ''
+		self.previous_id = ''
+		self.previous_response_id = ''
+		self.parallel_tools = False
+		self.max_tools = 0
+		self.tools = [ ]
+		self.tool_objects = [ ]
+		self.reasoning = ''
+		self.allowed_domains = [ ]
+		self.vector_store_ids = [ ]
+		self.output_text = ''
 		self.response = None
-		self.file_path = file_path
-		self.content = content
-		self.max_search_results = max_search_results
-		self.request = { }
-		self.messages = [ ]
-		self.stream_requested = False
-		self.background_requested = False
-		self.collections = {
-				'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
-				'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
-				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
-				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
-		}
-		self.files = {
-				'Outlays.csv': 'file_b0a448b3-904a-40c7-bae1-64df657fde1c',
-				'Authority.csv': 'file_c6ad236f-0c52-45f4-8883-d3be032d07c2',
-				'Balances.csv': 'file_0f63d120-406f-49e6-97e5-7855f2cb26b5',
-		}
+		self.usage = None
+		self.chat_values = { }
+		self.parts = [ ]
+		self.collections = cfg.GROK_COLLECTIONS
+		self.files = getattr( cfg, 'GROK_DOCUMENTS', { }, )
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+	def model_options( self ) -> List[ str ]:
+		"""Get model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns Grok text-generation models exposed by the wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Available Grok model identifiers.
 		"""
-		return [
-				'grok-4.20',
-				'grok-4.20-reasoning',
-				'grok-4.20-multi-agent',
-				'grok-4',
-				'grok-4-latest',
-				'grok-4-fast-reasoning',
-				'grok-4-fast-non-reasoning',
-				'grok-code-fast-1',
-				'grok-3',
-				'grok-3-mini',
-				'grok-3-fast',
-				'grok-3-mini-fast',
-		]
+		return [ 'grok-4.20', 'grok-4.20-reasoning', 'grok-4.20-multi-agent', 'grok-4.5', 'grok-4',
+			'grok-4-latest', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning',
+			'grok-code-fast-1', 'grok-3', 'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
 	
 	@property
-	def include_options( self ) -> List[ str ] | None:
-		"""Include options.
+	def include_options( self ) -> List[ str ]:
+		"""Get include options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns optional xAI SDK response inclusions exposed by the wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported include values.
 		"""
-		return [
-				'web_search_call_output',
-				'x_search_call_output',
-				'code_execution_call_output',
-				'collections_search_call_output',
-				'attachment_search_call_output',
-				'mcp_call_output',
-				'inline_citations',
-				'verbose_streaming',
-		]
+		return [ 'verbose_streaming', ]
 	
 	@property
-	def tool_options( self ) -> List[ str ] | None:
-		"""Tool options.
+	def tool_options( self ) -> List[ str ]:
+		"""Get tool options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns xAI server-side tools implemented by the wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported server-side tool names.
 		"""
-		return [
-				'web_search',
-				'x_search',
-				'collections_search',
-				'code_execution',
-		]
+		return [ 'web_search', 'x_search', 'collections_search', 'code_execution', ]
 	
 	@property
-	def choice_options( self ) -> List[ str ] | None:
-		"""Choice options.
+	def choice_options( self ) -> List[ str ]:
+		"""Get tool-choice options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns xAI tool-selection modes exposed by the wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported tool-selection values.
 		"""
 		return [ 'auto', 'required', 'none', ]
 	
 	@property
-	def format_options( self ) -> List[ str ] | None:
-		"""Format options.
+	def format_options( self ) -> List[ str ]:
+		"""Get response-format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns response-format selections supported by the wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported response-format values.
 		"""
-		return [
-				'text',
-				'json_object',
-				'json_schema',
-		]
+		return [ 'text', 'json_object', 'json_schema', ]
 	
 	@property
-	def reasoning_options( self ) -> List[ str ] | None:
-		"""Reasoning options.
+	def reasoning_options( self ) -> List[ str ]:
+		"""Get reasoning options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns reasoning-effort values exposed by the wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported reasoning-effort values.
 		"""
-		return [
-				'none',
-				'low',
-				'medium',
-				'high',
-				'xhigh',
-		]
+		return [ 'none', 'low', 'medium', 'high', 'xhigh', ]
 	
 	@property
-	def modality_options( self ) -> List[ str ] | None:
-		"""Modality options.
+	def modality_options( self ) -> List[ str ]:
+		"""Get modality options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns the response modality supported by the Grok Chat wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported response modalities.
 		"""
 		return [ 'text', ]
 	
 	@property
-	def media_options( self ) -> List[ str ] | None:
-		"""Media options.
+	def media_options( self ) -> List[ str ]:
+		"""Get media options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Chat workflow selector without mutating provider state.
+			Returns the media-detail selection retained by the application interface.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported media-detail selections.
 		"""
 		return [ 'auto', ]
 	
-	def build_reasoning( self, reasoning: str | Dict[ str, str ]=None ) -> Dict[
-		                                                                         str, str ] | None:
-		"""Build reasoning.
+	def supports_reasoning_model( self, model: str ) -> bool:
+		"""Determine reasoning-model support.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+			Determines whether a required Grok model accepts an explicit reasoning-effort
+			configuration.
 		
 		Args:
-		    reasoning (str | Dict[str, str]): Reasoning supplied to the xAI workflow.
+			model (str): Required Grok model identifier.
 		
 		Returns:
-		    Dict[str, str] | None: Result produced by the xAI workflow.
+			bool: True when the model supports explicit reasoning effort.
 		
 		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if reasoning is None:
-				return None
-			
-			if isinstance( reasoning, dict ):
-				value = reasoning.get( 'effort' )
-				if isinstance( value, str ) and value.strip( ) in self.reasoning_options:
-					if value.strip( ) == 'none':
-						return None
-					
-					return { 'effort': value.strip( ) }
-				
-				return None
-			
-			if isinstance( reasoning, str ) and reasoning.strip( ):
-				value = reasoning.strip( )
-				if value == 'none':
-					return None
-				
-				if value in self.reasoning_options:
-					return { 'effort': value }
-			
-			return None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'build_reasoning( self, reasoning )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_input( self, prompt: str, context: List[ Dict[ str, str ] ]=None,
-			input_data: List[ Dict[ str, Any ] ]=None ) -> List[ Dict[ str, Any ] ]:
-		"""Build input.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    context (List[Dict[str, str]]): Context supplied to the xAI workflow.
-		    input_data (List[Dict[str, Any]]): Input data supplied to the xAI workflow.
-		
-		Returns:
-		    List[Dict[str, Any]]: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			self.messages = [ ]
-			
-			if input_data is not None and len( input_data ) > 0:
-				self.messages.extend( input_data )
-			elif context is not None and len( context ) > 0:
-				for item in context:
-					if not isinstance( item, dict ):
-						continue
-					
-					role = str( item.get( 'role', '' ) or '' ).strip( )
-					content = item.get( 'content', '' )
-					
-					if role not in [ 'user', 'assistant', 'system', 'developer' ]:
-						continue
-					
-					if not isinstance( content, str ) or not content.strip( ):
-						continue
-					
-					self.messages.append(
-						{
-								'role': role,
-								'content': [
-										{
-												'type': 'input_text',
-												'text': content.strip( ),
-										},
-								],
-						} )
-			
-			self.messages.append(
-				{
-						'role': 'user',
-						'content': [
-								{
-										'type': 'input_text',
-										'text': prompt,
-								},
-						],
-				} )
-			
-			return self.messages
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'build_input( self, prompt, context, input_data )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_tools( self, tools: List[ Any ]=None, allowed_domains: List[ str ]=None,
-			vector_store_ids: List[ str ]=None ) -> List[ Dict[ str, Any ] ] | None:
-		"""Build tools.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the 
-		    resulting state on the instance for provider execution.
-		
-		Args:
-		    tools (List[Any]): Tools supplied to the xAI workflow.
-		    allowed_domains (List[str]): Allowed domains supplied to the xAI workflow.
-		    vector_store_ids (List[str]): Vector store ids supplied to the xAI workflow.
-		
-		Returns:
-		    List[Dict[str, Any]] | None: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
-			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-			if tools is None or len( tools ) == 0:
-				return None
-			
-			self.built_tools = [ ]
-			for tool in tools:
-				if isinstance( tool, dict ):
-					tool_type = str( tool.get( 'type', '' ) or '' ).strip( )
-				else:
-					tool_type = str( tool or '' ).strip( )
-				
-				if not tool_type:
-					continue
-				
-				if tool_type == 'web_search':
-					built_tool = { 'type': 'web_search' }
-					if len( self.allowed_domains ) > 0:
-						built_tool[ 'allowed_domains' ]=self.allowed_domains
-					
-					self.built_tools.append( built_tool )
-					continue
-				
-				if tool_type == 'x_search':
-					self.built_tools.append( { 'type': 'x_search' } )
-					continue
-				
-				if tool_type in [ 'collections_search', 'file_search' ]:
-					if len( self.vector_store_ids ) == 0:
-						continue
-					
-					self.built_tools.append( {
-								'type': 'collections_search',
-								'collection_ids': self.vector_store_ids,
-						} )
-					continue
-				
-				if tool_type in [ 'code_execution', 'code_interpreter' ]:
-					self.built_tools.append( { 'type': 'code_execution' } )
-					continue
-			
-			return self.built_tools if len( self.built_tools ) > 0 else None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'build_tools( self, tools, allowed_domains, vector_store_ids )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_tool_choice( self, tool_choice: str=None,
-			tools: List[ Dict[ str, Any ] ]=None ) -> str | None:
-		"""Build tool choice.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the 
-		    resulting state on the instance for provider execution.
-		
-		Args:
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    tools (List[Dict[str, Any]]): Tools supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			if not isinstance( tool_choice, str ) or not tool_choice.strip( ):
-				return None
-			
-			choice = tool_choice.strip( )
-			if choice not in self.choice_options:
-				return None
-			
-			if choice == 'none':
-				return 'none'
-			
-			if tools is None or len( tools ) == 0:
-				return None
-			
-			return choice
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'build_tool_choice( self, tool_choice, tools )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_include( self, include: List[ str ]=None,
-			tools: List[ Dict[ str, Any ] ]=None ) -> List[ str ] | None:
-		"""Build include.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores 
-		    the resulting state on the instance for provider execution.
-		
-		Args:
-		    include (List[str]): Include supplied to the xAI workflow.
-		    tools (List[Dict[str, Any]]): Tools supplied to the xAI workflow.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			if include is None or len( include ) == 0:
-				return None
-			
-			tool_types = [ ]
-			if isinstance( tools, list ):
-				for tool in tools:
-					if isinstance( tool, dict ) and tool.get( 'type' ):
-						tool_types.append( str( tool.get( 'type' ) ) )
-			
-			allowed = [ ]
-			for value in include:
-				if not isinstance( value, str ) or not value.strip( ):
-					continue
-				
-				name = value.strip( )
-				if name in [ 'inline_citations', 'verbose_streaming', 'mcp_call_output' ]:
-					allowed.append( name )
-					continue
-				
-				if name == 'web_search_call_output' and 'web_search' in tool_types:
-					allowed.append( name )
-					continue
-				
-				if name == 'x_search_call_output' and 'x_search' in tool_types:
-					allowed.append( name )
-					continue
-				
-				if name == 'code_execution_call_output' and 'code_execution' in tool_types:
-					allowed.append( name )
-					continue
-				
-				if name == 'collections_search_call_output' and 'collections_search' in tool_types:
-					allowed.append( name )
-					continue
-				
-				if name == 'attachment_search_call_output' and 'collections_search' in tool_types:
-					allowed.append( name )
-					continue
-			
-			return allowed if len( allowed ) > 0 else None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'build_include( self, include, tools )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_text_format( self, format: Dict[ str, Any ] | str=None,
-			response_schema: Any=None ) -> Dict[ str, Any ] | None:
-		"""Build text format.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the 
-		    resulting state on the instance for provider execution.
-		
-		Args:
-		    format (Dict[str, Any] | str): Format supplied to the xAI workflow.
-		    response_schema (Any): Response schema supplied to the xAI workflow.
-		
-		Returns:
-		    Dict[str, Any] | None: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			if format is None:
-				return None
-			
-			if isinstance( format, dict ) and len( format ) > 0:
-				if 'format' in format and isinstance( format.get( 'format' ), dict ):
-					return format
-				
-				if 'type' in format:
-					return { 'format': format }
-				
-				return None
-			
-			if isinstance( format, str ) and format.strip( ):
-				value = format.strip( )
-				if value == 'text':
-					return { 'format': { 'type': 'text' } }
-				
-				if value == 'json_object':
-					return { 'format': { 'type': 'json_object' } }
-				
-				if value == 'json_schema' and isinstance( response_schema, dict ):
-					return { 'format': { 'type': 'json_schema', 'json_schema': response_schema } }
-			
-			return None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'build_text_format( self, format, response_schema )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_request( self, prompt: str, model: str, temperature: float=None,
-			format: Dict[ str, Any ]=None, top_p: float=None, frequency: float=None,
-			max_tools: int=None, presence: float=None, max_tokens: int=None,
-			store: bool = None, stream: bool = None, instruct: str=None,
-			background: bool = False, reasoning: str=None, include: List[ str ]=None,
-			tools: List[ Any ]=None, allowed_domains: List[ str ]=None,
-			previous_id: str=None, tool_choice: str=None, is_parallel: bool = None,
-			context: List[ Dict[ str, str ] ]=None, input_data: List[ Dict[ str, Any ] ]=None,
-			vector_store_ids: List[ str ]=None, conversation_id: str=None,
-			response_schema: Any=None ) -> Dict[ str, Any ]:
-		"""Build request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the 
-		    resulting state on the instance for provider execution.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    format (Dict[str, Any]): Format supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    max_tools (int): Max tools supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    background (bool): Background supplied to the xAI workflow.
-		    reasoning (str): Reasoning supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    tools (List[Any]): Tools supplied to the xAI workflow.
-		    allowed_domains (List[str]): Allowed domains supplied to the xAI workflow.
-		    previous_id (str): Previous id supplied to the xAI workflow.
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    is_parallel (bool): Is parallel supplied to the xAI workflow.
-		    context (List[Dict[str, str]]): Context supplied to the xAI workflow.
-		    input_data (List[Dict[str, Any]]): Input data supplied to the xAI workflow.
-		    vector_store_ids (List[str]): Vector store ids supplied to the xAI workflow.
-		    conversation_id (str): Conversation id supplied to the xAI workflow.
-		    response_schema (Any): Response schema supplied to the xAI workflow.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
 			self.model = model
-			self.prompt = prompt
+			return self.model in [ 'grok-4.20-reasoning', 'grok-4.20-multi-agent', 'grok-4.5',
+				'grok-4-fast-reasoning', 'grok-3-mini', 'grok-3-mini-fast', ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Chat'
+			exception.method = ('supports_reasoning_model( self, model: str ) -> bool')
+			Logger( ).write( exception )
+			raise exception
+	
+	def build_tools( self, tools: Optional[ List[ Any ] ] = None,
+		allowed_domains: Optional[ List[ str ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None ) -> List[ Any ]:
+		"""Build provider tools.
+		
+		Purpose:
+			Builds provider-native Web Search, X Search, Collections Search, and code-execution
+			tools from application selections.
+		
+		Args:
+			tools (Optional[List[Any]]): Selected tool names or provider tool objects.
+			allowed_domains (Optional[List[str]]): Domains permitted for Web Search.
+			vector_store_ids (Optional[List[str]]): Collection identifiers used by Collections
+				Search.
+		
+		Returns:
+			List[Any]: Provider-ready xAI tool objects.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.tools = (tools if tools is not None else [ ])
+			self.allowed_domains = (allowed_domains if allowed_domains is not None else [ ])
+			self.vector_store_ids = (vector_store_ids if vector_store_ids is not None else [ ])
+			self.tool_objects = [ ]
+			for selected_tool in self.tools:
+				if isinstance( selected_tool, str ):
+					self.tool_name = selected_tool.strip( )
+				elif isinstance( selected_tool, dict ):
+					self.tool_name = str( selected_tool.get( 'type', '', ) ).strip( )
+				else:
+					self.tool_objects.append( selected_tool )
+					continue
+				
+				if not self.tool_name:
+					continue
+				
+				if self.tool_name == 'web_search':
+					if self.allowed_domains:
+						self.tool_objects.append(
+							web_search( allowed_domains=self.allowed_domains, ) )
+					else:
+						self.tool_objects.append( web_search( ) )
+					
+					continue
+				
+				if self.tool_name == 'x_search':
+					self.tool_objects.append( x_search( ) )
+					continue
+				
+				if self.tool_name == 'collections_search':
+					throw_if( 'vector_store_ids', self.vector_store_ids, )
+					self.tool_objects.append(
+						collections_search( collection_ids=self.vector_store_ids, ) )
+					continue
+				
+				if self.tool_name == 'code_execution':
+					self.tool_objects.append( code_execution( ) )
+			
+			return self.tool_objects
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Chat'
+			exception.method = 'build_tools( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def build_response_format( self, format: Any = None, response_schema: Any = None ) -> Any:
+		"""Build response format.
+		
+		Purpose:
+			Builds the provider response-format value for plain text, JSON object, or
+			schema-constrained output.
+		
+		Args:
+			format (Any): Requested response-format selection or provider configuration.
+			response_schema (Any): Optional JSON schema or Pydantic model.
+		
+		Returns:
+			Any: Provider-ready response-format value or None.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.response_format = format
+			self.response_schema = response_schema
+			if self.response_format is None:
+				return None
+			
+			if not isinstance( self.response_format, str ):
+				return self.response_format
+			
+			self.format_name = self.response_format.strip( ).lower( )
+			if not self.format_name:
+				return None
+			
+			if self.format_name == 'text':
+				return None
+			
+			if self.format_name == 'json_object':
+				return { 'type': 'json_object', }
+			
+			if self.format_name == 'json_schema':
+				throw_if( 'response_schema', self.response_schema, )
+				
+				return { 'type': 'json_schema', 'json_schema': self.response_schema, }
+			
+			return None
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Chat'
+			exception.method = 'build_response_format( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def build_chat( self, model: str, temperature: float = 0.0, top_p: float = 0.0,
+		frequency: float = 0.0, presence: float = 0.0, max_tokens: int = 0,
+		stops: Optional[ List[ str ] ] = None, store: bool = False,
+		include: Optional[ List[ str ] ] = None, tools: Optional[ List[ Any ] ] = None,
+		allowed_domains: Optional[ List[ str ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None, max_tools: int = 0, tool_choice: str='',
+		is_parallel: bool = False, previous_id: str = '', reasoning: str = '', format: Any = None,
+		response_schema: Any = None ) -> Any:
+		"""Build provider chat.
+		
+		Purpose:
+			Builds the xAI chat object from arguments assigned to object members and
+			provider-native tool and response-format configuration.
+		
+		Args:
+			model (str): Required Grok model identifier.
+			temperature (float): Sampling temperature.
+			top_p (float): Nucleus-sampling value.
+			frequency (float): Frequency penalty.
+			presence (float): Presence penalty.
+			max_tokens (int): Maximum output-token count.
+			stops (Optional[List[str]]): Stop sequences.
+			store (bool): Indicates whether xAI stores request messages.
+			include (Optional[List[str]]): Optional provider response inclusions.
+			tools (Optional[List[Any]]): Selected tools.
+			allowed_domains (Optional[List[str]]): Domains permitted for Web Search.
+			vector_store_ids (Optional[List[str]]): Collection identifiers used by Collections
+				Search.
+			max_tools (int): Maximum server-side tool turns.
+			tool_choice (str): Tool-selection mode.
+			is_parallel (bool): Indicates whether parallel tool calls are enabled.
+			previous_id (str): Previous stored response identifier.
+			reasoning (str): Reasoning-effort level.
+			format (Any): Response-format selection or provider configuration.
+			response_schema (Any): Optional structured-output schema.
+		
+		Returns:
+			Any: Configured xAI chat object.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'model', model )
+			self.model = model
 			self.temperature = temperature
 			self.top_percent = top_p
 			self.frequency_penalty = frequency
 			self.presence_penalty = presence
 			self.max_output_tokens = max_tokens
+			self.stops = (stops if stops is not None else [ ])
 			self.store_messages = store
-			self.stream = stream
-			self.background = background
-			self.instructions = instruct
-			self.response_format = self.build_text_format( format, response_schema=response_schema )
+			self.include = (include if include is not None else [ ])
 			self.max_tools = max_tools
-			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-			self.previous_id = previous_id if isinstance( previous_id, str ) else None
-			self.previous_response_id = self.previous_id
-			self.conversation_id = conversation_id if isinstance( conversation_id, str ) else None
+			self.tool_choice = tool_choice
 			self.parallel_tools = is_parallel
-			self.reasoning = self.build_reasoning( reasoning )
-			self.tools = self.build_tools( tools=tools, allowed_domains=allowed_domains,
-				vector_store_ids=self.vector_store_ids )
-			self.tool_choice = self.build_tool_choice( tool_choice=tool_choice, tools=self.tools )
-			self.include = self.build_include( include=include, tools=self.tools )
-			self.input = self.build_input( prompt=prompt, context=context, input_data=input_data )
-			self.request = {
-					'model': self.model,
-					'input': self.input,
-			}
+			self.previous_id = previous_id
+			self.previous_response_id = previous_id
+			self.reasoning = reasoning.strip( ).lower( )
+			self.response_format = self.build_response_format( format, response_schema, )
+			self.tool_objects = self.build_tools( tools, allowed_domains, vector_store_ids, )
+			self.chat_values = { 'model': self.model, 'store_messages': self.store_messages, }
+			if self.temperature > 0:
+				self.chat_values[ 'temperature' ] = (self.temperature)
 			
-			if self.instructions:
-				self.request[ 'instructions' ]=self.instructions
+			if self.top_percent > 0:
+				self.chat_values[ 'top_p' ] = (self.top_percent)
 			
-			if self.reasoning is not None and self.model == 'grok-4.20-multi-agent':
-				self.request[ 'reasoning' ]=self.reasoning
+			if self.frequency_penalty != 0:
+				self.chat_values[ 'frequency_penalty' ] = (self.frequency_penalty)
 			
-			if isinstance( self.max_output_tokens, int ) and self.max_output_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_output_tokens
+			if self.presence_penalty != 0:
+				self.chat_values[ 'presence_penalty' ] = (self.presence_penalty)
 			
-			if self.temperature is not None:
-				self.request[ 'temperature' ]=self.temperature
+			if self.max_output_tokens > 0:
+				self.chat_values[ 'max_tokens' ] = (self.max_output_tokens)
 			
-			if self.top_percent is not None:
-				self.request[ 'top_p' ]=self.top_percent
+			if self.stops:
+				self.chat_values[ 'stop' ] = self.stops
 			
-			if self.frequency_penalty is not None:
-				self.request[ 'frequency_penalty' ]=self.frequency_penalty
+			if self.include:
+				self.chat_values[ 'include' ] = self.include
 			
-			if self.presence_penalty is not None:
-				self.request[ 'presence_penalty' ]=self.presence_penalty
+			if self.tool_objects:
+				self.chat_values[ 'tools' ] = (self.tool_objects)
 			
-			if self.store_messages is not None:
-				self.request[ 'store' ]=self.store_messages
-			
-			# Stream and background are retained on self for layout/UI parity. This path returns final text.
-			if self.include is not None and len( self.include ) > 0:
-				self.request[ 'include' ]=self.include
-			
-			if self.tools is not None and len( self.tools ) > 0:
-				self.request[ 'tools' ]=self.tools
+			if self.max_tools > 0:
+				self.chat_values[ 'max_turns' ] = (self.max_tools)
 			
 			if self.tool_choice:
-				self.request[ 'tool_choice' ]=self.tool_choice
+				self.chat_values[ 'tool_choice' ] = (self.tool_choice)
 			
-			if self.parallel_tools is not None and self.tools is not None:
-				self.request[ 'parallel_tool_calls' ]=self.parallel_tools
+			if self.parallel_tools:
+				self.chat_values[ 'parallel_tool_calls' ] = (self.parallel_tools)
 			
-			if self.previous_id and self.previous_id.strip( ):
-				self.request[ 'previous_response_id' ]=self.previous_id.strip( )
+			if self.previous_response_id:
+				self.chat_values[ 'previous_response_id' ] = (self.previous_response_id)
 			
-			if self.conversation_id and self.conversation_id.strip( ):
-				self.request[ 'conversation' ]=self.conversation_id.strip( )
+			if self.reasoning:
+				if self.reasoning != 'none':
+					if self.supports_reasoning_model( self.model ):
+						self.chat_values[ 'reasoning_effort' ] = (self.reasoning)
 			
-			if isinstance( self.max_tools, int ) and self.max_tools > 0 and self.tools is not None:
-				self.request[ 'max_tool_calls' ]=self.max_tools
+			if self.response_format is not None:
+				self.chat_values[ 'response_format' ] = (self.response_format)
 			
-			if self.response_format is not None and len( self.response_format ) > 0:
-				self.request[ 'text' ]=self.response_format
-			
-			return self.request
+			self.client = Client( api_key=self.api_key, timeout=self.timeout, )
+			self.chat = self.client.chat.create( **self.chat_values )
+			return self.chat
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'grok'
 			exception.cause = 'Chat'
-			exception.method = 'build_request( self, **kwargs )'
+			exception.method = 'build_chat( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def get_output_text( self ) -> str | None:
-		"""Get output text.
+	def append_context( self, context: Optional[ List[ Dict[ str, Any ] ] ] = None ) -> None:
+		"""Append conversation context.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or 
-		    downstream request construction.
+			Appends valid system, user, and assistant history messages to the current xAI chat.
+		
+		Args:
+			context (Optional[List[Dict[str, Any]]]): Prior conversation messages.
 		
 		Returns:
-		    str | None: Result produced by the xAI workflow.
+			None: This method updates the current chat.
 		
 		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if self.response is None:
-				return None
-			
-			self.output_text = getattr( self.response, 'output_text', None )
-			if self.output_text:
-				return self.output_text
-			
-			if hasattr( self.response, 'output' ) and self.response.output:
-				text_parts = [ ]
-				for item in self.response.output:
-					if getattr( item, 'type', None ) != 'message':
-						continue
-					
-					if not hasattr( item, 'content' ) or item.content is None:
-						continue
-					
-					for block in item.content:
-						if getattr( block, 'type', None ) == 'output_text':
-							text = getattr( block, 'text', None )
-							if text:
-								text_parts.append( text )
+			from xai_sdk.chat import assistant
+			self.context = (context if context is not None else [ ])
+			for item in self.context:
+				if not isinstance( item, dict ):
+					continue
 				
-				if len( text_parts ) > 0:
-					self.output_text = ''.join( text_parts ).strip( )
-					return self.output_text
-			
-			return None
+				self.role = str( item.get( 'role', '', ) ).strip( ).lower( )
+				self.message_content = str( item.get( 'content', '', ) ).strip( )
+				if not self.message_content:
+					continue
+				
+				if self.role == 'system':
+					self.chat.append( system( self.message_content ) )
+					continue
+				
+				if self.role == 'user':
+					self.chat.append( user( self.message_content ) )
+					continue
+				
+				if self.role == 'assistant':
+					self.chat.append( assistant( self.message_content ) )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'grok'
 			exception.cause = 'Chat'
-			exception.method = 'get_output_text( self ) -> str | None'
+			exception.method = 'append_context( self, **kwargs ) -> None'
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_output_text( self ) -> str:
+		"""Get output text.
+		
+		Purpose:
+			Extracts generated text from the latest xAI response.
+		
+		Returns:
+			str: Generated response text or an empty string.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.output_text = ''
+			if self.response is None:
+				return self.output_text
+			
+			self.response_content = getattr( self.response, 'content', '', )
+			if self.response_content:
+				self.output_text = str( self.response_content ).strip( )
+			
+			return self.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Chat'
+			exception.method = 'get_output_text( self ) -> str'
+			Logger( ).write( exception )
+			raise exception
+	
+	def generate_text( self, prompt: str, model: str, temperature: float = 0.0, format: Any = None,
+		top_p: float = 0.0, frequency: float = 0.0, presence: float = 0.0, max_tokens: int = 0,
+		stops: Optional[ List[ str ] ] = None, store: bool = False, stream: bool = False,
+		instruct: str = '', reasoning: str = '', include: Optional[ List[ str ] ] = None,
+		tools: Optional[ List[ Any ] ] = None, allowed_domains: Optional[ List[ str ] ] = None,
+		previous_id: str = '', tool_choice: str = '', is_parallel: bool = False,
+		context: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None, max_tools: int = 0,
+		response_schema: Any = None, stream_handler: Any = None ) -> str:
+		"""Generate text.
+		
+		Purpose:
+			Executes synchronous or streaming Grok text generation using a required prompt,
+			required model, optional conversation history, provider-native server-side tools,
+			stored-response continuation, structured output, and reasoning configuration.
+		
+		Args:
+			prompt (str): Required user prompt.
+			model (str): Required Grok model identifier.
+			temperature (float): Sampling temperature.
+			format (Any): Response-format selection or provider configuration.
+			top_p (float): Nucleus-sampling value.
+			frequency (float): Frequency penalty.
+			presence (float): Presence penalty.
+			max_tokens (int): Maximum output-token count.
+			stops (Optional[List[str]]): Stop sequences.
+			store (bool): Indicates whether xAI stores request messages.
+			stream (bool): Indicates whether streaming is enabled.
+			instruct (str): Optional system instruction.
+			reasoning (str): Optional reasoning-effort level.
+			include (Optional[List[str]]): Optional provider response inclusions.
+			tools (Optional[List[Any]]): Selected server-side tools.
+			allowed_domains (Optional[List[str]]): Domains permitted for Web Search.
+			previous_id (str): Previous stored response identifier.
+			tool_choice (str): Tool-selection mode.
+			is_parallel (bool): Indicates whether parallel tool calls are enabled.
+			context (Optional[List[Dict[str, Any]]]): Prior conversation messages.
+			vector_store_ids (Optional[List[str]]): Collection identifiers used by Collections
+				Search.
+			max_tools (int): Maximum server-side tool turns.
+			response_schema (Any): Optional structured-output schema.
+			stream_handler (Any): Optional callable receiving each streaming text delta.
+		
+		Returns:
+			str: Generated response text.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.prompt = prompt
+			self.model = model
+			self.temperature = temperature
+			self.response_format = format
+			self.top_percent = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_output_tokens = max_tokens
+			self.stops = (stops if stops is not None else [ ])
+			self.store_messages = store
+			self.stream = stream
+			self.instructions = instruct
+			self.reasoning = reasoning
+			self.include = (include if include is not None else [ ])
+			self.tools = (tools if tools is not None else [ ])
+			self.allowed_domains = (allowed_domains if allowed_domains is not None else [ ])
+			self.previous_id = previous_id
+			self.previous_response_id = previous_id
+			self.tool_choice = tool_choice
+			self.parallel_tools = is_parallel
+			self.context = (context if context is not None else [ ])
+			self.vector_store_ids = (vector_store_ids if vector_store_ids is not None else [ ])
+			self.max_tools = max_tools
+			self.response_schema = response_schema
+			self.stream_handler = stream_handler
+			self.chat = self.build_chat( self.model, self.temperature, self.top_percent,
+				self.frequency_penalty, self.presence_penalty, self.max_output_tokens, self.stops,
+				self.store_messages, self.include, self.tools, self.allowed_domains,
+				self.vector_store_ids, self.max_tools, self.tool_choice, self.parallel_tools,
+				self.previous_response_id, self.reasoning, self.response_format,
+				self.response_schema, )
+			
+			if self.instructions:
+				self.chat.append( system( self.instructions ) )
+			
+			self.append_context( self.context )
+			self.chat.append( user( self.prompt ) )
+			if self.stream:
+				self.parts = [ ]
+				self.response = None
+				for response, chunk in self.chat.stream( ):
+					self.response = response
+					self.chunk_content = getattr( chunk, 'content', '', )
+					
+					if not self.chunk_content:
+						continue
+					
+					self.chunk_content = str( self.chunk_content )
+					self.parts.append( self.chunk_content )
+					if self.stream_handler is not None:
+						self.stream_handler( self.chunk_content )
+				
+				self.output_text = ''.join( self.parts ).strip( )
+				if not self.output_text:
+					self.output_text = self.get_output_text( )
+				
+				if self.response is not None:
+					self.previous_id = str( getattr( self.response, 'id', '', ) or '' )
+					self.previous_response_id = self.previous_id
+				
+				return self.output_text
+			
+			self.response = self.chat.sample( )
+			self.previous_id = str( getattr( self.response, 'id', '', ) or '' )
+			self.previous_response_id = self.previous_id
+			return self.get_output_text( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Chat'
+			exception.method = 'generate_text( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -984,20 +866,20 @@ class Chat( Grok ):
 		"""Get usage.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, 
-		    or downstream request construction.
+			Returns usage metadata from the latest xAI response.
 		
 		Returns:
-		    Any: Result produced by the xAI workflow.
+			Any: Provider usage metadata or None when unavailable.
 		
 		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			if self.response is None:
 				return None
 			
-			return getattr( self.response, 'usage', None )
+			self.usage = getattr( self.response, 'usage', None, )
+			return self.usage
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'grok'
@@ -1006,4498 +888,3437 @@ class Chat( Grok ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str, temperature: float=None,
-			format: Dict[ str, Any ]=None, top_p: float=None, top_k: int=None,
-			frequency: float=None, max_tools: int=None, presence: float=None,
-			max_tokens: int=None, store: bool = None, stream: bool = None,
-			instruct: str=None, background: bool = False, reasoning: str=None,
-			include: List[ str ]=None, tools: List[ Any ]=None,
-			allowed_domains: List[ str ]=None, previous_id: str=None,
-			tool_choice: str=None, is_parallel: bool=None,
-			context: List[ Dict[ str, str ] ]=None, input_data: List[ Dict[ str, Any ] ]=None,
-			vector_store_ids: List[ str ]=None, conversation_id: str=None,
-			response_format: Dict[ str, Any ] | str = None, response_schema: Any=None,
-			number: int=None, modalities: List[ str ]=None, media_resolution: str=None,
-			content: str=None, urls: List[ str ]=None, max_urls: int=None,
-			safety_profile: str=None, **kwargs: Any ) -> str | None:
-		"""Generate text.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
 		Purpose:
-		    Executes an xAI generation workflow using validated request settings,
-		    captures the provider response, and returns displayable output.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    format (Dict[str, Any]): Format supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    top_k (int): Top k supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    max_tools (int): Max tools supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    background (bool): Background supplied to the xAI workflow.
-		    reasoning (str): Reasoning supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    tools (List[Any]): Tools supplied to the xAI workflow.
-		    allowed_domains (List[str]): Allowed domains supplied to the xAI workflow.
-		    previous_id (str): Previous id supplied to the xAI workflow.
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    is_parallel (bool): Is parallel supplied to the xAI workflow.
-		    context (List[Dict[str, str]]): Context supplied to the xAI workflow.
-		    input_data (List[Dict[str, Any]]): Input data supplied to the xAI workflow.
-		    vector_store_ids (List[str]): Vector store ids supplied to the xAI workflow.
-		    conversation_id (str): Conversation id supplied to the xAI workflow.
-		    response_format (Dict[str, Any] | str): Response format supplied to the xAI workflow.
-		    response_schema (Any): Response schema supplied to the xAI workflow.
-		    number (int): Number supplied to the xAI workflow.
-		    modalities (List[str]): Modalities supplied to the xAI workflow.
-		    media_resolution (str): Media resolution supplied to the xAI workflow.
-		    content (str): Content supplied to the xAI workflow.
-		    urls (List[str]): Urls supplied to the xAI workflow.
-		    max_urls (int): Max urls supplied to the xAI workflow.
-		    safety_profile (str): Safety profile supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
+			Returns public members exposed by the Grok Chat wrapper.
 		
 		Returns:
-		    str | None: Result produced by the xAI workflow.
+			List[str]: Public member names.
+		"""
+		return [ 'api_key', 'base_url', 'timeout', 'client', 'chat', 'model', 'prompt',
+			'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
+			'max_output_tokens', 'stops', 'store_messages', 'stream', 'response_format',
+			'response_schema', 'context', 'instructions', 'include', 'tool_choice', 'previous_id',
+			'previous_response_id', 'parallel_tools', 'max_tools', 'tools', 'tool_objects',
+			'reasoning', 'allowed_domains', 'vector_store_ids', 'output_text', 'response', 'usage',
+			'collections', 'files', 'model_options', 'include_options', 'tool_options',
+			'choice_options', 'format_options', 'reasoning_options', 'modality_options',
+			'media_options', 'supports_reasoning_model', 'build_tools', 'build_response_format',
+			'build_chat', 'append_context', 'get_output_text', 'generate_text', 'get_usage', ]
+
+class Images( Grok ):
+	"""Provide Grok image workflow support.
+	
+	Purpose:
+		Provides image generation, image editing, and image analysis through the xAI Python
+		SDK. The class assigns accepted arguments to object members, constructs provider-native
+		image or multimodal-chat requests, executes the selected operation, and extracts image
+		URLs, decoded image bytes, or analysis text from provider responses.
+	
+	Attributes:
+		client (Optional[Client]): xAI SDK client.
+		chat (Any): Multimodal chat used for image analysis.
+		model (str): Grok model used by the current operation.
+		prompt (str): Prompt used by the current operation.
+		number (int): Number of images requested.
+		aspect_ratio (str): Requested output-image aspect ratio.
+		image_path (str): Local source-image path.
+		image_url (str): Provider-ready source-image URL or data URI.
+		detail (str): Image-detail level used for analysis.
+		response (Any): Latest xAI response.
+		output (Any): Extracted image output or collection of outputs.
+		output_text (str): Text extracted from an image-analysis response.
+	"""
+	client: Optional[ Client ]
+	chat: Any
+	model: str
+	prompt: str
+	number: int
+	aspect_ratio: str
+	image_path: str
+	image_url: str
+	detail: str
+	response: Any
+	output: Any
+	output_text: str
+	
+	def __init__( self, model: str = 'grok-imagine-image-quality' ) -> None:
+		"""Initialize instance.
+		
+		Purpose:
+			Initializes Grok image configuration and runtime state without executing a provider
+			request.
+		
+		Args:
+			model (str): Default Grok image-generation model.
+		
+		Returns:
+			None: This method initializes object state.
+		"""
+		super( ).__init__( )
+		self.api_key = cfg.XAI_API_KEY
+		self.base_url = cfg.XAI_BASE_URL
+		self.timeout = 3600
+		self.client = None
+		self.chat = None
+		self.model = model
+		self.prompt = ''
+		self.number = 1
+		self.aspect_ratio = 'auto'
+		self.image_path = ''
+		self.image_url = ''
+		self.file_path = ''
+		self.detail = 'auto'
+		self.response = None
+		self.output = None
+		self.output_text = ''
+		self.outputs = [ ]
+		self.encoded_image = ''
+		self.mime_type = ''
+		self.image_data = b''
+		self.response_content = ''
+	
+	@property
+	def model_options( self ) -> List[ str ]:
+		"""Get image-generation model options.
+		
+		Purpose:
+			Returns Grok models exposed for image generation and editing.
+		
+		Returns:
+			List[str]: Supported Grok image model identifiers.
+		"""
+		return [ 'grok-imagine-image-quality', 'grok-imagine-image', ]
+	
+	@property
+	def analysis_model_options( self ) -> List[ str ]:
+		"""Get image-analysis model options.
+		
+		Purpose:
+			Returns Grok multimodal models exposed for image understanding.
+		
+		Returns:
+			List[str]: Supported Grok image-analysis model identifiers.
+		"""
+		return [ 'grok-4.20-reasoning', 'grok-4.20', 'grok-4.5', 'grok-4', 'grok-4-latest',
+			'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-3', 'grok-3-mini',
+			'grok-3-fast', 'grok-3-mini-fast', ]
+	
+	@property
+	def aspect_options( self ) -> List[ str ]:
+		"""Get aspect-ratio options.
+		
+		Purpose:
+			Returns output-image aspect ratios exposed by the wrapper.
+		
+		Returns:
+			List[str]: Supported aspect-ratio values.
+		"""
+		return [ 'auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '2:1', '1:2', '19.5:9',
+			'9:19.5', '20:9', '9:20', ]
+	
+	@property
+	def size_options( self ) -> List[ str ]:
+		"""Get image-size options.
+		
+		Purpose:
+			Returns an automatic size selection because the xAI Python SDK image request does
+			not expose an independent pixel-size parameter.
+		
+		Returns:
+			List[str]: Available image-size selections.
+		"""
+		return [ 'auto', ]
+	
+	@property
+	def quality_options( self ) -> List[ str ]:
+		"""Get image-quality options.
+		
+		Purpose:
+			Returns model-based quality selections exposed by the application.
+		
+		Returns:
+			List[str]: Available image-quality selections.
+		"""
+		return [ 'auto', 'quality', ]
+	
+	@property
+	def style_options( self ) -> List[ str ]:
+		"""Get image-style options.
+		
+		Purpose:
+			Returns an empty collection because xAI image style is controlled through the
+			prompt rather than a separate request argument.
+		
+		Returns:
+			List[str]: Empty style-option collection.
+		"""
+		return [ ]
+	
+	@property
+	def format_options( self ) -> List[ str ]:
+		"""Get response-format options.
+		
+		Purpose:
+			Returns image response representations that may be returned by the xAI SDK.
+		
+		Returns:
+			List[str]: Supported response representations.
+		"""
+		return [ 'url', 'b64_json', ]
+	
+	@property
+	def mime_options( self ) -> List[ str ]:
+		"""Get source-image MIME-type options.
+		
+		Purpose:
+			Returns MIME types supported for local source images converted to data URIs.
+		
+		Returns:
+			List[str]: Supported source-image MIME types.
+		"""
+		return [ 'image/jpeg', 'image/png', 'image/webp', ]
+	
+	@property
+	def detail_options( self ) -> List[ str ]:
+		"""Get image-detail options.
+		
+		Purpose:
+			Returns multimodal image-detail levels exposed for image analysis.
+		
+		Returns:
+			List[str]: Supported image-detail values.
+		"""
+		return [ 'auto', 'low', 'high', ]
+	
+	@property
+	def modality_options( self ) -> List[ str ]:
+		"""Get response-modality options.
+		
+		Purpose:
+			Returns image and text modalities represented by the wrapper operations.
+		
+		Returns:
+			List[str]: Supported modality values.
+		"""
+		return [ 'image', 'text', ]
+	
+	@property
+	def include_options( self ) -> List[ str ]:
+		"""Get include options.
+		
+		Purpose:
+			Returns an empty collection because xAI image operations do not use response include
+			paths.
+		
+		Returns:
+			List[str]: Empty include-option collection.
+		"""
+		return [ ]
+	
+	@property
+	def tool_options( self ) -> List[ str ]:
+		"""Get tool options.
+		
+		Purpose:
+			Returns an empty collection because direct xAI image operations do not use chat
+			server-side tools.
+		
+		Returns:
+			List[str]: Empty tool-option collection.
+		"""
+		return [ ]
+	
+	@property
+	def choice_options( self ) -> List[ str ]:
+		"""Get tool-choice options.
+		
+		Purpose:
+			Returns an empty collection because direct xAI image operations do not use tool
+			selection.
+		
+		Returns:
+			List[str]: Empty tool-choice collection.
+		"""
+		return [ ]
+	
+	@property
+	def reasoning_options( self ) -> List[ str ]:
+		"""Get reasoning options.
+		
+		Purpose:
+			Returns an empty collection because image-generation reasoning is managed by the
+			selected image model.
+		
+		Returns:
+			List[str]: Empty reasoning-option collection.
+		"""
+		return [ ]
+	
+	def get_mime_type( self, path: str ) -> str:
+		"""Get image MIME type.
+		
+		Purpose:
+			Determines the MIME type of a required local source image from its file extension.
+		
+		Args:
+			path (str): Required local image path.
+		
+		Returns:
+			str: Source-image MIME type.
 		
 		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'path', path )
+			self.image_path = path
+			self.suffix = Path( self.image_path ).suffix.lower( )
+			if self.suffix in [ '.jpg', '.jpeg', ]:
+				self.mime_type = 'image/jpeg'
+			elif self.suffix == '.png':
+				self.mime_type = 'image/png'
+			elif self.suffix == '.webp':
+				self.mime_type = 'image/webp'
+			else:
+				self.mime_type = ''
+			
+			throw_if( 'mime_type', self.mime_type )
+			return self.mime_type
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Images'
+			exception.method = 'get_mime_type( self, path: str ) -> str'
+			Logger( ).write( exception )
+			raise exception
+	
+	def build_image_url( self, path: str ) -> str:
+		"""Build source-image data URI.
+		
+		Purpose:
+			Reads a required local source image and converts it into a provider-ready base64
+			data URI.
+		
+		Args:
+			path (str): Required local image path.
+		
+		Returns:
+			str: Provider-ready image data URI.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'path', path )
+			self.image_path = path
+			self.file_path = path
+			self.mime_type = self.get_mime_type( self.image_path )
+			with open( self.image_path, 'rb' ) as source:
+				self.image_data = source.read( )
+			
+			throw_if( 'image_data', self.image_data )
+			self.encoded_image = base64.b64encode( self.image_data ).decode( 'utf-8' )
+			self.image_url = (f'data:{self.mime_type};base64,'
+			                  f'{self.encoded_image}')
+			return self.image_url
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Images'
+			exception.method = 'build_image_url( self, path: str ) -> str'
+			Logger( ).write( exception )
+			raise exception
+	
+	def extract_image_output( self, response: Any ) -> Any:
+		"""Extract image output.
+		
+		Purpose:
+			Extracts an image URL or decoded image bytes from a required xAI image response.
+		
+		Args:
+			response (Any): Required xAI image response.
+		
+		Returns:
+			Any: Image URL, decoded image bytes, or the original provider response.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'response', response )
+			self.response = response
+			self.response_url = getattr( self.response, 'url', '', )
+			if self.response_url:
+				self.output = self.response_url
+				return self.output
+			
+			self.response_base64 = getattr( self.response, 'b64_json', '', )
+			if self.response_base64:
+				self.output = base64.b64decode( self.response_base64 )
+				return self.output
+			
+			self.output = self.response
+			return self.output
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Images'
+			exception.method = ('extract_image_output( self, response: Any ) -> Any')
+			Logger( ).write( exception )
+			raise exception
+	
+	def generate( self, prompt: str, model: str, number: int = 1,
+		aspect_ratio: str = 'auto' ) -> Any:
+		"""Generate images.
+		
+		Purpose:
+			Generates one or more images from a required prompt using a required Grok image
+			model and optional output aspect ratio.
+		
+		Args:
+			prompt (str): Required image-generation prompt.
+			model (str): Required Grok image model.
+			number (int): Number of images requested.
+			aspect_ratio (str): Output-image aspect ratio.
+		
+		Returns:
+			Any: Generated image output or collection of image outputs.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			self.client = OpenAI( api_key=cfg.XAI_API_KEY, base_url=self.base_url )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.prompt = prompt
+			self.model = model
 			self.number = number
-			self.top_k = top_k
-			self.modalities = modalities if modalities is not None else [ ]
-			self.media_resolution = media_resolution
-			self.content = content
-			self.urls = urls if urls is not None else [ ]
-			self.max_urls = max_urls
-			self.safety_profile = safety_profile
-			self.extra_kwargs = kwargs or { }
-			self.stream_requested = bool( stream )
-			self.background_requested = bool( background )
-			self.request = self.build_request( prompt=prompt, model=model,
-				temperature=temperature, format=response_format or format, top_p=top_p,
-				frequency=frequency, max_tools=max_tools, presence=presence,
-				max_tokens=max_tokens, store=store, stream=False, instruct=instruct,
-				background=False, reasoning=reasoning, include=include, tools=tools,
-				allowed_domains=allowed_domains, previous_id=previous_id,
-				tool_choice=tool_choice, is_parallel=is_parallel, context=context,
-				input_data=input_data, vector_store_ids=vector_store_ids,
-				conversation_id=conversation_id, response_schema=response_schema )
-			self.response = self.client.responses.create( **self.request )
-			self.previous_id = getattr( self.response, 'id', None )
-			self.previous_response_id = self.previous_id
-			self.output_text = self.get_output_text( )
+			self.aspect_ratio = aspect_ratio
+			self.client = Client( api_key=self.api_key, timeout=self.timeout, )
+			if self.number > 1:
+				if self.aspect_ratio:
+					if self.aspect_ratio != 'auto':
+						self.response = self.client.image.sample_batch( prompt=self.prompt,
+							model=self.model, n=self.number, aspect_ratio=self.aspect_ratio, )
+					else:
+						self.response = self.client.image.sample_batch( prompt=self.prompt,
+							model=self.model, n=self.number, )
+				else:
+					self.response = self.client.image.sample_batch( prompt=self.prompt,
+						model=self.model, n=self.number, )
+				
+				self.outputs = [ ]
+				for item in self.response:
+					self.outputs.append( self.extract_image_output( item ) )
+				
+				self.output = self.outputs
+				return self.output
+			
+			if self.aspect_ratio:
+				if self.aspect_ratio != 'auto':
+					self.response = self.client.image.sample( prompt=self.prompt, model=self.model,
+						aspect_ratio=self.aspect_ratio, )
+				else:
+					self.response = self.client.image.sample( prompt=self.prompt,
+						model=self.model, )
+			else:
+				self.response = self.client.image.sample( prompt=self.prompt, model=self.model, )
+			
+			return self.extract_image_output( self.response )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Images'
+			exception.method = 'generate( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def analyze( self, prompt: str, path: str, model: str, detail: str = 'auto' ) -> str:
+		"""Analyze an image.
+		
+		Purpose:
+			Analyzes a required local image using a required Grok multimodal model and returns
+			the generated textual analysis.
+		
+		Args:
+			prompt (str): Required image-analysis prompt.
+			path (str): Required local image path.
+			model (str): Required Grok multimodal model.
+			detail (str): Image-detail level.
+		
+		Returns:
+			str: Generated image-analysis text.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'path', path )
+			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.prompt = prompt
+			self.image_path = path
+			self.file_path = path
+			self.model = model
+			self.detail = detail
+			self.image_url = self.build_image_url( self.image_path )
+			self.client = Client( api_key=self.api_key, timeout=self.timeout, )
+			self.chat = self.client.chat.create( model=self.model, )
+			self.chat.append( user( self.prompt, image( self.image_url, detail=self.detail, ), ) )
+			self.response = self.chat.sample( )
+			self.response_content = getattr( self.response, 'content', '', )
+			self.output_text = str( self.response_content or '' ).strip( )
+			throw_if( 'output_text', self.output_text )
 			return self.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'generate_text( self, prompt: str ) -> str | None'
+			exception.cause = 'Images'
+			exception.method = 'analyze( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def get_grounding_sources( self ) -> List[ Dict[ str, Any ] ]:
-		"""Get grounding sources.
+	def edit( self, prompt: str, model: str, path: str = '', image_url: str = '',
+		aspect_ratio: str = 'auto', number: int = 1 ) -> Any:
+		"""Edit an image.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or
-		    downstream request construction.
-		
-		Returns:
-		    List[Dict[str, Any]]: Result produced by the xAI workflow.
-		
-		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
-		"""
-		try:
-			if self.response is None:
-				return [ ]
-			
-			self.sources = [ ]
-			output = getattr( self.response, 'output', None )
-			if isinstance( output, list ):
-				for item in output:
-					item_type = getattr( item, 'type', None )
-					
-					if item_type in [ 'web_search_call', 'x_search_call' ]:
-						action = getattr( item, 'action', None )
-						raw_sources = getattr( action, 'sources', None ) if action else None
-						if isinstance( raw_sources, list ):
-							for source in raw_sources:
-								self.sources.append(
-									{
-											'title': getattr( source, 'title', None ),
-											'url': getattr( source, 'url', None ),
-											'snippet': getattr( source, 'snippet', None ),
-											'file_id': None,
-									} )
-					
-					if item_type in [ 'collections_search_call', 'file_search_call' ]:
-						results = getattr( item, 'results', None )
-						if isinstance( results, list ):
-							for result in results:
-								self.sources.append(
-									{
-											'title': getattr( result, 'file_name',
-												None ) or getattr(
-												result, 'title', None ),
-											'url': None,
-											'snippet': getattr( result, 'text', None ),
-											'file_id': getattr( result, 'file_id', None ),
-									} )
-			
-			return self.sources
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = 'get_grounding_sources( self ) -> List[ Dict[ str, Any ] ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def answer_document( self, prompt: str, document_text: str, model: str,
-			instructions: str=None, temperature: float=None, top_p: float=None,
-			frequency: float=None, presence: float=None, max_tokens: int=None,
-			store: bool=None, include: List[ str ]=None, tools: List[ str ]=None,
-			tool_choice: str=None, reasoning: str=None,
-			context: List[ Dict[ str, str ] ]=None,
-			vector_store_ids: List[ str ]=None ) -> str | None:
-		"""Answer document.
-		
-		Purpose:
-		    Provides answer document behavior for the Chat workflow while preserving provider
-		    request and response state.
+			Edits a required source image using a required prompt and Grok image model. The
+			source may be supplied as a local path or public image URL.
 		
 		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    document_text (str): Document text supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    instructions (str): Instructions supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    tools (List[str]): Tools supplied to the xAI workflow.
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    reasoning (str): Reasoning supplied to the xAI workflow.
-		    context (List[Dict[str, str]]): Context supplied to the xAI workflow.
-		    vector_store_ids (List[str]): Vector store ids supplied to the xAI workflow.
+			prompt (str): Required image-editing instruction.
+			model (str): Required Grok image model.
+			path (str): Optional local source-image path.
+			image_url (str): Optional public source-image URL.
+			aspect_ratio (str): Optional output-image aspect ratio.
+			number (int): Number of edited images requested.
 		
 		Returns:
-		    str | None: Result produced by the xAI workflow.
+			Any: Edited image output or collection of edited-image outputs.
 		
 		Raises:
-		    Error: Re-raised after validation or provider execution errors are wrapped and logged.
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
-			throw_if( 'document_text', document_text )
 			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
 			self.prompt = prompt
-			self.content = document_text
 			self.model = model
-			self.instructions = instructions
+			self.image_path = path
+			self.file_path = path
+			self.image_url = image_url
+			self.aspect_ratio = aspect_ratio
+			self.number = number
+			if not self.image_url:
+				throw_if( 'path', self.image_path )
+				self.image_url = self.build_image_url( self.image_path )
+			
+			throw_if( 'image_url', self.image_url )
+			self.client = Client( api_key=self.api_key, timeout=self.timeout, )
+			if self.number > 1:
+				if self.aspect_ratio:
+					if self.aspect_ratio != 'auto':
+						self.response = self.client.image.sample_batch( prompt=self.prompt,
+							model=self.model, n=self.number, image_url=self.image_url,
+							aspect_ratio=self.aspect_ratio, )
+					else:
+						self.response = self.client.image.sample_batch( prompt=self.prompt,
+							model=self.model, n=self.number, image_url=self.image_url, )
+				else:
+					self.response = self.client.image.sample_batch( prompt=self.prompt,
+						model=self.model, n=self.number, image_url=self.image_url, )
+				
+				self.outputs = [ ]
+				for item in self.response:
+					self.outputs.append( self.extract_image_output( item ) )
+				
+				self.output = self.outputs
+				return self.output
+			
+			if self.aspect_ratio:
+				if self.aspect_ratio != 'auto':
+					self.response = self.client.image.sample( prompt=self.prompt, model=self.model,
+						image_url=self.image_url, aspect_ratio=self.aspect_ratio, )
+				else:
+					self.response = self.client.image.sample( prompt=self.prompt, model=self.model,
+						image_url=self.image_url, )
+			else:
+				self.response = self.client.image.sample( prompt=self.prompt, model=self.model,
+					image_url=self.image_url, )
+			
+			return self.extract_image_output( self.response )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Images'
+			exception.method = 'edit( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
+		
+		Purpose:
+			Returns public members exposed by the Grok Images wrapper.
+		
+		Returns:
+			List[str]: Public member names.
+		"""
+		return [ 'api_key', 'base_url', 'timeout', 'client', 'chat', 'model', 'prompt', 'number',
+			'aspect_ratio', 'image_path', 'image_url', 'file_path', 'detail', 'response', 'output',
+			'outputs', 'output_text', 'mime_type', 'model_options', 'analysis_model_options',
+			'aspect_options', 'size_options', 'quality_options', 'style_options', 'format_options',
+			'mime_options', 'detail_options', 'modality_options', 'include_options',
+			'tool_options',
+			'choice_options', 'reasoning_options', 'get_mime_type', 'build_image_url',
+			'extract_image_output', 'generate', 'analyze', 'edit', ]
+
+class Files( Grok ):
+	"""Provide xAI file-management and file-analysis workflows.
+	
+	Purpose:
+		Provides file upload, listing, retrieval, content download, deletion, summarization,
+		question answering, and file surveying through the xAI Files and Chat APIs. The class
+		assigns accepted arguments to object members before constructing provider requests and
+		returns stable application-facing metadata, content, and generated text.
+	
+	Attributes:
+		client (Optional[Client]): xAI SDK client used for file-enabled chat requests.
+		api_key (str): xAI API key.
+		base_url (str): xAI REST API base URL.
+		file_path (str): Local file path used by the current operation.
+		file_name (str): Filename assigned during upload.
+		file_id (str): xAI file identifier used by the current operation.
+		file_ids (List[str]): File identifiers retained by the wrapper.
+		purpose (str): Compatibility purpose value stored with uploaded files.
+		expires_after (int): Optional file-expiration duration in seconds.
+		model (str): Grok model used for file analysis.
+		prompt (str): Prompt used by the current file-analysis request.
+		instructions (str): Optional system instruction.
+		temperature (float): Sampling temperature.
+		top_percent (float): Nucleus-sampling value.
+		frequency_penalty (float): Frequency penalty.
+		presence_penalty (float): Presence penalty.
+		max_output_tokens (int): Maximum output-token count.
+		store_messages (bool): Indicates whether xAI stores chat messages.
+		stream (bool): Indicates whether response streaming is enabled.
+		include (List[str]): Optional xAI streaming inclusions.
+		previous_id (str): Previous stored response identifier.
+		response (Any): Latest provider response.
+		file_content (Any): Latest downloaded file content.
+		output_text (str): Text extracted from the latest file-analysis response.
+		limit (int): Maximum number of files requested by a list operation.
+		pagination_token (str): Pagination token supplied to a list operation.
+		next_token (str): Pagination token returned by the latest list operation.
+		documents (Dict[str, str]): Configured document labels mapped to file identifiers.
+	"""
+	client: Optional[ Client ]
+	api_key: str
+	base_url: str
+	file_path: str
+	file_name: str
+	file_id: str
+	file_ids: List[ str ]
+	purpose: str
+	expires_after: int
+	model: str
+	prompt: str
+	instructions: str
+	temperature: float
+	top_percent: float
+	frequency_penalty: float
+	presence_penalty: float
+	max_output_tokens: int
+	store_messages: bool
+	stream: bool
+	include: List[ str ]
+	previous_id: str
+	response: Any
+	file_content: Any
+	output_text: str
+	limit: int
+	pagination_token: str
+	next_token: str
+	documents: Dict[ str, str ]
+	
+	def __init__( self, model: str = 'grok-4.20' ) -> None:
+		"""Initialize instance.
+		
+		Purpose:
+			Initializes xAI file-management and file-analysis state without executing a
+			provider request.
+		
+		Args:
+			model (str): Default Grok model used for file analysis.
+		
+		Returns:
+			None: This method initializes object state.
+		"""
+		super( ).__init__( )
+		self.api_key = cfg.XAI_API_KEY
+		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1', )
+		self.timeout = 3600
+		self.client = None
+		self.chat = None
+		self.file_path = ''
+		self.file_name = ''
+		self.file_id = ''
+		self.file_ids = [ ]
+		self.purpose = 'assistants'
+		self.expires_after = 0
+		self.model = model
+		self.prompt = ''
+		self.instructions = ''
+		self.temperature = 0.0
+		self.top_percent = 0.0
+		self.frequency_penalty = 0.0
+		self.presence_penalty = 0.0
+		self.max_output_tokens = 0
+		self.store_messages = False
+		self.stream = False
+		self.include = [ ]
+		self.previous_id = ''
+		self.previous_response_id = ''
+		self.response = None
+		self.file_content = None
+		self.output_text = ''
+		self.limit = 100
+		self.pagination_token = ''
+		self.next_token = ''
+		self.download_format = ''
+		self.params = { }
+		self.headers = { }
+		self.metadata = { }
+		self.results = [ ]
+		self.parts = [ ]
+		self.documents = getattr( cfg, 'GROK_DOCUMENTS', { }, )
+	
+	@property
+	def model_options( self ) -> List[ str ]:
+		"""Get file-analysis model options.
+		
+		Purpose:
+			Returns Grok models exposed for file summarization and question answering.
+		
+		Returns:
+			List[str]: Supported Grok model identifiers.
+		"""
+		return [ 'grok-4.20-reasoning', 'grok-4.20', 'grok-4.5', 'grok-4', 'grok-4-latest',
+			'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-code-fast-1', 'grok-3',
+			'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
+	
+	@property
+	def purpose_options( self ) -> List[ str ]:
+		"""Get file-purpose options.
+		
+		Purpose:
+			Returns compatibility purpose values accepted and stored by the xAI Files API.
+		
+		Returns:
+			List[str]: Available file-purpose values.
+		"""
+		return [ 'assistants', 'batch', 'fine-tune', 'user_data', ]
+	
+	@property
+	def format_options( self ) -> List[ str ]:
+		"""Get output-format options.
+		
+		Purpose:
+			Returns the textual output format implemented by file-analysis workflows.
+		
+		Returns:
+			List[str]: Supported output formats.
+		"""
+		return [ 'text', ]
+	
+	@property
+	def tool_options( self ) -> List[ str ]:
+		"""Get tool options.
+		
+		Purpose:
+			Returns server-side tools that may be used with file-enabled chat requests.
+		
+		Returns:
+			List[str]: Supported server-side tool names.
+		"""
+		return [ 'code_execution', ]
+	
+	@property
+	def include_options( self ) -> List[ str ]:
+		"""Get include options.
+		
+		Purpose:
+			Returns optional xAI streaming response inclusions.
+		
+		Returns:
+			List[str]: Supported include values.
+		"""
+		return [ 'verbose_streaming', ]
+	
+	def get_headers( self ) -> Dict[ str, str ]:
+		"""Get request headers.
+		
+		Purpose:
+			Builds authentication headers for xAI Files API requests.
+		
+		Returns:
+			Dict[str, str]: Provider request headers.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.headers = { 'Authorization': f'Bearer {self.api_key}', }
+			return self.headers
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = ('get_headers( self ) -> Dict[ str, str ]')
+			Logger( ).write( exception )
+			raise exception
+	
+	def normalize_metadata( self, file_data: Dict[ str, Any ] ) -> Dict[ str, Any ]:
+		"""Normalize file metadata.
+		
+		Purpose:
+			Converts a required xAI file response into a stable application-facing metadata
+			record.
+		
+		Args:
+			file_data (Dict[str, Any]): Required provider file metadata.
+		
+		Returns:
+			Dict[str, Any]: Application-facing file metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_data', file_data )
+			self.metadata = file_data
+			self.file_id = str( self.metadata.get( 'id', '', ) or '' )
+			self.file_name = str(
+				self.metadata.get( 'filename', self.metadata.get( 'name', '', ), ) or '' )
+			
+			return { 'id': self.file_id, 'name': self.file_name, 'filename': self.file_name,
+				'object': self.metadata.get( 'object', 'file', ),
+				'purpose': self.metadata.get( 'purpose', '', ),
+				'bytes': self.metadata.get( 'bytes', self.metadata.get( 'size_bytes', 0, ), ),
+				'created_at': self.metadata.get( 'created_at', None, ),
+				'expires_at': self.metadata.get( 'expires_at', None, ),
+				'content_type': self.metadata.get( 'content_type', '', ),
+				'public_url': self.metadata.get( 'public_url', '', ),
+				'public_url_expires_at': self.metadata.get( 'public_url_expires_at', None, ),
+				'metadata': self.metadata, }
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'normalize_metadata( self, **kwargs ) -> Dict[ str, Any ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def upload( self, file_path: str, file_name: str = '', purpose: str = 'assistants',
+		expires_after: int = 0 ) -> Dict[ str, Any ]:
+		"""Upload a file.
+		
+		Purpose:
+			Uploads a required local file to xAI storage with an optional filename,
+			compatibility purpose, and expiration duration.
+		
+		Args:
+			file_path (str): Required local file path.
+			file_name (str): Optional uploaded filename.
+			purpose (str): Compatibility purpose value stored with the file.
+			expires_after (int): Optional expiration duration in seconds.
+		
+		Returns:
+			Dict[str, Any]: Uploaded file metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_path', file_path )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.file_path = file_path
+			self.file_name = (file_name.strip( ) if file_name else Path( self.file_path ).name)
+			self.purpose = purpose
+			self.expires_after = expires_after
+			self.headers = self.get_headers( )
+			self.params = { 'purpose': self.purpose, }
+			if self.expires_after > 0:
+				self.params[ 'expires_after' ] = str( self.expires_after )
+			
+			with open( self.file_path, 'rb' ) as source:
+				self.response = requests.post( url=(f'{self.base_url.rstrip( "/" )}'
+				                                    f'/files'), headers=self.headers,
+					data=self.params, files={ 'file': (self.file_name, source,), },
+					timeout=self.timeout, )
+			
+			self.response.raise_for_status( )
+			self.metadata = self.response.json( )
+			return self.normalize_metadata( self.metadata )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'upload( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list( self, limit: int = 100, pagination_token: str = '' ) -> List[ Dict[ str, Any ] ]:
+		"""List files.
+		
+		Purpose:
+			Lists uploaded xAI files using an optional result limit and pagination token.
+		
+		Args:
+			limit (int): Maximum number of files requested.
+			pagination_token (str): Optional pagination token.
+		
+		Returns:
+			List[Dict[str, Any]]: Application-facing file metadata records.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.limit = limit
+			self.pagination_token = pagination_token
+			self.headers = self.get_headers( )
+			self.params = { 'limit': self.limit, }
+			if self.pagination_token:
+				self.params[ 'pagination_token' ] = (self.pagination_token)
+			
+			self.response = requests.get( url=(f'{self.base_url.rstrip( "/" )}/files'),
+				headers=self.headers, params=self.params, timeout=self.timeout, )
+			self.response.raise_for_status( )
+			self.payload = self.response.json( )
+			self.file_data = self.payload.get( 'data', [ ], )
+			self.next_token = str(
+				self.payload.get( 'next_page', self.payload.get( 'next_token', '', ), ) or '' )
+			self.results = [ self.normalize_metadata( item ) for item in self.file_data ]
+			self.file_ids = [ item.get( 'id', '', ) for item in self.results if item.get( 'id', '', ) ]
+			return self.results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'list( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list_files( self, limit: int=100, pagination_token: str='' ) -> List[ Dict[ str, Any ] ]:
+		"""List files.
+		
+		Purpose:
+			Provides the application-compatible alias for xAI file listing.
+		
+		Args:
+			limit (int): Maximum number of files requested.
+			pagination_token (str): Optional pagination token.
+		
+		Returns:
+			List[Dict[str, Any]]: Application-facing file metadata records.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.limit = limit
+			self.pagination_token = pagination_token
+			return self.list( self.limit, self.pagination_token, )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'list_files( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def retrieve( self, file_id: str ) -> Dict[ str, Any ]:
+		"""Retrieve file metadata.
+		
+		Purpose:
+			Retrieves metadata for a required xAI file identifier.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+		
+		Returns:
+			Dict[str, Any]: Application-facing file metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.file_id = file_id
+			self.headers = self.get_headers( )
+			self.response = requests.get( url=(f'{self.base_url.rstrip( "/" )}/files/{self.file_id}'),
+				headers=self.headers, timeout=self.timeout, )
+			self.response.raise_for_status( )
+			self.metadata = self.response.json( )
+			return self.normalize_metadata( self.metadata )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'retrieve( self, file_id: str ) -> Dict[ str, Any ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def extract( self, file_id: str ) -> bytes:
+		"""Download file content.
+		
+		Purpose:
+			Downloads the original content of a required xAI file.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+		
+		Returns:
+			bytes: Downloaded file content.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.file_id = file_id
+			self.headers = self.get_headers( )
+			self.response = requests.get( url=(f'{self.base_url.rstrip( "/" )}/files/{self.file_id}/content'),
+				headers=self.headers, timeout=self.timeout, )
+			self.response.raise_for_status( )
+			self.file_content = self.response.content
+			return self.file_content
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'extract( self, file_id: str ) -> bytes'
+			Logger( ).write( exception )
+			raise exception
+	
+	def download( self, file_id: str ) -> bytes:
+		"""Download file content.
+		
+		Purpose:
+			Provides the application-compatible alias for xAI file-content download.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+		
+		Returns:
+			bytes: Downloaded file content.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.file_id = file_id
+			return self.extract( self.file_id )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'download( self, file_id: str ) -> bytes'
+			Logger( ).write( exception )
+			raise exception
+	
+	def content( self, file_id: str ) -> bytes:
+		"""Get file content.
+		
+		Purpose:
+			Provides the application-compatible alias for xAI file-content retrieval.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+		
+		Returns:
+			bytes: Downloaded file content.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.file_id = file_id
+			return self.extract( self.file_id )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = ('content( self, file_id: str ) -> bytes')
+			Logger( ).write( exception )
+			raise exception
+	
+	def delete( self, file_id: str ) -> Dict[ str, Any ]:
+		"""Delete a file.
+		
+		Purpose:
+			Deletes a required file from xAI storage.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+		
+		Returns:
+			Dict[str, Any]: File-deletion result.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.file_id = file_id
+			self.headers = self.get_headers( )
+			self.response = requests.delete( url=(f'{self.base_url.rstrip( "/" )}/files/{self.file_id}'),
+				headers=self.headers, timeout=self.timeout, )
+			self.response.raise_for_status( )
+			if self.response.content:
+				self.metadata = self.response.json( )
+			else:
+				self.metadata = { 'id': self.file_id, 'deleted': True, 'object': 'file.deleted', }
+			
+			return { 'id': self.metadata.get( 'id', self.file_id, ),
+				'deleted': self.metadata.get( 'deleted', True, ),
+				'object': self.metadata.get( 'object', 'file.deleted', ),
+				'metadata': self.metadata, }
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'delete( self, file_id: str ) -> Dict[ str, Any ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_output_text( self ) -> str:
+		"""Get output text.
+		
+		Purpose:
+			Extracts generated text from the latest xAI file-analysis response.
+		
+		Returns:
+			str: Generated response text or an empty string.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.output_text = ''
+			if self.response is None:
+				return self.output_text
+			
+			self.response_content = getattr( self.response, 'content', '', )
+			if self.response_content:
+				self.output_text = str( self.response_content ).strip( )
+			
+			return self.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = ('get_output_text( self ) -> str')
+			Logger( ).write( exception )
+			raise exception
+	
+	def summarize( self, file_id: str, prompt: str, model: str, instruct: str = '',
+		temperature: float = 0.0, top_p: float = 0.0, frequency: float = 0.0, presence: float=0.0,
+		max_tokens: int = 0, store: bool = False, stream: bool = False,
+		include: Optional[ List[ str ] ] = None, previous_id: str = '',
+		stream_handler: Any = None ) -> str:
+		"""Analyze a file.
+		
+		Purpose:
+			Generates a response to a required prompt using a required xAI file attachment and
+			Grok model.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+			prompt (str): Required file-analysis prompt.
+			model (str): Required Grok model identifier.
+			instruct (str): Optional system instruction.
+			temperature (float): Sampling temperature.
+			top_p (float): Nucleus-sampling value.
+			frequency (float): Frequency penalty.
+			presence (float): Presence penalty.
+			max_tokens (int): Maximum output-token count.
+			store (bool): Indicates whether xAI stores chat messages.
+			stream (bool): Indicates whether response streaming is enabled.
+			include (Optional[List[str]]): Optional streaming response inclusions.
+			previous_id (str): Previous stored response identifier.
+			stream_handler (Any): Optional callable receiving each streaming text delta.
+		
+		Returns:
+			str: Generated file-analysis response.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.file_id = file_id
+			self.prompt = prompt
+			self.model = model
+			self.instructions = instruct
 			self.temperature = temperature
 			self.top_percent = top_p
 			self.frequency_penalty = frequency
 			self.presence_penalty = presence
 			self.max_output_tokens = max_tokens
 			self.store_messages = store
-			self.include = include if include is not None else [ ]
-			self.tool_choice = tool_choice
-			self.reasoning = reasoning
-			self.context = context if context is not None else [ ]
-			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-			selected_tools = [ ]
-			if tools is not None:
-				for item in tools:
-					if isinstance( item, dict ):
-						selected_tools.append( item )
+			self.stream = stream
+			self.include = (include if include is not None else [ ])
+			self.previous_id = previous_id
+			self.previous_response_id = previous_id
+			self.stream_handler = stream_handler
+			self.chat_values = { 'model': self.model, 'store_messages': self.store_messages, }
+			if self.temperature > 0:
+				self.chat_values[ 'temperature' ] = (self.temperature)
+			
+			if self.top_percent > 0:
+				self.chat_values[ 'top_p' ] = (self.top_percent)
+			
+			if self.frequency_penalty != 0:
+				self.chat_values[ 'frequency_penalty' ] = (self.frequency_penalty)
+			
+			if self.presence_penalty != 0:
+				self.chat_values[ 'presence_penalty' ] = (self.presence_penalty)
+			
+			if self.max_output_tokens > 0:
+				self.chat_values[ 'max_tokens' ] = (self.max_output_tokens)
+			
+			if self.include:
+				self.chat_values[ 'include' ] = self.include
+			
+			if self.previous_response_id:
+				self.chat_values[ 'previous_response_id' ] = (self.previous_response_id)
+			
+			self.client = Client( api_key=self.api_key, timeout=self.timeout, )
+			self.chat = self.client.chat.create( **self.chat_values )
+			if self.instructions:
+				self.chat.append( system( self.instructions ) )
+			
+			self.chat.append( user( self.prompt, file( file_id=self.file_id, ), ) )
+			
+			if self.stream:
+				self.parts = [ ]
+				self.response = None
+				for response, chunk in self.chat.stream( ):
+					self.response = response
+					self.chunk_content = getattr( chunk, 'content', '', )
+					if not self.chunk_content:
 						continue
 					
-					if isinstance( item, str ) and item.strip( ):
-						selected_tools.append( { 'type': item.strip( ) } )
+					self.chunk_content = str( self.chunk_content )
+					self.parts.append( self.chunk_content )
+					
+					if self.stream_handler is not None:
+						self.stream_handler( self.chunk_content )
+				
+				self.output_text = ''.join( self.parts ).strip( )
+				
+				if not self.output_text:
+					self.output_text = self.get_output_text( )
+				
+				return self.output_text
 			
-			self.tools = selected_tools
-			if isinstance( self.tool_choice, list ):
-				self.tool_choice = self.tool_choice[ 0 ] if len( self.tool_choice ) > 0 else None
-			
-			document_prompt = ( f'Document Context:\n'
-					f'{self.content}\n\n'
-					f'User Question:\n'
-					f'{self.prompt}' )
-			
-			self.output_text = self.generate_text( prompt=document_prompt, model=self.model,
-				temperature=self.temperature, top_p=self.top_percent,
-				frequency=self.frequency_penalty, presence=self.presence_penalty,
-				max_tokens=self.max_output_tokens, store=self.store_messages, stream=False,
-				instruct=self.instructions, reasoning=self.reasoning, include=self.include,
-				tools=self.tools, tool_choice=self.tool_choice, context=self.context,
-				vector_store_ids=self.vector_store_ids )
-			
-			return self.output_text
+			self.response = self.chat.sample( )
+			self.previous_id = str( getattr( self.response, 'id', '', ) or '' )
+			self.previous_response_id = self.previous_id
+			return self.get_output_text( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'grok'
-			exception.cause = 'Chat'
-			exception.method = ('answer_document( self, prompt: str, document_text: str, model: str '
-			                    ') -> str | None')
+			exception.cause = 'Files'
+			exception.method = 'summarize( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def search( self, file_id: str, query: str, model: str, instruct: str = '',
+		temperature: float = 0.0, top_p: float = 0.0, frequency: float=0.0, presence: float=0.0,
+		max_tokens: int = 0, store: bool = False, stream: bool = False,
+		include: Optional[ List[ str ] ] = None, previous_id: str = '',
+		stream_handler: Any = None ) -> str:
+		"""Search a file.
 		
 		Purpose:
-		    Provides dir behavior for the Chat workflow while preserving provider request and
-		    response state.
+			Answers a required question using a required xAI file attachment.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+			query (str): Required question about the file.
+			model (str): Required Grok model identifier.
+			instruct (str): Optional system instruction.
+			temperature (float): Sampling temperature.
+			top_p (float): Nucleus-sampling value.
+			frequency (float): Frequency penalty.
+			presence (float): Presence penalty.
+			max_tokens (int): Maximum output-token count.
+			store (bool): Indicates whether xAI stores chat messages.
+			stream (bool): Indicates whether response streaming is enabled.
+			include (Optional[List[str]]): Optional streaming response inclusions.
+			previous_id (str): Previous stored response identifier.
+			stream_handler (Any): Optional callable receiving each streaming text delta.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			str: Generated answer based on the attached file.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
-		return [ 'api_key', 'base_url', 'client', 'model', 'prompt', 'temperature', 'top_percent',
-			'frequency_penalty', 'presence_penalty', 'max_output_tokens', 'stops',
-			'store_messages',
-			'stream', 'background', 'number', 'response_format', 'context', 'instructions',
-			'include', 'tool_choice', 'previous_id', 'previous_response_id', 'conversation_id',
-			'parallel_tools', 'max_tools', 'input', 'tools', 'reasoning', 'allowed_domains',
-			'max_search_results', 'output_text', 'vector_store_ids', 'file_ids', 'response',
-			'file_path', 'model_options', 'include_options', 'tool_options', 'choice_options',
-			'format_options', 'reasoning_options', 'modality_options', 'media_options',
-			'build_reasoning', 'build_input', 'build_tools', 'build_tool_choice', 'build_include',
-			'build_text_format', 'build_request', 'get_output_text', 'get_usage', 'generate_text',
-			'get_grounding_sources', 'answer_documents' ]
+		try:
+			throw_if( 'file_id', file_id )
+			throw_if( 'query', query )
+			throw_if( 'model', model )
+			self.file_id = file_id
+			self.query_text = query
+			self.model = model
+			self.instructions = instruct
+			self.temperature = temperature
+			self.top_percent = top_p
+			self.frequency_penalty = frequency
+			self.presence_penalty = presence
+			self.max_output_tokens = max_tokens
+			self.store_messages = store
+			self.stream = stream
+			self.include = (include if include is not None else [ ])
+			self.previous_id = previous_id
+			self.stream_handler = stream_handler
+			self.prompt = ('Answer the following question using the attached file. '
+			               'Base the answer on the file content and identify any '
+			               'information the file does not provide.\n\n'
+			               f'Question: {self.query_text}')
+			
+			return self.summarize( self.file_id, self.prompt, self.model, self.instructions,
+				self.temperature, self.top_percent, self.frequency_penalty, self.presence_penalty,
+				self.max_output_tokens, self.store_messages, self.stream, self.include,
+				self.previous_id, self.stream_handler, )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'search( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def survey( self, file_id: str, max_chars: int = 4000 ) -> Dict[ str, Any ]:
+		"""Survey a file.
+		
+		Purpose:
+			Retrieves file metadata and content and returns a bounded textual preview for
+			application inspection.
+		
+		Args:
+			file_id (str): Required xAI file identifier.
+			max_chars (int): Maximum number of preview characters.
+		
+		Returns:
+			Dict[str, Any]: File metadata, preview text, and file identifier.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'file_id', file_id )
+			self.file_id = file_id
+			self.max_chars = max_chars
+			self.metadata = self.retrieve( self.file_id )
+			self.file_content = self.extract( self.file_id )
+			if isinstance( self.file_content, bytes ):
+				self.content_text = self.file_content.decode( 'utf-8', errors='replace', )
+			else:
+				self.content_text = str( self.file_content )
+			
+			if self.max_chars > 0:
+				self.preview = self.content_text[ :self.max_chars ]
+			else:
+				self.preview = self.content_text
+			
+			return { 'metadata': self.metadata, 'preview': self.preview, 'file_id': self.file_id, }
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Files'
+			exception.method = 'survey( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
+		
+		Purpose:
+			Returns public members exposed by the Grok Files wrapper.
+		
+		Returns:
+			List[str]: Public member names.
+		"""
+		return [ 'api_key', 'base_url', 'timeout', 'client', 'chat', 'file_path', 'file_name',
+			'file_id', 'file_ids', 'purpose', 'expires_after', 'model', 'prompt', 'instructions',
+			'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
+			'max_output_tokens', 'store_messages', 'stream', 'include', 'previous_id',
+			'previous_response_id', 'response', 'file_content', 'output_text', 'limit',
+			'pagination_token', 'next_token', 'documents', 'model_options', 'purpose_options',
+			'format_options', 'tool_options', 'include_options', 'get_headers',
+			'normalize_metadata', 'upload', 'list', 'list_files', 'retrieve', 'extract',
+			'download',
+			'content', 'delete', 'get_output_text', 'summarize', 'search', 'survey', ]
 
 class TTS( Grok ):
-	"""TTS workflow wrapper.
+	"""Provide xAI text-to-speech workflow support.
 	
 	Purpose:
-	    Builds text-to-speech request state for audio generation workflows exposed by the application.
+		Provides batch speech synthesis through the xAI Text-to-Speech REST API. The class
+		assigns accepted arguments to object members, constructs the provider-native output
+		format and request payload, executes the synthesis request, extracts the returned audio,
+		and optionally writes the audio bytes to a local file.
 	
 	Attributes:
-	    client: Runtime attribute used by the TTS workflow.
-	    model: Runtime attribute used by the TTS workflow.
-	    input_text: Runtime attribute used by the TTS workflow.
-	    voice: Runtime attribute used by the TTS workflow.
-	    language: Runtime attribute used by the TTS workflow.
-	    response_format: Runtime attribute used by the TTS workflow.
-	    sample_rate: Runtime attribute used by the TTS workflow.
-	    bit_rate: Runtime attribute used by the TTS workflow.
-	    speed: Runtime attribute used by the TTS workflow.
-	    audio_path: Runtime attribute used by the TTS workflow.
-	    audio_bytes: Runtime attribute used by the TTS workflow.
-	    request: Runtime attribute used by the TTS workflow.
-	    response: Runtime attribute used by the TTS workflow.
+		api_key (str): xAI API key.
+		base_url (str): xAI REST API base URL.
+		text (str): Text converted to speech.
+		language (str): BCP-47 language code used for synthesis.
+		voice_id (str): Built-in or custom xAI voice identifier.
+		output_format (str | Dict[str, Any]): Requested audio-output configuration.
+		codec (str): Requested audio codec.
+		speed (float): Speech-speed multiplier.
+		optimize_streaming_latency (int): Latency-optimization level.
+		text_normalization (bool): Indicates whether written text is normalized before synthesis.
+		sample_rate (int): Requested audio sample rate.
+		bit_rate (int): Requested MP3 bit rate.
+		with_timestamps (bool): Indicates whether character timing metadata is requested.
+		audio_path (str): Optional local output path.
+		response (Any): Latest HTTP response.
+		audio (bytes): Generated audio bytes.
+		audio_timestamps (Any): Character timing metadata returned by the provider.
+		duration (float): Generated audio duration in seconds.
+		content_type (str): MIME type of the generated audio.
+		params (Dict[str, Any]): Provider request payload.
 	"""
-	client: Optional[ Any ]
-	model: Optional[ str ]
-	input_text: Optional[ str ]
-	voice: Optional[ str ]
-	language: Optional[ str ]
-	response_format: Optional[ str ]
-	sample_rate: Optional[ int ]
-	bit_rate: Optional[ int ]
-	speed: Optional[ float ]
-	audio_path: Optional[ str ]
-	audio_bytes: Optional[ bytes ]
-	request: Optional[ Dict[ str, Any ] ]
-	response: Optional[ Any ]
+	api_key: str
+	base_url: str
+	text: str
+	language: str
+	voice_id: str
+	output_format: str | Dict[ str, Any ]
+	codec: str
+	speed: float
+	optimize_streaming_latency: int
+	text_normalization: bool
+	sample_rate: int
+	bit_rate: int
+	with_timestamps: bool
+	audio_path: str
+	response: Any
+	audio: bytes
+	audio_timestamps: Any
+	duration: float
+	content_type: str
+	params: Dict[ str, Any ]
 	
-	def __init__( self, model: str='xai-tts' ):
+	def __init__( self ) -> None:
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes TTS state with default configuration values and runtime attributes used by later xAI provider calls.
+			Initializes xAI text-to-speech configuration and runtime state without executing a
+			provider request.
 		
-		Args:
-		    model (str): Model supplied to the xAI workflow.
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
-		self.base_url = cfg.XAI_BASE_URL
-		self.client = None
-		self.model = model
-		self.number = None
-		self.input_text = None
-		self.prompt = None
-		self.language = 'auto'
-		self.voice = 'eve'
-		self.response_format = 'mp3'
-		self.sample_rate = None
-		self.bit_rate = None
+		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1', )
+		self.timeout = 3600
+		self.text = ''
+		self.language = 'en'
+		self.voice_id = 'eve'
+		self.output_format = 'mp3'
+		self.codec = 'mp3'
 		self.speed = 1.0
-		self.instructions = None
-		self.temperature = None
-		self.top_percent = None
-		self.frequency_penalty = None
-		self.presence_penalty = None
-		self.max_completion_tokens = None
-		self.store = None
-		self.stream = None
-		self.audio_path = None
-		self.file_path = None
-		self.request = { }
+		self.optimize_streaming_latency = 0
+		self.text_normalization = False
+		self.sample_rate = 24000
+		self.bit_rate = 128000
+		self.with_timestamps = False
+		self.audio_path = ''
+		self.filepath = ''
 		self.response = None
-		self.audio_bytes = None
-		self.output_format = None
-		self.optimize_streaming_latency = None
-		self.text_normalization = None
-		self.extra_kwargs = { }
+		self.audio = b''
+		self.audio_timestamps = None
+		self.duration = 0.0
+		self.content_type = ''
+		self.params = { }
+		self.output_format_payload = { }
+		self.result = { }
 	
 	@property
-	def model_options( self ) -> List[ str ]:
-		"""Model options.
+	def voice_options( self ) -> List[ str ]:
+		"""Get voice options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
+			Returns the standard built-in xAI voices exposed by the wrapper. Custom voice
+			identifiers may also be supplied directly to create_speech().
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
+			List[str]: Standard built-in xAI voice identifiers.
 		"""
-		return [
-				'xai-tts',
-		]
+		return [ 'eve', 'ara', 'rex', 'sal', 'leo', ]
 	
 	@property
-	def voice_options( self ) -> List[ str ] | None:
-		"""Voice options.
+	def format_options( self ) -> List[ str ]:
+		"""Get audio-format options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
+			Returns audio codecs supported by the xAI Text-to-Speech API.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported audio-codec values.
 		"""
-		return [
-				'eve',
-				'ara',
-				'rex',
-				'sal',
-				'leo', ]
+		return [ 'mp3', 'wav', 'pcm', 'mulaw', 'alaw', ]
 	
 	@property
-	def language_options( self ) -> List[ str ] | None:
-		"""Language options.
+	def language_options( self ) -> List[ str ]:
+		"""Get language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
+			Returns documented language codes exposed by the xAI Text-to-Speech API.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Supported language-code values.
 		"""
-		return [
-				'auto',
-				'en',
-				'ar-EG',
-				'ar-SA',
-				'ar-AE',
-				'bn',
-				'zh',
-				'fr',
-				'de',
-				'hi',
-				'id',
-				'it',
-				'ja',
-				'ko',
-				'pt-BR',
-				'pt-PT',
-				'ru',
-				'es-MX',
-				'es-ES',
-				'tr',
-				'vi',
-		]
+		return [ 'auto', 'en', 'ar-EG', 'ar-SA', 'ar-AE', 'bn', 'zh', 'fr', 'de', 'hi', 'id', 'it',
+			'ja', 'ko', 'pt-BR', 'pt-PT', 'ru', 'es-MX', 'es-ES', 'tr', 'vi', ]
 	
 	@property
-	def format_options( self ) -> List[ str ] | None:
-		"""Format options.
+	def sample_rate_options( self ) -> List[ int ]:
+		"""Get sample-rate options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
+			Returns documented audio sample rates supported by xAI speech synthesis.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[int]: Supported sample rates in hertz.
 		"""
-		return [
-				'mp3',
-				'wav',
-				'pcm',
-				'mulaw',
-				'alaw',
-		]
+		return [ 8000, 16000, 22050, 24000, 44100, 48000, ]
 	
 	@property
-	def response_format_options( self ) -> List[ str ] | None:
-		"""Response format options.
+	def bit_rate_options( self ) -> List[ int ]:
+		"""Get bit-rate options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
+			Returns documented MP3 bit rates supported by xAI speech synthesis.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[int]: Supported MP3 bit rates in bits per second.
 		"""
-		return self.format_options
+		return [ 32000, 64000, 96000, 128000, 192000, ]
 	
-	@property
-	def output_format_options( self ) -> List[ str ] | None:
-		"""Output format options.
+	def build_output_format( self, output_format: str | Dict[ str, Any ] = 'mp3',
+		sample_rate: int = 24000, bit_rate: int = 128000 ) -> Dict[ str, Any ]:
+		"""Build output-format configuration.
 		
 		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return self.format_options
-	
-	@property
-	def speed_options( self ) -> List[ float ] | None:
-		"""Speed options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
-		
-		Returns:
-		    List[float] | None: Result produced by the xAI workflow.
-		"""
-		return [
-				0.25,
-				0.50,
-				0.75,
-				1.00,
-				1.25,
-				1.50,
-				2.00,
-				3.00,
-				4.00,
-		]
-	
-	@property
-	def sample_rate_options( self ) -> List[ int ] | None:
-		"""Sample rate options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
-		
-		Returns:
-		    List[int] | None: Result produced by the xAI workflow.
-		"""
-		return [
-				8000,
-				16000,
-				22050,
-				24000,
-				44100,
-				48000,
-		]
-	
-	@property
-	def bit_rate_options( self ) -> List[ int ] | None:
-		"""Bit rate options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the TTS workflow selector without mutating provider state.
-		
-		Returns:
-		    List[int] | None: Result produced by the xAI workflow.
-		"""
-		return [
-				32000,
-				64000,
-				96000,
-				128000,
-				192000,
-		]
-	
-	def validate_voice( self, voice: str=None ) -> str:
-		"""Validate voice.
-		
-		Purpose:
-		    Provides validate voice behavior for the TTS workflow while preserving provider request and response state.
+			Builds the provider-native audio-output configuration from the selected codec,
+			sample rate, and MP3 bit rate.
 		
 		Args:
-		    voice (str): Voice supplied to the xAI workflow.
+			output_format (str | Dict[str, Any]): Audio codec or complete provider output
+				configuration.
+			sample_rate (int): Requested audio sample rate.
+			bit_rate (int): Requested MP3 bit rate.
 		
 		Returns:
-		    str: Result produced by the xAI workflow.
+			Dict[str, Any]: Provider-ready output-format configuration.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			value = str( voice or 'eve' ).strip( ).lower( )
-			if value not in self.voice_options:
-				return 'eve'
+			self.output_format = output_format
+			self.sample_rate = sample_rate
+			self.bit_rate = bit_rate
+			self.output_format_payload = { }
+			if isinstance( self.output_format, dict ):
+				self.output_format_payload = { key: value for key, value in
+					self.output_format.items( ) if value is not None and value != '' }
+				self.codec = str(
+					self.output_format_payload.get( 'codec', 'mp3', ) ).strip( ).lower( )
+			else:
+				self.codec = str( self.output_format ).strip( ).lower( )
+				throw_if( 'output_format', self.codec )
+				self.output_format_payload = { 'codec': self.codec, }
 			
-			return value
+			self.output_format_payload[ 'sample_rate' ] = (self.sample_rate)
+			
+			if self.codec == 'mp3':
+				self.output_format_payload[ 'bit_rate' ] = (self.bit_rate)
+			else:
+				self.output_format_payload.pop( 'bit_rate', None, )
+			
+			return self.output_format_payload
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'validate_voice( self, voice: str=None ) -> str'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'TTS'
+			exception.method = 'build_output_format( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def validate_language( self, language: str=None ) -> str:
-		"""Validate language.
+	def extract_audio( self ) -> bytes:
+		"""Extract generated audio.
 		
 		Purpose:
-		    Provides validate language behavior for the TTS workflow while preserving provider request and response state.
-		
-		Args:
-		    language (str): Language supplied to the xAI workflow.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			value = str( language or 'auto' ).strip( )
-			valid_values = self.language_options
-			if value not in valid_values:
-				return 'auto'
-			
-			return value
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'validate_language( self, language: str=None ) -> str'
-			raise ex
-	
-	def validate_format( self, format: str=None ) -> str:
-		"""Validate format.
-		
-		Purpose:
-		    Provides validate format behavior for the TTS workflow while preserving provider
-		    request and response state.
-		
-		Args:
-		    format (str): Format supplied to the xAI workflow.
+			Extracts audio bytes and available response metadata from the latest xAI
+			Text-to-Speech response. Both direct binary responses and JSON responses containing
+			base64-encoded audio are supported.
 		
 		Returns:
-		    str: Result produced by the xAI workflow.
+			bytes: Generated audio bytes.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			value = str( format or 'mp3' ).strip( ).lower( )
+			throw_if( 'response', self.response )
+			self.audio = b''
+			self.audio_timestamps = None
+			self.duration = 0.0
+			self.content_type = str( self.response.headers.get( 'Content-Type', '', ) )
+			if 'application/json' in self.content_type.lower( ):
+				self.result = self.response.json( )
+				self.encoded_audio = self.result.get( 'audio', '', )
+				if self.encoded_audio:
+					self.audio = base64.b64decode( self.encoded_audio )
+				
+				self.audio_timestamps = self.result.get( 'audio_timestamps', None, )
+				self.duration = float( self.result.get( 'duration', 0.0, ) or 0.0 )
+				self.content_type = str(
+					self.result.get( 'content_type', self.content_type, ) or self.content_type )
+			else:
+				self.audio = self.response.content
 			
-			if value == 'mu-law':
-				value = 'mulaw'
-			
-			if value == 'a-law':
-				value = 'alaw'
-			
-			if value not in self.format_options:
-				return 'mp3'
-			
-			return value
+			throw_if( 'audio', self.audio )
+			return self.audio
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'validate_format( self, format: str=None ) -> str'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'TTS'
+			exception.method = 'extract_audio( self ) -> bytes'
+			Logger( ).write( exception )
+			raise exception
 	
-	def validate_sample_rate( self, sample_rate: int=None ) -> int | None:
-		"""Validate sample rate.
-		
-		Purpose:
-		    Provides validate sample rate behavior for the TTS workflow while preserving provider
-		    request and response state.
-		
-		Args:
-		    sample_rate (int): Sample rate supplied to the xAI workflow.
-		
-		Returns:
-		    int | None: Result produced by the xAI workflow.
-		"""
-		try:
-			if sample_rate is None:
-				return None
-			
-			value = int( sample_rate )
-			if value not in self.sample_rate_options:
-				return None
-			
-			return value
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'validate_sample_rate( self, sample_rate: int=None ) -> int | None'
-			raise ex
-	
-	def validate_bit_rate( self, bit_rate: int=None ) -> int | None:
-		"""Validate bit rate.
-		
-		Purpose:
-		    Provides validate bit rate behavior for the TTS workflow while preserving provider
-		    request and response state.
-		
-		Args:
-		    bit_rate (int): Bit rate supplied to the xAI workflow.
-		
-		Returns:
-		    int | None: Result produced by the xAI workflow.
-		"""
-		try:
-			if bit_rate is None:
-				return None
-			
-			value = int( bit_rate )
-			if value not in self.bit_rate_options:
-				return None
-			
-			return value
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'validate_bit_rate( self, bit_rate: int=None ) -> int | None'
-			raise ex
-	
-	def validate_speed( self, speed: float=None ) -> float:
-		"""Validate speed.
-		
-		Purpose:
-		    Provides validate speed behavior for the TTS workflow while preserving provider
-		    request and response state.
-		
-		Args:
-		    speed (float): Speed supplied to the xAI workflow.
-		
-		Returns:
-		    float: Result produced by the xAI workflow.
-		"""
-		try:
-			value = 1.0 if speed is None else float( speed )
-			
-			if value < 0.25:
-				return 0.25
-			
-			if value > 4.0:
-				return 4.0
-			
-			return value
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'validate_speed( self, speed: float=None ) -> float'
-			raise ex
-	
-	def build_output_format( self ) -> Dict[ str, Any ] | None:
-		"""Build output format.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any] | None: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'response_format', self.response_format )
-			self.output_format = { 'codec': self.response_format, }
-			if self.sample_rate is not None:
-				self.output_format[ 'sample_rate' ]=self.sample_rate
-			
-			if self.response_format == 'mp3' and self.bit_rate is not None:
-				self.output_format[ 'bit_rate' ]=self.bit_rate
-			
-			return self.output_format
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'build_output_format( self ) -> Dict[ str, Any ] | None'
-			raise ex
-	
-	def build_request( self ) -> Dict[ str, Any ]:
-		"""Build request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'input_text', self.input_text )
-			throw_if( 'voice', self.voice )
-			throw_if( 'language', self.language )
-			self.request = {
-					'text': self.input_text,
-					'voice_id': self.voice,
-					'language': self.language,
-			}
-			self.output_format = self.build_output_format( )
-			if self.output_format:
-				self.request[ 'output_format' ]=self.output_format
-			
-			if self.optimize_streaming_latency is not None:
-				self.request[ 'optimize_streaming_latency' ]=self.optimize_streaming_latency
-			
-			if self.text_normalization is not None:
-				self.request[ 'text_normalization' ]=self.text_normalization
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'build_request( self ) -> Dict[ str, Any ]'
-			raise ex
-	
-	def execute_request( self ) -> Any:
-		"""Execute request.
-		
-		Purpose:
-		    Provides execute request behavior for the TTS workflow while preserving provider
-		    request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'api_key', self.api_key )
-			throw_if( 'base_url', self.base_url )
-			throw_if( 'request', self.request )
-			self.response = requests.post( url=f'{self.base_url.rstrip( "/" )}/tts',
-				headers={ 'Authorization': f'Bearer {self.api_key}',
-				          'Content-Type': 'application/json', },
-				json=self.request, timeout=self.timeout or 3600, )
-			self.response.raise_for_status( )
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'execute_request( self ) -> Any'
-			raise ex
-	
-	def extract_audio( self ) -> bytes | None:
-		"""Extract audio.
-		
-		Purpose:
-		    Provides extract audio behavior for the TTS workflow while preserving provider
-		    request and response state.
-		
-		Returns:
-		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
-		"""
-		try:
-			if self.response is None:
-				return None
-			
-			self.audio_bytes = self.response.content
-			if not self.audio_bytes:
-				return None
-			
-			if self.audio_path:
-				with open( self.audio_path, 'wb' ) as target:
-					target.write( self.audio_bytes )
-			
-			return self.audio_bytes
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'extract_audio( self ) -> bytes | None'
-			raise ex
-	
-	def create_speech( self, text: str, model: str='xai-tts', format: str='mp3',
-			speed: float=1.0, voice: str='eve', instruct: str=None, file_path: str=None,
-			language: str='auto', sample_rate: int=None, bit_rate: int=None,
-			optimize_streaming_latency: int=None, text_normalization: bool = None,
-			**kwargs: Any ) -> bytes | None:
+	def create_speech( self, text: str, language: str = 'en', voice_id: str = 'eve',
+		output_format: str | Dict[ str, Any ] = 'mp3', speed: float = 1.0,
+		optimize_streaming_latency: int = 0, text_normalization: bool = False,
+		sample_rate: int = 24000, bit_rate: int = 128000, filepath: str = '', audio_path: str = '',
+		with_timestamps: bool = False ) -> bytes:
 		"""Create speech.
 		
 		Purpose:
-		    Creates the requested xAI resource using validated names, paths, or configuration values.
+			Converts required text into speech through the xAI batch Text-to-Speech endpoint
+			using the selected language, built-in or custom voice, output codec, sample rate,
+			MP3 bit rate, speed, normalization, latency, and timestamp controls.
 		
 		Args:
-		    text (str): Text supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    format (str): Format supplied to the xAI workflow.
-		    speed (float): Speed supplied to the xAI workflow.
-		    voice (str): Voice supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    file_path (str): File path supplied to the xAI workflow.
-		    language (str): Language supplied to the xAI workflow.
-		    sample_rate (int): Sample rate supplied to the xAI workflow.
-		    bit_rate (int): Bit rate supplied to the xAI workflow.
-		    optimize_streaming_latency (int): Optimize streaming latency supplied to the xAI workflow.
-		    text_normalization (bool): Text normalization supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
+			text (str): Required text converted to speech.
+			language (str): BCP-47 language code or auto.
+			voice_id (str): Built-in or custom xAI voice identifier.
+			output_format (str | Dict[str, Any]): Audio codec or complete provider output
+				configuration.
+			speed (float): Speech-speed multiplier.
+			optimize_streaming_latency (int): Latency-optimization level.
+			text_normalization (bool): Indicates whether written text is normalized before
+				synthesis.
+			sample_rate (int): Requested audio sample rate.
+			bit_rate (int): Requested MP3 bit rate.
+			filepath (str): Optional local output path.
+			audio_path (str): Compatibility alias for the optional local output path.
+			with_timestamps (bool): Indicates whether character timing metadata is requested.
 		
 		Returns:
-		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
+			bytes: Generated audio bytes.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'text', text )
-			self.input_text = text
-			self.prompt = text
-			self.model = model or 'xai-tts'
-			self.response_format = self.validate_format( format )
-			self.speed = self.validate_speed( speed )
-			self.voice = self.validate_voice( voice )
-			self.language = self.validate_language( language )
-			self.instructions = instruct
-			self.audio_path = file_path
-			self.file_path = file_path
-			self.sample_rate = self.validate_sample_rate( sample_rate )
-			self.bit_rate = self.validate_bit_rate( bit_rate )
-			self.optimize_streaming_latency = optimize_streaming_latency
-			self.text_normalization = text_normalization
-			self.extra_kwargs = kwargs or { }
-			self.build_request( )
-			self.execute_request( )
-			return self.extract_audio( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'create_speech( self, text: str ) -> bytes | None'
-			raise ex
-	
-	def synthesize( self, text: str, model: str='xai-tts', format: str='mp3',
-			speed: float=1.0, voice: str='eve', instruct: str=None, file_path: str=None,
-			language: str='auto', **kwargs: Any ) -> bytes | None:
-		"""Synthesize.
-		
-		Purpose:
-		    Provides synthesize behavior for the TTS workflow while preserving provider request and response state.
-		
-		Args:
-		    text (str): Text supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    format (str): Format supplied to the xAI workflow.
-		    speed (float): Speed supplied to the xAI workflow.
-		    voice (str): Voice supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    file_path (str): File path supplied to the xAI workflow.
-		    language (str): Language supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
-		"""
-		try:
-			return self.create_speech( text=text, model=model, format=format, speed=speed,
-				voice=voice, instruct=instruct, file_path=file_path, language=language, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'synthesize( self, text: str ) -> bytes | None'
-			raise ex
-	
-	def generate( self, text: str=None, prompt: str=None, model: str='xai-tts',
-			format: str='mp3', speed: float=1.0, voice: str='eve', instruct: str=None,
-			file_path: str=None, language: str='auto', **kwargs: Any ) -> bytes | None:
-		"""Generate.
-		
-		Purpose:
-		    Provides generate behavior for the TTS workflow while preserving provider request and response state.
-		
-		Args:
-		    text (str): Text supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    format (str): Format supplied to the xAI workflow.
-		    speed (float): Speed supplied to the xAI workflow.
-		    voice (str): Voice supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    file_path (str): File path supplied to the xAI workflow.
-		    language (str): Language supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Optional[bytes]: Audio bytes returned by the xAI speech workflow when generation succeeds.
-		"""
-		try:
-			input_text = text or prompt
-			throw_if( 'text', input_text )
-			return self.create_speech( text=input_text, model=model, format=format, speed=speed,
-				voice=voice, instruct=instruct, file_path=file_path, language=language,
-				**kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'TTS'
-			ex.method = 'generate( self, text: str ) -> bytes | None'
-			raise ex
-	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
-		
-		Purpose:
-		    Provides dir behavior for the TTS workflow while preserving provider request and
-		    response state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [ 'api_key', 'base_url', 'client', 'model', 'number', 'input_text', 'prompt',
-			'language', 'voice', 'response_format', 'sample_rate', 'bit_rate', 'speed',
-			'instructions', 'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
-			'max_completion_tokens', 'store', 'stream', 'audio_path', 'file_path', 'request',
-			'response', 'audio_bytes', 'output_format', 'optimize_streaming_latency',
-			'text_normalization', 'extra_kwargs', 'model_options', 'voice_options',
-			'language_options', 'format_options', 'response_format_options',
-			'output_format_options', 'speed_options', 'sample_rate_options', 'bit_rate_options',
-			'validate_voice', 'validate_language', 'validate_format', 'validate_sample_rate',
-			'validate_bit_rate', 'validate_speed', 'build_output_format', 'build_request',
-			'execute_request', 'extract_audio', 'create_speech', 'synthesize', 'generate', ]
-
-class Transcription( Grok ):
-	"""Transcription workflow wrapper.
-	
-	Purpose:
-	    Builds speech-to-text request state from uploaded audio files and provider model settings.
-	
-	Attributes:
-	    client: Runtime attribute used by the Transcription workflow.
-	    model: Runtime attribute used by the Transcription workflow.
-	    prompt: Runtime attribute used by the Transcription workflow.
-	    language: Runtime attribute used by the Transcription workflow.
-	    file_path: Runtime attribute used by the Transcription workflow.
-	    audio_file: Runtime attribute used by the Transcription workflow.
-	    messages: Runtime attribute used by the Transcription workflow.
-	    response: Runtime attribute used by the Transcription workflow.
-	    transcript: Runtime attribute used by the Transcription workflow.
-	    request: Runtime attribute used by the Transcription workflow.
-	"""
-	client: Optional[ Client ]
-	model: Optional[ str ]
-	prompt: Optional[ str ]
-	language: Optional[ str ]
-	file_path: Optional[ str ]
-	audio_file: Optional[ Any ]
-	messages: Optional[ List[ Any ] ]
-	response: Optional[ Any ]
-	transcript: Optional[ str ]
-	request: Optional[ Dict[ str, Any ] ]
-	
-	def __init__( self, number: int=1, model: str='grok-3-mini-fast',
-			temperature: float=0.8, top_p: float=0.9, frequency: float=0.0,
-			presence: float=0.0, max_tokens: int=10000, store: bool = True,
-			stream: bool = False, language: str='en', instruct: str=None ):
-		"""Initialize instance.
-		
-		Purpose:
-		    Initializes Transcription state with default configuration values and runtime
-		    attributes used by later xAI provider calls.
-		
-		Args:
-		    number (int): Number supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    language (str): Language supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		"""
-		super( ).__init__( )
-		self.api_key = os.getenv( 'XAI_API_KEY' ) or cfg.XAI_API_KEY
-		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1' )
-		self.client = None
-		self.number = number
-		self.model = model
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_output_tokens = max_tokens
-		self.max_completion_tokens = max_tokens
-		self.store = store
-		self.stream = stream
-		self.language = language
-		self.instructions = instruct
-		self.prompt = None
-		self.file_path = None
-		self.audio_file = None
-		self.messages = [ ]
-		self.request = { }
-		self.response = None
-		self.chat = None
-		self.transcript = None
-		self.response_format = None
-		self.include = [ ]
-		self.extra_kwargs = { }
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		"""Model options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [
-				'grok-4',
-				'grok-4-latest',
-				'grok-4-fast-reasoning',
-				'grok-4-fast-non-reasoning',
-				'grok-3',
-				'grok-3-latest',
-				'grok-3-mini',
-				'grok-3-fast',
-				'grok-3-mini-fast',
-		]
-	
-	@property
-	def language_options( self ) -> List[ str ]:
-		"""Language options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [
-				'auto',
-				'en',
-				'es',
-				'fr',
-				'de',
-				'it',
-				'ja',
-				'ko',
-				'pt',
-				'zh',
-				'Tagalog',
-				'French',
-				'Japanese',
-				'German',
-				'Italian',
-				'Chinese',
-		]
-	
-	@property
-	def format_options( self ) -> List[ str ]:
-		"""Format options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [
-				'audio/wav',
-				'audio/mp3',
-				'audio/mpeg',
-				'audio/mp4',
-				'audio/m4a',
-				'audio/webm',
-				'audio/ogg',
-				'audio/flac',
-		]
-	
-	@property
-	def response_format_options( self ) -> List[ str ]:
-		"""Response format options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'text', 'json', ]
-	
-	@property
-	def include_options( self ) -> List[ str ]:
-		"""Include options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Transcription workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ ]
-	
-	def build_prompt( self ) -> str:
-		"""Build prompt.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			if isinstance( self.prompt, str ) and self.prompt.strip( ):
-				return self.prompt.strip( )
-			
-			language = self.language or 'auto'
-			return ( 'Transcribe the attached audio file accurately. '
-					f'Use the language hint "{language}" when helpful. '
-					'Return only the transcript unless additional instructions require otherwise.' )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'build_prompt( self )'
-			raise ex
-	
-	def build_messages( self ) -> List[ Any ]:
-		"""Build messages.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    List[Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			self.messages = [ ]
-			
-			if isinstance( self.instructions, str ) and self.instructions.strip( ):
-				self.messages.append( system( self.instructions.strip( ) ) )
-			
-			self.messages.append( user( self.build_prompt( ) ) )
-			return self.messages
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'build_messages( self )'
-			raise ex
-	
-	def build_request( self ) -> Dict[ str, Any ]:
-		"""Build request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'model', self.model )
-			throw_if( 'file_path', self.file_path )
-			self.build_messages( )
-			self.request = { 'model': self.model, 'messages': self.messages, }
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'build_request( self )'
-			raise ex
-	
-	def execute_request( self ) -> Any:
-		"""Execute request.
-		
-		Purpose:
-		    Provides execute request behavior for the Transcription workflow while preserving
-		    provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'api_key', self.api_key )
-			throw_if( 'file_path', self.file_path )
-			self.client = Client( api_key=cfg.XAI_API_KEY )
-			with open( self.file_path, 'rb' ) as self.audio_file:
-				self.chat = self.client.chat.create( file=self.audio_file, **self.request )
-				self.response = self.chat.sample( )
-			
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'execute_request( self )'
-			raise ex
-	
-	def extract_transcript( self ) -> str:
-		"""Extract transcript.
-		
-		Purpose:
-		    Provides extract transcript behavior for the Transcription workflow while preserving
-		    provider request and response state.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			if self.response is None:
-				return ''
-			
-			output_text = getattr( self.response, 'output_text', None )
-			if isinstance( output_text, str ) and output_text.strip( ):
-				self.transcript = output_text.strip( )
-				return self.transcript
-			
-			text = getattr( self.response, 'text', None )
-			if isinstance( text, str ) and text.strip( ):
-				self.transcript = text.strip( )
-				return self.transcript
-			
-			content = getattr( self.response, 'content', None )
-			if isinstance( content, str ) and content.strip( ):
-				self.transcript = content.strip( )
-				return self.transcript
-			
-			self.transcript = str( self.response ).strip( )
-			return self.transcript
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'extract_transcript( self )'
-			raise ex
-	
-	def transcribe( self, path: str, model: str='grok-3-mini-fast', language: str='en',
-			prompt: str=None, temperature: float=None, top_p: float=None,
-			frequency: float=None, presence: float=None, max_tokens: int=None,
-			store: bool=None, stream: bool = None, instruct: str=None,
-			response_format: str=None, include: List[ str ]=None, mime_type: str=None,
-			start_time: float=None, end_time: float=None, **kwargs: Any ) -> str:
-		"""Transcribe.
-		
-		Purpose:
-		    Executes xAI transcription using validated audio input and model configuration.
-		
-		Args:
-		    path (str): Path supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    language (str): Language supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    response_format (str): Response format supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    mime_type (str): Mime type supplied to the xAI workflow.
-		    start_time (float): Start time supplied to the xAI workflow.
-		    end_time (float): End time supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'path', path )
-			throw_if( 'model', model )
-			self.file_path = path
-			self.model = model
+			throw_if( 'language', language )
+			throw_if( 'voice_id', voice_id )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.text = text
 			self.language = language
-			self.prompt = prompt
-			self.temperature = temperature if temperature is not None else self.temperature
-			self.top_percent = top_p if top_p is not None else self.top_percent
-			self.frequency_penalty = frequency if frequency is not None else self.frequency_penalty
-			self.presence_penalty = presence if presence is not None else self.presence_penalty
-			self.max_output_tokens = max_tokens if max_tokens is not None else self.max_output_tokens
-			self.max_completion_tokens = self.max_output_tokens
-			self.store = store if store is not None else self.store
-			self.stream = stream if stream is not None else self.stream
-			self.instructions = instruct if instruct is not None else self.instructions
-			self.response_format = response_format
-			self.include = include if include is not None else [ ]
-			self.mime_type = mime_type
-			self.start_time = start_time
-			self.end_time = end_time
-			self.extra_kwargs = kwargs or { }
-			self.build_request( )
-			self.execute_request( )
-			return self.extract_transcript( )
+			self.voice_id = voice_id
+			self.output_format = output_format
+			self.speed = speed
+			self.optimize_streaming_latency = (optimize_streaming_latency)
+			self.text_normalization = text_normalization
+			self.sample_rate = sample_rate
+			self.bit_rate = bit_rate
+			self.filepath = filepath
+			self.audio_path = audio_path
+			self.with_timestamps = with_timestamps
+			
+			if not self.filepath:
+				self.filepath = self.audio_path
+			
+			self.audio_path = self.filepath
+			self.output_format_payload = self.build_output_format( self.output_format,
+				self.sample_rate, self.bit_rate, )
+			self.params = { 'text': self.text, 'language': self.language, 'voice_id': self.voice_id,
+				'output_format': self.output_format_payload, 'speed': self.speed,
+				'optimize_streaming_latency': (self.optimize_streaming_latency),
+				'text_normalization': self.text_normalization,
+				'with_timestamps': self.with_timestamps, }
+			self.response = requests.post( url=(f'{self.base_url.rstrip( "/" )}/tts'),
+				headers={ 'Authorization': f'Bearer {self.api_key}',
+					'Content-Type': 'application/json', }, json=self.params,
+				timeout=self.timeout, )
+			self.response.raise_for_status( )
+			self.audio = self.extract_audio( )
+			if self.audio_path:
+				with open( self.audio_path, 'wb' ) as target:
+					target.write( self.audio )
+			
+			return self.audio
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Transcription'
-			ex.method = 'transcribe( self, path: str, model: str ) -> str'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'TTS'
+			exception.method = 'create_speech( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
 		Purpose:
-		    Provides dir behavior for the Transcription workflow while preserving provider
-		    request and response state.
+			Returns public members exposed by the Grok text-to-speech wrapper.
 		
 		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
+			List[str]: Public member names.
 		"""
-		return [ 'api_key', 'base_url', 'client', 'number', 'model', 'temperature', 'top_percent',
-			'frequency_penalty', 'presence_penalty', 'max_output_tokens', 'max_completion_tokens',
-			'store', 'stream', 'language', 'instructions', 'prompt', 'file_path', 'audio_file',
-			'messages', 'request', 'response', 'chat', 'transcript', 'response_format', 'include',
-			'extra_kwargs', 'model_options', 'language_options', 'format_options',
-			'response_format_options', 'include_options', 'build_prompt', 'build_messages',
-			'build_request', 'execute_request', 'extract_transcript', 'transcribe', ]
+		return [ 'api_key', 'base_url', 'timeout', 'text', 'language', 'voice_id', 'output_format',
+			'codec', 'speed', 'optimize_streaming_latency', 'text_normalization', 'sample_rate',
+			'bit_rate', 'with_timestamps', 'audio_path', 'filepath', 'response', 'audio',
+			'audio_timestamps', 'duration', 'content_type', 'params', 'voice_options',
+			'format_options', 'language_options', 'sample_rate_options', 'bit_rate_options',
+			'build_output_format', 'extract_audio', 'create_speech', ]
 
 class Translation( Grok ):
-	"""Translation workflow wrapper.
+	"""Provide xAI audio-translation workflow support.
 	
 	Purpose:
-	    Builds translation request state from source content, language values, and provider model settings.
+		Provides spoken-audio translation by transcribing a required audio file through the
+		xAI Speech-to-Text API and translating the resulting transcript through a required
+		Grok text model. The class assigns accepted arguments to object members before
+		constructing either provider request.
 	
 	Attributes:
-	    client: Runtime attribute used by the Translation workflow.
-	    model: Runtime attribute used by the Translation workflow.
-	    prompt: Runtime attribute used by the Translation workflow.
-	    target_language: Runtime attribute used by the Translation workflow.
-	    source_language: Runtime attribute used by the Translation workflow.
-	    file_path: Runtime attribute used by the Translation workflow.
-	    audio_file: Runtime attribute used by the Translation workflow.
-	    messages: Runtime attribute used by the Translation workflow.
-	    response: Runtime attribute used by the Translation workflow.
-	    translation: Runtime attribute used by the Translation workflow.
-	    request: Runtime attribute used by the Translation workflow.
+		api_key (str): xAI API key.
+		base_url (str): xAI REST API base URL.
+		audio_path (str): Local audio-file path used by the current request.
+		file_name (str): Source audio filename.
+		mime_type (str): Source audio MIME type.
+		source_language (str): Optional language code used for transcript formatting.
+		target_language (str): Required translation target language.
+		text_format (bool): Indicates whether inverse text normalization is enabled.
+		keyterm (str): Optional transcription-bias term.
+		model (str): Grok text model used for translation.
+		prompt (str): Translation prompt sent to the Grok model.
+		response (Any): Latest provider response.
+		transcript (str): Text returned by the Speech-to-Text API.
+		translation (str): Text returned by the Grok translation request.
+		result (Dict[str, Any]): Parsed Speech-to-Text response.
+		params (List[Tuple[str, str]]): Speech-to-Text multipart parameters.
+		chat (Any): xAI chat used for translation.
+		client (Optional[Client]): xAI SDK client.
+		duration (float): Source audio duration returned by Speech-to-Text.
+		words (List[Dict[str, Any]]): Word-level transcription segments.
 	"""
+	api_key: str
+	base_url: str
+	audio_path: str
+	file_name: str
+	mime_type: str
+	source_language: str
+	target_language: str
+	text_format: bool
+	keyterm: str
+	model: str
+	prompt: str
+	response: Any
+	transcript: str
+	translation: str
+	result: Dict[ str, Any ]
+	params: List[ tuple[ str, str ] ]
+	chat: Any
 	client: Optional[ Client ]
-	model: Optional[ str ]
-	prompt: Optional[ str ]
-	target_language: Optional[ str ]
-	source_language: Optional[ str ]
-	file_path: Optional[ str ]
-	audio_file: Optional[ Any ]
-	messages: Optional[ List[ Any ] ]
-	response: Optional[ Any ]
-	translation: Optional[ str ]
-	request: Optional[ Dict[ str, Any ] ]
+	duration: float
+	words: List[ Dict[ str, Any ] ]
 	
-	def __init__( self, model: str='grok-3-fast', temperature: float=0.8,
-			top_p: float=0.9, frequency: float=0.0, presence: float=0.0,
-			max_tokens: int=10000, store: bool = True, stream: bool = False,
-			instruct: str=None ):
+	def __init__( self, model: str = 'grok-4.20' ) -> None:
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes Translation state with default configuration values and runtime attributes
-		    used by later xAI provider calls.
+			Initializes xAI audio-translation configuration and runtime state without
+			executing a provider request.
 		
 		Args:
-		    model (str): Model supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		"""
-		super( ).__init__( )
-		self.api_key = os.getenv( 'XAI_API_KEY' ) or cfg.XAI_API_KEY
-		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1' )
-		self.client = None
-		self.model = model
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_output_tokens = max_tokens
-		self.max_completion_tokens = max_tokens
-		self.store = store
-		self.stream = stream
-		self.instructions = instruct
-		self.prompt = None
-		self.target_language = None
-		self.source_language = None
-		self.file_path = None
-		self.audio_file = None
-		self.messages = [ ]
-		self.request = { }
-		self.response = None
-		self.chat = None
-		self.translation = None
-		self.response_format = None
-		self.include = [ ]
-		self.mime_type = None
-		self.extra_kwargs = { }
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		"""Model options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
+			model (str): Default Grok text model used for translation.
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'grok-4', 'grok-4-latest', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning',
-			'grok-3', 'grok-3-latest', 'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
-	
-	@property
-	def language_options( self ) -> List[ str ]:
-		"""Language options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'English', 'Spanish', 'French', 'German', 'Italian', 'Japanese', 'Korean',
-			'Portuguese', 'Chinese', 'Tagalog', ]
-	
-	@property
-	def format_options( self ) -> List[ str ]:
-		"""Format options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/webm',
-			'audio/ogg', 'audio/flac', ]
-	
-	@property
-	def response_format_options( self ) -> List[ str ]:
-		"""Response format options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'text', 'json', ]
-	
-	@property
-	def include_options( self ) -> List[ str ]:
-		"""Include options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Translation workflow selector
-		    without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ ]
-	
-	def build_prompt( self ) -> str:
-		"""Build prompt.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'target_language', self.target_language )
-			
-			if isinstance( self.prompt, str ) and self.prompt.strip( ):
-				base_prompt = self.prompt.strip( )
-			else:
-				base_prompt = 'Translate the spoken audio in the attached file.'
-			
-			if self.source_language and str( self.source_language ).strip( ):
-				return (
-						f'{base_prompt} Source language hint: {self.source_language}. '
-						f'Translate the speech into {self.target_language}. '
-						'Return only the translated text unless additional instructions require otherwise.'
-				)
-			
-			return (
-					f'{base_prompt} Translate the speech into {self.target_language}. '
-					'Return only the translated text unless additional instructions require otherwise.'
-			)
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'build_prompt( self )'
-			raise ex
-	
-	def build_messages( self ) -> List[ Any ]:
-		"""Build messages.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    List[Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			self.messages = [ ]
-			
-			if isinstance( self.instructions, str ) and self.instructions.strip( ):
-				self.messages.append( system( self.instructions.strip( ) ) )
-			
-			self.messages.append( user( self.build_prompt( ) ) )
-			return self.messages
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'build_messages( self )'
-			raise ex
-	
-	def build_request( self ) -> Dict[ str, Any ]:
-		"""Build request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the
-		    resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'model', self.model )
-			throw_if( 'file_path', self.file_path )
-			throw_if( 'target_language', self.target_language )
-			self.build_messages( )
-			self.request = {
-					'model': self.model,
-					'messages': self.messages,
-			}
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'build_request( self )'
-			raise ex
-	
-	def execute_request( self ) -> Any:
-		"""Execute request.
-		
-		Purpose:
-		    Provides execute request behavior for the Translation workflow while preserving
-		    provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'api_key', self.api_key )
-			throw_if( 'file_path', self.file_path )
-			self.client = Client( api_key=cfg.XAI_API_KEY )
-			with open( self.file_path, 'rb' ) as self.audio_file:
-				self.chat = self.client.chat.create( file=self.audio_file, **self.request )
-				self.response = self.chat.sample( )
-			
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'execute_request( self )'
-			raise ex
-	
-	def extract_translation( self ) -> str:
-		"""Extract translation.
-		
-		Purpose:
-		    Provides extract translation behavior for the Translation workflow while preserving
-		    provider request and response state.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			if self.response is None:
-				return ''
-			
-			output_text = getattr( self.response, 'output_text', None )
-			if isinstance( output_text, str ) and output_text.strip( ):
-				self.translation = output_text.strip( )
-				return self.translation
-			
-			text = getattr( self.response, 'text', None )
-			if isinstance( text, str ) and text.strip( ):
-				self.translation = text.strip( )
-				return self.translation
-			
-			content = getattr( self.response, 'content', None )
-			if isinstance( content, str ) and content.strip( ):
-				self.translation = content.strip( )
-				return self.translation
-			
-			self.translation = str( self.response ).strip( )
-			return self.translation
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'extract_translation( self )'
-			raise ex
-	
-	def translate( self, path: str, model: str='grok-3-fast', language: str='English',
-			prompt: str=None, source_language: str=None, temperature: float=None,
-			top_p: float=None, frequency: float=None, presence: float=None,
-			max_tokens: int=None, store: bool = None, stream: bool = None,
-			instruct: str=None, response_format: str=None, include: List[ str ]=None,
-			mime_type: str=None, **kwargs: Any ) -> str:
-		"""Translate.
-		
-		Purpose:
-		    Executes xAI translation using validated source content and language settings.
-		
-		Args:
-		    path (str): Path supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    language (str): Language supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    source_language (str): Source language supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    response_format (str): Response format supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    mime_type (str): Mime type supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'path', path )
-			throw_if( 'model', model )
-			throw_if( 'language', language )
-			self.file_path = path
-			self.model = model
-			self.target_language = language
-			self.source_language = source_language
-			self.prompt = prompt
-			self.temperature = temperature if temperature is not None else self.temperature
-			self.top_percent = top_p if top_p is not None else self.top_percent
-			self.frequency_penalty = frequency if frequency is not None else self.frequency_penalty
-			self.presence_penalty = presence if presence is not None else self.presence_penalty
-			self.max_output_tokens = max_tokens if max_tokens is not None else self.max_output_tokens
-			self.max_completion_tokens = self.max_output_tokens
-			self.store = store if store is not None else self.store
-			self.stream = stream if stream is not None else self.stream
-			self.instructions = instruct if instruct is not None else self.instructions
-			self.response_format = response_format
-			self.include = include if include is not None else [ ]
-			self.mime_type = mime_type
-			self.extra_kwargs = kwargs or { }
-			self.build_request( )
-			self.execute_request( )
-			return self.extract_translation( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Translation'
-			ex.method = 'translate( self, path: str, model: str, language: str ) -> str'
-			raise ex
-	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
-		
-		Purpose:
-		    Provides dir behavior for the Translation workflow while preserving provider request and response state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [
-				'api_key',
-				'base_url',
-				'client',
-				'model',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'max_output_tokens',
-				'max_completion_tokens',
-				'store',
-				'stream',
-				'instructions',
-				'prompt',
-				'target_language',
-				'source_language',
-				'file_path',
-				'audio_file',
-				'messages',
-				'request',
-				'response',
-				'chat',
-				'translation',
-				'response_format',
-				'include',
-				'mime_type',
-				'extra_kwargs',
-				'model_options',
-				'language_options',
-				'format_options',
-				'response_format_options',
-				'include_options',
-				'build_prompt',
-				'build_messages',
-				'build_request',
-				'execute_request',
-				'extract_translation',
-				'translate',
-		]
-
-class Image( Grok ):
-	"""Images workflow wrapper.
-	
-	Purpose:
-	    Builds and executes xAI image-generation and image-analysis workflows while preserving
-	    prompt, model, and response state.
-	
-	Attributes:
-	    model: Runtime attribute used by the Images workflow.
-	    prompt: Runtime attribute used by the Images workflow.
-	    aspect_ratio: Runtime attribute used by the Images workflow.
-	    resolution: Runtime attribute used by the Images workflow.
-	    response_format: Runtime attribute used by the Images workflow.
-	    client: Runtime attribute used by the Images workflow.
-	    image_path: Runtime attribute used by the Images workflow.
-	    image_url: Runtime attribute used by the Images workflow.
-	    detail: Runtime attribute used by the Images workflow.
-	    response: Runtime attribute used by the Images workflow.
-	    request: Runtime attribute used by the Images workflow.
-	    output: Runtime attribute used by the Images workflow.
-	"""
-	model: Optional[ str ]
-	prompt: Optional[ str ]
-	aspect_ratio: Optional[ str ]
-	resolution: Optional[ str ]
-	response_format: Optional[ str ]
-	client: Optional[ OpenAI ]
-	image_path: Optional[ str ]
-	image_url: Optional[ str ]
-	detail: Optional[ str ]
-	response: Optional[ Any ]
-	request: Optional[ Dict[ str, Any ] ]
-	output: Optional[ Any ]
-	
-	def __init__( self ):
-		"""Initialize instance.
-		
-		Purpose:
-		    Initializes Images state with default configuration values and runtime attributes
-		    used by later xAI provider calls.
-		"""
-		super( ).__init__( )
-		self.api_key = os.getenv( 'XAI_API_KEY' ) or cfg.XAI_API_KEY
-		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1' )
-		self.client = None
-		self.model = None
-		self.prompt = None
-		self.number = None
-		self.aspect_ratio = None
-		self.resolution = None
-		self.size = None
-		self.quality = None
-		self.style = None
-		self.detail = None
-		self.response_format = None
-		self.mime_type = None
-		self.compression = None
-		self.background = None
-		self.response_modalities = None
-		self.max_output_tokens = None
-		self.temperature = None
-		self.top_percent = None
-		self.frequency_penalty = None
-		self.presence_penalty = None
-		self.tools = [ ]
-		self.tool_choice = None
-		self.include = [ ]
-		self.allowed_domains = [ ]
-		self.store = None
-		self.stream = None
-		self.is_parallel = None
-		self.max_tools = None
-		self.max_searches = None
-		self.image_path = None
-		self.image_url = None
-		self.mask_path = None
-		self.request = { }
-		self.response = None
-		self.output = None
-		self.extra_body = { }
-		self.extra_kwargs = { }
-	
-	@property
-	def model_options( self ) -> List[ str ]:
-		"""Model options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'grok-imagine-image', 'grok-2-image-1212' ]
-	
-	@property
-	def analysis_model_options( self ) -> List[ str ]:
-		"""Analysis model options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'grok-4.20-reasoning', 'grok-4.20', 'grok-4', 'grok-4-latest',
-			'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', ]
-	
-	@property
-	def tool_options( self ) -> List[ str ] | None:
-		"""Tool options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [ ]
-	
-	@property
-	def include_options( self ) -> List[ str ] | None:
-		"""Include options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [ ]
-	
-	@property
-	def choice_options( self ) -> List[ str ] | None:
-		"""Choice options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [ 'auto', 'required', 'none' ]
-	
-	@property
-	def aspect_options( self ) -> List[ str ]:
-		"""Aspect options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without
-		    mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'auto', '1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9',
-			'9:20', '20:9', '1:2', '2:1', ]
-	
-	@property
-	def size_options( self ) -> List[ str ]:
-		"""Size options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ '1k', '2k' ]
-	
-	@property
-	def quality_options( self ) -> List[ str ]:
-		"""Quality options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'auto', 'low', 'medium', 'high' ]
-	
-	@property
-	def style_options( self ) -> List[ str ]:
-		"""Style options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ ]
-	
-	@property
-	def backcolor_options( self ) -> List[ str ]:
-		"""Backcolor options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ ]
-	
-	@property
-	def detail_options( self ) -> List[ str ]:
-		"""Detail options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'auto', 'low', 'high' ]
-	
-	@property
-	def format_options( self ) -> List[ str ]:
-		"""Format options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'url', 'b64_json' ]
-	
-	@property
-	def mime_options( self ) -> List[ str ]:
-		"""Mime options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'url', 'b64_json' ]
-	
-	@property
-	def output_options( self ) -> List[ str ]:
-		"""Output options.
-		
-		Purpose:
-		    Returns the configured option values exposed by the Images workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [ 'url', 'b64_json' ]
-	
-	def initialize_client( self ) -> None:
-		"""Initialize client.
-		
-		Purpose:
-		    Provides initialize client behavior for the Images workflow while preserving provider request and response state.
-		"""
-		try:
-			throw_if( 'api_key', self.api_key )
-			throw_if( 'base_url', self.base_url )
-			self.client = OpenAI( api_key=cfg.XAI_API_KEY, base_url=self.base_url )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'initialize_client( self )'
-			raise ex
-	
-	def normalize_resolution( self, value: str=None ) -> str | None:
-		"""Normalize resolution.
-		
-		Purpose:
-		    Provides normalize resolution behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    value (str): Value supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			if value is None:
-				return None
-			
-			resolution = str( value ).strip( ).lower( )
-			if resolution in [ '1k', '2k' ]:
-				return resolution
-			
-			return None
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'normalize_resolution( self, value )'
-			raise ex
-	
-	def normalize_response_format( self, value: str=None ) -> str | None:
-		"""Normalize response format.
-		
-		Purpose:
-		    Provides normalize response format behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    value (str): Value supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			if value is None:
-				return None
-			
-			response_format = str( value ).strip( ).lower( )
-			if response_format in [ 'url', 'b64_json' ]:
-				return response_format
-			
-			if response_format == 'base64':
-				return 'b64_json'
-			
-			return None
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'normalize_response_format( self, value )'
-			raise ex
-	
-	def encode_image_data_uri( self, image_path: str ) -> str:
-		"""Encode image data uri.
-		
-		Purpose:
-		    Encodes local binary content into a text representation required by xAI request payloads.
-		
-		Args:
-		    image_path (str): Image path supplied to the xAI workflow.
-		
-		Returns:
-		    str: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'image_path', image_path )
-			path = Path( image_path )
-			
-			if not path.exists( ):
-				raise FileNotFoundError( f'Image file was not found: {image_path}' )
-			
-			suffix = path.suffix.lower( ).replace( '.', '' )
-			if suffix == 'jpg':
-				suffix = 'jpeg'
-			
-			if suffix not in [ 'jpeg', 'png', 'webp' ]:
-				suffix = 'jpeg'
-			
-			image_bytes = path.read_bytes( )
-			encoded = base64.b64encode( image_bytes ).decode( 'utf-8' )
-			return f'data:image/{suffix};base64,{encoded}'
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'encode_image_data_uri( self, image_path )'
-			raise ex
-	
-	def get_output_text( self ) -> str | None:
-		"""Get output text.
-		
-		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			if self.response is None:
-				return None
-			
-			output_text = getattr( self.response, 'output_text', None )
-			if output_text:
-				return output_text
-			
-			output = getattr( self.response, 'output', None )
-			if not isinstance( output, list ):
-				return None
-			
-			text_parts: List[ str ]=[ ]
-			for item in output:
-				if getattr( item, 'type', None ) != 'message':
-					continue
-				
-				content = getattr( item, 'content', None )
-				if not isinstance( content, list ):
-					continue
-				
-				for block in content:
-					if getattr( block, 'type', None ) == 'output_text':
-						text = getattr( block, 'text', None )
-						if text:
-							text_parts.append( text )
-			
-			return ''.join( text_parts ).strip( ) if text_parts else None
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'get_output_text( self )'
-			raise ex
-	
-	def normalize_image_result( self ) -> Any:
-		"""Normalize image result.
-		
-		Purpose:
-		    Provides normalize image result behavior for the Images workflow while preserving provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			if self.response is None:
-				return None
-			
-			data = getattr( self.response, 'data', None )
-			if isinstance( data, list ) and len( data ) > 0:
-				results: List[ Any ]=[ ]
-				
-				for item in data:
-					url = getattr( item, 'url', None )
-					b64_json = getattr( item, 'b64_json', None )
-					
-					if url:
-						results.append( url )
-						continue
-					
-					if b64_json:
-						results.append( b64_json )
-						continue
-					
-					results.append( item )
-				
-				return results[ 0 ] if len( results ) == 1 else results
-			
-			url = getattr( self.response, 'url', None )
-			if url:
-				return url
-			
-			base64_value = getattr( self.response, 'base64', None )
-			if base64_value:
-				return base64_value
-			
-			image_bytes = getattr( self.response, 'image', None )
-			if image_bytes:
-				return image_bytes
-			
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'normalize_image_result( self )'
-			raise ex
-	
-	def build_generation_request( self ) -> Dict[ str, Any ]:
-		"""Build generation request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', self.prompt )
-			throw_if( 'model', self.model )
-			self.request = { 'model': self.model, 'prompt': self.prompt, }
-			self.extra_body = { }
-			
-			if isinstance( self.number, int ) and self.number > 0:
-				self.request[ 'n' ]=self.number
-			
-			if self.response_format:
-				self.request[ 'response_format' ]=self.response_format
-			
-			if self.aspect_ratio:
-				self.extra_body[ 'aspect_ratio' ]=self.aspect_ratio
-			
-			if self.resolution:
-				self.extra_body[ 'resolution' ]=self.resolution
-			
-			if self.extra_body:
-				self.request[ 'extra_body' ]=self.extra_body
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'build_generation_request( self )'
-			raise ex
-	
-	def build_edit_request( self ) -> Dict[ str, Any ]:
-		"""Build edit request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', self.prompt )
-			throw_if( 'model', self.model )
-			throw_if( 'image_url', self.image_url )
-			self.request = {
-					'model': self.model,
-					'prompt': self.prompt,
-					'image': {
-							'type': 'image_url',
-							'url': self.image_url,
-					},
-			}
-			
-			if self.response_format:
-				self.request[ 'response_format' ]=self.response_format
-			
-			if self.aspect_ratio:
-				self.request[ 'aspect_ratio' ]=self.aspect_ratio
-			
-			if self.resolution:
-				self.request[ 'resolution' ]=self.resolution
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'build_edit_request( self )'
-			raise ex
-	
-	def build_analysis_request( self ) -> Dict[ str, Any ]:
-		"""Build analysis request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', self.prompt )
-			throw_if( 'model', self.model )
-			throw_if( 'image_url', self.image_url )
-			self.request = {
-					'model': self.model,
-					'input': [
-							{
-									'role': 'user',
-									'content': [
-											{
-													'type': 'input_image',
-													'image_url': self.image_url,
-											},
-											{
-													'type': 'input_text',
-													'text': self.prompt,
-											},
-									],
-							},
-					],
-			}
-			
-			if self.detail:
-				self.request[ 'input' ][ 0 ][ 'content' ][ 0 ][ 'detail' ]=self.detail
-			
-			if isinstance( self.max_output_tokens, int ) and self.max_output_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_output_tokens
-			
-			if self.temperature is not None:
-				self.request[ 'temperature' ]=self.temperature
-			
-			if self.top_percent is not None:
-				self.request[ 'top_p' ]=self.top_percent
-			
-			if self.store is not None:
-				self.request[ 'store' ]=self.store
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'build_analysis_request( self )'
-			raise ex
-	
-	def generate( self, prompt: str, model: str='grok-imagine-image', number: int=None,
-			size: str=None, quality: str=None, style: str=None, fmt: str=None,
-			mime_type: str=None, compression: float=None, background: str=None,
-			aspect_ratio: str=None, response_modalities: str=None, temperature: float=None,
-			top_p: float=None, top_k: int=None, frequency: float=None, presence: float=None,
-			max_tokens: int=None, instruct: str=None, tools: List[ Any ]=None,
-			tool_choice: str=None, include: List[ str ]=None, allowed_domains: List[ str ]=None,
-			store: bool = None, stream: bool = None, is_parallel: bool = None,
-			max_tools: int=None, max_searches: int=None, grounded: bool = False,
-			image_search: bool=False, response_format: str=None, **kwargs: Any ) -> Any:
-		"""Generate.
-		
-		Purpose:
-		    Provides generate behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    number (int): Number supplied to the xAI workflow.
-		    size (str): Size supplied to the xAI workflow.
-		    quality (str): Quality supplied to the xAI workflow.
-		    style (str): Style supplied to the xAI workflow.
-		    fmt (str): Fmt supplied to the xAI workflow.
-		    mime_type (str): Mime type supplied to the xAI workflow.
-		    compression (float): Compression supplied to the xAI workflow.
-		    background (str): Background supplied to the xAI workflow.
-		    aspect_ratio (str): Aspect ratio supplied to the xAI workflow.
-		    response_modalities (str): Response modalities supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    top_k (int): Top k supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    tools (List[Any]): Tools supplied to the xAI workflow.
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    allowed_domains (List[str]): Allowed domains supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    is_parallel (bool): Is parallel supplied to the xAI workflow.
-		    max_tools (int): Max tools supplied to the xAI workflow.
-		    max_searches (int): Max searches supplied to the xAI workflow.
-		    grounded (bool): Grounded supplied to the xAI workflow.
-		    image_search (bool): Image search supplied to the xAI workflow.
-		    response_format (str): Response format supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			self.prompt = prompt
-			self.model = model
-			self.number = number
-			self.size = size
-			self.resolution = self.normalize_resolution( size )
-			self.quality = quality
-			self.style = style
-			self.response_format = self.normalize_response_format(
-				response_format or fmt or mime_type )
-			self.mime_type = mime_type
-			self.compression = compression
-			self.background = background
-			self.aspect_ratio = aspect_ratio
-			self.response_modalities = response_modalities
-			self.temperature = temperature
-			self.top_percent = top_p
-			self.top_k = top_k
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_output_tokens = max_tokens
-			self.instructions = instruct
-			self.tools = tools if tools is not None else [ ]
-			self.tool_choice = tool_choice
-			self.include = include if include is not None else [ ]
-			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
-			self.store = store
-			self.stream = stream
-			self.is_parallel = is_parallel
-			self.max_tools = max_tools
-			self.max_searches = max_searches
-			self.grounded = grounded
-			self.image_search = image_search
-			self.extra_kwargs = kwargs or { }
-			self.initialize_client( )
-			self.build_generation_request( )
-			self.response = self.client.images.generate( **self.request )
-			self.output = self.normalize_image_result( )
-			return self.output
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'generate( self, prompt: str, model: str )'
-			raise ex
-	
-	def generate_image( self, prompt: str, model: str='grok-imagine-image',
-			number: int=None, size: str=None, quality: str=None, style: str=None,
-			fmt: str=None, mime_type: str=None, compression: float=None,
-			background: str=None, aspect_ratio: str=None,
-			response_modalities: str=None, **kwargs: Any ) -> Any:
-		"""Generate image.
-		
-		Purpose:
-		    Executes an xAI generation workflow using validated request settings, captures the provider response, and returns displayable output.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    number (int): Number supplied to the xAI workflow.
-		    size (str): Size supplied to the xAI workflow.
-		    quality (str): Quality supplied to the xAI workflow.
-		    style (str): Style supplied to the xAI workflow.
-		    fmt (str): Fmt supplied to the xAI workflow.
-		    mime_type (str): Mime type supplied to the xAI workflow.
-		    compression (float): Compression supplied to the xAI workflow.
-		    background (str): Background supplied to the xAI workflow.
-		    aspect_ratio (str): Aspect ratio supplied to the xAI workflow.
-		    response_modalities (str): Response modalities supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.generate( prompt=prompt, model=model, number=number, size=size,
-				quality=quality, style=style, fmt=fmt, mime_type=mime_type,
-				compression=compression, background=background, aspect_ratio=aspect_ratio,
-				response_modalities=response_modalities, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'generate_image( self, prompt: str, model: str )'
-			raise ex
-	
-	def create( self, prompt: str, model: str='grok-imagine-image', resolution: str=None,
-			aspect_ratio: str=None, format: str=None, number: int=None,
-			quality: str=None, style: str=None, **kwargs: Any ) -> Any:
-		"""Create.
-		
-		Purpose:
-		    Provides create behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    resolution (str): Resolution supplied to the xAI workflow.
-		    aspect_ratio (str): Aspect ratio supplied to the xAI workflow.
-		    format (str): Format supplied to the xAI workflow.
-		    number (int): Number supplied to the xAI workflow.
-		    quality (str): Quality supplied to the xAI workflow.
-		    style (str): Style supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.generate( prompt=prompt, model=model, number=number,
-				size=resolution, quality=quality, style=style, fmt=format,
-				aspect_ratio=aspect_ratio, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'create( self, prompt: str, model: str )'
-			raise ex
-	
-	def create_image( self, prompt: str, model: str='grok-imagine-image',
-			**kwargs: Any ) -> Any:
-		"""Create image.
-		
-		Purpose:
-		    Creates the requested xAI resource using validated names, paths, or configuration values.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.generate( prompt=prompt, model=model, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'create_image( self, prompt: str, model: str )'
-			raise ex
-	
-	def edit( self, image_path: str=None, prompt: str=None, model: str='grok-imagine-image',
-			aspect_ratio: str=None, resolution: str=None, quality: str=None,
-			response_format: str=None, path: str=None, mask_path: str=None, mask: str=None,
-			size: str=None, fmt: str=None, mime_type: str=None, **kwargs: Any ) -> Any:
-		"""Edit.
-		
-		Purpose:
-		    Provides edit behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    image_path (str): Image path supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    aspect_ratio (str): Aspect ratio supplied to the xAI workflow.
-		    resolution (str): Resolution supplied to the xAI workflow.
-		    quality (str): Quality supplied to the xAI workflow.
-		    response_format (str): Response format supplied to the xAI workflow.
-		    path (str): Path supplied to the xAI workflow.
-		    mask_path (str): Mask path supplied to the xAI workflow.
-		    mask (str): Mask supplied to the xAI workflow.
-		    size (str): Size supplied to the xAI workflow.
-		    fmt (str): Fmt supplied to the xAI workflow.
-		    mime_type (str): Mime type supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			self.image_path = image_path or path
-			throw_if( 'image_path', self.image_path )
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			self.prompt = prompt
-			self.model = model
-			self.aspect_ratio = aspect_ratio
-			self.resolution = self.normalize_resolution( resolution or size )
-			self.quality = quality
-			self.response_format = self.normalize_response_format(
-				response_format or fmt or mime_type )
-			self.mask_path = mask_path or mask
-			self.extra_kwargs = kwargs or { }
-			if str( self.image_path ).startswith( 'http://' ) or str(
-					self.image_path ).startswith( 'https://' ):
-				self.image_url = str( self.image_path )
-			elif str( self.image_path ).startswith( 'data:image/' ):
-				self.image_url = str( self.image_path )
-			else:
-				self.image_url = self.encode_image_data_uri( self.image_path )
-			
-			self.build_edit_request( )
-			self.response = requests.post( url=f'{self.base_url.rstrip( "/" )}/images/edits',
-				headers={
-						'Authorization': f'Bearer {self.api_key}',
-						'Content-Type': 'application/json',
-				},
-				json=self.request, timeout=self.timeout or 3600, )
-			self.response.raise_for_status( )
-			self.output = self.response.json( )
-			return self.output
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'edit( self, image_path: str, prompt: str )'
-			raise ex
-	
-	def edit_image( self, image_path: str=None, prompt: str=None,
-			model: str='grok-imagine-image', **kwargs: Any ) -> Any:
-		"""Edit image.
-		
-		Purpose:
-		    Provides edit image behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    image_path (str): Image path supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.edit( image_path=image_path, prompt=prompt, model=model, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'edit_image( self, image_path: str, prompt: str )'
-			raise ex
-	
-	def modify( self, image_path: str=None, prompt: str=None,
-			model: str='grok-imagine-image', **kwargs: Any ) -> Any:
-		"""Modify.
-		
-		Purpose:
-		    Provides modify behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    image_path (str): Image path supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.edit( image_path=image_path, prompt=prompt, model=model, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'modify( self, image_path: str, prompt: str )'
-			raise ex
-	
-	def generate_edit( self, image_path: str=None, prompt: str=None,
-			model: str='grok-imagine-image', **kwargs: Any ) -> Any:
-		"""Generate edit.
-		
-		Purpose:
-		    Executes an xAI generation workflow using validated request settings, captures the provider response, and returns displayable output.
-		
-		Args:
-		    image_path (str): Image path supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.edit( image_path=image_path, prompt=prompt, model=model, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'generate_edit( self, image_path: str, prompt: str )'
-			raise ex
-	
-	def analyze( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
-			max_output_tokens: int=10000, temperature: float=None, top_p: float=None,
-			detail: str='high', image_path: str=None, path: str=None, store: bool = False,
-			**kwargs: Any ) -> str | None:
-		"""Analyze.
-		
-		Purpose:
-		    Provides analyze behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    image_url (str): Image url supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    max_output_tokens (int): Max output tokens supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    detail (str): Detail supplied to the xAI workflow.
-		    image_path (str): Image path supplied to the xAI workflow.
-		    path (str): Path supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			throw_if( 'model', model )
-			self.prompt = prompt
-			self.model = model
-			self.image_path = image_path or path
-			self.detail = detail
-			self.max_output_tokens = max_output_tokens
-			self.temperature = temperature
-			self.top_percent = top_p
-			self.store = store
-			self.extra_kwargs = kwargs or { }
-			
-			if image_url:
-				self.image_url = image_url
-			elif self.image_path:
-				self.image_url = self.encode_image_data_uri( self.image_path )
-			else:
-				raise ValueError( 'Either image_url, image_path, or path is required.' )
-			
-			self.initialize_client( )
-			self.build_analysis_request( )
-			self.response = self.client.responses.create( **self.request )
-			self.output = self.get_output_text( )
-			return self.output
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'analyze( self, prompt: str, image_url: str )'
-			raise ex
-	
-	def analyze_image( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
-			image_path: str=None, path: str=None, **kwargs: Any ) -> str | None:
-		"""Analyze image.
-		
-		Purpose:
-		    Provides analyze image behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    image_url (str): Image url supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    image_path (str): Image path supplied to the xAI workflow.
-		    path (str): Path supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.analyze( prompt=prompt, image_url=image_url, model=model,
-				image_path=image_path, path=path, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'analyze_image( self, prompt: str, image_url: str )'
-			raise ex
-	
-	def vision( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
-			image_path: str=None, path: str=None, **kwargs: Any ) -> str | None:
-		"""Vision.
-		
-		Purpose:
-		    Provides vision behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    image_url (str): Image url supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    image_path (str): Image path supplied to the xAI workflow.
-		    path (str): Path supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.analyze( prompt=prompt, image_url=image_url, model=model,
-				image_path=image_path, path=path, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'vision( self, prompt: str, image_url: str )'
-			raise ex
-	
-	def describe( self, prompt: str, image_url: str=None, model: str='grok-4.20-reasoning',
-			image_path: str=None, path: str=None, **kwargs: Any ) -> str | None:
-		"""Describe.
-		
-		Purpose:
-		    Provides describe behavior for the Images workflow while preserving provider request and response state.
-		
-		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    image_url (str): Image url supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    image_path (str): Image path supplied to the xAI workflow.
-		    path (str): Path supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.analyze( prompt=prompt, image_url=image_url, model=model,
-				image_path=image_path, path=path, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Images'
-			ex.method = 'describe( self, prompt: str, image_url: str )'
-			raise ex
-	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
-		
-		Purpose:
-		    Provides dir behavior for the Images workflow while preserving provider request and
-		    response state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [ 'api_key', 'base_url', 'client', 'model', 'prompt', 'number', 'aspect_ratio',
-			'resolution', 'size', 'quality', 'style', 'detail', 'response_format', 'mime_type',
-			'compression', 'background', 'response_modalities', 'max_output_tokens', 'temperature',
-			'top_percent', 'frequency_penalty', 'presence_penalty', 'tools', 'tool_choice',
-			'include', 'allowed_domains', 'store', 'stream', 'is_parallel', 'max_tools',
-			'max_searches', 'image_path', 'image_url', 'mask_path', 'request', 'response',
-			'output', 'extra_body', 'extra_kwargs', 'model_options', 'analysis_model_options',
-			'tool_options', 'include_options', 'choice_options', 'aspect_options', 'size_options',
-			'quality_options', 'style_options', 'backcolor_options', 'detail_options',
-			'format_options', 'mime_options', 'output_options', 'initialize_client',
-			'normalize_resolution', 'normalize_response_format', 'encode_image_data_uri',
-			'get_output_text', 'normalize_image_result', 'build_generation_request',
-			'build_edit_request', 'build_analysis_request', 'generate', 'generate_image', 'create',
-			'create_image', 'edit', 'edit_image', 'modify', 'generate_edit', 'analyze',
-			'analyze_image', 'vision', 'describe', ]
-
-class Files( Grok ):
-	"""Files workflow wrapper.
-	
-	Purpose:
-	    Manages xAI file upload, retrieval, listing, deletion, and metadata workflows used by document and provider operations.
-	
-	Attributes:
-	    client: Runtime attribute used by the Files workflow.
-	    api_key: Runtime attribute used by the Files workflow.
-	    base_url: Runtime attribute used by the Files workflow.
-	    file_path: Runtime attribute used by the Files workflow.
-	    file_name: Runtime attribute used by the Files workflow.
-	    file_id: Runtime attribute used by the Files workflow.
-	    file_ids: Runtime attribute used by the Files workflow.
-	    purpose: Runtime attribute used by the Files workflow.
-	    model: Runtime attribute used by the Files workflow.
-	    prompt: Runtime attribute used by the Files workflow.
-	    instructions: Runtime attribute used by the Files workflow.
-	    request: Runtime attribute used by the Files workflow.
-	    response: Runtime attribute used by the Files workflow.
-	    content: Runtime attribute used by the Files workflow.
-	    output_text: Runtime attribute used by the Files workflow.
-	    documents: Runtime attribute used by the Files workflow.
-	"""
-	client: Optional[ OpenAI ]
-	api_key: Optional[ str ]
-	base_url: Optional[ str ]
-	file_path: Optional[ str ]
-	file_name: Optional[ str ]
-	file_id: Optional[ str ]
-	file_ids: Optional[ List[ str ] ]
-	purpose: Optional[ str ]
-	model: Optional[ str ]
-	prompt: Optional[ str ]
-	instructions: Optional[ str ]
-	request: Optional[ Dict[ str, Any ] ]
-	response: Optional[ Any ]
-	content: Optional[ Any ]
-	output_text: Optional[ str ]
-	documents: Optional[ Dict[ str, str ] ]
-	
-	def __init__( self ):
-		"""Initialize instance.
-		
-		Purpose:
-		    Initializes Files state with default configuration values and runtime attributes used by later xAI provider calls.
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
-		self.base_url = cfg.XAI_BASE_URL
-		self.client = None
-		self.model = None
-		self.instructions = None
-		self.prompt = None
+		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1', )
+		self.timeout = 3600
+		self.audio_path = ''
+		self.file_name = ''
+		self.mime_type = ''
+		self.source_language = ''
+		self.target_language = 'en'
+		self.text_format = False
+		self.keyterm = ''
+		self.model = model
+		self.prompt = ''
+		self.instructions = ''
 		self.response = None
-		self.request = { }
-		self.content = None
-		self.output_text = None
-		self.file_id = None
-		self.file_ids = [ ]
-		self.file_path = None
-		self.file_name = None
-		self.file_paths = [ ]
-		self.file_names = [ ]
-		self.purpose = 'assistants'
-		self.response_format = None
-		self.temperature = None
-		self.top_percent = None
-		self.frequency_penalty = None
-		self.presence_penalty = None
-		self.max_output_tokens = None
-		self.store = None
-		self.stream = None
-		self.include = [ ]
-		self.tools = [ ]
-		self.tool_choice = None
-		self.previous_id = None
-		self.previous_response_id = None
-		self.conversation_id = None
-		self.limit = None
-		self.next_token = None
-		self.order = None
-		self.sort_by = None
-		self.filter = None
-		self.team_id = None
-		self.download_format = None
-		self.page_number = None
-		self.extra_kwargs = { }
-		self.documents = {
-				'AccountBalances.csv': 'file_4731bb8c-d8ff-48c0-9dae-3092fbcab214',
-				'SF133.csv': 'file_41037cc2-e1f4-4cce-b25a-5c1d1f0172b2',
-				'Authority.csv': 'file_cbde06d5-988b-483f-880c-441613bfe54f',
-				'Outlays.csv': 'file_78479189-7d47-4edb-9abc-2931172430e9',
-		}
+		self.transcript = ''
+		self.translation = ''
+		self.result = { }
+		self.params = [ ]
+		self.chat = None
+		self.client = None
+		self.duration = 0.0
+		self.words = [ ]
+		self.response_content = ''
 	
 	@property
 	def model_options( self ) -> List[ str ]:
-		"""Model options.
+		"""Get translation-model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+			Returns Grok text models exposed for transcript translation.
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
+			List[str]: Supported Grok text model identifiers.
 		"""
-		return [ 'grok-4.20-reasoning', 'grok-4.20', 'grok-4', 'grok-4-latest',
-			'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-code-fast-1', 'grok-3',
+		return [ 'grok-4.20', 'grok-4.20-reasoning', 'grok-4.20-multi-agent', 'grok-4.5', 'grok-4',
+			'grok-4-latest', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-3',
 			'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
 	
 	@property
-	def purpose_options( self ) -> List[ str ]:
-		"""Purpose options.
+	def language_options( self ) -> List[ str ]:
+		"""Get language options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without
-		    mutating provider state.
+			Returns language codes supported for xAI Speech-to-Text formatting and transcript
+			translation selection.
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
+			List[str]: Supported language-code values.
 		"""
-		return [ 'assistants', 'batch', 'fine-tune', 'user_data', ]
+		return [ 'ar', 'cs', 'da', 'de', 'en', 'es', 'fa', 'fil', 'fr', 'hi', 'id', 'it', 'ja',
+			'ko', 'mk', 'ms', 'nl', 'pl', 'pt', 'ro', 'ru', 'sv', 'th', 'tr', 'vi', ]
 	
 	@property
-	def format_options( self ) -> List[ str ]:
-		"""Format options.
+	def mime_options( self ) -> List[ str ]:
+		"""Get audio MIME-type options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
+			Returns common container MIME types accepted by the xAI Speech-to-Text endpoint.
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
+			List[str]: Supported audio MIME-type values.
 		"""
-		return [
-				'text',
-				'json_object',
-		]
+		return [ 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/flac', 'audio/ogg',
+			'audio/webm', 'audio/mp4', 'audio/aac', 'audio/m4a', ]
 	
 	@property
-	def tool_options( self ) -> List[ str ]:
-		"""Tool options.
+	def format_options( self ) -> List[ bool ]:
+		"""Get text-formatting options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
+			Returns the Boolean values supported by the Speech-to-Text inverse text
+			normalization argument.
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
+			List[bool]: Available text-formatting values.
 		"""
-		return [ 'code_interpreter', ]
+		return [ False, True, ]
 	
-	@property
-	def include_options( self ) -> List[ str ]:
-		"""Include options.
+	def get_mime_type( self, path: str ) -> str:
+		"""Get audio MIME type.
 		
 		Purpose:
-		    Returns the configured option values exposed by the Files workflow selector without mutating provider state.
-		
-		Returns:
-		    List[str]: Result produced by the xAI workflow.
-		"""
-		return [
-				'code_execution_call_output',
-		]
-	
-	def initialize_client( self ) -> None:
-		"""Initialize client.
-		
-		Purpose:
-		    Provides initialize client behavior for the Files workflow while preserving provider request and response state.
-		"""
-		try:
-			throw_if( 'api_key', self.api_key )
-			throw_if( 'base_url', self.base_url )
-			self.client = OpenAI( api_key=cfg.XAI_API_KEY, base_url=self.base_url )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'initialize_client( self )'
-			raise ex
-	
-	def build_headers( self ) -> Dict[ str, str ]:
-		"""Build headers.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, str]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'api_key', self.api_key )
-			return { 'Authorization': f'Bearer {self.api_key}', }
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_headers( self )'
-			raise ex
-	
-	def build_json_headers( self ) -> Dict[ str, str ]:
-		"""Build json headers.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, str]: Result produced by the xAI workflow.
-		"""
-		try:
-			headers = self.build_headers( )
-			headers[ 'Content-Type' ]='application/json'
-			return headers
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_json_headers( self )'
-			raise ex
-	
-	def normalize_file_id( self, response: Any = None ) -> str | None:
-		"""Normalize file id.
-		
-		Purpose:
-		    Provides normalize file id behavior for the Files workflow while preserving provider request and response state.
+			Determines the MIME type of a required local audio file from its extension.
 		
 		Args:
-		    response (Any): Response supplied to the xAI workflow.
+			path (str): Required local audio-file path.
 		
 		Returns:
-		    str | None: Result produced by the xAI workflow.
+			str: Audio MIME type.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			value = response if response is not None else self.response
-			if value is None:
-				return None
-			
-			if isinstance( value, dict ):
-				file_id = value.get( 'id' ) or value.get( 'file_id' )
-				return str( file_id ) if file_id else None
-			
-			file_id = getattr( value, 'id', None ) or getattr( value, 'file_id', None )
-			return str( file_id ) if file_id else None
+			throw_if( 'path', path )
+			self.audio_path = path
+			self.suffix = Path( self.audio_path ).suffix.lower( )
+			self.mime_type = { '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.flac': 'audio/flac',
+				'.ogg': 'audio/ogg', '.webm': 'audio/webm', '.m4a': 'audio/mp4',
+				'.mp4': 'audio/mp4', '.aac': 'audio/aac', }.get( self.suffix,
+				'application/octet-stream', )
+			return self.mime_type
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'normalize_file_id( self, response )'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Translation'
+			exception.method = ('get_mime_type( self, path: str ) -> str')
+			Logger( ).write( exception )
+			raise exception
 	
-	def get_output_text( self ) -> str | None:
-		"""Get output text.
+	def transcribe( self, path: str, source_language: str = '', text_format: bool = False,
+		mime_type: str = '', keyterm: str = '' ) -> str:
+		"""Transcribe source audio.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+			Transcribes a required local audio file through the xAI Speech-to-Text endpoint
+			using optional language-formatting and keyterm controls.
+		
+		Args:
+			path (str): Required local audio-file path.
+			source_language (str): Optional language code used with text formatting.
+			text_format (bool): Indicates whether inverse text normalization is enabled.
+			mime_type (str): Optional source-audio MIME type.
+			keyterm (str): Optional term used to bias transcription.
 		
 		Returns:
-		    str | None: Result produced by the xAI workflow.
+			str: Generated source transcript.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
+			throw_if( 'path', path )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.audio_path = path
+			self.source_language = source_language
+			self.text_format = text_format
+			self.mime_type = mime_type
+			self.keyterm = keyterm
+			self.file_name = Path( self.audio_path ).name
+			if not self.mime_type:
+				self.mime_type = self.get_mime_type( self.audio_path )
+			
+			self.params = [ ('format', str( self.text_format ).lower( ),), ]
+			if self.source_language:
+				self.params.append( ('language', self.source_language,) )
+			
+			if self.keyterm:
+				self.params.append( ('keyterm', self.keyterm,) )
+			
+			with open( self.audio_path, 'rb' ) as source:
+				self.response = requests.post( url=(f'{self.base_url.rstrip( "/" )}'
+				                                    f'/stt'),
+					headers={ 'Authorization': (f'Bearer {self.api_key}'), }, data=self.params,
+					files={ 'file': (self.file_name, source, self.mime_type,), },
+					timeout=self.timeout, )
+			
+			self.response.raise_for_status( )
+			self.result = self.response.json( )
+			self.transcript = str( self.result.get( 'text', '', ) or '' ).strip( )
+			self.duration = float( self.result.get( 'duration', 0.0, ) or 0.0 )
+			self.words = self.result.get( 'words', [ ], ) or [ ]
+			throw_if( 'transcript', self.transcript )
+			return self.transcript
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Translation'
+			exception.method = 'transcribe( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_output_text( self ) -> str:
+		"""Get translated text.
+		
+		Purpose:
+			Extracts translated text from the latest Grok chat response.
+		
+		Returns:
+			str: Generated translated text or an empty string.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.translation = ''
 			if self.response is None:
-				return None
+				return self.translation
 			
-			output_text = getattr( self.response, 'output_text', None )
-			if output_text:
-				self.output_text = output_text
-				return self.output_text
+			self.response_content = getattr( self.response, 'content', '', )
+			if self.response_content:
+				self.translation = str( self.response_content ).strip( )
 			
-			output = getattr( self.response, 'output', None )
-			if not isinstance( output, list ):
-				return None
-			
-			parts: List[ str ]=[ ]
-			for item in output:
-				if getattr( item, 'type', None ) != 'message':
-					continue
-				
-				content = getattr( item, 'content', None )
-				if not isinstance( content, list ):
-					continue
-				
-				for block in content:
-					text = getattr( block, 'text', None )
-					if text:
-						parts.append( text )
-			
-			self.output_text = ''.join( parts ).strip( ) if parts else None
-			return self.output_text
+			return self.translation
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'get_output_text( self )'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Translation'
+			exception.method = 'get_output_text( self ) -> str'
+			Logger( ).write( exception )
+			raise exception
 	
-	def build_upload_request( self ) -> Dict[ str, Any ]:
-		"""Build upload request.
+	def translate( self, path: str, target_language: str, model: str, source_language: str = '',
+		text_format: bool = False, mime_type: str = '', keyterm: str = '',
+		instruct: str = '' ) -> str:
+		"""Translate spoken audio.
 		
 		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
+			Transcribes a required local audio file through xAI Speech-to-Text and translates
+			the transcript into a required target language through a required Grok text model.
+		
+		Args:
+			path (str): Required local audio-file path.
+			target_language (str): Required target language or language code.
+			model (str): Required Grok text model identifier.
+			source_language (str): Optional source-language formatting code.
+			text_format (bool): Indicates whether inverse text normalization is enabled.
+			mime_type (str): Optional source-audio MIME type.
+			keyterm (str): Optional term used to bias transcription.
+			instruct (str): Optional translation system instruction.
 		
 		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
+			str: Generated translated text.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			throw_if( 'file_path', self.file_path )
-			path = Path( self.file_path )
-			if not path.exists( ):
-				raise FileNotFoundError( f'File was not found: {self.file_path}' )
+			throw_if( 'path', path )
+			throw_if( 'target_language', target_language, )
+			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.audio_path = path
+			self.target_language = target_language
+			self.model = model
+			self.source_language = source_language
+			self.text_format = text_format
+			self.mime_type = mime_type
+			self.keyterm = keyterm
+			self.instructions = instruct
+			self.transcript = self.transcribe( self.audio_path, self.source_language,
+				self.text_format, self.mime_type, self.keyterm, )
+			self.prompt = (f'Translate the following transcript into '
+			               f'{self.target_language}. Preserve the meaning, '
+			               f'tone, names, numbers, technical terms, and '
+			               f'speaker distinctions. Return only the translated '
+			               f'text.\n\n{self.transcript}')
+			self.client = Client( api_key=self.api_key, timeout=self.timeout, )
+			self.chat = self.client.chat.create( model=self.model, )
 			
-			self.file_name = self.file_name or path.name
-			throw_if( 'file_name', self.file_name )
-			self.request = { 'file_path': str( path ), 'file_name': self.file_name,
-					'purpose': self.purpose, }
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_upload_request( self )'
-			raise ex
-	
-	def execute_upload( self ) -> Any:
-		"""Execute upload.
-		
-		Purpose:
-		    Provides execute upload behavior for the Files workflow while preserving provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			self.initialize_client( )
-			throw_if( 'file_path', self.file_path )
-			throw_if( 'purpose', self.purpose )
-			with open( self.file_path, 'rb' ) as file_stream:
-				self.response = self.client.files.create( file=file_stream, purpose=self.purpose )
-			
-			self.file_id = self.normalize_file_id( self.response )
-			if self.file_id and self.file_id not in self.file_ids:
-				self.file_ids.append( self.file_id )
-			
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'execute_upload( self )'
-			raise ex
-	
-	def build_list_request( self ) -> Dict[ str, Any ]:
-		"""Build list request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			self.request = { }
-			
-			if self.team_id:
-				self.request[ 'team_id' ]=self.team_id
-			
-			if isinstance( self.limit, int ) and self.limit > 0:
-				self.request[ 'limit' ]=self.limit
-			
-			if self.next_token:
-				self.request[ 'next_token' ]=self.next_token
-			
-			if self.order:
-				self.request[ 'order' ]=self.order
-			
-			if self.sort_by:
-				self.request[ 'sort_by' ]=self.sort_by
-			
-			if self.filter:
-				self.request[ 'filter' ]=self.filter
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_list_request( self )'
-			raise ex
-	
-	def execute_list( self ) -> Any:
-		"""Execute list.
-		
-		Purpose:
-		    Provides execute list behavior for the Files workflow while preserving provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'base_url', self.base_url )
-			response = requests.get( url=f'{self.base_url.rstrip( "/" )}/files',
-				headers=self.build_headers( ), params=self.request, timeout=self.timeout or 3600 )
-			response.raise_for_status( )
-			self.response = response.json( )
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'execute_list( self )'
-			raise ex
-	
-	def build_retrieve_request( self ) -> Dict[ str, Any ]:
-		"""Build retrieve request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'file_id', self.file_id )
-			self.request = { }
-			
-			if self.team_id:
-				self.request[ 'team_id' ]=self.team_id
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_retrieve_request( self )'
-			raise ex
-	
-	def execute_retrieve( self ) -> Any:
-		"""Execute retrieve.
-		
-		Purpose:
-		    Provides execute retrieve behavior for the Files workflow while preserving provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'base_url', self.base_url )
-			throw_if( 'file_id', self.file_id )
-			response = requests.get( url=f'{self.base_url.rstrip( "/" )}/files/{self.file_id}',
-				headers=self.build_headers( ), params=self.request, timeout=self.timeout or 3600 )
-			response.raise_for_status( )
-			self.response = response.json( )
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'execute_retrieve( self )'
-			raise ex
-	
-	def build_extract_request( self ) -> Dict[ str, Any ]:
-		"""Build extract request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'file_id', self.file_id )
-			self.request = { }
-			
-			if self.team_id:
-				self.request[ 'team_id' ]=self.team_id
-			
-			if self.download_format:
-				self.request[ 'format' ]=self.download_format
-			
-			if isinstance( self.page_number, int ) and self.page_number > 0:
-				self.request[ 'page_number' ]=self.page_number
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_extract_request( self )'
-			raise ex
-	
-	def execute_extract( self ) -> bytes | str | None:
-		"""Execute extract.
-		
-		Purpose:
-		    Provides execute extract behavior for the Files workflow while preserving provider request and response state.
-		
-		Returns:
-		    bytes | str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'base_url', self.base_url )
-			throw_if( 'file_id', self.file_id )
-			response = requests.get(
-				url=f'{self.base_url.rstrip( "/" )}/files/{self.file_id}/content',
-				headers=self.build_headers( ), params=self.request, timeout=self.timeout or 3600 )
-			response.raise_for_status( )
-			content_type = str( response.headers.get( 'content-type', '' ) ).lower( )
-			if 'application/json' in content_type:
-				self.content = response.json( )
-				return self.content
-			
-			if self.download_format == 'DOWNLOAD_FORMAT_TEXT' or 'text/' in content_type:
-				self.content = response.text
-				return self.content
-			
-			self.content = response.content
-			return self.content
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'execute_extract( self )'
-			raise ex
-	
-	def build_delete_request( self ) -> Dict[ str, Any ]:
-		"""Build delete request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'file_id', self.file_id )
-			self.request = { }
-			
-			if self.team_id:
-				self.request[ 'team_id' ]=self.team_id
-			
-			return self.request
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_delete_request( self )'
-			raise ex
-	
-	def execute_delete( self ) -> Any:
-		"""Execute delete.
-		
-		Purpose:
-		    Provides execute delete behavior for the Files workflow while preserving provider request and response state.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'base_url', self.base_url )
-			throw_if( 'file_id', self.file_id )
-			response = requests.delete( url=f'{self.base_url.rstrip( "/" )}/files/{self.file_id}',
-				headers=self.build_headers( ), params=self.request, timeout=self.timeout or 3600 )
-			response.raise_for_status( )
-			if response.content:
-				try:
-					self.response = response.json( )
-				except Exception:
-					self.response = { 'id': self.file_id, 'deleted': True }
-			else:
-				self.response = { 'id': self.file_id, 'deleted': True }
-			
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'execute_delete( self )'
-			raise ex
-	
-	def build_file_input( self ) -> List[ Dict[ str, Any ] ]:
-		"""Build file input.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    List[Dict[str, Any]]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', self.prompt )
-			self.content = [ {
-					'type': 'input_text',
-					'text': self.prompt,
-			}, ]
-			
-			for file_id in self.file_ids:
-				if not isinstance( file_id, str ) or not file_id.strip( ):
-					continue
-				
-				self.content.append( {
-						'type': 'input_file',
-						'file_id': file_id.strip( ),
-				} )
-			
-			return self.content
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_file_input( self )'
-			raise ex
-	
-	def build_file_response_request( self ) -> Dict[ str, Any ]:
-		"""Build file response request.
-		
-		Purpose:
-		    Builds normalized xAI request configuration from validated inputs and stores the resulting state on the instance for provider execution.
-		
-		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'model', self.model )
-			throw_if( 'prompt', self.prompt )
-			if not isinstance( self.file_ids, list ) or len( self.file_ids ) == 0:
-				raise ValueError( 'At least one file_id is required for a file-aware response.' )
-			
-			self.request = { 'model': self.model, 'input': [ {
-					'role': 'user',
-					'content': self.build_file_input( ),
-			} ], }
 			if self.instructions:
-				self.request[ 'instructions' ]=self.instructions
+				self.chat.append( system( self.instructions ) )
 			
-			if isinstance( self.max_output_tokens, int ) and self.max_output_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_output_tokens
-			
-			if self.temperature is not None:
-				self.request[ 'temperature' ]=self.temperature
-			
-			if self.top_percent is not None:
-				self.request[ 'top_p' ]=self.top_percent
-			
-			if self.frequency_penalty is not None:
-				self.request[ 'frequency_penalty' ]=self.frequency_penalty
-			
-			if self.presence_penalty is not None:
-				self.request[ 'presence_penalty' ]=self.presence_penalty
-			
-			if self.store is not None:
-				self.request[ 'store' ]=self.store
-			
-			if self.include:
-				self.request[ 'include' ]=self.include
-			
-			if self.tools:
-				self.request[ 'tools' ]=self.tools
-			
-			if self.tool_choice:
-				self.request[ 'tool_choice' ]=self.tool_choice
-			
-			if self.previous_id:
-				self.request[ 'previous_response_id' ]=self.previous_id
-			
-			if self.conversation_id:
-				self.request[ 'conversation' ]=self.conversation_id
-			
-			if self.response_format:
-				self.request[ 'text' ]={ 'format': { 'type': self.response_format, } }
-			
-			return self.request
+			self.chat.append( user( self.prompt ) )
+			self.response = self.chat.sample( )
+			self.translation = self.get_output_text( )
+			throw_if( 'translation', self.translation, )
+			return self.translation
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'build_file_response_request( self )'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Translation'
+			exception.method = 'translate( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def execute_file_response( self ) -> str | None:
-		"""Execute file response.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
 		Purpose:
-		    Provides execute file response behavior for the Files workflow while preserving provider request and response state.
+			Returns public members exposed by the Grok Translation wrapper.
 		
 		Returns:
-		    str | None: Result produced by the xAI workflow.
+			List[str]: Public member names.
 		"""
-		try:
-			self.initialize_client( )
-			self.response = self.client.responses.create( **self.request )
-			return self.get_output_text( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'execute_file_response( self )'
-			raise ex
-	
-	def upload( self, filepath: str, filename: str=None, purpose: str='assistants',
-			**kwargs: Any ) -> Any:
-		"""Upload.
-		
-		Purpose:
-		    Provides upload behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    filepath (str): Filepath supplied to the xAI workflow.
-		    filename (str): Filename supplied to the xAI workflow.
-		    purpose (str): Purpose supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'filepath', filepath )
-			self.file_path = filepath
-			self.file_name = filename
-			self.purpose = purpose or 'assistants'
-			self.extra_kwargs = kwargs or { }
-			self.build_upload_request( )
-			return self.execute_upload( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'upload( self, filepath: str, filename: str=None )'
-			raise ex
-	
-	def list( self, limit: int=None, next_token: str=None, order: str=None,
-			sort_by: str=None, filter: str=None, team_id: str=None, **kwargs: Any ) -> Any:
-		"""List.
-		
-		Purpose:
-		    Provides list behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    limit (int): Limit supplied to the xAI workflow.
-		    next_token (str): Next token supplied to the xAI workflow.
-		    order (str): Order supplied to the xAI workflow.
-		    sort_by (str): Sort by supplied to the xAI workflow.
-		    filter (str): Filter supplied to the xAI workflow.
-		    team_id (str): Team id supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			self.limit = limit
-			self.next_token = next_token
-			self.order = order
-			self.sort_by = sort_by
-			self.filter = filter
-			self.team_id = team_id
-			self.extra_kwargs = kwargs or { }
-			self.build_list_request( )
-			return self.execute_list( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'list( self )'
-			raise ex
-	
-	def list_files( self, limit: int=None, next_token: str=None, order: str=None,
-			sort_by: str=None, filter: str=None, team_id: str=None, **kwargs: Any ) -> Any:
-		"""List files.
-		
-		Purpose:
-		    Lists xAI resources and returns normalized metadata for UI display or downstream selection.
-		
-		Args:
-		    limit (int): Limit supplied to the xAI workflow.
-		    next_token (str): Next token supplied to the xAI workflow.
-		    order (str): Order supplied to the xAI workflow.
-		    sort_by (str): Sort by supplied to the xAI workflow.
-		    filter (str): Filter supplied to the xAI workflow.
-		    team_id (str): Team id supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.list( limit=limit, next_token=next_token, order=order,
-				sort_by=sort_by, filter=filter, team_id=team_id, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'list_files( self )'
-			raise ex
-	
-	def retrieve( self, file_id: str, team_id: str=None, **kwargs: Any ) -> Any:
-		"""Retrieve.
-		
-		Purpose:
-		    Provides retrieve behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    file_id (str): File id supplied to the xAI workflow.
-		    team_id (str): Team id supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.team_id = team_id
-			self.extra_kwargs = kwargs or { }
-			self.build_retrieve_request( )
-			return self.execute_retrieve( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'retrieve( self, file_id: str )'
-			raise ex
-	
-	def extract( self, file_id: str, format: str=None, page_number: int=None,
-			team_id: str=None, **kwargs: Any ) -> bytes | str | None:
-		"""Extract.
-		
-		Purpose:
-		    Provides extract behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    file_id (str): File id supplied to the xAI workflow.
-		    format (str): Format supplied to the xAI workflow.
-		    page_number (int): Page number supplied to the xAI workflow.
-		    team_id (str): Team id supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    bytes | str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.download_format = format
-			self.page_number = page_number
-			self.team_id = team_id
-			self.extra_kwargs = kwargs or { }
-			self.build_extract_request( )
-			return self.execute_extract( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'extract( self, file_id: str )'
-			raise ex
-	
-	def download( self, file_id: str, format: str=None, page_number: int=None,
-			team_id: str=None, **kwargs: Any ) -> bytes | str | None:
-		"""Download.
-		
-		Purpose:
-		    Provides download behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    file_id (str): File id supplied to the xAI workflow.
-		    format (str): Format supplied to the xAI workflow.
-		    page_number (int): Page number supplied to the xAI workflow.
-		    team_id (str): Team id supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    bytes | str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			return self.extract( file_id=file_id, format=format, page_number=page_number,
-				team_id=team_id, **kwargs )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'download( self, file_id: str )'
-			raise ex
-	
-	def delete( self, file_id: str, team_id: str=None, **kwargs: Any ) -> Any:
-		"""Delete.
-		
-		Purpose:
-		    Provides delete behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    file_id (str): File id supplied to the xAI workflow.
-		    team_id (str): Team id supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'file_id', file_id )
-			self.file_id = file_id
-			self.team_id = team_id
-			self.extra_kwargs = kwargs or { }
-			self.build_delete_request( )
-			return self.execute_delete( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'delete( self, file_id: str )'
-			raise ex
-	
-	def summarize( self, filepath: str=None, filename: str=None, prompt: str=None,
-			file_id: str=None, model: str='grok-4.20-reasoning', temperature: float=None,
-			top_p: float=None, frequency: float=None, presence: float=None,
-			max_tokens: int=None, store: bool = None, stream: bool = None,
-			instruct: str=None, include: List[ str ]=None, tools: List[ Any ]=None,
-			tool_choice: str=None, previous_id: str=None, conversation_id: str=None,
-			purpose: str='assistants', **kwargs: Any ) -> str | None:
-		"""Summarize.
-		
-		Purpose:
-		    Provides summarize behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    filepath (str): Filepath supplied to the xAI workflow.
-		    filename (str): Filename supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    file_id (str): File id supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    include (List[str]): Include supplied to the xAI workflow.
-		    tools (List[Any]): Tools supplied to the xAI workflow.
-		    tool_choice (str): Tool choice supplied to the xAI workflow.
-		    previous_id (str): Previous id supplied to the xAI workflow.
-		    conversation_id (str): Conversation id supplied to the xAI workflow.
-		    purpose (str): Purpose supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'prompt', prompt )
-			self.prompt = prompt
-			self.model = model
-			self.instructions = instruct
-			self.temperature = temperature
-			self.top_percent = top_p
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_output_tokens = max_tokens
-			self.store = store
-			self.stream = stream
-			self.include = include if include is not None else [ ]
-			self.tools = tools if tools is not None else [ ]
-			self.tool_choice = tool_choice
-			self.previous_id = previous_id
-			self.previous_response_id = previous_id
-			self.conversation_id = conversation_id
-			self.extra_kwargs = kwargs or { }
-			self.file_ids = [ ]
-			
-			if file_id:
-				self.file_id = file_id
-				self.file_ids.append( file_id )
-			
-			if filepath:
-				upload_response = self.upload( filepath=filepath, filename=filename,
-					purpose=purpose )
-				uploaded_id = self.normalize_file_id( upload_response )
-				if uploaded_id and uploaded_id not in self.file_ids:
-					self.file_ids.append( uploaded_id )
-			
-			self.build_file_response_request( )
-			return self.execute_file_response( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'summarize( self, filepath: str, prompt: str )'
-			raise ex
-	
-	def survey( self, filepaths: List[ str ], filenames: List[ str ], prompt: str,
-			model: str='grok-4.20-reasoning', temperature: float=None, top_p: float=None,
-			frequency: float=None, presence: float=None, max_tokens: int=None,
-			store: bool = None, stream: bool = None, instruct: str=None,
-			purpose: str='assistants', **kwargs: Any ) -> str | None:
-		"""Survey.
-		
-		Purpose:
-		    Provides survey behavior for the Files workflow while preserving provider request and response state.
-		
-		Args:
-		    filepaths (List[str]): Filepaths supplied to the xAI workflow.
-		    filenames (List[str]): Filenames supplied to the xAI workflow.
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
-		    temperature (float): Temperature supplied to the xAI workflow.
-		    top_p (float): Top p supplied to the xAI workflow.
-		    frequency (float): Frequency supplied to the xAI workflow.
-		    presence (float): Presence supplied to the xAI workflow.
-		    max_tokens (int): Max tokens supplied to the xAI workflow.
-		    store (bool): Store supplied to the xAI workflow.
-		    stream (bool): Stream supplied to the xAI workflow.
-		    instruct (str): Instruct supplied to the xAI workflow.
-		    purpose (str): Purpose supplied to the xAI workflow.
-		    **kwargs: Additional keyword values supplied to the xAI workflow.
-		
-		Returns:
-		    str | None: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'filepaths', filepaths )
-			throw_if( 'filenames', filenames )
-			throw_if( 'prompt', prompt )
-			
-			if len( filepaths ) != len( filenames ):
-				raise ValueError( 'filepaths and filenames must have the same length.' )
-			
-			self.file_ids = [ ]
-			for index, filepath in enumerate( filepaths ):
-				upload_response = self.upload( filepath=filepath, filename=filenames[ index ],
-					purpose=purpose )
-				uploaded_id = self.normalize_file_id( upload_response )
-				if uploaded_id and uploaded_id not in self.file_ids:
-					self.file_ids.append( uploaded_id )
-			
-			self.prompt = prompt
-			self.model = model
-			self.instructions = instruct
-			self.temperature = temperature
-			self.top_percent = top_p
-			self.frequency_penalty = frequency
-			self.presence_penalty = presence
-			self.max_output_tokens = max_tokens
-			self.store = store
-			self.stream = stream
-			self.extra_kwargs = kwargs or { }
-			self.build_file_response_request( )
-			return self.execute_file_response( )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'Files'
-			ex.method = 'survey( self, filepaths: List[ str ], filenames: List[ str ] )'
-			raise ex
-	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
-		
-		Purpose:
-		    Provides dir behavior for the Files workflow while preserving provider request and response state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [
-				'api_key',
-				'base_url',
-				'client',
-				'file_path',
-				'file_name',
-				'file_id',
-				'file_ids',
-				'file_paths',
-				'file_names',
-				'purpose',
-				'model',
-				'prompt',
-				'instructions',
-				'response',
-				'request',
-				'content',
-				'output_text',
-				'documents',
-				'response_format',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'max_output_tokens',
-				'store',
-				'stream',
-				'include',
-				'tools',
-				'tool_choice',
-				'previous_id',
-				'previous_response_id',
-				'conversation_id',
-				'limit',
-				'next_token',
-				'order',
-				'sort_by',
-				'filter',
-				'team_id',
-				'download_format',
-				'page_number',
-				'extra_kwargs',
-				'model_options',
-				'purpose_options',
-				'format_options',
-				'tool_options',
-				'include_options',
-				'initialize_client',
-				'build_headers',
-				'build_json_headers',
-				'normalize_file_id',
-				'get_output_text',
-				'build_upload_request',
-				'execute_upload',
-				'build_list_request',
-				'execute_list',
-				'build_retrieve_request',
-				'execute_retrieve',
-				'build_extract_request',
-				'execute_extract',
-				'build_delete_request',
-				'execute_delete',
-				'build_file_input',
-				'build_file_response_request',
-				'execute_file_response',
-				'upload',
-				'list',
-				'list_files',
-				'retrieve',
-				'extract',
-				'download',
-				'delete',
-				'summarize',
-				'survey',
-		]
+		return [ 'api_key', 'base_url', 'timeout', 'audio_path', 'file_name', 'mime_type',
+			'source_language', 'target_language', 'text_format', 'keyterm', 'model', 'prompt',
+			'instructions', 'response', 'transcript', 'translation', 'result', 'params', 'chat',
+			'client', 'duration', 'words', 'model_options', 'language_options', 'mime_options',
+			'format_options', 'get_mime_type', 'transcribe', 'get_output_text', 'translate', ]
 
-class VectorStores( Grok ):
-	"""VectorStores workflow wrapper.
+class Transcription( Grok ):
+	"""Provide xAI speech-to-text workflow support.
 	
 	Purpose:
-	    Manages xAI collection and vector-store style operations used to connect documents to retrieval-enabled workflows.
+		Provides batch audio transcription through the xAI Speech-to-Text REST API. The class
+		assigns accepted arguments to object members, constructs the provider multipart request,
+		uploads the required local audio file, and extracts transcript text, duration, detected
+		language, word-level timestamps, and channel-level results from the provider response.
 	
 	Attributes:
-	    client: Runtime attribute used by the VectorStores workflow.
-	    model: Runtime attribute used by the VectorStores workflow.
-	    prompt: Runtime attribute used by the VectorStores workflow.
-	    response_format: Runtime attribute used by the VectorStores workflow.
-	    number: Runtime attribute used by the VectorStores workflow.
-	    content: Runtime attribute used by the VectorStores workflow.
-	    name: Runtime attribute used by the VectorStores workflow.
-	    file_path: Runtime attribute used by the VectorStores workflow.
-	    file_name: Runtime attribute used by the VectorStores workflow.
-	    file_ids: Runtime attribute used by the VectorStores workflow.
-	    store_ids: Runtime attribute used by the VectorStores workflow.
-	    store_id: Runtime attribute used by the VectorStores workflow.
-	    collection_ids: Runtime attribute used by the VectorStores workflow.
-	    collection_id: Runtime attribute used by the VectorStores workflow.
-	    documents: Runtime attribute used by the VectorStores workflow.
-	    collections: Runtime attribute used by the VectorStores workflow.
-	    response: Runtime attribute used by the VectorStores workflow.
+		api_key (str): xAI API key.
+		base_url (str): xAI REST API base URL.
+		audio_path (str): Local audio-file path used by the current request.
+		file_name (str): Source audio filename.
+		mime_type (str): Source audio MIME type.
+		language (str): Optional source-language hint.
+		text_format (bool): Indicates whether inverse text normalization is enabled.
+		keyterm (str): Optional transcription-bias term.
+		response (Any): Latest provider response.
+		transcript (str): Transcript extracted from the latest response.
+		result (Dict[str, Any]): Parsed Speech-to-Text response.
+		words (List[Dict[str, Any]]): Word-level transcription results.
+		channels (List[Dict[str, Any]]): Channel-level transcription results.
+		duration (float): Audio duration returned by the provider.
+		params (List[Tuple[str, str]]): Multipart Speech-to-Text parameters.
 	"""
-	client: Optional[ Client ]
-	model: Optional[ str ]
-	prompt: Optional[ str ]
-	response_format: Optional[ str ]
-	number: Optional[ int ]
-	content: Optional[ str ]
-	name: Optional[ str ]
-	file_path: Optional[ str ]
-	file_name: Optional[ str ]
-	file_ids: Optional[ List[ str ] ]
-	store_ids: Optional[ List[ str ] ]
-	store_id: Optional[ str ]
-	collection_ids: Optional[ List[ str ] ]
-	collection_id: Optional[ str ]
-	documents: Optional[ Dict[ str, str ] ]
-	collections: Optional[ Dict[ str, str ] ]
-	response: Optional[ Any ]
+	api_key: str
+	base_url: str
+	audio_path: str
+	file_name: str
+	mime_type: str
+	language: str
+	text_format: bool
+	keyterm: str
+	response: Any
+	transcript: str
+	result: Dict[ str, Any ]
+	words: List[ Dict[ str, Any ] ]
+	channels: List[ Dict[ str, Any ] ]
+	duration: float
+	params: List[ tuple[ str, str ] ]
 	
-	def __init__( self ):
+	def __init__( self ) -> None:
 		"""Initialize instance.
 		
 		Purpose:
-		    Initializes VectorStores state with default configuration values and runtime attributes used by later xAI provider calls.
+			Initializes xAI Speech-to-Text configuration and runtime state without executing a
+			provider request.
+		
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
-		self.base_url = cfg.XAI_BASE_URL
-		self.client = Client( api_key=cfg.XAI_API_KEY )
-		self.model = None
-		self.prompt = None
-		self.response_format = None
-		self.number = None
-		self.content = None
-		self.name = None
+		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1', )
+		self.timeout = 3600
+		self.audio_path = ''
+		self.filepath = ''
+		self.file_name = ''
+		self.mime_type = ''
+		self.language = ''
+		self.text_format = False
+		self.output_format = False
+		self.keyterm = ''
 		self.response = None
-		self.file_ids = [ ]
-		self.store_ids = [ ]
-		self.collection_ids = [ ]
-		self.file_path = None
-		self.file_name = None
-		self.store_id = None
-		self.collection_id = None
-		default_collections = {
-				'Federal Financial Regulations': 'collection_9195d847-03a1-443c-9240-294c64dd01e2',
-				'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
-				'Explanatory Statements': 'collection_41dc3374-24d0-4692-819c-59e3d7b11b93',
-				'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee'
-		}
-		configured_collections = getattr( cfg, 'GROK_COLLECTIONS', None )
-		self.collections = configured_collections if isinstance( configured_collections,
-			dict ) else default_collections
+		self.transcript = ''
+		self.result = { }
+		self.words = [ ]
+		self.channels = [ ]
+		self.duration = 0.0
+		self.params = [ ]
+		self.content_type = ''
+	
+	@property
+	def format_options( self ) -> List[ bool ]:
+		"""Get text-formatting options.
 		
-		default_documents = {
-				'Outlays.csv': 'file_b0a448b3-904a-40c7-bae1-64df657fde1c',
-				'Authority.csv': 'file_c6ad236f-0c52-45f4-8883-d3be032d07c2',
-				'Balances.csv': 'file_0f63d120-406f-49e6-97e5-7855f2cb26b5'
-		}
-		configured_documents = getattr( cfg, 'GROK_DOCUMENTS', None )
-		self.documents = configured_documents if isinstance( configured_documents,
-			dict ) else default_documents
+		Purpose:
+			Returns the Boolean values accepted by the xAI inverse text-normalization argument.
+		
+		Returns:
+			List[bool]: Available text-formatting values.
+		"""
+		return [ False, True, ]
+	
+	@property
+	def language_options( self ) -> List[ str ]:
+		"""Get language options.
+		
+		Purpose:
+			Returns language codes supported by the xAI Speech-to-Text workflow.
+		
+		Returns:
+			List[str]: Supported language-code values.
+		"""
+		return [ '', 'ar', 'cs', 'da', 'de', 'en', 'es', 'fa', 'fil', 'fr', 'hi', 'id', 'it', 'ja',
+			'ko', 'mk', 'ms', 'nl', 'pl', 'pt', 'ro', 'ru', 'sv', 'th', 'tr', 'vi', ]
+	
+	@property
+	def mime_options( self ) -> List[ str ]:
+		"""Get audio MIME-type options.
+		
+		Purpose:
+			Returns common audio MIME types accepted by the xAI Speech-to-Text endpoint.
+		
+		Returns:
+			List[str]: Supported audio MIME-type values.
+		"""
+		return [ 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/flac', 'audio/ogg',
+			'audio/webm', 'audio/mp4', 'audio/aac', 'audio/m4a', ]
+	
+	def get_mime_type( self, path: str ) -> str:
+		"""Get audio MIME type.
+		
+		Purpose:
+			Determines the MIME type of a required local audio file from its extension.
+		
+		Args:
+			path (str): Required local audio-file path.
+		
+		Returns:
+			str: Audio MIME type.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'path', path )
+			self.audio_path = path
+			self.suffix = Path( self.audio_path ).suffix.lower( )
+			self.mime_type = { '.mp3': 'audio/mpeg', '.mpeg': 'audio/mpeg', '.wav': 'audio/wav',
+				'.flac': 'audio/flac', '.ogg': 'audio/ogg', '.oga': 'audio/ogg',
+				'.webm': 'audio/webm', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4',
+				'.aac': 'audio/aac', }.get( self.suffix, 'application/octet-stream', )
+			return self.mime_type
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Transcription'
+			exception.method = ('get_mime_type( self, path: str ) -> str')
+			Logger( ).write( exception )
+			raise exception
+	
+	def transcribe( self, path: str, language: str = '', format: bool = False, mime_type: str = '',
+		keyterm: str = '' ) -> str:
+		"""Transcribe audio.
+		
+		Purpose:
+			Uploads a required local audio file to the xAI batch Speech-to-Text endpoint and
+			returns the generated transcript. Optional language, inverse text normalization,
+			MIME type, and keyterm-bias settings are included when supplied.
+		
+		Args:
+			path (str): Required local audio-file path.
+			language (str): Optional source-language hint.
+			format (bool): Indicates whether inverse text normalization is enabled.
+			mime_type (str): Optional source-audio MIME type.
+			keyterm (str): Optional term used to bias transcription.
+		
+		Returns:
+			str: Generated transcript text.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'path', path )
+			throw_if( 'XAI_API_KEY', self.api_key )
+			self.audio_path = path
+			self.filepath = path
+			self.language = language
+			self.text_format = format
+			self.output_format = format
+			self.mime_type = mime_type
+			self.keyterm = keyterm
+			self.file_name = Path( self.audio_path ).name
+			
+			if not self.mime_type:
+				self.mime_type = self.get_mime_type( self.audio_path )
+			
+			self.params = [ ('format', str( self.text_format ).lower( ),), ]
+			
+			if self.language:
+				self.params.append( ('language', self.language,) )
+			
+			if self.keyterm:
+				self.params.append( ('keyterm', self.keyterm,) )
+			
+			with open( self.audio_path, 'rb' ) as source:
+				self.response = requests.post( url=(f'{self.base_url.rstrip( "/" )}'
+				                                    f'/stt'),
+					headers={ 'Authorization': (f'Bearer {self.api_key}'), }, data=self.params,
+					files={ 'file': (self.file_name, source, self.mime_type,), },
+					timeout=self.timeout, )
+			
+			self.response.raise_for_status( )
+			self.content_type = str( self.response.headers.get( 'Content-Type', '', ) )
+			
+			if 'application/json' in self.content_type.lower( ):
+				self.result = self.response.json( )
+				self.transcript = str( self.result.get( 'text', '', ) or '' ).strip( )
+				self.language = str(
+					self.result.get( 'language', self.language, ) or self.language )
+				self.duration = float( self.result.get( 'duration', 0.0, ) or 0.0 )
+				self.words = self.result.get( 'words', [ ], ) or [ ]
+				self.channels = self.result.get( 'channels', [ ], ) or [ ]
+			else:
+				self.transcript = self.response.text.strip( )
+				self.result = { 'text': self.transcript, 'language': self.language,
+					'duration': self.duration, 'words': self.words, 'channels': self.channels, }
+			
+			throw_if( 'transcript', self.transcript )
+			return self.transcript
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Transcription'
+			exception.method = 'transcribe( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_result( self ) -> Dict[ str, Any ]:
+		"""Get transcription result.
+		
+		Purpose:
+			Returns the complete parsed response from the latest xAI Speech-to-Text request.
+		
+		Returns:
+			Dict[str, Any]: Parsed transcription response.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Transcription'
+			exception.method = ('get_result( self ) -> Dict[ str, Any ]')
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_words( self ) -> List[ Dict[ str, Any ] ]:
+		"""Get word-level results.
+		
+		Purpose:
+			Returns word-level transcription timestamps from the latest xAI response.
+		
+		Returns:
+			List[Dict[str, Any]]: Word-level transcription results.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			return self.words
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Transcription'
+			exception.method = ('get_words( self ) -> List[ Dict[ str, Any ] ]')
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_channels( self ) -> List[ Dict[ str, Any ] ]:
+		"""Get channel-level results.
+		
+		Purpose:
+			Returns channel-level transcription results from the latest xAI response.
+		
+		Returns:
+			List[Dict[str, Any]]: Channel-level transcription results.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			return self.channels
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'Transcription'
+			exception.method = ('get_channels( self ) -> List[ Dict[ str, Any ] ]')
+			Logger( ).write( exception )
+			raise exception
+	
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
+		
+		Purpose:
+			Returns public members exposed by the Grok Transcription wrapper.
+		
+		Returns:
+			List[str]: Public member names.
+		"""
+		return [ 'api_key', 'base_url', 'timeout', 'audio_path', 'filepath', 'file_name',
+			'mime_type', 'language', 'text_format', 'output_format', 'keyterm', 'response',
+			'transcript', 'result', 'words', 'channels', 'duration', 'params', 'content_type',
+			'format_options', 'language_options', 'mime_options', 'get_mime_type', 'transcribe',
+			'get_result', 'get_words', 'get_channels', ]
+
+class VectorStores( Grok ):
+	"""Provide xAI Collections workflow support.
+	
+	Purpose:
+		Provides xAI collection creation, listing, retrieval, updating, deletion, document
+		management, and semantic search. The class uses the xAI Management API key for
+		collection and indexed-document administration and the standard xAI API key for
+		semantic collection searches.
+	
+	Attributes:
+		client (Optional[Client]): xAI SDK client used for collection searches.
+		api_key (str): Standard xAI API key.
+		management_key (str): xAI Management API key.
+		base_url (str): Standard xAI REST API base URL.
+		management_base_url (str): xAI Management API base URL.
+		model (str): Grok model retained by search workflows.
+		prompt (str): Semantic-search query.
+		name (str): Collection name used by the current operation.
+		description (str): Collection description used by the current operation.
+		file_path (str): Local document path used by an upload operation.
+		file_name (str): Document filename used by the current operation.
+		file_id (str): xAI file identifier used by the current operation.
+		file_ids (List[str]): File identifiers used by a batch operation.
+		store_id (str): Application-facing collection identifier.
+		store_ids (List[str]): Application-facing collection identifiers.
+		collection_id (str): Provider collection identifier.
+		collection_ids (List[str]): Provider collection identifiers.
+		request (Dict[str, Any]): Latest request data.
+		response (Any): Latest provider response.
+		result (Any): Normalized result from the latest operation.
+		params (Dict[str, Any]): Query-string parameters.
+		payload (Dict[str, Any]): JSON request body.
+		headers (Dict[str, str]): HTTP request headers.
+		team_id (str): Optional xAI team identifier.
+		limit (int): Maximum number of resources requested.
+		order (str): Result ordering.
+		sort_by (str): Result sort field.
+		pagination_token (str): Pagination token.
+		next_token (str): Pagination token returned by the provider.
+		filter (str): Provider filter expression.
+		collections (Dict[str, str]): Configured collection labels and identifiers.
+		documents (Dict[str, str]): Configured document labels and identifiers.
+	"""
+	client: Optional[ Client ]
+	api_key: str
+	management_key: str
+	base_url: str
+	management_base_url: str
+	model: str
+	prompt: str
+	name: str
+	description: str
+	file_path: str
+	file_name: str
+	file_id: str
+	file_ids: List[ str ]
+	store_id: str
+	store_ids: List[ str ]
+	collection_id: str
+	collection_ids: List[ str ]
+	request: Dict[ str, Any ]
+	response: Any
+	result: Any
+	params: Dict[ str, Any ]
+	payload: Dict[ str, Any ]
+	headers: Dict[ str, str ]
+	team_id: str
+	limit: int
+	order: str
+	sort_by: str
+	pagination_token: str
+	next_token: str
+	filter: str
+	collections: Dict[ str, str ]
+	documents: Dict[ str, str ]
+	
+	def __init__( self, model: str = 'grok-4.20' ) -> None:
+		"""Initialize instance.
+		
+		Purpose:
+			Initializes xAI collection-management and semantic-search state without executing a
+			provider request.
+		
+		Args:
+			model (str): Default Grok model retained by collection-search workflows.
+		
+		Returns:
+			None: This method initializes object state.
+		"""
+		super( ).__init__( )
+		self.api_key = cfg.XAI_API_KEY
+		self.management_key = cfg.XAI_MANAGEMENT_KEY
+		self.base_url = getattr( cfg, 'XAI_BASE_URL', 'https://api.x.ai/v1', )
+		self.management_base_url = getattr( cfg, 'XAI_MANAGEMENT_BASE_URL',
+			'https://management-api.x.ai/v1', )
+		self.timeout = 3600
+		self.client = None
+		self.model = model
+		self.prompt = ''
+		self.response_format = ''
+		self.number = 1
+		self.content = ''
+		self.name = ''
+		self.description = ''
+		self.file_path = ''
+		self.file_name = ''
+		self.file_id = ''
+		self.file_ids = [ ]
+		self.store_id = ''
+		self.store_ids = [ ]
+		self.collection_id = ''
+		self.collection_ids = [ ]
+		self.request = { }
+		self.response = None
+		self.result = None
+		self.params = { }
+		self.payload = { }
+		self.headers = { }
+		self.team_id = ''
+		self.limit = 100
+		self.order = 'desc'
+		self.sort_by = 'collection_name'
+		self.pagination_token = ''
+		self.next_token = ''
+		self.filter = ''
+		self.collections = cfg.GROK_COLLECTIONS
+		self.documents = getattr( cfg, 'GROK_DOCUMENTS', { }, )
 	
 	@property
 	def model_options( self ) -> List[ str ]:
-		"""Model options.
+		"""Get model options.
 		
 		Purpose:
-		    Returns the configured option values exposed by the VectorStores workflow selector without mutating provider state.
+			Returns Grok models exposed for collection-grounded generation workflows.
 		
 		Returns:
-		    List[str]: Result produced by the xAI workflow.
+			List[str]: Supported Grok model identifiers.
 		"""
-		return [
-				'grok-4',
-				'grok-4-0709',
-				'grok-4-latest',
-				'grok-4-1-fast',
-				'grok-4-1-fast-reasoning',
-				'grok-4-1-fast-reasoning-latest',
-				'grok-4-1-fast-non-reasoning',
-				'grok-4-1-fast-non-reasoning-latest',
-				'grok-4-fast',
-				'grok-4-fast-reasoning',
-				'grok-4-fast-reasoning-latest',
-				'grok-4-fast-non-reasoning',
-				'grok-4-fast-non-reasoning-latest',
-				'grok-code-fast-1',
-				'grok-3',
-				'grok-3-latest',
-				'grok-3-mini',
-				'grok-3-fast',
-				'grok-3-fast-latest',
-				'grok-3-mini-fast',
-				'grok-3-mini-fast-latest',
-		]
+		return [ 'grok-4.20', 'grok-4.20-reasoning', 'grok-4.20-multi-agent', 'grok-4.5', 'grok-4',
+			'grok-4-latest', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-3',
+			'grok-3-mini', 'grok-3-fast', 'grok-3-mini-fast', ]
+	
+	@property
+	def order_options( self ) -> List[ str ]:
+		"""Get ordering options.
+		
+		Purpose:
+			Returns ordering values supported by xAI collection and document list operations.
+		
+		Returns:
+			List[str]: Supported ordering values.
+		"""
+		return [ 'asc', 'desc', ]
+	
+	@property
+	def collection_sort_options( self ) -> List[ str ]:
+		"""Get collection sort options.
+		
+		Purpose:
+			Returns fields supported for sorting collection-list results.
+		
+		Returns:
+			List[str]: Supported collection sort fields.
+		"""
+		return [ 'collection_name', 'created_at', 'documents_count', ]
+	
+	@property
+	def document_sort_options( self ) -> List[ str ]:
+		"""Get document sort options.
+		
+		Purpose:
+			Returns fields supported for sorting collection-document results.
+		
+		Returns:
+			List[str]: Supported document sort fields.
+		"""
+		return [ 'name', 'created_at', 'size_bytes', 'status', ]
 	
 	def get_collection_id( self, store_id: str ) -> str:
-		"""Get collection id.
+		"""Get provider collection identifier.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+			Resolves a required application-facing store identifier or configured collection
+			label to the corresponding xAI collection identifier.
 		
 		Args:
-		    store_id (str): Store id supplied to the xAI workflow.
+			store_id (str): Required store identifier or configured collection label.
 		
 		Returns:
-		    str: Result produced by the xAI workflow.
+			str: Provider collection identifier.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'store_id', store_id )
-			value = str( store_id ).strip( )
-			
-			if value in self.collections:
-				return self.collections[ value ]
-			
-			if ' — ' in value:
-				return value.split( ' — ' )[ -1 ].strip( )
-			
-			return value
+			self.store_id = store_id
+			self.collection_id = str(
+				self.collections.get( self.store_id, self.store_id, ) ).strip( )
+			throw_if( 'collection_id', self.collection_id, )
+			return self.collection_id
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'get_collection_id( self, store_id: str ) -> str'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('get_collection_id( self, store_id: str ) -> str')
+			Logger( ).write( exception )
+			raise exception
 	
-	def get_collection_rows( self ) -> List[ Dict[ str, Any ] ]:
-		"""Get collection rows.
+	def get_collection_name( self, collection_id: str ) -> str:
+		"""Get configured collection name.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+			Resolves a required provider collection identifier to its configured
+			application-facing label when one is available.
+		
+		Args:
+			collection_id (str): Required provider collection identifier.
 		
 		Returns:
-		    List[Dict[str, Any]]: Result produced by the xAI workflow.
+			str: Configured collection label or the original identifier.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			rows = [ ]
-			for name, collection_id in self.collections.items( ):
-				rows.append(
-					{
-							'id': collection_id,
-							'name': name,
-							'display_name': name,
-							'description': '',
-							'status': 'configured',
-							'file_counts': '',
-							'usage_bytes': '',
-							'collection_id': collection_id,
-							'collection_name': name,
-							'collection_description': '',
-					}
-				)
+			throw_if( 'collection_id', collection_id, )
+			self.collection_id = collection_id
 			
-			return rows
+			for label, identifier in self.collections.items( ):
+				if identifier == self.collection_id:
+					return label
+			
+			return self.collection_id
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'get_collection_rows( self ) -> List[ Dict[ str, Any ] ]'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('get_collection_name( self, collection_id: str ) -> str')
+			Logger( ).write( exception )
+			raise exception
+	
+	def build_management_headers( self ) -> Dict[ str, str ]:
+		"""Build Management API headers.
+		
+		Purpose:
+			Builds authenticated JSON headers for xAI collection-management requests.
+		
+		Returns:
+			Dict[str, str]: Management API request headers.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'XAI_MANAGEMENT_KEY', self.management_key, )
+			self.headers = { 'Authorization': (f'Bearer {self.management_key}'),
+				'Content-Type': 'application/json', }
+			return self.headers
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('build_management_headers( self ) -> Dict[ str, str ]')
+			Logger( ).write( exception )
+			raise exception
+	
+	def execute_management_request( self, method: str, path: str,
+		params: Optional[ Dict[ str, Any ] ] = None,
+		payload: Optional[ Dict[ str, Any ] ] = None ) -> Any:
+		"""Execute Management API request.
+		
+		Purpose:
+			Executes an authenticated xAI collection-management request and returns its decoded
+			JSON body when present.
+		
+		Args:
+			method (str): Required HTTP method.
+			path (str): Required Management API resource path.
+			params (Optional[Dict[str, Any]]): Optional query-string parameters.
+			payload (Optional[Dict[str, Any]]): Optional JSON request body.
+		
+		Returns:
+			Any: Decoded JSON response or an empty dictionary.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'method', method )
+			throw_if( 'path', path )
+			self.method = method.upper( )
+			self.resource_path = path
+			self.params = (params if params is not None else { })
+			self.payload = (payload if payload is not None else { })
+			self.headers = self.build_management_headers( )
+			self.response = requests.request( method=self.method,
+				url=(f'{self.management_base_url.rstrip( "/" )}/'
+				     f'{self.resource_path.lstrip( "/" )}'), headers=self.headers,
+				params=self.params if self.params else None,
+				json=self.payload if self.payload else None, timeout=self.timeout, )
+			self.response.raise_for_status( )
+			
+			if not self.response.content:
+				self.result = { }
+				return self.result
+			
+			self.result = self.response.json( )
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('execute_management_request( self, **kwargs )')
+			Logger( ).write( exception )
+			raise exception
+	
+	def normalize_collection( self, collection: Dict[ str, Any ] ) -> Dict[ str, Any ]:
+		"""Normalize collection metadata.
+		
+		Purpose:
+			Converts required xAI collection metadata into a stable application-facing record.
+		
+		Args:
+			collection (Dict[str, Any]): Required provider collection metadata.
+		
+		Returns:
+			Dict[str, Any]: Application-facing collection metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'collection', collection )
+			self.collection = collection
+			self.collection_id = str(
+				self.collection.get( 'collection_id', self.collection.get( 'id', '', ), ) or '' )
+			self.name = str( self.collection.get( 'collection_name',
+				self.collection.get( 'name', '', ), ) or '' )
+			
+			return { 'id': self.collection_id, 'collection_id': self.collection_id,
+				'name': self.name, 'collection_name': self.name,
+				'description': self.collection.get( 'collection_description',
+					self.collection.get( 'description', '', ), ),
+				'created_at': self.collection.get( 'created_at', None, ),
+				'documents_count': self.collection.get( 'documents_count', 0, ),
+				'collection_type': self.collection.get( 'collection_type', '', ),
+				'index_configuration': self.collection.get( 'index_configuration', { }, ),
+				'chunk_configuration': self.collection.get( 'chunk_configuration', { }, ),
+				'field_definitions': self.collection.get( 'field_definitions', [ ], ),
+				'metadata': self.collection, }
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('normalize_collection( self, collection: '
+			                    'Dict[ str, Any ] ) -> Dict[ str, Any ]')
+			Logger( ).write( exception )
+			raise exception
+	
+	def normalize_collection_list( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		"""Normalize collection list.
+		
+		Purpose:
+			Converts a required xAI collection-list response into application-facing records
+			and updates the configured name-to-identifier mapping.
+		
+		Args:
+			payload (Dict[str, Any]): Required provider collection-list response.
+		
+		Returns:
+			List[Dict[str, Any]]: Application-facing collection metadata records.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'payload', payload )
+			self.payload = payload
+			self.next_token = str( self.payload.get( 'pagination_token', '', ) or '' )
+			self.collection_data = self.payload.get( 'collections', [ ], ) or [ ]
+			self.results = [ self.normalize_collection( item ) for item in self.collection_data ]
+			
+			for item in self.results:
+				if item[ 'name' ] and item[ 'id' ]:
+					self.collections[ item[ 'name' ] ] = item[ 'id' ]
+			
+			return self.results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('normalize_collection_list( self, payload: '
+			                    'Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]')
+			Logger( ).write( exception )
+			raise exception
 	
 	def get_text_output( self, response: Any ) -> Any:
-		"""Get text output.
+		"""Get collection-search output.
 		
 		Purpose:
-		    Retrieves normalized xAI provider state or response data for display, reuse, or downstream request construction.
+			Extracts textual content or semantic-search matches from a required xAI collection
+			search response.
 		
 		Args:
-		    response (Any): Response supplied to the xAI workflow.
+			response (Any): Required xAI collection-search response.
 		
 		Returns:
-		    Any: Result produced by the xAI workflow.
+			Any: Search text, semantic matches, or the original provider response.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if response is None:
-				return None
+			throw_if( 'response', response )
+			self.response = response
+			self.output_text = getattr( self.response, 'content', '', )
 			
-			output_text = getattr( response, 'output_text', None )
-			if output_text:
-				return output_text
+			if self.output_text:
+				return str( self.output_text ).strip( )
 			
-			text = getattr( response, 'text', None )
-			if text:
-				return text
+			self.matches = getattr( self.response, 'matches', None, )
 			
-			if isinstance( response, dict ):
-				output_text = response.get( 'output_text' ) or response.get( 'text' )
-				if output_text:
-					return output_text
+			if self.matches is not None:
+				return self.matches
 			
-			return response
+			if isinstance( self.response, dict ):
+				if 'matches' in self.response:
+					return self.response[ 'matches' ]
+				
+				if 'content' in self.response:
+					return self.response[ 'content' ]
+			
+			return self.response
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'get_text_output( self, response: Any ) -> Any'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('get_text_output( self, response: Any ) -> Any')
+			Logger( ).write( exception )
+			raise exception
 	
-	def raise_management_required( self, operation: str ) -> None:
-		"""Raise management required.
+	def create( self, name: str, description: str = '' ) -> Dict[ str, Any ]:
+		"""Create a collection.
 		
 		Purpose:
-		    Provides raise management required behavior for the VectorStores workflow while preserving provider request and response state.
+			Creates an xAI collection with a required name and optional description.
 		
 		Args:
-		    operation (str): Operation supplied to the xAI workflow.
-		"""
-		raise NotImplementedError(
-			f'Grok VectorStores.{operation} requires xAI collection-management capability. '
-			f'This wrapper is currently configured with XAI_API_KEY only. Use configured '
-			f'collections for search, or add the required management credential/path before '
-			f'enabling remote collection management.'
-		)
-	
-	def create( self, name: str, model: str=None ) -> Any:
-		"""Create.
-		
-		Purpose:
-		    Provides create behavior for the VectorStores workflow while preserving provider request and response state.
-		
-		Args:
-		    name (str): Name supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
+			name (str): Required collection name.
+			description (str): Optional collection description.
 		
 		Returns:
-		    Any: Result produced by the xAI workflow.
+			Dict[str, Any]: Created collection metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'name', name )
 			self.name = name
-			self.file_name = name
-			self.model = model
-			self.raise_management_required( 'create' )
+			self.description = description
+			self.payload = { 'collection_name': self.name, }
+			
+			if self.description:
+				self.payload[ 'collection_description' ] = (self.description)
+			
+			self.result = self.execute_management_request( 'POST', '/collections',
+				payload=self.payload, )
+			self.result = self.normalize_collection( self.result )
+			self.collection_id = self.result[ 'id' ]
+			
+			if self.name and self.collection_id:
+				self.collections[ self.name ] = self.collection_id
+			
+			return self.result
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'create( self, name: str, model: str=None ) -> Any'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'create( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def list( self ) -> List[ Dict[ str, Any ] ]:
-		"""List.
+	def list( self, limit: int = 100, order: str = 'desc', sort_by: str = 'collection_name',
+		pagination_token: str = '', filter: str = '', team_id: str = '' ) -> List[
+		Dict[ str, Any ] ]:
+		"""List collections.
 		
 		Purpose:
-		    Provides list behavior for the VectorStores workflow while preserving provider request and response state.
-		
-		Returns:
-		    List[Dict[str, Any]]: Result produced by the xAI workflow.
-		"""
-		try:
-			self.response = self.get_collection_rows( )
-			return self.response
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'list( self ) -> List[ Dict[ str, Any ] ]'
-			raise ex
-	
-	def retrieve( self, store_id: str ) -> Dict[ str, Any ]:
-		"""Retrieve.
-		
-		Purpose:
-		    Provides retrieve behavior for the VectorStores workflow while preserving provider request and response state.
+			Lists xAI collections using pagination, ordering, sorting, filtering, and optional
+			team scope.
 		
 		Args:
-		    store_id (str): Store id supplied to the xAI workflow.
+			limit (int): Maximum number of collections requested.
+			order (str): Result ordering.
+			sort_by (str): Collection sort field.
+			pagination_token (str): Optional pagination token.
+			filter (str): Optional provider filter expression.
+			team_id (str): Optional team identifier.
 		
 		Returns:
-		    Dict[str, Any]: Result produced by the xAI workflow.
+			List[Dict[str, Any]]: Application-facing collection metadata records.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.limit = limit
+			self.order = order
+			self.sort_by = sort_by
+			self.pagination_token = pagination_token
+			self.filter = filter
+			self.team_id = team_id
+			self.params = { 'limit': self.limit, 'order': self.order, 'sort_by': self.sort_by, }
+			
+			if self.pagination_token:
+				self.params[ 'pagination_token' ] = (self.pagination_token)
+			
+			if self.filter:
+				self.params[ 'filter' ] = self.filter
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.result = self.execute_management_request( 'GET', '/collections',
+				params=self.params, )
+			return self.normalize_collection_list( self.result )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'list( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def retrieve( self, store_id: str, team_id: str = '' ) -> Dict[ str, Any ]:
+		"""Retrieve a collection.
+		
+		Purpose:
+			Retrieves metadata for a required xAI collection.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			Dict[str, Any]: Application-facing collection metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'store_id', store_id )
 			self.store_id = store_id
+			self.team_id = team_id
 			self.collection_id = self.get_collection_id( self.store_id )
-			display_name = ''
-			for name, collection_id in self.collections.items( ):
-				if collection_id == self.collection_id:
-					display_name = name
-					break
+			self.params = { }
 			
-			self.response = {
-					'id': self.collection_id,
-					'name': display_name or self.collection_id,
-					'display_name': display_name or self.collection_id,
-					'description': '',
-					'status': 'configured',
-					'file_counts': '',
-					'usage_bytes': '',
-					'collection_id': self.collection_id,
-					'collection_name': display_name or self.collection_id,
-					'collection_description': '',
-			}
-			return self.response
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.result = self.execute_management_request( 'GET',
+				f'/collections/{self.collection_id}', params=self.params, )
+			return self.normalize_collection( self.result )
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'retrieve( self, store_id: str ) -> Dict[ str, Any ]'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'retrieve( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def search( self, prompt: str, store_id: str, model: str='grok-4-fast' ) -> Any:
-		"""Search.
+	def update( self, store_id: str, name: str = '', description: str = '' ) -> Dict[ str, Any ]:
+		"""Update a collection.
 		
 		Purpose:
-		    Provides search behavior for the VectorStores workflow while preserving provider request and response state.
+			Updates the name or description of a required xAI collection.
 		
 		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    store_id (str): Store id supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
+			store_id (str): Required collection identifier or configured label.
+			name (str): Optional replacement collection name.
+			description (str): Optional replacement collection description.
 		
 		Returns:
-		    Any: Result produced by the xAI workflow.
+			Dict[str, Any]: Updated collection metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			self.store_id = store_id
+			self.name = name
+			self.description = description
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.payload = { }
+			
+			if self.name:
+				self.payload[ 'collection_name' ] = self.name
+			
+			if self.description:
+				self.payload[ 'collection_description' ] = (self.description)
+			
+			throw_if( 'payload', self.payload )
+			self.result = self.execute_management_request( 'PUT',
+				f'/collections/{self.collection_id}', payload=self.payload, )
+			self.result = self.normalize_collection( self.result )
+			
+			if self.name:
+				self.collections[ self.name ] = self.collection_id
+			
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'update( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def delete( self, store_id: str, team_id: str = '' ) -> bool:
+		"""Delete a collection.
+		
+		Purpose:
+			Deletes a required xAI collection.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			bool: True when the deletion request completes.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			self.store_id = store_id
+			self.team_id = team_id
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.params = { }
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.execute_management_request( 'DELETE', f'/collections/{self.collection_id}',
+				params=self.params, )
+			
+			for label, identifier in list( self.collections.items( ) ):
+				if identifier == self.collection_id:
+					del self.collections[ label ]
+			
+			return True
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'delete( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def add_document( self, store_id: str, file_id: str,
+		fields: Optional[ Dict[ str, Any ] ] = None ) -> Any:
+		"""Add a document to a collection.
+		
+		Purpose:
+			Adds a required existing xAI file to a required collection and optionally assigns
+			document metadata fields.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			file_id (str): Required xAI file identifier.
+			fields (Optional[Dict[str, Any]]): Optional collection document fields.
+		
+		Returns:
+			Any: Provider document-addition result.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.fields = (fields if fields is not None else { })
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.payload = { }
+			
+			if self.fields:
+				self.payload[ 'fields' ] = self.fields
+			
+			self.result = self.execute_management_request( 'POST',
+				(f'/collections/{self.collection_id}/'
+				 f'documents/{self.file_id}'), payload=self.payload, )
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'add_document( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list_documents( self, store_id: str, limit: int = 100, order: str = 'desc',
+		sort_by: str = 'name', pagination_token: str = '', filter: str = '', team_id: str = '' ) \
+			-> \
+			List[ Dict[ str, Any ] ]:
+		"""List collection documents.
+		
+		Purpose:
+			Lists documents in a required xAI collection using pagination, ordering, sorting,
+			filtering, and optional team scope.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			limit (int): Maximum number of documents requested.
+			order (str): Result ordering.
+			sort_by (str): Document sort field.
+			pagination_token (str): Optional pagination token.
+			filter (str): Optional document filter expression.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			List[Dict[str, Any]]: Collection document metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			self.store_id = store_id
+			self.limit = limit
+			self.order = order
+			self.sort_by = sort_by
+			self.pagination_token = pagination_token
+			self.filter = filter
+			self.team_id = team_id
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.params = { 'limit': self.limit, 'order': self.order, 'sort_by': self.sort_by, }
+			
+			if self.pagination_token:
+				self.params[ 'pagination_token' ] = (self.pagination_token)
+			
+			if self.filter:
+				self.params[ 'filter' ] = self.filter
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.result = self.execute_management_request( 'GET',
+				(f'/collections/{self.collection_id}/'
+				 f'documents'), params=self.params, )
+			self.next_token = str( self.result.get( 'pagination_token', '', ) or '' )
+			return self.result.get( 'documents', [ ], ) or [ ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'list_documents( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def retrieve_document( self, store_id: str, file_id: str, team_id: str = '' ) -> Dict[
+		str, Any ]:
+		"""Retrieve collection document.
+		
+		Purpose:
+			Retrieves metadata for a required document in a required xAI collection.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			file_id (str): Required xAI file identifier.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			Dict[str, Any]: Collection document metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.team_id = team_id
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.params = { }
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.result = self.execute_management_request( 'GET',
+				(f'/collections/{self.collection_id}/'
+				 f'documents/{self.file_id}'), params=self.params, )
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('retrieve_document( self, **kwargs )')
+			Logger( ).write( exception )
+			raise exception
+	
+	def regenerate_document( self, store_id: str, file_id: str, team_id: str = '' ) -> Any:
+		"""Regenerate document index.
+		
+		Purpose:
+			Regenerates semantic indices for a required document in a required xAI collection.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			file_id (str): Required xAI file identifier.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			Any: Provider regeneration result.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.team_id = team_id
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.params = { }
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.result = self.execute_management_request( 'PATCH',
+				(f'/collections/{self.collection_id}/'
+				 f'documents/{self.file_id}'), params=self.params, )
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('regenerate_document( self, **kwargs )')
+			Logger( ).write( exception )
+			raise exception
+	
+	def remove_document( self, store_id: str, file_id: str, team_id: str = '' ) -> bool:
+		"""Remove a collection document.
+		
+		Purpose:
+			Removes a required document from a required xAI collection without deleting the
+			underlying xAI file.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			file_id (str): Required xAI file identifier.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			bool: True when the removal request completes.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.team_id = team_id
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.params = { }
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.execute_management_request( 'DELETE', (f'/collections/{self.collection_id}/'
+			                                            f'documents/{self.file_id}'),
+				params=self.params, )
+			return True
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('remove_document( self, **kwargs )')
+			Logger( ).write( exception )
+			raise exception
+	
+	def batch_get_documents( self, store_id: str, file_ids: List[ str ], team_id: str = '' ) -> \
+			List[ Dict[ str, Any ] ]:
+		"""Retrieve document metadata in a batch.
+		
+		Purpose:
+			Retrieves metadata for required file identifiers in a required xAI collection.
+		
+		Args:
+			store_id (str): Required collection identifier or configured label.
+			file_ids (List[str]): Required xAI file identifiers.
+			team_id (str): Optional team identifier.
+		
+		Returns:
+			List[Dict[str, Any]]: Requested collection document metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_ids', file_ids )
+			self.store_id = store_id
+			self.file_ids = file_ids
+			self.team_id = team_id
+			self.collection_id = self.get_collection_id( self.store_id )
+			self.params = { 'file_ids': self.file_ids, }
+			
+			if self.team_id:
+				self.params[ 'team_id' ] = self.team_id
+			
+			self.result = self.execute_management_request( 'GET',
+				(f'/collections/{self.collection_id}/'
+				 f'documents:batchGet'), params=self.params, )
+			return self.result.get( 'documents', [ ], ) or [ ]
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = ('batch_get_documents( self, **kwargs )')
+			Logger( ).write( exception )
+			raise exception
+	
+	def search( self, prompt: str, store_id: str, model: str, filter: str = '' ) -> Any:
+		"""Search a collection.
+		
+		Purpose:
+			Performs semantic retrieval for a required query against a required xAI collection.
+		
+		Args:
+			prompt (str): Required semantic-search query.
+			store_id (str): Required collection identifier or configured label.
+			model (str): Required Grok model retained by the operation.
+			filter (str): Optional document metadata filter.
+		
+		Returns:
+			Any: Semantic-search matches returned by xAI.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'store_id', store_id )
+			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
 			self.prompt = prompt
-			self.model = model
 			self.store_id = store_id
+			self.model = model
+			self.filter = filter
 			self.collection_id = self.get_collection_id( self.store_id )
-			self.store_ids = [ self.collection_id ]
-			self.collection_ids = [ self.collection_id ]
-			self.response = self.client.collections.search( query=self.prompt,
-				collection_ids=self.collection_ids )
+			self.collection_ids = [ self.collection_id, ]
+			self.client = Client( api_key=self.api_key, management_api_key=self.management_key,
+				timeout=self.timeout, )
+			
+			if self.filter:
+				self.response = self.client.collections.search( query=self.prompt,
+					collection_ids=self.collection_ids, filter=self.filter, )
+			else:
+				self.response = self.client.collections.search( query=self.prompt,
+					collection_ids=self.collection_ids, )
+			
 			return self.get_text_output( self.response )
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'search( self, prompt: str, store_id: str, model: str ) -> Any'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'search( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def survey( self, prompt: str, store_ids: List[ str ], model: str='grok-4-fast' ) -> Any:
-		"""Survey.
+	def survey( self, prompt: str, store_ids: List[ str ], model: str, filter: str = '' ) -> Any:
+		"""Search multiple collections.
 		
 		Purpose:
-		    Provides survey behavior for the VectorStores workflow while preserving provider request and response state.
+			Performs semantic retrieval for a required query across multiple required xAI
+			collections.
 		
 		Args:
-		    prompt (str): Prompt supplied to the xAI workflow.
-		    store_ids (List[str]): Store ids supplied to the xAI workflow.
-		    model (str): Model supplied to the xAI workflow.
+			prompt (str): Required semantic-search query.
+			store_ids (List[str]): Required collection identifiers or configured labels.
+			model (str): Required Grok model retained by the operation.
+			filter (str): Optional document metadata filter.
 		
 		Returns:
-		    Any: Result produced by the xAI workflow.
+			Any: Semantic-search matches returned by xAI.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'store_ids', store_ids )
+			throw_if( 'model', model )
+			throw_if( 'XAI_API_KEY', self.api_key )
 			self.prompt = prompt
-			self.model = model
 			self.store_ids = store_ids
-			self.collection_ids = [
-					self.get_collection_id( store_id )
-					for store_id in self.store_ids
-			]
-			self.response = self.client.collections.search( query=self.prompt,
-				collection_ids=self.collection_ids )
+			self.model = model
+			self.filter = filter
+			self.collection_ids = [ self.get_collection_id( item ) for item in self.store_ids ]
+			self.client = Client( api_key=self.api_key, management_api_key=self.management_key,
+				timeout=self.timeout, )
+			
+			if self.filter:
+				self.response = self.client.collections.search( query=self.prompt,
+					collection_ids=self.collection_ids, filter=self.filter, )
+			else:
+				self.response = self.client.collections.search( query=self.prompt,
+					collection_ids=self.collection_ids, )
+			
 			return self.get_text_output( self.response )
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'survey( self, prompt: str, store_ids: List[ str ], model: str ) -> Any'
-			raise ex
+			exception = Error( e )
+			exception.module = 'grok'
+			exception.cause = 'VectorStores'
+			exception.method = 'survey( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def update( self, store_id: str, filepath: str=None, filename: str=None ) -> Any:
-		"""Update.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
 		Purpose:
-		    Provides update behavior for the VectorStores workflow while preserving provider request and response state.
-		
-		Args:
-		    store_id (str): Store id supplied to the xAI workflow.
-		    filepath (str): Filepath supplied to the xAI workflow.
-		    filename (str): Filename supplied to the xAI workflow.
+			Returns public members exposed by the Grok VectorStores wrapper.
 		
 		Returns:
-		    Any: Result produced by the xAI workflow.
+			List[str]: Public member names.
 		"""
-		try:
-			throw_if( 'store_id', store_id )
-			self.store_id = store_id
-			self.collection_id = self.get_collection_id( self.store_id )
-			self.file_path = filepath
-			self.file_name = filename
-			self.raise_management_required( 'update' )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'update( self, store_id: str, filepath: str=None, filename: str=None ) -> Any'
-			raise ex
-	
-	def delete( self, store_id: str ) -> Any:
-		"""Delete.
-		
-		Purpose:
-		    Provides delete behavior for the VectorStores workflow while preserving provider request and response state.
-		
-		Args:
-		    store_id (str): Store id supplied to the xAI workflow.
-		
-		Returns:
-		    Any: Result produced by the xAI workflow.
-		"""
-		try:
-			throw_if( 'store_id', store_id )
-			self.store_id = store_id
-			self.collection_id = self.get_collection_id( self.store_id )
-			self.raise_management_required( 'delete' )
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'grok'
-			ex.cause = 'VectorStores'
-			ex.method = 'delete( self, store_id: str ) -> Any'
-			raise ex
-	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
-		
-		Purpose:
-		    Provides dir behavior for the VectorStores workflow while preserving provider request and response state.
-		
-		Returns:
-		    List[str] | None: Result produced by the xAI workflow.
-		"""
-		return [
-				'client',
-				'file_path',
-				'file_name',
-				'response',
-				'model',
-				'prompt',
-				'response_format',
-				'number',
-				'content',
-				'name',
-				'file_ids',
-				'store_ids',
-				'store_id',
-				'collection_ids',
-				'collection_id',
-				'documents',
-				'collections',
-				'model_options',
-				'get_collection_id',
-				'get_collection_rows',
-				'get_text_output',
-				'raise_management_required',
-				'create',
-				'list',
-				'retrieve',
-				'search',
-				'survey',
-				'update',
-				'delete',
-		]
+		return [ 'api_key', 'management_key', 'base_url', 'management_base_url', 'timeout',
+			'client', 'model', 'prompt', 'response_format', 'number', 'content', 'name',
+			'description', 'file_path', 'file_name', 'file_id', 'file_ids', 'store_id',
+			'store_ids',
+			'collection_id', 'collection_ids', 'request', 'response', 'result', 'params',
+			'payload',
+			'headers', 'team_id', 'limit', 'order', 'sort_by', 'pagination_token', 'next_token',
+			'filter', 'collections', 'documents', 'model_options', 'order_options',
+			'collection_sort_options', 'document_sort_options', 'get_collection_id',
+			'get_collection_name', 'build_management_headers', 'execute_management_request',
+			'normalize_collection', 'normalize_collection_list', 'get_text_output', 'create',
+			'list', 'retrieve', 'update', 'delete', 'add_document', 'list_documents',
+			'retrieve_document', 'regenerate_document', 'remove_document', 'batch_get_documents',
+			'search', 'survey', ]

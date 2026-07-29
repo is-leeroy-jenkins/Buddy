@@ -9,6 +9,7 @@
 	    The module preserves the project provider-wrapper pattern, local validation helpers,
 	    OpenAI request builders, and wrapped exception handling used by the application.
 """
+
 from __future__ import annotations
 import json
 import os
@@ -26,17 +27,16 @@ import tempfile
 def throw_if( name: str, value: object ) -> None:
 	"""Throw if.
 	
+	Purpose:
+		Validates a required value before a provider or application operation proceeds. The
+		function raises a ValueError when the supplied value is missing, blank, or empty.
 	
-		Purpose:
-		    Validates a required argument before provider request construction or local workflow
-		    execution.
+	Args:
+		name (str): Name value used by the operation.
+		value (object): Value value used by the operation.
 	
-		Args:
-		    name: Resource, argument, or store name to validate or use.
-		    value: Candidate value checked for required input validation.
-	
-		Raises:
-		    ValueError: Raised when required input validation fails or unsupported provider  options are supplied.
+	Raises:
+		ValueError: Raised when required input is missing or invalid.
 	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
@@ -50,49 +50,45 @@ def throw_if( name: str, value: object ) -> None:
 def encode_image( image_path: str ) -> str:
 	"""Encode image.
 	
+	Purpose:
+		Reads a local image file and converts its bytes into a base64-encoded string. The
+		encoded value is used by image and vision workflows that require inline image content.
 	
-		Purpose:
-		    Reads a local image file and converts its bytes to a base64 string for vision-capable
-		    provider requests.
+	Args:
+		image_path (str): Image path value used by the operation.
 	
-		Args:
-		    image_path: Local image path read and encoded for provider requests.
-	
-		Returns:
-		    str: Result produced by the provider workflow.
+	Returns:
+		Base64-encoded image content.
 	"""
 	with open( image_path, "rb" ) as image_file:
 		return base64.b64encode( image_file.read( ) ).decode( 'utf-8' )
 
 class GPT:
-	"""GPT provider wrapper.
+	"""Provide GPT workflow support.
 	
+	Purpose:
+		Provides the shared OpenAI wrapper base used by Gipity provider workflows. The class
+		stores common model, prompt, request, response, and compatibility fields inherited by
+		text, image, audio, embedding, file, and vector-store wrappers.
 	
-		Purpose:
-		    Stores shared OpenAI configuration, credential state, prompt parameters, and response
-		    settings used by the provider-specific workflow classes.
-	
-		Attributes:
-		    api_key: OpenAI API key loaded from project configuration.
-		    client: OpenAI client created for the current provider operation.
-		    prompt: User prompt or task instruction used by the current request.
-		    temperature: Sampling temperature value retained for compatible models.
-		    top_percent: Nucleus sampling value retained for compatible models.
-		    frequency_penalty: Frequency penalty value retained for compatible models.
-		    presence_penalty: Presence penalty value retained for compatible models.
-		    max_tokens: Maximum output-token value used by supported requests.
-		    stops: Stop-sequence collection retained for compatible request types.
-		    store: Response storage flag used by supported OpenAI requests.
-		    stream: Streaming flag retained by UI workflows and request builders.
-		    background: Background-execution flag retained by UI workflows and request builders.
-		    number: Requested count for generated candidates or image outputs.
-		    response_format: Response-format configuration used by text or media requests.
-		    context: Prior conversation or document context supplied to request builders.
-		    instructions: System or developer instructions supplied to model requests.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
+	Attributes:
+		api_key (Optional[str]): Api key retained by the provider wrapper.
+		client (Optional[OpenAI]): Client retained by the provider wrapper.
+		prompt (Optional[str]): Prompt retained by the provider wrapper.
+		temperature (Optional[float]): Temperature retained by the provider wrapper.
+		top_percent (Optional[float]): Top percent retained by the provider wrapper.
+		frequency_penalty (Optional[float]): Frequency penalty retained by the provider wrapper.
+		presence_penalty (Optional[float]): Presence penalty retained by the provider wrapper.
+		max_tokens (Optional[int]): Max tokens retained by the provider wrapper.
+		stops (Optional[List[str]]): Stops retained by the provider wrapper.
+		store (Optional[bool]): Store retained by the provider wrapper.
+		stream (Optional[bool]): Stream retained by the provider wrapper.
+		background (Optional[bool]): Background retained by the provider wrapper.
+		number (Optional[int]): Number retained by the provider wrapper.
+		response_format (Optional[Dict[str, str]]): Response format retained by the provider
+		wrapper.
+		context (Optional[List[Dict[str, str]]]): Context retained by the provider wrapper.
+		instructions (Optional[str]): Instructions retained by the provider wrapper.
 	"""
 	api_key: Optional[ str ]
 	client: Optional[ OpenAI ]
@@ -112,12 +108,13 @@ class GPT:
 	instructions: Optional[ str ]
 	
 	def __init__( self ):
-		"""Initialize GPT.
+		"""Initialize instance.
 		
-		
-			Purpose:
-			    Initializes GPT state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
+		Purpose:
+			Initializes the GPT object with default configuration, runtime state, provider
+			settings,
+			and compatibility fields. This constructor prepares the instance for later method calls
+			without performing external work beyond local attribute assignment.
 		"""
 		self.api_key = cfg.OPENAI_API_KEY
 		self.model = None
@@ -139,892 +136,678 @@ class GPT:
 		self.context = [ ]
 
 class Chat( GPT ):
-	"""Chat provider wrapper.
+	"""Provide OpenAI Responses API text-generation support.
 	
+	Purpose:
+		Provides the OpenAI Responses API implementation used by Text mode. The class stores
+		request arguments as object members, constructs provider-specific input, tool, response-
+		format, reasoning, and continuation payloads, executes synchronous or streaming requests,
+		and exposes response text and usage information to the application.
 	
-		Purpose:
-		    Builds and executes OpenAI Responses API chat requests, including tool configuration,
-		    retrieval inputs, prompt templates, response extraction, and usage metadata.
-	
-		Attributes:
-		    include: Responses API include fields requested by the current workflow.
-		    tool_choice: Tool-choice policy selected for the current request.
-		    previous_id: Previous Responses API identifier used for stateful continuation.
-		    conversation_id: Responses API conversation identifier used for continuation.
-		    parallel_tools: Flag controlling parallel tool-call support when tools are active.
-		    max_tools: Maximum tool-call count sent with supported Responses API requests.
-		    input: Responses API input payload built for the current request.
-		    tools: Tool definitions selected or built for the current request.
-		    reasoning: Reasoning-effort configuration used by supported models.
-		    image_url: Remote image URL used by image-analysis workflows.
-		    image_path: Local image path used by image-analysis or image-editing workflows.
-		    file_url: File URL retained for compatibility with document workflows.
-		    file_path: Local file path retained for file-enabled workflows.
-		    allowed_domains: Allowed-domain filters used by web-search tool configuration.
-		    max_search_results: Maximum number of search results requested by supported tools.
-		    output_text: Text extracted from the latest provider response.
-		    vector_stores: Named OpenAI vector-store identifiers available to the application.
-		    files: Named OpenAI file identifiers available to the application.
-		    content: Supplemental content block retained for request construction.
-		    vector_store_ids: Vector-store identifiers used by file-search tools.
-		    file_ids: File identifiers retained for file-enabled workflows.
-		    response: Latest provider response object returned by an API call.
-		    file: Latest file object returned by an OpenAI file workflow.
-		    purpose: OpenAI file purpose used by upload and file operations.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
+	Attributes:
+		include (List[str]): Additional response fields requested from the provider.
+		tool_choice (str): Tool-selection behavior used by the request.
+		previous_id (str): Previous response identifier used for continuation.
+		conversation_id (str): Conversation identifier used for continuation.
+		parallel_tools (bool): Indicates whether parallel tool calls are permitted.
+		max_tools (int): Maximum number of built-in tool calls permitted.
+		input (List[Dict[str, Any]]): Input messages sent to the provider.
+		tools (List[Dict[str, Any]]): Provider-ready tool definitions.
+		reasoning (Dict[str, str]): Provider-ready reasoning configuration.
+		allowed_domains (List[str]): Domains allowed by the web-search tool.
+		output_text (str): Text extracted from the latest response.
+		vector_store_ids (List[str]): Vector store identifiers used by file search.
+		response (Optional[Response]): Latest OpenAI response object.
 	"""
-	include: Optional[ List[ str ] ]
-	tool_choice: Optional[ str ]
-	previous_id: Optional[ str ]
-	conversation_id: Optional[ str ]
-	parallel_tools: Optional[ bool ]
-	max_tools: Optional[ int ]
-	input: Optional[ List[ Dict[ str, Any ] ] | str ]
-	tools: Optional[ List[ Dict[ str, Any ] ] ]
-	reasoning: Optional[ Dict[ str, str ] ]
-	image_url: Optional[ str ]
-	image_path: Optional[ str ]
-	file_url: Optional[ str ]
-	file_path: Optional[ str ]
-	allowed_domains: Optional[ List[ str ] ]
-	max_search_results: Optional[ int ]
-	output_text: Optional[ str ]
-	vector_stores: Optional[ Dict[ str, str ] ]
-	files: Optional[ Dict[ str, str ] ]
-	content: Optional[ str ]
-	vector_store_ids: Optional[ List[ str ] ]
-	file_ids: Optional[ List[ str ] ]
+	include: List[ str ]
+	tool_choice: str
+	previous_id: str
+	conversation_id: str
+	parallel_tools: bool
+	max_tools: int
+	input: List[ Dict[ str, Any ] ]
+	tools: List[ Dict[ str, Any ] ]
+	reasoning: Dict[ str, str ]
+	allowed_domains: List[ str ]
+	output_text: str
+	vector_store_ids: List[ str ]
 	response: Optional[ Response ]
-	file: Optional[ FileObject ]
-	purpose: Optional[ str ]
 	
-	def __init__( self, model: str='gpt-5-nano', prompt: str=None, temperature: float=None,
-		top_p: float=None, presense: float=None, presence: float=None, store: bool=None,
-		stream: bool=None, stops: List[ str ]=None, response_format: Dict[ str, Any ]=None,
-		number: int=None, instruct: str=None, context: List[ Dict[ str, str ] ]=None,
-		allowed_domains: List[ str ]=None, include: List[ str ]=None,
-		tools: List[ Dict[ str, Any ] ]=None, max_tools: int=None, tool_choice: str=None,
-		file_path: str=None, background: bool=None, is_parallel: bool=None,
-		max_tokens: int=None, frequency: float=None, input: List[ Dict[ str, Any ] ]=None,
-		file_ids: List[ str ]=None, previous_id: str=None, conversation_id: str=None,
-		reasoning: Dict[ str, str ] | str=None, output_text: str=None,
-		max_search_results: int=None, content: str=None, vector_store_ids: List[ str ]=None ):
-		"""Initialize Chat.
+	def __init__( self, model: str = 'gpt-5-nano', prompt: str = '', temperature: float = 0.0,
+		top_p: float = 0.0, frequency: float = 0.0, presence: float = 0.0, max_tokens: int = 0,
+		max_tools: int = 0, store: bool = False, stream: bool = False, background: bool = False,
+		is_parallel: bool = False, instruct: str = '', tool_choice: str = '', previous_id: str =
+		'',
+		conversation_id: str = '', reasoning: str = '',
+		response_format: Optional[ Dict[ str, Any ] ] = None,
+		context: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		allowed_domains: Optional[ List[ str ] ] = None, include: Optional[ List[ str ] ] = None,
+		tools: Optional[ List[ str | Dict[ str, Any ] ] ] = None,
+		input_data: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None ) -> None:
+		"""Initialize instance.
 		
+		Purpose:
+			Initializes the OpenAI Chat wrapper with explicit defaults and provider-request
+			state. The constructor performs local assignment only and does not execute an API
+			request.
 		
-			Purpose:
-			    Initializes Chat state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
+		Args:
+			model (str): OpenAI model identifier.
+			prompt (str): User prompt retained for a later request.
+			temperature (float): Sampling temperature retained for supported models.
+			top_p (float): Nucleus-sampling value retained for supported models.
+			frequency (float): Frequency penalty retained for supported models.
+			presence (float): Presence penalty retained for supported models.
+			max_tokens (int): Maximum output-token count.
+			max_tools (int): Maximum number of built-in tool calls.
+			store (bool): Indicates whether the response should be stored.
+			stream (bool): Indicates whether response events should be streamed.
+			background (bool): Indicates whether the response should run in background mode.
+			is_parallel (bool): Indicates whether parallel tool calls are permitted.
+			instruct (str): System or developer instructions.
+			tool_choice (str): Tool-selection behavior.
+			previous_id (str): Previous response identifier.
+			conversation_id (str): Conversation identifier.
+			reasoning (str): Reasoning effort.
+			response_format (Optional[Dict[str, Any]]): Text-format configuration.
+			context (Optional[List[Dict[str, Any]]]): Prior application messages.
+			allowed_domains (Optional[List[str]]): Domains allowed by web search.
+			include (Optional[List[str]]): Additional response fields to include.
+			tools (Optional[List[str | Dict[str, Any]]]): Selected provider tools.
+			input_data (Optional[List[Dict[str, Any]]]): Prebuilt Responses API input items.
+			vector_store_ids (Optional[List[str]]): Vector stores used by file search.
 		
-			Args:
-			    model: Provider model identifier selected for the operation.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    presense: Backward-compatible misspelled presence-penalty argument.
-			    presence: Presence penalty supplied to compatible model requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    stops: Stop sequences retained for compatible provider requests.
-			    response_format: Response-format configuration retained for compatible workflows.
-			    number: Requested output count before provider-specific normalization.
-			    instruct: System or developer instructions supplied to the provider.
-			    context: Prior conversation context supplied to request builders.
-			    allowed_domains: Allowed web-search domains supplied to tool configuration.
-			    include: Requested provider include fields.
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
-			    max_tools: Maximum number of tool calls allowed for the request.
-			    tool_choice: Tool-choice policy selected for the request.
-			    file_path: Output or input file path used by the workflow.
-			    background: Background transparency or execution option supplied by the caller.
-			    is_parallel: Flag controlling parallel tool-call support when tools are active.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    input: Prebuilt provider input payload supplied by the caller.
-			    file_ids: OpenAI file identifiers attached to a vector store or batch.
-			    previous_id: Previous Responses API identifier used for stateful continuation.
-			    conversation_id: Conversation identifier used for stateful continuation.
-			    reasoning: Reasoning-effort value or reasoning configuration supplied by the UI.
-			    output_text: Previously extracted output text retained for compatibility.
-			    max_search_results: Maximum search-result count retained for compatible tools.
-			    content: Supplemental content block supplied to request construction.
-			    vector_store_ids: Vector-store identifiers used by file-search tools.
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.model = model
 		self.prompt = prompt
-		self.number = number
-		self.response_format = response_format if response_format is not None else { }
 		self.temperature = temperature
 		self.top_percent = top_p
-		self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
 		self.frequency_penalty = frequency
-		self.presence_penalty = presence if presence is not None else presense
+		self.presence_penalty = presence
 		self.max_tokens = max_tokens
-		self.context = context if context is not None else [ ]
-		self.stream = stream
-		self.store = store
-		self.instructions = instruct
-		self.stops = stops if stops is not None else [ ]
-		self.background = background
-		self.input = input if input is not None else [ ]
-		self.include = include if include is not None else [ ]
-		self.output_text = output_text
 		self.max_tools = max_tools
-		self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-		self.file_ids = file_ids if file_ids is not None else [ ]
-		self.tools = tools if tools is not None else [ ]
+		self.store = store
+		self.stream = stream
+		self.background = background
+		self.parallel_tools = is_parallel
+		self.instructions = instruct
+		self.tool_choice = tool_choice
 		self.previous_id = previous_id
 		self.conversation_id = conversation_id
-		self.reasoning = reasoning
-		self.parallel_tools = is_parallel
-		self.tool_choice = tool_choice
+		self.reasoning_effort = reasoning
+		self.reasoning = { }
+		self.response_format = response_format if response_format is not None else { }
+		self.context = context if context is not None else [ ]
+		self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
+		self.include = include if include is not None else [ ]
+		self.selected_tools = tools if tools is not None else [ ]
+		self.tools = [ ]
+		self.input = input_data if input_data is not None else [ ]
+		self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
 		self.response = None
-		self.file = None
-		self.file_url = file_path
-		self.file_path = file_path
-		self.image_url = None
-		self.content = content
-		self.max_search_results = max_search_results
-		self.purpose = None
+		self.output_text = ''
 		self.request = { }
 		self.messages = [ ]
-		self.built_tools = [ ]
-		self.stream_requested = False
-		self.background_requested = False
-		self.prompt_template = None
-		self.vector_stores = cfg.GPT_VECTOR_STORES
+		self.stream_events = [ ]
+		self.response_stream = None
+		self.requested_format = None
+		self.effective_context = [ ]
+		self.vector_stores = { 'Governance': 'vs_6a1850a9bdc08191912353eedf59aede',
+			'Public Laws': 'vs_699506f7d5348191990e0557c717fa9d',
+			'Explanatory Statements': 'vs_699505df9ac48191a525c0ecb86fef66',
+			'Army Techniques Publications': 'vs_699356ef052c81918da14c4ed3bcea17',
+			'Army Field Manuals': 'vs_69935542863481918d150c1e89c38633',
+			'Army Regulations': 'vs_6993550488408191919cd70968ba8be8',
+			'DoD Armory': 'vs_697f86ad98888191b967685ae558bfc0',
+			'Army Style Guides': 'vs_68f4efd7d4c4819191458dd6cde6f2cc',
+			'Apportionments': 'vs_68a34aaff93481918c3b3fef8c4e8fea',
+			'Financial Regulations': 'vs_712r5W5833G6aLxIYIbuvVcK', }
 		self.files = { 'Account_Balances.csv': 'file-U6wFeRGSeg38Db5uJzo5sj',
 			'SF133.csv': 'file-WT2h2F5SNxqK2CxyAMSDg6',
 			'Authority.csv': 'file-Qi2rw2QsdxKBX1iiaQxY3m',
 			'Outlays.csv': 'file-GHEwSWR7ezMvHrQ3X648wn', }
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+	def model_options( self ) -> List[ str ]:
+		"""Get model options.
 		
+		Purpose:
+			Returns model identifiers exposed to the application for OpenAI Text mode.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
+		Returns:
+			List[str]: Available OpenAI text-generation models.
 		"""
-		return [ 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.2', 'gpt-5.1', 'gpt-5',
-			'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o',
-			'gpt-4o-mini', ]
+		return [ 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.1', 'gpt-5', 'gpt-5-mini',
+			'gpt-5-nano', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', ]
 	
 	@property
-	def include_options( self ) -> List[ str ] | None:
-		"""Include options.
+	def include_options( self ) -> List[ str ]:
+		"""Get include options.
 		
+		Purpose:
+			Returns additional response fields supported by the Responses API workflow.
 		
-			Purpose:
-			    Returns include options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Include option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported include-path values.
 		"""
-		return [ 'file_search_call.results', 'web_search_call.results',
-			'web_search_call.action.sources', 'code_interpreter_call.outputs',
-			'reasoning.encrypted_content', 'message.output_text.logprobs', ]
+		return [ 'file_search_call.results', 'web_search_call.action.sources',
+			'code_interpreter_call.outputs', 'reasoning.encrypted_content',
+			'message.output_text.logprobs', ]
 	
 	@property
-	def tool_options( self ) -> List[ str ] | None:
-		"""Tool options.
+	def tool_options( self ) -> List[ str ]:
+		"""Get tool options.
 		
+		Purpose:
+			Returns built-in tools implemented by this wrapper.
 		
-			Purpose:
-			    Returns tool options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ] | None: Tool option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported built-in tool names.
 		"""
-		return [ 'web_search', 'file_search', 'code_interpreter', ]
+		return [ 'web_search', 'file_search', ]
 	
 	@property
-	def choice_options( self ) -> List[ str ] | None:
-		"""Choice options.
+	def choice_options( self ) -> List[ str ]:
+		"""Get tool-choice options.
 		
+		Purpose:
+			Returns tool-selection values accepted by the Responses API workflow.
 		
-			Purpose:
-			    Returns choice options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Tool-choice option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported tool-choice values.
 		"""
 		return [ 'auto', 'required', 'none', ]
 	
 	@property
-	def purpose_options( self ) -> List[ str ] | None:
-		"""Purpose options.
+	def purpose_options( self ) -> List[ str ]:
+		"""Get file-purpose options.
 		
+		Purpose:
+			Returns file-purpose values retained for compatibility with file workflows.
 		
-			Purpose:
-			    Returns purpose options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: File-purpose option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported file-purpose values.
 		"""
 		return [ 'assistants', 'batch', 'fine-tune', 'vision', 'user_data', 'evals', ]
 	
 	@property
-	def format_options( self ) -> List[ str ] | None:
-		"""Format options.
+	def format_options( self ) -> List[ str ]:
+		"""Get response-format options.
 		
+		Purpose:
+			Returns text-format values implemented by the Responses API request builder.
 		
-			Purpose:
-			    Returns format options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Response-format option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported response-format values.
 		"""
 		return [ 'text', 'json_object', 'json_schema', ]
 	
 	@property
-	def reasoning_options( self ) -> List[ str ] | None:
-		"""Reasoning options.
+	def reasoning_options( self ) -> List[ str ]:
+		"""Get reasoning options.
 		
+		Purpose:
+			Returns reasoning-effort values supported by current OpenAI reasoning models.
 		
-			Purpose:
-			    Returns reasoning options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Reasoning-effort option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported reasoning-effort values.
 		"""
-		return [ 'none', 'minimal', 'low', 'medium', 'high', ]
+		return [ 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', ]
 	
 	@property
-	def modality_options( self ) -> List[ str ] | None:
-		"""Modality options.
+	def modality_options( self ) -> List[ str ]:
+		"""Get modality options.
 		
+		Purpose:
+			Returns the output modality implemented by the Text-mode wrapper.
 		
-			Purpose:
-			    Returns modality options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Modality option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported output modalities.
 		"""
-		return [ 'text', ]
+		return [ 'text' ]
 	
-	def build_reasoning( self, reasoning: str | Dict[ str, str ]=None ) -> Dict[ str, str ] | None:
-		"""Build reasoning.
+	def supports_reasoning_model( self, model: str = '' ) -> bool:
+		"""Determine reasoning-model support.
 		
+		Purpose:
+			Determines whether the selected model accepts a Responses API reasoning object.
 		
-			Purpose:
-			    Builds the reasoning structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
+		Args:
+			model (str): Model identifier to inspect.
 		
-			Args:
-			    reasoning: Reasoning-effort value or reasoning configuration supplied by the UI.
+		Returns:
+			bool: True when the model supports reasoning configuration.
 		
-			Returns:
-			    Dict[ str, str ] | None: Provider reasoning configuration or None when reasoning is not active.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if reasoning is None:
-				return None
-			
-			if isinstance( reasoning, dict ):
-				value = reasoning.get( 'effort' )
-				if isinstance( value, str ) and value.strip( ) in self.reasoning_options:
-					if value.strip( ) == 'none':
-						return None
-					
-					return { 'effort': value.strip( ) }
-				
-				return None
-			
-			if isinstance( reasoning, str ) and reasoning.strip( ):
-				value = reasoning.strip( )
-				if value == 'none':
-					return None
-				
-				if value in self.reasoning_options:
-					return { 'effort': value }
-			
-			return None
+			self.model = model if model else self.model
+			return self.model.startswith( 'gpt-5' ) or self.model.startswith( 'o' )
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_reasoning( self, reasoning )'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'supports_reasoning_model( self, model: str = "" ) -> bool'
+			Logger( ).write( ex )
+			raise ex
 	
-	def build_input( self, prompt: str, context: List[ Dict[ str, str ] ]=None,
-		input_data: List[ Dict[ str, Any ] ]=None ) -> List[ Dict[ str, Any ] ]:
-		"""Build input.
+	def build_reasoning( self, reasoning: str = '', model: str = '' ) -> Dict[ str, str ]:
+		"""Build reasoning configuration.
 		
+		Purpose:
+			Builds the provider-ready reasoning object for a supported model and effort value.
 		
-			Purpose:
-			    Builds the input structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
+		Args:
+			reasoning (str): Requested reasoning effort.
+			model (str): OpenAI model identifier.
 		
-			Args:
-			    prompt: User prompt or task instruction submitted to the provider.
-			    context: Prior conversation context supplied to request builders.
-			    input_data: Prebuilt provider input payload supplied by the caller.
+		Returns:
+			Dict[str, str]: Provider-ready reasoning configuration or an empty dictionary.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Responses API input payload for the current request.
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.reasoning_effort = reasoning
+			self.model = model if model else self.model
+			self.reasoning = { }
+			
+			if not self.reasoning_effort:
+				return self.reasoning
+			
+			if self.reasoning_effort == 'none':
+				return self.reasoning
+			
+			if not self.supports_reasoning_model( self.model ):
+				return self.reasoning
+			
+			if self.reasoning_effort not in self.reasoning_options:
+				return self.reasoning
+			
+			if self.model.startswith( 'gpt-5.1' ):
+				if self.reasoning_effort in [ 'minimal', 'xhigh' ]:
+					return self.reasoning
+			
+			if self.reasoning_effort == 'xhigh':
+				if not self.model.startswith( 'gpt-5.4' ):
+					self.reasoning_effort = 'high'
+			
+			self.reasoning = { 'effort': self.reasoning_effort, }
+			return self.reasoning
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = ('build_reasoning( self, reasoning: str = "", '
+			             'model: str = "" ) -> Dict[ str, str ]')
+			Logger( ).write( ex )
+			raise ex
+	
+	def build_input( self, prompt: str, context: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		input_data: Optional[ List[ Dict[ str, Any ] ] ] = None ) -> List[ Dict[ str, Any ] ]:
+		"""Build input messages.
 		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
+		Purpose:
+			Builds Responses API input items from prebuilt input data or application history and
+			appends the current user prompt.
+		
+		Args:
+			prompt (str): Current user prompt.
+			context (Optional[List[Dict[str, Any]]]): Prior application messages.
+			input_data (Optional[List[Dict[str, Any]]]): Prebuilt Responses API input items.
+		
+		Returns:
+			List[Dict[str, Any]]: Provider-ready Responses API input items.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
+			self.prompt = prompt
+			self.context = context if context is not None else [ ]
+			self.input = input_data if input_data is not None else [ ]
 			self.messages = [ ]
-			if input_data is not None and len( input_data ) > 0:
-				self.messages.extend( input_data )
-			elif context is not None and len( context ) > 0:
-				for item in context:
+			
+			if self.input:
+				self.messages.extend( self.input )
+			else:
+				for item in self.context:
 					if not isinstance( item, dict ):
 						continue
 					
-					role = str( item.get( 'role', '' ) or '' ).strip( )
-					content = item.get( 'content', '' )
+					self.message_role = item.get( 'role', '' )
+					self.message_content = item.get( 'content', '' )
 					
-					if role not in [ 'user', 'assistant', 'system', 'developer' ]:
+					if self.message_role not in [ 'user', 'assistant', 'system', 'developer', ]:
 						continue
 					
-					if not isinstance( content, str ) or not content.strip( ):
+					if not self.message_content:
 						continue
 					
-					self.messages.append( { 'role': role,
-						'content': [ { 'type': 'input_text', 'text': content.strip( ), }, ], } )
+					self.messages.append( { 'role': self.message_role,
+						'content': [ { 'type': 'input_text', 'text': self.message_content, }, ],
+					} )
 			
 			self.messages.append( { 'role': 'user',
-				'content': [ { 'type': 'input_text', 'text': prompt, }, ], } )
-			
-			return self.messages
+				'content': [ { 'type': 'input_text', 'text': self.prompt, }, ], } )
+			self.input = self.messages
+			return self.input
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_input( self, prompt, context, input_data )'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'build_input( self, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			Logger( ).write( ex )
+			raise ex
 	
-	def build_tools( self, tools: List[ Dict[ str, Any ] ]=None,
-		allowed_domains: List[ str ]=None,
-		vector_store_ids: List[ str ]=None ) -> List[ Dict[ str, Any ] ] | None:
-		"""Build tools.
+	def build_tools( self, tools: Optional[ List[ str | Dict[ str, Any ] ] ] = None,
+		allowed_domains: Optional[ List[ str ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None ) -> List[ Dict[ str, Any ] ]:
+		"""Build tool definitions.
 		
+		Purpose:
+			Builds OpenAI web-search and file-search tool definitions from application-selected
+			tool names.
 		
-			Purpose:
-			    Builds the tools structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
+		Args:
+			tools (Optional[List[str | Dict[str, Any]]]): Selected provider tools.
+			allowed_domains (Optional[List[str]]): Domains permitted by web search.
+			vector_store_ids (Optional[List[str]]): Vector stores used by file search.
 		
-			Args:
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
-			    allowed_domains: Allowed web-search domains supplied to tool configuration.
-			    vector_store_ids: Vector-store identifiers used by file-search tools.
+		Returns:
+			List[Dict[str, Any]]: Provider-ready OpenAI tool definitions.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ] | None: Normalized provider tool definitions or None when no supported tools are active.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
+			self.selected_tools = tools if tools is not None else [ ]
 			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
-			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-			self.built_tools = [ ]
+			self.vector_store_ids = (vector_store_ids if vector_store_ids is not None else [ ])
+			self.tools = [ ]
 			
-			if tools is None or len( tools ) == 0:
-				return None
+			for selected_tool in self.selected_tools:
+				if isinstance( selected_tool, dict ):
+					self.tool_name = selected_tool.get( 'type', '' )
+				else:
+					self.tool_name = selected_tool
+				
+				if self.tool_name in [ 'web_search', 'web_search_preview',
+					'web_search_preview_2025_03_11', ]:
+					self.web_search_tool = { 'type': 'web_search', }
+					
+					if self.allowed_domains:
+						self.web_search_tool[ 'filters' ] = {
+							'allowed_domains': self.allowed_domains, }
+					
+					self.tools.append( self.web_search_tool )
+					continue
+				
+				if self.tool_name == 'file_search':
+					throw_if( 'vector_store_ids', self.vector_store_ids )
+					self.tools.append(
+						{ 'type': 'file_search', 'vector_store_ids': self.vector_store_ids, } )
 			
-			for tool in tools:
-				if not isinstance( tool, dict ):
-					continue
-				
-				tool_type = str( tool.get( 'type', '' ) or '' ).strip( )
-				if not tool_type:
-					continue
-				
-				if tool_type == 'web_search':
-					built_tool = { 'type': 'web_search' }
-					filters = tool.get( 'filters' )
-					if isinstance( filters, dict ) and len( filters ) > 0:
-						built_tool[ 'filters' ]=filters
-					elif len( self.allowed_domains ) > 0:
-						built_tool[ 'filters' ]={ 'allowed_domains': self.allowed_domains }
-					
-					search_context_size = tool.get( 'search_context_size' )
-					if isinstance( search_context_size, str ) and search_context_size.strip( ):
-						built_tool[ 'search_context_size' ]=search_context_size.strip( )
-					
-					user_location = tool.get( 'user_location' )
-					if isinstance( user_location, dict ) and len( user_location ) > 0:
-						built_tool[ 'user_location' ]=user_location
-					
-					self.built_tools.append( built_tool )
-					continue
-				
-				if tool_type == 'file_search':
-					ids = tool.get( 'vector_store_ids' )
-					if isinstance( ids, list ) and len( ids ) > 0:
-						self.vector_store_ids = ids
-					
-					if len( self.vector_store_ids ) == 0:
-						continue
-					
-					built_tool = { 'type': 'file_search',
-						'vector_store_ids': self.vector_store_ids, }
-					
-					max_num_results = tool.get( 'max_num_results' )
-					if isinstance( max_num_results, int ) and max_num_results > 0:
-						built_tool[ 'max_num_results' ]=max_num_results
-					
-					filters = tool.get( 'filters' )
-					if isinstance( filters, dict ) and len( filters ) > 0:
-						built_tool[ 'filters' ]=filters
-					
-					self.built_tools.append( built_tool )
-					continue
-				
-				if tool_type == 'code_interpreter':
-					built_tool = { 'type': 'code_interpreter' }
-					container = tool.get( 'container' )
-					
-					if isinstance( container, dict ) and len( container ) > 0:
-						built_tool[ 'container' ]=container
-					elif isinstance( container, str ) and container.strip( ):
-						built_tool[ 'container' ]=container.strip( )
-					else:
-						built_tool[ 'container' ]={ 'type': 'auto' }
-					
-					self.built_tools.append( built_tool )
-					continue
-			
-			return self.built_tools if len( self.built_tools ) > 0 else None
+			return self.tools
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_tools( self, tools, allowed_domains, vector_store_ids )'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'build_tools( self, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			Logger( ).write( ex )
+			raise ex
 	
-	def build_tool_choice( self, tool_choice: str=None,
-		tools: List[ Dict[ str, Any ] ]=None ) -> str | None:
-		"""Build tool choice.
+	def build_text_format( self, format: Optional[ Dict[ str, Any ] | str ] = None ) -> Dict[
+		str, Any ]:
+		"""Build text-format configuration.
 		
+		Purpose:
+			Builds the Responses API text-format object from a supported format name or a
+			complete provider-ready format dictionary.
 		
-			Purpose:
-			    Builds the tool choice structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
+		Args:
+			format (Optional[Dict[str, Any] | str]): Requested response format.
 		
-			Args:
-			    tool_choice: Tool-choice policy selected for the request.
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
+		Returns:
+			Dict[str, Any]: Provider-ready text configuration or an empty dictionary.
 		
-			Returns:
-			    str | None: Validated tool-choice policy or None when not applicable.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution  errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if not isinstance( tool_choice, str ) or not tool_choice.strip( ):
-				return None
+			self.requested_format = format
+			self.response_format = { }
 			
-			choice = tool_choice.strip( )
-			if choice not in self.choice_options:
-				return None
+			if self.requested_format is None:
+				return self.response_format
 			
-			if choice == 'none':
-				return 'none'
+			if isinstance( self.requested_format, dict ):
+				if 'format' in self.requested_format:
+					self.response_format = self.requested_format
+					return self.response_format
+				
+				if 'type' in self.requested_format:
+					self.response_format = { 'format': self.requested_format, }
+					return self.response_format
+				
+				return self.response_format
 			
-			if tools is None or len( tools ) == 0:
-				return None
+			if self.requested_format == 'text':
+				self.response_format = { 'format': { 'type': 'text', }, }
+				return self.response_format
 			
-			return choice
+			if self.requested_format == 'json_object':
+				self.response_format = { 'format': { 'type': 'json_object', }, }
+				return self.response_format
+			
+			return self.response_format
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_tool_choice( self, tool_choice, tools )'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'build_text_format( self, **kwargs| str ] = None ) -> Dict[ str, Any ]'
+			Logger( ).write( ex )
+			raise ex
 	
-	def build_include( self, include: List[ str ]=None,
-		tools: List[ Dict[ str, Any ] ]=None ) -> List[ str ] | None:
-		"""Build include.
-		
-		
-			Purpose:
-			    Builds the include structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
-		
-			Args:
-			    include: Requested provider include fields.
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
-		
-			Returns:
-			    List[ str ] | None: Filtered include fields or None when no include values are
-			    valid.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if include is None or len( include ) == 0:
-				return None
-			
-			tool_types = [ ]
-			if isinstance( tools, list ):
-				for tool in tools:
-					if isinstance( tool, dict ) and tool.get( 'type' ):
-						tool_types.append( str( tool.get( 'type' ) ) )
-			
-			allowed = [ ]
-			for value in include:
-				if not isinstance( value, str ) or not value.strip( ):
-					continue
-				
-				name = value.strip( )
-				if name == 'reasoning.encrypted_content':
-					allowed.append( name )
-					continue
-				
-				if name == 'message.output_text.logprobs':
-					allowed.append( name )
-					continue
-				
-				if name.startswith( 'web_search_call.' ) and 'web_search' in tool_types:
-					allowed.append( name )
-					continue
-				
-				if name == 'file_search_call.results' and 'file_search' in tool_types:
-					allowed.append( name )
-					continue
-				
-				if name == 'code_interpreter_call.outputs' and 'code_interpreter' in tool_types:
-					allowed.append( name )
-					continue
-			
-			return allowed if len( allowed ) > 0 else None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_include( self, include, tools )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_text_format( self, format: Dict[ str, Any ] | str = None ) -> Dict[ str, Any ] | None:
-		"""Build text format.
-		
-		
-			Purpose:
-			    Builds the text format structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
-		
-			Args:
-			    format: Output or response format selected for the operation.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Provider text-format configuration or None when no format is active.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
-		"""
-		try:
-			if format is None:
-				return None
-			
-			if isinstance( format, dict ) and len( format ) > 0:
-				if 'format' in format and isinstance( format.get( 'format' ), dict ):
-					return format
-				
-				if 'type' in format:
-					return { 'format': format }
-				
-				return None
-			
-			if isinstance( format, str ) and format.strip( ):
-				value = format.strip( )
-				if value == 'text':
-					return { 'format': { 'type': 'text' } }
-				
-				if value == 'json_object':
-					return { 'format': { 'type': 'json_object' } }
-			
-			return None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_text_format( self, format )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_prompt_template( self, prompt_id: str=None, prompt_version: str=None,
-		prompt_variables: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Build prompt template.
-		
-		
-			Purpose:
-			    Builds the prompt template structure required by the OpenAI workflow and stores
-			    the normalized request state on the instance.
-		
-			Args:
-			    prompt_id: OpenAI prompt-template identifier.
-			    prompt_version: OpenAI prompt-template version.
-			    prompt_variables: Variables supplied to an OpenAI prompt template.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Prompt-template reference dictionary or None when no template is selected.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
-		"""
-		try:
-			if not isinstance( prompt_id, str ) or not prompt_id.strip( ):
-				return None
-			
-			template = { 'id': prompt_id.strip( ) }
-			
-			if isinstance( prompt_version, str ) and prompt_version.strip( ):
-				template[ 'version' ]=prompt_version.strip( )
-			
-			if isinstance( prompt_variables, dict ) and len( prompt_variables ) > 0:
-				template[ 'variables' ]=prompt_variables
-			
-			return template
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = ('build_prompt_template( self, prompt_id, prompt_version, '
-			                    'prompt_variables )')
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_request( self, prompt: str, model: str, temperature: float=None,
-		format: Dict[ str, Any ]=None, top_p: float=None, frequency: float=None,
-		max_tools: int=None, presence: float=None, max_tokens: int=None, store: bool=None,
-		stream: bool=None, instruct: str=None, background: bool=False, reasoning: str=None,
-		include: List[ str ]=None, tools: List[ Dict[ str, Any ] ]=None,
-		allowed_domains: List[ str ]=None, previous_id: str=None, tool_choice: str=None,
-		is_parallel: bool=None, context: List[ Dict[ str, str ] ]=None,
-		input_data: List[ Dict[ str, Any ] ]=None, vector_store_ids: List[ str ]=None,
-		conversation_id: str=None, prompt_id: str=None, prompt_version: str=None,
-		prompt_variables: Dict[ str, Any ]=None ) -> Dict[ str, Any ]:
+	def build_request( self, prompt: str, model: str, temperature: float = 0.0,
+		format: Optional[ Dict[ str, Any ] | str ] = None, top_p: float = 0.0,
+		frequency: float = 0.0, max_tools: int = 0, presence: float = 0.0, max_tokens: int = 0,
+		store: bool = False, stream: bool = False, instruct: str = '', background: bool = False,
+		reasoning: str = '', include: Optional[ List[ str ] ] = None,
+		tools: Optional[ List[ str | Dict[ str, Any ] ] ] = None,
+		allowed_domains: Optional[ List[ str ] ] = None, previous_id: str = '',
+		tool_choice: str = '', is_parallel: bool = False,
+		context: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		input_data: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None, conversation_id: str = '' ) -> Dict[
+		str, Any ]:
 		"""Build request.
 		
+		Purpose:
+			Builds the complete OpenAI Responses API request from values assigned to object
+			members.
 		
-			Purpose:
-			    Builds the request structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
+		Args:
+			prompt (str): Current user prompt.
+			model (str): OpenAI model identifier.
+			temperature (float): Sampling temperature for supported models.
+			format (Optional[Dict[str, Any] | str]): Text-format configuration.
+			top_p (float): Nucleus-sampling value for supported models.
+			frequency (float): Frequency penalty for supported models.
+			max_tools (int): Maximum number of built-in tool calls.
+			presence (float): Presence penalty for supported models.
+			max_tokens (int): Maximum output-token count.
+			store (bool): Indicates whether the response should be stored.
+			stream (bool): Indicates whether response events should be streamed.
+			instruct (str): System or developer instructions.
+			background (bool): Indicates whether the response runs in background mode.
+			reasoning (str): Reasoning effort.
+			include (Optional[List[str]]): Additional response fields to include.
+			tools (Optional[List[str | Dict[str, Any]]]): Selected provider tools.
+			allowed_domains (Optional[List[str]]): Domains allowed by web search.
+			previous_id (str): Previous response identifier.
+			tool_choice (str): Tool-selection behavior.
+			is_parallel (bool): Indicates whether parallel tool calls are permitted.
+			context (Optional[List[Dict[str, Any]]]): Prior application messages.
+			input_data (Optional[List[Dict[str, Any]]]): Prebuilt Responses API input items.
+			vector_store_ids (Optional[List[str]]): Vector stores used by file search.
+			conversation_id (str): Conversation identifier.
 		
-			Args:
-			    prompt: User prompt or task instruction submitted to the provider.
-			    model: Provider model identifier selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    format: Output or response format selected for the operation.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    max_tools: Maximum number of tool calls allowed for the request.
-			    presence: Presence penalty supplied to compatible model requests.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    instruct: System or developer instructions supplied to the provider.
-			    background: Background transparency or execution option supplied by the caller.
-			    reasoning: Reasoning-effort value or reasoning configuration supplied by the UI.
-			    include: Requested provider include fields.
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
-			    allowed_domains: Allowed web-search domains supplied to tool configuration.
-			    previous_id: Previous Responses API identifier used for stateful continuation.
-			    tool_choice: Tool-choice policy selected for the request.
-			    is_parallel: Flag controlling parallel tool-call support when tools are active.
-			    context: Prior conversation context supplied to request builders.
-			    input_data: Prebuilt provider input payload supplied by the caller.
-			    vector_store_ids: Vector-store identifiers used by file-search tools.
-			    conversation_id: Conversation identifier used for stateful continuation.
-			    prompt_id: OpenAI prompt-template identifier.
-			    prompt_version: OpenAI prompt-template version.
-			    prompt_variables: Variables supplied to an OpenAI prompt template.
+		Returns:
+			Dict[str, Any]: Provider-ready Responses API request.
 		
-			Returns:
-			    Dict[ str, Any ]: Normalized provider request dictionary.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			self.model = model
 			self.prompt = prompt
+			self.model = model
 			self.temperature = temperature
+			self.requested_format = format
 			self.top_percent = top_p
 			self.frequency_penalty = frequency
+			self.max_tools = max_tools
 			self.presence_penalty = presence
 			self.max_tokens = max_tokens
 			self.store = store
 			self.stream = stream
-			self.background = background
 			self.instructions = instruct
-			self.response_format = self.build_text_format( format )
-			self.max_tools = max_tools
-			self.vector_store_ids = vector_store_ids if vector_store_ids is not None else [ ]
-			self.previous_id = previous_id if isinstance( previous_id, str ) else None
-			self.conversation_id = conversation_id if isinstance( conversation_id, str ) else None
+			self.background = background
+			self.reasoning_effort = reasoning
+			self.include = include if include is not None else [ ]
+			self.selected_tools = tools if tools is not None else [ ]
+			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
+			self.previous_id = previous_id
+			self.tool_choice = tool_choice
 			self.parallel_tools = is_parallel
-			self.reasoning = self.build_reasoning( reasoning )
-			self.prompt_template = self.build_prompt_template( prompt_id=prompt_id,
-				prompt_version=prompt_version, prompt_variables=prompt_variables )
-			self.tools = self.build_tools( tools=tools, allowed_domains=allowed_domains,
-				vector_store_ids=self.vector_store_ids )
-			self.tool_choice = self.build_tool_choice( tool_choice=tool_choice, tools=self.tools )
-			self.include = self.build_include( include=include, tools=self.tools )
-			self.input = self.build_input( prompt=prompt, context=context, input_data=input_data )
+			self.context = context if context is not None else [ ]
+			self.input = input_data if input_data is not None else [ ]
+			self.vector_store_ids = (vector_store_ids if vector_store_ids is not None else [ ])
+			self.conversation_id = conversation_id
+			self.reasoning = self.build_reasoning( self.reasoning_effort, self.model, )
+			self.tools = self.build_tools( self.selected_tools, self.allowed_domains,
+				self.vector_store_ids, )
+			self.response_format = self.build_text_format( self.requested_format, )
+			self.effective_context = ([ ] if self.conversation_id else self.context)
+			self.input = self.build_input( self.prompt, self.effective_context, self.input, )
 			self.request = { 'model': self.model, 'input': self.input, }
 			
 			if self.instructions:
-				self.request[ 'instructions' ]=self.instructions
+				self.request[ 'instructions' ] = self.instructions
 			
-			if self.prompt_template is not None:
-				self.request[ 'prompt' ]=self.prompt_template
+			if self.reasoning:
+				self.request[ 'reasoning' ] = self.reasoning
 			
-			if self.reasoning is not None:
-				self.request[ 'reasoning' ]=self.reasoning
+			if self.max_tokens > 0:
+				self.request[ 'max_output_tokens' ] = self.max_tokens
 			
-			if isinstance( self.max_tokens, int ) and self.max_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_tokens
+			if not self.model.startswith( 'gpt-5' ):
+				self.request[ 'temperature' ] = self.temperature
+				self.request[ 'top_p' ] = self.top_percent
+				self.request[ 'frequency_penalty' ] = self.frequency_penalty
+				self.request[ 'presence_penalty' ] = self.presence_penalty
 			
-			if self.temperature is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'temperature' ]=self.temperature
+			self.request[ 'store' ] = self.store
+			self.request[ 'stream' ] = self.stream
+			self.request[ 'background' ] = self.background
 			
-			if self.top_percent is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'top_p' ]=self.top_percent
+			if self.include:
+				self.request[ 'include' ] = self.include
 			
-			if self.frequency_penalty is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'frequency_penalty' ]=self.frequency_penalty
-			
-			if self.presence_penalty is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'presence_penalty' ]=self.presence_penalty
-			
-			if self.store is not None:
-				self.request[ 'store' ]=self.store
-			
-			if self.background is not None:
-				self.request[ 'background' ]=bool( self.background )
-			
-			if self.include is not None and len( self.include ) > 0:
-				self.request[ 'include' ]=self.include
-			
-			if self.tools is not None and len( self.tools ) > 0:
-				self.request[ 'tools' ]=self.tools
+			if self.tools:
+				self.request[ 'tools' ] = self.tools
+				self.request[ 'parallel_tool_calls' ] = self.parallel_tools
+				
+				if self.max_tools > 0:
+					self.request[ 'max_tool_calls' ] = self.max_tools
 			
 			if self.tool_choice:
-				self.request[ 'tool_choice' ]=self.tool_choice
+				self.request[ 'tool_choice' ] = self.tool_choice
 			
-			if self.parallel_tools is not None and self.tools is not None:
-				self.request[ 'parallel_tool_calls' ]=self.parallel_tools
+			if self.previous_id:
+				self.request[ 'previous_response_id' ] = self.previous_id
 			
-			if self.previous_id and self.previous_id.strip( ):
-				self.request[ 'previous_response_id' ]=self.previous_id.strip( )
+			if self.conversation_id:
+				self.request[ 'conversation' ] = self.conversation_id
 			
-			if self.conversation_id and self.conversation_id.strip( ):
-				self.request[ 'conversation' ]=self.conversation_id.strip( )
-			
-			if isinstance( self.max_tools, int ) and self.max_tools > 0 and self.tools is not None:
-				self.request[ 'max_tool_calls' ]=self.max_tools
-			
-			if self.response_format is not None and len( self.response_format ) > 0:
-				self.request[ 'text' ]=self.response_format
+			if self.response_format:
+				self.request[ 'text' ] = self.response_format
 			
 			return self.request
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'build_request( self, **kwargs )'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'build_request( self, **kwargs ) -> Dict[ str, Any ]'
+			Logger( ).write( ex )
+			raise ex
 	
-	def get_output_text( self ) -> str | None:
+	def get_output_text( self ) -> str:
 		"""Get output text.
 		
+		Purpose:
+			Extracts aggregated text from the latest synchronous or completed background response.
 		
-			Purpose:
-			    Gets output text from the current instance state or latest provider response.
+		Returns:
+			str: Extracted response text or an empty string.
 		
-			Returns:
-			    str | None: Extracted response text or None when no text output is available.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution  errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
+			self.output_text = ''
 			if self.response is None:
-				return None
-			
-			self.output_text = getattr( self.response, 'output_text', None )
-			if self.output_text:
 				return self.output_text
 			
-			if hasattr( self.response, 'output' ) and self.response.output:
-				text_parts = [ ]
-				for item in self.response.output:
-					if getattr( item, 'type', None ) != 'message':
-						continue
-					
-					if not hasattr( item, 'content' ) or item.content is None:
-						continue
-					
-					for block in item.content:
-						if getattr( block, 'type', None ) == 'output_text':
-							text = getattr( block, 'text', None )
-							if text:
-								text_parts.append( text )
-				
-				if len( text_parts ) > 0:
-					self.output_text = ''.join( text_parts ).strip( )
-					return self.output_text
+			self.response_text = getattr( self.response, 'output_text', '' )
+			if self.response_text:
+				self.output_text = self.response_text
+				return self.output_text
 			
-			return None
+			self.text_parts = [ ]
+			for item in getattr( self.response, 'output', [ ] ) or [ ]:
+				if getattr( item, 'type', '' ) != 'message':
+					continue
+				
+				for block in getattr( item, 'content', [ ] ) or [ ]:
+					if getattr( block, 'type', '' ) != 'output_text':
+						continue
+					
+					self.block_text = getattr( block, 'text', '' )
+					if self.block_text:
+						self.text_parts.append( self.block_text )
+			
+			self.output_text = ''.join( self.text_parts ).strip( )
+			return self.output_text
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'get_output_text( self ) -> str | None'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'get_output_text( self ) -> str'
+			Logger( ).write( ex )
+			raise ex
 	
 	def get_usage( self ) -> Any:
-		"""Get usage.
+		"""Get response usage.
 		
+		Purpose:
+			Returns token usage from the latest completed response.
 		
-			Purpose:
-			    Gets usage from the current instance state or latest provider response.
+		Returns:
+			Any: Provider usage object or None when unavailable.
 		
-			Returns:
-			    Any: Usage metadata from the latest provider response.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			if self.response is None:
@@ -1032,1406 +815,1071 @@ class Chat( GPT ):
 			
 			return getattr( self.response, 'usage', None )
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'get_usage( self ) -> Any'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'get_usage( self ) -> Any'
+			Logger( ).write( ex )
+			raise ex
 	
-	def completion( self, prompt_id: str=None, prompt_version: str=None, model: str=None,
-		user_input: str=None, temperature: float=None, format: Dict[ str, Any ]=None,
-		top_p: float=None, frequency: float=None, presence: float=None,
-		max_tokens: int=None, store: bool=None, stream: bool=None, instruct: str=None,
-		background: bool=False, reasoning: str=None, include: List[ str ]=None,
-		tools: List[ Dict[ str, Any ] ]=None, tool_choice: str=None, is_parallel: bool=None,
-		previous_id: str=None, context: List[ Dict[ str, str ] ]=None,
-		input_data: List[ Dict[ str, Any ] ]=None, allowed_domains: List[ str ]=None,
-		vector_store_ids: List[ str ]=None, conversation_id: str=None, max_tools: int=None,
-		prompt_variables: Dict[ str, Any ]=None ) -> Response | Any:
-		"""Completion.
-		
-		
-			Purpose:
-			    Creates a Responses API completion call from prompt-template, tool, context,
-			    and model configuration state.
-		
-			Args:
-			    prompt_id: OpenAI prompt-template identifier.
-			    prompt_version: OpenAI prompt-template version.
-			    model: Provider model identifier selected for the operation.
-			    user_input: User text submitted through the prompt-template workflow.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    format: Output or response format selected for the operation.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    presence: Presence penalty supplied to compatible model requests.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    instruct: System or developer instructions supplied to the provider.
-			    background: Background transparency or execution option supplied by the caller.
-			    reasoning: Reasoning-effort value or reasoning configuration supplied by the UI.
-			    include: Requested provider include fields.
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
-			    tool_choice: Tool-choice policy selected for the request.
-			    is_parallel: Flag controlling parallel tool-call support when tools are active.
-			    previous_id: Previous Responses API identifier used for stateful continuation.
-			    context: Prior conversation context supplied to request builders.
-			    input_data: Prebuilt provider input payload supplied by the caller.
-			    allowed_domains: Allowed web-search domains supplied to tool configuration.
-			    vector_store_ids: Vector-store identifiers used by file-search tools.
-			    conversation_id: Conversation identifier used for stateful continuation.
-			    max_tools: Maximum number of tool calls allowed for the request.
-			    prompt_variables: Variables supplied to an OpenAI prompt template.
-		
-			Returns:
-			    Response | Any: Full Responses API response object returned by OpenAI.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
-		"""
-		try:
-			prompt = user_input if user_input is not None else self.prompt
-			selected_model = model if model is not None else self.model
-			throw_if( 'user_input', prompt )
-			throw_if( 'model', selected_model )
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.stream_requested = bool( stream )
-			self.background_requested = bool( background )
-			self.request = self.build_request( prompt=prompt, model=selected_model,
-				temperature=temperature, format=format, top_p=top_p, frequency=frequency,
-				max_tools=max_tools, presence=presence, max_tokens=max_tokens, store=store,
-				stream=False, instruct=instruct, background=background, reasoning=reasoning,
-				include=include, tools=tools, allowed_domains=allowed_domains,
-				previous_id=previous_id, tool_choice=tool_choice, is_parallel=is_parallel,
-				context=context, input_data=input_data, vector_store_ids=vector_store_ids,
-				conversation_id=conversation_id, prompt_id=prompt_id,
-				prompt_version=prompt_version,
-				prompt_variables=prompt_variables )
-			
-			self.response = self.client.responses.create( **self.request )
-			self.previous_id = getattr( self.response, 'id', None )
-			self.output_text = self.get_output_text( )
-			return self.response
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'completion( self, **kwargs ) -> Response | Any'
-			Logger( ).write( exception )
-			raise exception
-	
-	def generate_text( self, prompt: str, model: str, temperature: float=None,
-		format: Dict[ str, Any ]=None, top_p: float=None, frequency: float=None,
-		max_tools: int=None, presence: float=None, max_tokens: int=None, store: bool=None,
-		stream: bool=None, instruct: str=None, background: bool=False, reasoning: str=None,
-		include: List[ str ]=None, tools: List[ Dict[ str, Any ] ]=None,
-		allowed_domains: List[ str ]=None, previous_id: str=None, tool_choice: str=None,
-		is_parallel: bool=None, context: List[ Dict[ str, str ] ]=None,
-		input_data: List[ Dict[ str, Any ] ]=None, vector_store_ids: List[ str ]=None,
-		conversation_id: str=None ) -> str | None:
+	def generate_text( self, prompt: str, model: str, temperature: float = 0.0,
+		format: Optional[ Dict[ str, Any ] | str ] = None, top_p: float = 0.0,
+		frequency: float = 0.0, max_tools: int = 0, presence: float = 0.0, max_tokens: int = 0,
+		store: bool = False, stream: bool = False, instruct: str = '', background: bool = False,
+		reasoning: str = '', include: Optional[ List[ str ] ] = None,
+		tools: Optional[ List[ str | Dict[ str, Any ] ] ] = None,
+		allowed_domains: Optional[ List[ str ] ] = None, previous_id: str = '',
+		tool_choice: str = '', is_parallel: bool = False,
+		context: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		input_data: Optional[ List[ Dict[ str, Any ] ] ] = None,
+		vector_store_ids: Optional[ List[ str ] ] = None, conversation_id: str = '' ) -> str:
 		"""Generate text.
 		
+		Purpose:
+			Executes a synchronous, streaming, or background OpenAI Responses API request using
+			arguments assigned to wrapper members.
 		
-			Purpose:
-			    Generates text through the Responses API after validating prompt and model
-			    settings and building the provider request payload.
+		Args:
+			prompt (str): Current user prompt.
+			model (str): OpenAI model identifier.
+			temperature (float): Sampling temperature for supported models.
+			format (Optional[Dict[str, Any] | str]): Text-format configuration.
+			top_p (float): Nucleus-sampling value for supported models.
+			frequency (float): Frequency penalty for supported models.
+			max_tools (int): Maximum number of built-in tool calls.
+			presence (float): Presence penalty for supported models.
+			max_tokens (int): Maximum output-token count.
+			store (bool): Indicates whether the response should be stored.
+			stream (bool): Indicates whether response events should be streamed.
+			instruct (str): System or developer instructions.
+			background (bool): Indicates whether the response runs in background mode.
+			reasoning (str): Reasoning effort.
+			include (Optional[List[str]]): Additional response fields to include.
+			tools (Optional[List[str | Dict[str, Any]]]): Selected provider tools.
+			allowed_domains (Optional[List[str]]): Domains allowed by web search.
+			previous_id (str): Previous response identifier.
+			tool_choice (str): Tool-selection behavior.
+			is_parallel (bool): Indicates whether parallel tool calls are permitted.
+			context (Optional[List[Dict[str, Any]]]): Prior application messages.
+			input_data (Optional[List[Dict[str, Any]]]): Prebuilt Responses API input items.
+			vector_store_ids (Optional[List[str]]): Vector stores used by file search.
+			conversation_id (str): Conversation identifier.
 		
-			Args:
-			    prompt: User prompt or task instruction submitted to the provider.
-			    model: Provider model identifier selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    format: Output or response format selected for the operation.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    max_tools: Maximum number of tool calls allowed for the request.
-			    presence: Presence penalty supplied to compatible model requests.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    instruct: System or developer instructions supplied to the provider.
-			    background: Background transparency or execution option supplied by the caller.
-			    reasoning: Reasoning-effort value or reasoning configuration supplied by the UI.
-			    include: Requested provider include fields.
-			    tools: Tool selections or provider tool dictionaries supplied by the UI.
-			    allowed_domains: Allowed web-search domains supplied to tool configuration.
-			    previous_id: Previous Responses API identifier used for stateful continuation.
-			    tool_choice: Tool-choice policy selected for the request.
-			    is_parallel: Flag controlling parallel tool-call support when tools are active.
-			    context: Prior conversation context supplied to request builders.
-			    input_data: Prebuilt provider input payload supplied by the caller.
-			    vector_store_ids: Vector-store identifiers used by file-search tools.
-			    conversation_id: Conversation identifier used for stateful continuation.
+		Returns:
+			str: Generated text, streamed text, or an empty string for an incomplete background
+			response.
 		
-			Returns:
-			    str | None: Generated text output or None when no output text is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			response = self.completion( model=model, user_input=prompt, temperature=temperature,
-				format=format, top_p=top_p, frequency=frequency, presence=presence,
-				max_tokens=max_tokens, store=store, stream=stream, instruct=instruct,
-				background=False, reasoning=reasoning, include=include, tools=tools,
-				tool_choice=tool_choice, is_parallel=is_parallel, previous_id=previous_id,
-				context=context, input_data=input_data, allowed_domains=allowed_domains,
-				vector_store_ids=vector_store_ids, conversation_id=conversation_id,
-				max_tools=max_tools )
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.prompt = prompt
+			self.model = model
+			self.temperature = temperature
+			self.requested_format = format
+			self.top_percent = top_p
+			self.frequency_penalty = frequency
+			self.max_tools = max_tools
+			self.presence_penalty = presence
+			self.max_tokens = max_tokens
+			self.store = store
+			self.stream = stream
+			self.instructions = instruct
+			self.background = background
+			self.reasoning_effort = reasoning
+			self.include = include if include is not None else [ ]
+			self.selected_tools = tools if tools is not None else [ ]
+			self.allowed_domains = allowed_domains if allowed_domains is not None else [ ]
+			self.previous_id = previous_id
+			self.tool_choice = tool_choice
+			self.parallel_tools = is_parallel
+			self.context = context if context is not None else [ ]
+			self.input = input_data if input_data is not None else [ ]
+			self.vector_store_ids = (vector_store_ids if vector_store_ids is not None else [ ])
+			self.conversation_id = conversation_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = self.build_request( self.prompt, self.model, self.temperature,
+				self.requested_format, self.top_percent, self.frequency_penalty, self.max_tools,
+				self.presence_penalty, self.max_tokens, self.store, self.stream, self.instructions,
+				self.background, self.reasoning_effort, self.include, self.selected_tools,
+				self.allowed_domains, self.previous_id, self.tool_choice, self.parallel_tools,
+				self.context, self.input, self.vector_store_ids, self.conversation_id, )
 			
-			if response is None:
-				return None
+			if self.stream:
+				self.stream_events = [ ]
+				self.text_parts = [ ]
+				self.response_stream = self.client.responses.create( **self.request )
+				
+				for event in self.response_stream:
+					self.stream_events.append( event )
+					self.event_type = getattr( event, 'type', '' )
+					if self.event_type == 'response.output_text.delta':
+						self.delta = getattr( event, 'delta', '' )
+						if self.delta:
+							self.text_parts.append( self.delta )
+					
+					elif self.event_type == 'response.completed':
+						self.response = getattr( event, 'response', None )
+				
+				self.output_text = ''.join( self.text_parts ).strip( )
+				if self.response is not None:
+					self.previous_id = getattr( self.response, 'id', self.previous_id, )
+				
+				return self.output_text
 			
+			self.response = self.client.responses.create( **self.request )
+			self.previous_id = getattr( self.response, 'id', self.previous_id, )
+			self.output_text = self.get_output_text( )
 			return self.output_text
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Chat'
-			exception.method = 'generate_text( self, prompt: str ) -> str | None'
-			Logger( ).write( exception )
-			raise exception
+			ex = Error( e )
+			ex.module = 'gpt'
+			ex.cause = 'Chat'
+			ex.method = 'generate_text( self, **kwargs ) -> str'
+			Logger( ).write( ex )
+			raise ex
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
+		Purpose:
+			Returns public members exposed by the OpenAI Chat wrapper.
 		
-			Purpose:
-			    Returns the public Chat members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
+		Returns:
+			List[str]: Public member names.
 		"""
 		return [ 'api_key', 'client', 'model', 'prompt', 'temperature', 'top_percent',
-			'frequency_penalty', 'presence_penalty', 'max_tokens', 'stops', 'store', 'stream',
-			'background', 'number', 'response_format', 'context', 'instructions', 'include',
-			'tool_choice', 'previous_id', 'conversation_id', 'parallel_tools', 'max_tools',
-			'input',
-			'tools', 'reasoning', 'allowed_domains', 'max_search_results', 'output_text',
-			'vector_store_ids', 'file_ids', 'response', 'file', 'purpose', 'model_options',
+			'frequency_penalty', 'presence_penalty', 'max_tokens', 'store', 'stream', 'background',
+			'response_format', 'context', 'instructions', 'include', 'tool_choice', 'previous_id',
+			'conversation_id', 'parallel_tools', 'max_tools', 'input', 'tools', 'reasoning',
+			'allowed_domains', 'output_text', 'vector_store_ids', 'response', 'model_options',
 			'include_options', 'tool_options', 'choice_options', 'purpose_options',
-			'format_options', 'reasoning_options', 'modality_options', 'build_reasoning',
-			'build_input', 'build_tools', 'build_tool_choice', 'build_include',
-			'build_text_format',
-			'build_prompt_template', 'build_request', 'get_output_text', 'get_usage', 'completion',
-			'generate_text', ]
+			'format_options', 'reasoning_options', 'modality_options', 'supports_reasoning_model',
+			'build_reasoning', 'build_input', 'build_tools', 'build_text_format', 'build_request',
+			'get_output_text', 'get_usage', 'generate_text', ]
 
 class Images( GPT ):
-	"""Images provider wrapper.
+	"""Provide OpenAI image workflow support.
 	
+	Purpose:
+		Provides OpenAI image generation, image analysis, and image editing functionality.
+		The class stores each accepted method argument as an object member before constructing
+		and executing the corresponding Images API or Responses API request.
 	
-		Purpose:
-		    Builds and executes OpenAI image-generation, image-analysis, and image-editing
-		    workflows while normalizing model-specific image options.
-	
-		Attributes:
-		    quality: Image quality option selected for generation or editing.
-		    detail: Image detail option selected for analysis.
-		    size: Image size option selected for generation or editing.
-		    previous_id: Previous Responses API identifier used for stateful continuation.
-		    include: Responses API include fields requested by the current workflow.
-		    tool_choice: Tool-choice policy selected for the current request.
-		    parallel_tools: Flag controlling parallel tool-call support when tools are active.
-		    input: Responses API input payload built for the current request.
-		    instructions: System or developer instructions supplied to model requests.
-		    max_tools: Maximum tool-call count sent with supported Responses API requests.
-		    tools: Tool definitions selected or built for the current request.
-		    messages: Message list built for Responses API input payloads.
-		    reasoning: Reasoning-effort configuration used by supported models.
-		    image_url: Remote image URL used by image-analysis workflows.
-		    image_path: Local image path used by image-analysis or image-editing workflows.
-		    file_url: File URL retained for compatibility with document workflows.
-		    file_path: Local file path retained for file-enabled workflows.
-		    style: Image style option retained for compatible image models.
-		    allowed_domains: Allowed-domain filters used by web-search tool configuration.
-		    response_format: Response-format configuration used by text or media requests.
-		    mime_format: Mime format value retained by the Images workflow.
-		    background: Background-execution flag retained by UI workflows and request builders.
-		    backcolor: Background color option retained by image-generation workflows.
-		    compression: Image compression option used when a provider supports it.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
+	Attributes:
+		api_key (str): OpenAI API key used by the wrapper.
+		client (Optional[OpenAI]): OpenAI client used by the wrapper.
+		model (str): Model used by the current image operation.
+		prompt (str): Prompt used by the current image operation.
+		number (int): Number of images requested.
+		size (str): Requested image dimensions.
+		quality (str): Requested image quality.
+		detail (str): Image-analysis detail level.
+		background (str): Requested image background behavior.
+		output_format (str): Requested image output format.
+		output_compression (int): Requested image compression percentage.
+		image_path (str): Local source-image path.
+		mask_path (str): Local mask-image path.
+		response (Any): Latest provider response.
+		outputs (List[str | bytes]): Extracted image outputs.
+		output_text (str): Extracted image-analysis text.
+		request (Dict[str, Any]): Provider-ready request payload.
 	"""
-	quality: Optional[ str ]
-	detail: Optional[ str ]
-	size: Optional[ str ]
-	previous_id: Optional[ str ]
-	include: Optional[ List[ str ] ]
-	tool_choice: Optional[ str ]
-	parallel_tools: Optional[ bool ]
-	input: Optional[ List[ Dict[ str, Any ] ] | str ]
-	instructions: Optional[ str ]
-	max_tools: Optional[ int ]
-	tools: Optional[ List[ Dict[ str, Any ] ] ]
-	messages: Optional[ List[ Dict[ str, Any ] ] ]
-	reasoning: Optional[ Dict[ str, str ] ]
-	image_url: Optional[ str ]
-	image_path: Optional[ str ]
-	file_url: Optional[ str ]
-	file_path: Optional[ str ]
-	style: Optional[ str ]
-	allowed_domains: Optional[ List[ str ] ]
-	response_format: Optional[ str ]
-	mime_format: Optional[ str ]
-	background: Optional[ str ]
-	backcolor: Optional[ str ]
-	compression: Optional[ float ]
+	api_key: str
+	client: Optional[ OpenAI ]
+	model: str
+	prompt: str
+	number: int
+	size: str
+	quality: str
+	detail: str
+	background: str
+	output_format: str
+	output_compression: int
+	image_path: str
+	mask_path: str
+	response: Any
+	outputs: List[ str | bytes ]
+	output_text: str
+	request: Dict[ str, Any ]
 	
-	def __init__( self, prompt: str=None, model: str='gpt-image-1', temperature: float=None,
-		top_p: float=None, presence: float=None, frequency: float=None,
-		max_tokens: int=None, store: bool=None, stream: bool=False, backcolor: str=None,
-		instruct: str=None, background: bool=None, number: int=None,
-		response_format: str=None, path: str=None, image_url: str=None, size: str=None,
-		quality: str=None, detail: str=None, style: str=None, compression: float=None ):
-		"""Initialize Images.
+	def __init__( self, model: str = 'gpt-image-1-mini' ) -> None:
+		"""Initialize instance.
 		
+		Purpose:
+			Initializes OpenAI image-wrapper state without executing a provider request.
 		
-			Purpose:
-			    Initializes Images state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
+		Args:
+			model (str): Default OpenAI image model.
 		
-			Args:
-			    prompt: User prompt or task instruction submitted to the provider.
-			    model: Provider model identifier selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    presence: Presence penalty supplied to compatible model requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    backcolor: Backcolor supplied to the init workflow.
-			    instruct: System or developer instructions supplied to the provider.
-			    background: Background transparency or execution option supplied by the caller.
-			    number: Requested output count before provider-specific normalization.
-			    response_format: Response-format configuration retained for compatible workflows.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    image_url: Remote image URL supplied to image-analysis workflows.
-			    size: Image size option selected for generation or editing.
-			    quality: Image quality option selected for generation or editing.
-			    detail: Image detail option selected for image analysis.
-			    style: Image style option retained for compatible image-generation models.
-			    compression: Compression setting supplied to supported image-output workflows.
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.model = model
-		self.prompt = prompt
-		self.input_text = None
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_tokens = max_tokens
-		self.store = store
-		self.stream = stream
-		self.instructions = instruct
-		self.background = backcolor if backcolor is not None else background
-		self.backcolor = backcolor
-		self.number = number
-		self.size = size
-		self.quality = quality
-		self.detail = detail
-		self.style = style
-		self.compression = compression
-		self.response_format = response_format
-		self.mime_format = response_format
-		self.output_format = response_format
-		self.output_compression = None
-		self.image_path = path
-		self.file_path = path
-		self.image_url = image_url
-		self.file_url = None
-		self.response = None
+		self.prompt = ''
+		self.input_text = ''
+		self.instructions = ''
+		self.number = 1
+		self.size = '1024x1024'
+		self.quality = 'auto'
+		self.detail = 'auto'
+		self.background = 'auto'
+		self.output_format = 'png'
+		self.output_compression = 0
+		self.image_path = ''
+		self.mask_path = ''
+		self.image_url = ''
 		self.file = None
-		self.data = None
+		self.file_id = ''
+		self.response = None
 		self.outputs = [ ]
+		self.output_text = ''
 		self.request = { }
-		self.messages = [ ]
+		self.input = [ ]
+		self.image_content = { }
+		self.max_tokens = 0
+		self.temperature = 0.0
+		self.store = False
+		self.stream = False
 		self.include = [ ]
-		self.tool_choice = None
-		self.parallel_tools = None
-		self.max_tools = None
-		self.tools = [ ]
-		self.reasoning = None
-		self.allowed_domains = [ ]
-		self.previous_id = None
-		self.b64_json = None
-		self.url = None
+		self.data = None
 	
 	@property
 	def model_options( self ) -> List[ str ]:
-		"""Model options.
+		"""Get generation-model options.
 		
+		Purpose:
+			Returns the OpenAI image-generation models exposed by the wrapper.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported image-generation model identifiers.
 		"""
-		return [ 'gpt-image-2', 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini', 'dall-e-3',
-			'dall-e-2', ]
+		return [ 'gpt-image-2', 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini', ]
 	
 	@property
 	def analysis_model_options( self ) -> List[ str ]:
-		"""Analysis model options.
+		"""Get analysis-model options.
 		
+		Purpose:
+			Returns vision-capable text models exposed for image analysis.
 		
-			Purpose:
-			    Returns analysis model options used by the Streamlit selectors and provider
-			    request builders.
-		
-			Returns:
-			    List[ str ]: Image-analysis model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported image-analysis model identifiers.
 		"""
-		return [ 'gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.2', 'gpt-5.1',
-			'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
+		return [ 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4.1-mini',
 			'gpt-4o', 'gpt-4o-mini', ]
 	
 	@property
-	def edit_model_options( self ) -> List[ str ]:
-		"""Edit model options.
+	def size_options( self ) -> List[ str ]:
+		"""Get image-size options.
 		
+		Purpose:
+			Returns image sizes exposed for OpenAI image generation and editing.
 		
-			Purpose:
-			    Returns edit model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Image-editing model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported image-size values.
 		"""
-		return [ 'gpt-image-2', 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini',
-			'chatgpt-image-latest', 'dall-e-2', ]
+		return [ 'auto', '1024x1024', '1024x1536', '1536x1024', ]
 	
 	@property
-	def style_options( self ) -> List[ str ]:
-		"""Style options.
+	def quality_options( self ) -> List[ str ]:
+		"""Get image-quality options.
 		
+		Purpose:
+			Returns image-quality values exposed by the wrapper.
 		
-			Purpose:
-			    Returns style options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Image style option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported image-quality values.
 		"""
-		return [ 'vivid', 'natural', ]
+		return [ 'auto', 'low', 'medium', 'high', ]
+	
+	@property
+	def detail_options( self ) -> List[ str ]:
+		"""Get image-detail options.
+		
+		Purpose:
+			Returns detail levels supported by image-analysis requests.
+		
+		Returns:
+			List[str]: Supported image-analysis detail values.
+		"""
+		return [ 'auto', 'low', 'high', 'original', ]
+	
+	@property
+	def backcolor_options( self ) -> List[ str ]:
+		"""Get background options.
+		
+		Purpose:
+			Returns background values exposed for image generation and editing.
+		
+		Returns:
+			List[str]: Supported background values.
+		"""
+		return [ 'auto', 'transparent', 'opaque', ]
 	
 	@property
 	def format_options( self ) -> List[ str ]:
-		"""Format options.
+		"""Get output-format options.
 		
+		Purpose:
+			Returns image output formats supported by the wrapper.
 		
-			Purpose:
-			    Returns format options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Response-format option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported output-format values.
 		"""
 		return [ 'png', 'jpeg', 'webp', ]
 	
 	@property
 	def mime_options( self ) -> List[ str ]:
-		"""Mime options.
+		"""Get MIME-format options.
 		
+		Purpose:
+			Returns image format values used by the application selector.
 		
-			Purpose:
-			    Returns mime options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ]: MIME type option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported image format values.
 		"""
 		return [ 'png', 'jpeg', 'webp', ]
 	
 	@property
-	def size_options( self ) -> List[ str ]:
-		"""Size options.
+	def style_options( self ) -> List[ str ]:
+		"""Get style options.
 		
+		Purpose:
+			Returns legacy image-style options retained for application compatibility.
 		
-			Purpose:
-			    Returns size options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ]: Image size option names exposed to the UI selector.
+		Returns:
+			List[str]: Available style values.
 		"""
-		return [ 'auto', '1024x1024', '1024x1536', '1536x1024', '1792x1024', '1024x1792',
-			'512x512',
-			'256x256', ]
+		return [ 'vivid', 'natural', ]
+	
+	@property
+	def include_options( self ) -> List[ str ]:
+		"""Get analysis-include options.
+		
+		Purpose:
+			Returns additional response fields supported by image-analysis requests.
+		
+		Returns:
+			List[str]: Supported Responses API include values.
+		"""
+		return [ 'message.input_image.image_url', 'message.output_text.logprobs', ]
+	
+	@property
+	def tool_options( self ) -> List[ str ]:
+		"""Get image-tool options.
+		
+		Purpose:
+			Returns tools applicable to the current OpenAI image wrapper.
+		
+		Returns:
+			List[str]: Supported image-related tool names.
+		"""
+		return [ 'image_generation', ]
 	
 	@property
 	def choice_options( self ) -> List[ str ]:
-		"""Choice options.
+		"""Get tool-choice options.
 		
+		Purpose:
+			Returns tool-choice values retained for application selector compatibility.
 		
-			Purpose:
-			    Returns choice options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Tool-choice option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported tool-choice values.
 		"""
 		return [ 'auto', 'required', 'none', ]
 	
 	@property
-	def backcolor_options( self ) -> List[ str ]:
-		"""Backcolor options.
+	def reasoning_options( self ) -> List[ str ]:
+		"""Get reasoning options.
 		
+		Purpose:
+			Returns reasoning-effort options exposed for vision-capable reasoning models.
 		
-			Purpose:
-			    Returns backcolor options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Image background option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported reasoning-effort values.
 		"""
-		return [ 'auto', 'transparent', 'opaque', ]
+		return [ 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', ]
 	
 	@property
-	def quality_options( self ) -> List[ str ]:
-		"""Quality options.
+	def modality_options( self ) -> List[ str ]:
+		"""Get modality options.
 		
+		Purpose:
+			Returns modalities produced or consumed by image workflows.
 		
-			Purpose:
-			    Returns quality options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ]: Image quality option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported modality values.
 		"""
-		return [ 'auto', 'low', 'medium', 'high', 'standard', 'hd', ]
+		return [ 'text', 'image', ]
 	
-	@property
-	def detail_options( self ) -> List[ str ]:
-		"""Detail options.
+	def supports_original_detail( self, model: str ) -> bool:
+		"""Determine original-detail support.
 		
+		Purpose:
+			Determines whether a selected image-analysis model supports the original image-detail
+			setting.
 		
-			Purpose:
-			    Returns detail options used by the Streamlit selectors and provider request
-			    builders.
+		Args:
+			model (str): Image-analysis model identifier.
 		
-			Returns:
-			    List[ str ]: Image detail option names exposed to the UI selector.
-		"""
-		return [ 'auto', 'low', 'high', 'original', ]
-	
-	@property
-	def reasoning_options( self ) -> List[ str ] | None:
-		"""Reasoning options.
+		Returns:
+			bool: True when the selected model supports original detail.
 		
-		
-			Purpose:
-			    Returns reasoning options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Reasoning-effort option names exposed to the UI selector.
-		"""
-		return [ 'low', 'medium', 'high', 'none', 'minimal', 'xhigh', ]
-	
-	@property
-	def modality_options( self ) -> List[ str ] | None:
-		"""Modality options.
-		
-		
-			Purpose:
-			    Returns modality options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Modality option names exposed to the UI selector.
-		"""
-		return [ 'text', 'auto', 'image', 'audio', ]
-	
-	def is_gpt_image_model( self, model: str ) -> bool:
-		"""Is gpt image model.
-		
-		
-			Purpose:
-			    Executes the is gpt image model workflow for the Images provider wrapper while
-			    preserving normalized instance state for downstream use.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    bool: True when the selected model uses the GPT image-generation endpoint.
-		"""
-		return isinstance( model, str ) and model in [ 'gpt-image-2', 'gpt-image-1.5',
-			'gpt-image-1', 'gpt-image-1-mini', 'chatgpt-image-latest', ]
-	
-	def normalize_count( self, number: int=None ) -> int:
-		"""Normalize count.
-		
-		
-			Purpose:
-			    Normalizes count data from provider-specific objects into application-ready Python
-			    values.
-		
-			Args:
-			    number (int): Requested output count before provider-specific normalization.
-		
-			Returns:
-			    int: Validated image count accepted by the selected endpoint.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if isinstance( number, int ) and number > 0:
-				return max( 1, min( 10, number ) )
-			
-			return 1
+			throw_if( 'model', model )
+			self.model = model
+			return self.model.startswith( 'gpt-5.4' )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = 'normalize_count( self, number ) -> int'
+			exception.method = 'supports_original_detail( self, model: str ) -> bool'
 			Logger( ).write( exception )
 			raise exception
 	
-	def normalize_output_format( self, fmt: str=None, background: str=None ) -> str:
-		"""Normalize output format.
+	def get_analysis_detail( self, detail: str, model: str ) -> str:
+		"""Get effective analysis detail.
 		
+		Purpose:
+			Returns the image-detail value permitted by the selected analysis model.
 		
-			Purpose:
-			    Normalizes output format data from provider-specific objects into
-			    application-ready Python values.
+		Args:
+			detail (str): Requested image-detail level.
+			model (str): Image-analysis model identifier.
 		
-			Args:
-			    fmt (str): Image output format before provider-specific normalization.
-			    background (str): Background transparency or execution option supplied by the caller.
+		Returns:
+			str: Effective image-detail value.
 		
-			Returns:
-			    str: Image output format accepted by the selected endpoint.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			valid_formats = [ 'png', 'jpeg', 'webp' ]
-			output_format = fmt if isinstance( fmt, str ) and fmt in valid_formats else 'jpeg'
+			throw_if( 'detail', detail )
+			throw_if( 'model', model )
+			self.detail = detail
+			self.model = model
+			if self.detail not in self.detail_options:
+				self.detail = 'auto'
 			
-			if background == 'transparent' and output_format == 'jpeg':
-				output_format = 'png'
+			if self.detail == 'original':
+				if not self.supports_original_detail( self.model ):
+					self.detail = 'high'
 			
-			return output_format
+			return self.detail
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = 'normalize_output_format( self, fmt, background ) -> str'
+			exception.method = 'get_analysis_detail( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def normalize_background( self, background: str=None, model: str=None ) -> str | None:
-		"""Normalize background.
+	def get_output_compression( self, compression: float, output_format: str ) -> int:
+		"""Get effective output compression.
 		
+		Purpose:
+			Returns an integer compression percentage for JPEG and WebP image output.
 		
-			Purpose:
-			    Normalizes background data from provider-specific objects into application-ready
-			    Python values.
+		Args:
+			compression (float): Requested compression percentage.
+			output_format (str): Requested image output format.
 		
-			Args:
-			    background: Background transparency or execution option supplied by the caller.
-			    model: Provider model identifier selected for the operation.
+		Returns:
+			int: Effective compression percentage or zero when compression is not applicable.
 		
-			Returns:
-			    str | None: Background option accepted by the selected image endpoint.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			valid_backgrounds = [ 'auto', 'transparent', 'opaque' ]
-			value = background if isinstance( background,
-				str ) and background in valid_backgrounds else None
+			self.compression = compression
+			self.output_format = output_format
+			self.output_compression = 0
+			if self.output_format not in [ 'jpeg', 'webp' ]:
+				return self.output_compression
 			
-			if model == 'gpt-image-2' and value == 'transparent':
-				return 'auto'
+			if self.compression <= 0:
+				return self.output_compression
 			
-			return value
+			if self.compression > 100:
+				self.compression = 100
+			
+			self.output_compression = int( self.compression )
+			return self.output_compression
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = 'normalize_background( self, background, model ) -> str | None'
+			exception.method = 'get_output_compression( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def normalize_size( self, size: str=None, model: str=None ) -> str:
-		"""Normalize size.
+	def extract_image_outputs( self ) -> str | bytes | List[ str | bytes ] | None:
+		"""Extract image outputs.
 		
+		Purpose:
+			Extracts URLs or decoded base64 image bytes from the latest Images API response.
 		
-			Purpose:
-			    Normalizes size data from provider-specific objects into application-ready Python
-			    values.
+		Returns:
+			str | bytes | List[str | bytes] | None: Extracted image output or outputs.
 		
-			Args:
-			    size: Image size option selected for generation or editing.
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    str: Image size accepted by the selected image endpoint.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if model == 'dall-e-2':
-				valid_sizes = [ '256x256', '512x512', '1024x1024' ]
-				return size if isinstance( size, str ) and size in valid_sizes else '1024x1024'
-			
-			if model == 'dall-e-3':
-				valid_sizes = [ '1024x1024', '1792x1024', '1024x1792' ]
-				return size if isinstance( size, str ) and size in valid_sizes else '1024x1024'
-			
-			valid_sizes = [ 'auto', '1024x1024', '1024x1536', '1536x1024' ]
-			return size if isinstance( size, str ) and size in valid_sizes else '1024x1024'
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Images'
-			exception.method = 'normalize_size( self, size, model ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_quality( self, quality: str=None, model: str=None ) -> str | None:
-		"""Normalize quality.
-		
-		
-			Purpose:
-			    Normalizes quality data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    quality: Image quality option selected for generation or editing.
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    str | None: Image quality accepted by the selected image endpoint.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if model == 'dall-e-2':
-				return None
-			
-			if model == 'dall-e-3':
-				valid_qualities = [ 'standard', 'hd' ]
-				return quality if isinstance( quality,
-					str ) and quality in valid_qualities else 'standard'
-			
-			valid_qualities = [ 'auto', 'low', 'medium', 'high' ]
-			return quality if isinstance( quality, str ) and quality in valid_qualities else 'auto'
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Images'
-			exception.method = 'normalize_quality( self, quality, model ) -> str | None'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_compression( self, compression: float=None ) -> int | None:
-		"""Normalize compression.
-		
-		
-			Purpose:
-			    Normalizes compression data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    compression: Compression setting supplied to supported image-output workflows.
-		
-			Returns:
-			    int | None: Compression value accepted by the selected image endpoint.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if compression is None:
-				return None
-			
-			return max( 0, min( 100, int( round( float( compression ) * 100 ) ) ) )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Images'
-			exception.method = 'normalize_compression( self, compression ) -> int | None'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_image_outputs( self ) -> str | bytes | list[ str | bytes ] | None:
-		"""Normalize image outputs.
-		
-		
-			Purpose:
-			    Normalizes image outputs data from provider-specific objects into
-			    application-ready Python values.
-		
-			Returns:
-			    str | bytes | list[ str | bytes ] | None: Image output payload normalized as URLs
-			    or binary image bytes.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.data = getattr( self.response, 'data', None )
 			self.outputs = [ ]
+			if self.response is None:
+				return None
 			
-			if self.data and len( self.data ) > 0:
-				for item in self.data:
-					self.b64_json = getattr( item, 'b64_json', None )
-					self.url = getattr( item, 'url', None )
-					
-					if self.b64_json:
-						self.outputs.append( base64.b64decode( self.b64_json ) )
-						continue
-					
-					if self.url:
-						self.outputs.append( self.url )
-						continue
-				
-				if len( self.outputs ) == 1:
-					return self.outputs[ 0 ]
-				
-				if len( self.outputs ) > 1:
-					return self.outputs
+			self.data = getattr( self.response, 'data', None )
+			if not self.data:
+				return None
 			
-			return None
+			for item in self.data:
+				self.image_url = getattr( item, 'url', '' )
+				self.image_base64 = getattr( item, 'b64_json', '' )
+				
+				if self.image_url:
+					self.outputs.append( self.image_url )
+					continue
+				
+				if self.image_base64:
+					self.outputs.append( base64.b64decode( self.image_base64 ) )
+			
+			if len( self.outputs ) == 0:
+				return None
+			
+			if len( self.outputs ) == 1:
+				return self.outputs[ 0 ]
+			
+			return self.outputs
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = (
-				'normalize_image_outputs( self ) -> str | bytes | list[ str | bytes '
-				'] | None')
+			exception.method = 'extract_image_outputs( self )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate( self, prompt: str, number: int=1, model: str='gpt-image-1-mini',
-		size: str='1024x1024', quality: str='auto', fmt: str='jpeg',
-		compression: float=None, background: str=None ) -> str | bytes | list[
-		str | bytes ] | None:
-		"""Generate.
+	def get_output_text( self ) -> str:
+		"""Get analysis output text.
 		
+		Purpose:
+			Extracts text from the latest image-analysis Responses API response.
 		
-			Purpose:
-			    Generates images through the OpenAI image API after normalizing image count, size,
-			    quality, format, background, and compression settings.
+		Returns:
+			str: Extracted image-analysis text.
 		
-			Args:
-			    prompt: User prompt or task instruction submitted to the provider.
-			    number: Requested output count before provider-specific normalization.
-			    model: Provider model identifier selected for the operation.
-			    size: Image size option selected for generation or editing.
-			    quality: Image quality option selected for generation or editing.
-			    fmt: Image output format before provider-specific normalization.
-			    compression: Compression setting supplied to supported image-output workflows.
-			    background: Background transparency or execution option supplied by the caller.
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			self.output_text = ''
+			if self.response is None:
+				return self.output_text
+			
+			self.response_text = getattr( self.response, 'output_text', '', )
+			if self.response_text:
+				self.output_text = self.response_text
+				return self.output_text
+			
+			self.text_parts = [ ]
+			for item in getattr( self.response, 'output', [ ] ) or [ ]:
+				if getattr( item, 'type', '' ) != 'message':
+					continue
+				
+				for block in getattr( item, 'content', [ ] ) or [ ]:
+					if getattr( block, 'type', '' ) != 'output_text':
+						continue
+					
+					self.block_text = getattr( block, 'text', '' )
+					if self.block_text:
+						self.text_parts.append( self.block_text )
+			
+			self.output_text = ''.join( self.text_parts ).strip( )
+			return self.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Images'
+			exception.method = 'get_output_text( self ) -> str'
+			Logger( ).write( exception )
+			raise exception
+	
+	def generate( self, prompt: str, model: str, number: int = 1, size: str = '1024x1024',
+		quality: str = 'auto', fmt: str = 'png', compression: float = 0.0,
+		background: str = 'auto' ) -> str | bytes | List[ str | bytes ] | None:
+		"""Generate images.
 		
-			Returns:
-			    str | bytes | list[ str | bytes ] | None: Generated image output normalized as
-			    URLs or binary image bytes.
+		Purpose:
+			Generates one or more images from a required text prompt using the selected OpenAI
+			image model.
 		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Args:
+			prompt (str): Required image-generation prompt.
+			model (str): Required OpenAI image model.
+			number (int): Number of images requested.
+			size (str): Requested image dimensions.
+			quality (str): Requested image quality.
+			fmt (str): Requested output format.
+			compression (float): Requested JPEG or WebP compression percentage.
+			background (str): Requested background behavior.
+		
+		Returns:
+			str | bytes | List[str | bytes] | None: Generated image output or outputs.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			throw_if( 'size', size )
+			throw_if( 'quality', quality )
+			throw_if( 'fmt', fmt )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
 			self.prompt = prompt
-			self.model = model or 'gpt-image-1-mini'
-			self.number = self.normalize_count( number )
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			self.model = model
+			self.number = number
+			self.size = size
+			self.quality = quality
+			self.output_format = fmt
+			self.compression = compression
+			self.background = background
+			self.output_compression = self.get_output_compression( self.compression,
+				self.output_format, )
 			
-			valid_generation_models = [ 'gpt-image-2', 'gpt-image-1.5', 'gpt-image-1',
-				'gpt-image-1-mini', 'dall-e-3', 'dall-e-2', ]
+			if self.number <= 0:
+				self.number = 1
 			
-			if self.model not in valid_generation_models:
-				raise ValueError( f'Unsupported GPT image generation model: {self.model}' )
+			if self.number > 10:
+				self.number = 10
 			
-			self.size = self.normalize_size( size=size, model=self.model )
-			self.quality = self.normalize_quality( quality=quality, model=self.model )
-			self.background = self.normalize_background( background=background, model=self.model )
-			self.output_format = self.normalize_output_format( fmt=fmt,
-				background=self.background )
+			if self.model == 'gpt-image-2':
+				if self.background == 'transparent':
+					self.background = 'auto'
+			
+			self.client = OpenAI( api_key=self.api_key, )
 			self.request = { 'model': self.model, 'prompt': self.prompt, 'n': self.number,
-				'size': self.size, }
+				'size': self.size, 'quality': self.quality, 'output_format': self.output_format, }
 			
-			if self.is_gpt_image_model( self.model ):
-				self.request[ 'output_format' ]=self.output_format
-				
-				if self.quality:
-					self.request[ 'quality' ]=self.quality
-				
-				if self.background:
-					self.request[ 'background' ]=self.background
-				
-				if compression is not None and self.output_format in [ 'jpeg', 'webp' ]:
-					self.output_compression = self.normalize_compression( compression )
-					self.request[ 'output_compression' ]=self.output_compression
-			else:
-				self.request[ 'response_format' ]='b64_json'
-				
-				if self.quality:
-					self.request[ 'quality' ]=self.quality
+			if self.background:
+				self.request[ 'background' ] = self.background
+			
+			if self.output_compression > 0:
+				self.request[ 'output_compression' ] = self.output_compression
 			
 			self.response = self.client.images.generate( **self.request )
-			return self.normalize_image_outputs( )
+			return self.extract_image_outputs( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = (
-				'generate( self, prompt: str ) -> str | bytes | list[ str | bytes ] '
-				'| None')
+			exception.method = 'generate( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def analyze( self, text: str, path: str=None, image_url: str=None, instruct: str=None,
-		model: str='gpt-4.1-mini', max_tokens: int=None, temperature: float=None,
-		include: List[ str ]=None, store: bool=None, stream: bool=False,
-		detail: str='auto' ) -> str | None:
-		"""Analyze.
+	def analyze( self, text: str, path: str, model: str, instruct: str = '', max_tokens: int = 0,
+		temperature: float = 0.0, include: Optional[ List[ str ] ] = None, store: bool = False,
+		stream: bool = False, detail: str = 'auto' ) -> str:
+		"""Analyze an image.
 		
+		Purpose:
+			Uploads a required local image and analyzes it with a required vision-capable model
+			through the OpenAI Responses API.
 		
-			Purpose:
-			    Analyzes an image with a vision-capable model and returns text extracted from the
-			    model response.
+		Args:
+			text (str): Required question or instruction for image analysis.
+			path (str): Required local image path.
+			model (str): Required vision-capable OpenAI model.
+			instruct (str): Optional system or developer instructions.
+			max_tokens (int): Maximum output-token count.
+			temperature (float): Sampling temperature for supported models.
+			include (Optional[List[str]]): Additional response fields to include.
+			store (bool): Indicates whether the response should be stored.
+			stream (bool): Indicates whether response events should be streamed.
+			detail (str): Requested image-detail level.
 		
-			Args:
-			    text: Input text supplied to the operation.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    image_url: Remote image URL supplied to image-analysis workflows.
-			    instruct: System or developer instructions supplied to the provider.
-			    model: Provider model identifier selected for the operation.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    include: Requested provider include fields.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    detail: Image detail option selected for image analysis.
+		Returns:
+			str: Image-analysis response text.
 		
-			Returns:
-			    str | None: Image-analysis text output or None when no output text is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'text', text )
+			throw_if( 'path', path )
+			throw_if( 'model', model )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
 			self.input_text = text
-			self.file_path = path
 			self.image_path = path
-			self.image_url = image_url
-			self.model = model or 'gpt-4.1-mini'
+			self.model = model
 			self.instructions = instruct
 			self.max_tokens = max_tokens
 			self.temperature = temperature
 			self.include = include if include is not None else [ ]
 			self.store = store
 			self.stream = stream
-			self.detail = detail if detail in self.detail_options else 'auto'
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			self.detail = self.get_analysis_detail( detail, self.model, )
+			self.client = OpenAI( api_key=self.api_key, )
 			
-			if self.image_url is None and self.image_path:
-				encoded = encode_image( self.image_path )
-				self.image_url = f'data:image/png;base64,{encoded}'
+			with open( self.image_path, 'rb' ) as source:
+				self.file = self.client.files.create( file=source, purpose='vision', )
 			
-			throw_if( 'image_url', self.image_url )
-			self.request = { 'model': self.model, 'input': [ { 'role': 'user',
+			self.file_id = self.file.id
+			self.image_content = { 'type': 'input_image', 'file_id': self.file_id,
+				'detail': self.detail, }
+			self.input = [ { 'role': 'user',
 				'content': [ { 'type': 'input_text', 'text': self.input_text, },
-					{ 'type': 'input_image', 'image_url': self.image_url,
-						'detail': self.detail, }, ], }, ], }
+					self.image_content, ], }, ]
+			self.request = { 'model': self.model, 'input': self.input, 'store': self.store,
+				'stream': self.stream, }
 			
 			if self.instructions:
-				self.request[ 'instructions' ]=self.instructions
+				self.request[ 'instructions' ] = self.instructions
 			
-			if isinstance( self.max_tokens, int ) and self.max_tokens > 0:
-				self.request[ 'max_output_tokens' ]=self.max_tokens
+			if self.max_tokens > 0:
+				self.request[ 'max_output_tokens' ] = self.max_tokens
 			
-			if self.temperature is not None and not self.model.startswith( 'gpt-5' ):
-				self.request[ 'temperature' ]=self.temperature
-			
-			if self.store is not None:
-				self.request[ 'store' ]=self.store
+			if not self.model.startswith( 'gpt-5' ):
+				self.request[ 'temperature' ] = self.temperature
 			
 			if self.include:
-				self.request[ 'include' ]=self.include
+				self.request[ 'include' ] = self.include
 			
 			self.response = self.client.responses.create( **self.request )
-			self.output_text = getattr( self.response, 'output_text', None )
-			
-			if self.output_text:
+			if self.stream:
+				self.text_parts = [ ]
+				for event in self.response:
+					self.event_type = getattr( event, 'type', '' )
+					if self.event_type == 'response.output_text.delta':
+						self.delta = getattr( event, 'delta', '' )
+						if self.delta:
+							self.text_parts.append( self.delta )
+					
+					elif self.event_type == 'response.completed':
+						self.response = getattr( event, 'response', None )
+				
+				self.output_text = ''.join( self.text_parts ).strip( )
 				return self.output_text
 			
-			if hasattr( self.response, 'output' ) and self.response.output:
-				text_parts = [ ]
-				for item in self.response.output:
-					if getattr( item, 'type', None ) != 'message':
-						continue
-					
-					if not hasattr( item, 'content' ) or item.content is None:
-						continue
-					
-					for block in item.content:
-						if getattr( block, 'type', None ) == 'output_text':
-							output = getattr( block, 'text', None )
-							if output:
-								text_parts.append( output )
-				
-				if len( text_parts ) > 0:
-					return ''.join( text_parts ).strip( )
-			
-			return None
+			return self.get_output_text( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = 'analyze( self, text: str, path: str=None ) -> str | None'
+			exception.method = 'analyze( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def edit( self, prompt: str, path: str, model: str='gpt-image-1', size: str='1024x1024',
-		quality: str='auto', fmt: str='jpeg', compression: float=None, background: str =
-		None,
-		number: int=1 ) -> str | bytes | list[ str | bytes ] | None:
-		"""Edit.
+	def edit( self, prompt: str, path: str, model: str, number: int=1, size: str='1024x1024',
+		quality: str='auto', fmt: str='png', compression: float=0.0, background: str='auto',
+		mask_path: str = '' ) -> str | bytes | List[ str | bytes ] | None:
+		"""Edit an image.
 		
+		Purpose:
+			Edits a required local image using a required prompt and OpenAI image model.
 		
-			Purpose:
-			    Edits an input image with the OpenAI image API and returns normalized URL or
-			    binary image output.
+		Args:
+			prompt (str): Required image-editing instruction.
+			path (str): Required local source-image path.
+			model (str): Required OpenAI image model.
+			number (int): Number of edited images requested.
+			size (str): Requested image dimensions.
+			quality (str): Requested image quality.
+			fmt (str): Requested output format.
+			compression (float): Requested JPEG or WebP compression percentage.
+			background (str): Requested background behavior.
+			mask_path (str): Optional local image-mask path.
 		
-			Args:
-			    prompt: User prompt or task instruction submitted to the provider.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    model: Provider model identifier selected for the operation.
-			    size: Image size option selected for generation or editing.
-			    quality: Image quality option selected for generation or editing.
-			    fmt: Image output format before provider-specific normalization.
-			    compression: Compression setting supplied to supported image-output workflows.
-			    background: Background transparency or execution option supplied by the caller.
-			    number: Requested output count before provider-specific normalization.
+		Returns:
+			str | bytes | List[str | bytes] | None: Edited image output or outputs.
 		
-			Returns:
-			    str | bytes | list[ str | bytes ] | None: Edited image output normalized as URLs
-			    or binary image bytes.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'path', path )
+			throw_if( 'model', model )
+			throw_if( 'size', size )
+			throw_if( 'quality', quality )
+			throw_if( 'fmt', fmt )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
 			self.prompt = prompt
-			self.input_text = prompt
-			self.file_path = path
 			self.image_path = path
-			self.model = model or 'gpt-image-1'
-			self.number = self.normalize_count( number )
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			self.model = model
+			self.number = number
+			self.size = size
+			self.quality = quality
+			self.output_format = fmt
+			self.compression = compression
+			self.background = background
+			self.mask_path = mask_path
+			self.output_compression = self.get_output_compression( self.compression,
+				self.output_format, )
 			
-			valid_edit_models = [ 'gpt-image-2', 'gpt-image-1.5', 'gpt-image-1',
-				'gpt-image-1-mini',
-				'chatgpt-image-latest', 'dall-e-2', ]
+			if self.number <= 0:
+				self.number = 1
 			
-			if self.model not in valid_edit_models:
-				raise ValueError( f'Unsupported GPT image edit model: {self.model}' )
+			if self.number > 10:
+				self.number = 10
 			
-			self.size = self.normalize_size( size=size, model=self.model )
-			self.quality = self.normalize_quality( quality=quality, model=self.model )
-			self.background = self.normalize_background( background=background, model=self.model )
-			self.output_format = self.normalize_output_format( fmt=fmt,
-				background=self.background )
-			self.request = { 'model': self.model, 'prompt': self.input_text, 'size': self.size,
-				'n': self.number, }
+			if self.model == 'gpt-image-2':
+				if self.background == 'transparent':
+					self.background = 'auto'
 			
-			if self.is_gpt_image_model( self.model ):
-				self.request[ 'output_format' ]=self.output_format
-				
-				if self.quality:
-					self.request[ 'quality' ]=self.quality
-				
-				if self.background:
-					self.request[ 'background' ]=self.background
-				
-				if compression is not None and self.output_format in [ 'jpeg', 'webp' ]:
-					self.output_compression = self.normalize_compression( compression )
-					self.request[ 'output_compression' ]=self.output_compression
-			else:
-				self.request[ 'response_format' ]='b64_json'
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'model': self.model, 'prompt': self.prompt, 'n': self.number,
+				'size': self.size, 'quality': self.quality, 'output_format': self.output_format, }
 			
-			with open( self.file_path, 'rb' ) as source:
-				self.response = self.client.images.edit( image=source, **self.request )
+			if self.background:
+				self.request[ 'background' ] = self.background
 			
-			return self.normalize_image_outputs( )
+			if self.output_compression > 0:
+				self.request[ 'output_compression' ] = self.output_compression
+			
+			with open( self.image_path, 'rb' ) as source:
+				if self.mask_path:
+					with open( self.mask_path, 'rb' ) as mask:
+						self.response = self.client.images.edit( image=source, mask=mask,
+							**self.request )
+				else:
+					self.response = self.client.images.edit( image=source, **self.request )
+			
+			return self.extract_image_outputs( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Images'
-			exception.method = 'edit( self, **kwargs ) -> str | bytes | list[ str | bytes ] | None'
+			exception.method = 'edit( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
-		
-			Purpose:
-			    Returns the public Images members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
-		"""
-		return [ 'number', 'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
-			'max_completion_tokens', 'store', 'stream', 'modalities', 'stops', 'api_key', 'client',
-			'path', 'input_text', 'image_url', 'size', 'quality', 'detail', 'model',
-			'style_options', 'model_options', 'analysis_model_options', 'edit_model_options',
-			'detail_options', 'format_options', 'mime_options', 'size_options', 'quality_options',
-			'backcolor_options', 'is_gpt_image_model', 'normalize_count',
-			'normalize_output_format',
-			'normalize_background', 'normalize_size', 'normalize_quality', 'normalize_compression',
-			'normalize_image_outputs', 'generate', 'analyze', 'edit', ]
-
-class TTS( ):
-	"""TTS provider wrapper.
-	
-	
 		Purpose:
-		    Builds and executes OpenAI text-to-speech requests and validates voice, speed, model,
-		    and output format selections.
-	
-		Attributes:
-		    api_key: OpenAI API key loaded from project configuration.
-		    client: OpenAI client created for the current provider operation.
-		    speed: Speech speed value selected for text-to-speech output.
-		    voice: Voice option selected for text-to-speech output.
-		    input: Responses API input payload built for the current request.
-		    instructions: System or developer instructions supplied to model requests.
-		    response: Latest provider response object returned by an API call.
-		    response_format: Response-format configuration used by text or media requests.
-		    file_path: Local file path retained for file-enabled workflows.
-		    model: Provider model identifier used by the current workflow.
-		    audio_bytes: Audio bytes value retained by the TTS workflow.
-		    request: Normalized request dictionary prepared for provider execution.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
-	"""
-	api_key: Optional[ str ]
-	client: Optional[ OpenAI ]
-	speed: Optional[ float ]
-	voice: Optional[ str ]
-	input: Optional[ str ]
-	instructions: Optional[ str ]
-	response: Optional[ Any ]
-	response_format: Optional[ str ]
-	file_path: Optional[ str ]
-	model: Optional[ str ]
-	audio_bytes: Optional[ bytes ]
-	request: Optional[ Dict[ str, Any ] ]
-	
-	def __init__( self, input: str=None, model: str='gpt-4o-mini-tts', format: str=None,
-		instruct: str=None, voice: str=None, speed: float=None, file_path: str=None ):
-		"""Initialize TTS.
+			Returns public members exposed by the OpenAI Images wrapper.
 		
-		
-			Purpose:
-			    Initializes TTS state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
-		
-			Args:
-			    input: Prebuilt provider input payload supplied by the caller.
-			    model: Provider model identifier selected for the operation.
-			    format: Output or response format selected for the operation.
-			    instruct: System or developer instructions supplied to the provider.
-			    voice: Text-to-speech voice selected for audio generation.
-			    speed: Text-to-speech speed value selected by the caller.
-			    file_path: Output or input file path used by the workflow.
+		Returns:
+			List[str]: Public member names.
 		"""
+		return [ 'api_key', 'client', 'model', 'prompt', 'input_text', 'instructions', 'number',
+			'size', 'quality', 'detail', 'background', 'output_format', 'output_compression',
+			'image_path', 'mask_path', 'image_url', 'file', 'file_id', 'response', 'outputs',
+			'output_text', 'request', 'input', 'image_content', 'max_tokens', 'temperature',
+			'store', 'stream', 'include', 'model_options', 'analysis_model_options',
+			'size_options',
+			'quality_options', 'detail_options', 'backcolor_options', 'format_options',
+			'mime_options', 'style_options', 'include_options', 'tool_options', 'choice_options',
+			'reasoning_options', 'modality_options', 'supports_original_detail',
+			'get_analysis_detail', 'get_output_compression', 'extract_image_outputs',
+			'get_output_text', 'generate', 'analyze', 'edit', ]
+
+class TTS( GPT ):
+	"""Provide OpenAI text-to-speech workflow support.
+	
+	Purpose:
+		Provides text-to-speech generation through the OpenAI Audio Speech API. The class
+		stores speech request arguments as object members, creates provider-ready requests from
+		those members, streams generated audio to a temporary file, returns the resulting audio
+		bytes, and optionally writes the audio to a caller-specified output path.
+	
+	Attributes:
+		api_key (str): OpenAI API key used by the wrapper.
+		client (Optional[OpenAI]): OpenAI client used by the wrapper.
+		model (str): Text-to-speech model used by the current request.
+		input (str): Text converted to speech.
+		voice (str): Voice used to generate speech.
+		response_format (str): Audio format returned by the provider.
+		speed (float): Speech playback speed.
+		instructions (str): Model instructions controlling speech delivery.
+		file_path (str): Optional output path used to persist generated audio.
+		response (Any): Latest streaming speech response.
+		audio_bytes (bytes): Audio bytes produced by the latest request.
+		request (Dict[str, Any]): Provider-ready speech request.
+		temp_path (str): Temporary audio file path used during response streaming.
+	"""
+	api_key: str
+	client: Optional[ OpenAI ]
+	model: str
+	input: str
+	voice: str
+	response_format: str
+	speed: float
+	instructions: str
+	file_path: str
+	response: Any
+	audio_bytes: bytes
+	request: Dict[ str, Any ]
+	temp_path: str
+	
+	def __init__( self, model: str='gpt-4o-mini-tts', format: str = 'mp3', voice: str = 'alloy',
+		speed: float = 1.0 ) -> None:
+		"""Initialize instance.
+		
+		Purpose:
+			Initializes OpenAI text-to-speech configuration and request state without executing
+			a provider request.
+		
+		Args:
+			model (str): Default OpenAI text-to-speech model.
+			format (str): Default audio response format.
+			voice (str): Default speech voice.
+			speed (float): Default speech speed.
+		
+		Returns:
+			None: This method initializes object state.
+		"""
+		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
-		self.input = input
 		self.model = model
-		self.instructions = instruct
-		self.response_format = format
+		self.input = ''
 		self.voice = voice
-		self.file_path = file_path
+		self.response_format = format
 		self.speed = speed
+		self.instructions = ''
+		self.file_path = ''
 		self.response = None
-		self.audio_bytes = None
-		self.request = None
+		self.audio_bytes = b''
+		self.request = { }
+		self.temp_path = ''
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+	def model_options( self ) -> List[ str ]:
+		"""Get text-to-speech model options.
 		
+		Purpose:
+			Returns OpenAI models supported by the Audio Speech API workflow.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported text-to-speech model identifiers.
 		"""
 		return [ 'gpt-4o-mini-tts', 'gpt-4o-mini-tts-2025-12-15', 'tts-1', 'tts-1-hd', ]
 	
 	@property
-	def mime_options( self ) -> List[ str ] | None:
-		"""Mime options.
+	def mime_options( self ) -> List[ str ]:
+		"""Get audio-format options.
 		
+		Purpose:
+			Returns audio response formats supported by the OpenAI Speech API.
 		
-			Purpose:
-			    Returns mime options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ] | None: MIME type option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported audio response-format values.
 		"""
 		return [ 'mp3', 'opus', 'aac', 'flac', 'wav', 'pcm', ]
 	
 	@property
-	def voice_options( self ) -> List[ str ] | None:
-		"""Voice options.
+	def format_options( self ) -> List[ str ]:
+		"""Get audio-format options.
 		
+		Purpose:
+			Returns audio response formats supported by the OpenAI Speech API.
 		
-			Purpose:
-			    Returns voice options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Voice option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported audio response-format values.
 		"""
-		return [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage',
+		return self.mime_options
+	
+	@property
+	def voice_options( self ) -> List[ str ]:
+		"""Get speech-voice options.
+		
+		Purpose:
+			Returns built-in OpenAI voices exposed by the text-to-speech wrapper.
+		
+		Returns:
+			List[str]: Supported built-in voice identifiers.
+		"""
+		return [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage',
 			'shimmer', 'verse', 'marin', 'cedar', ]
 	
 	@property
-	def speed_options( self ) -> List[ float ] | None:
-		"""Speed options.
+	def speed_options( self ) -> List[ float ]:
+		"""Get speech-speed options.
 		
+		Purpose:
+			Returns speech-speed values exposed by the text-to-speech wrapper.
 		
-			Purpose:
-			    Returns speed options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ float ] | None: Speech-speed options exposed to the UI selector.
+		Returns:
+			List[float]: Supported speech-speed selections.
 		"""
 		return [ 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0, 3.0, 4.0, ]
 	
-	def validate_model( self, model: str=None ) -> str:
-		"""Validate model.
-		
-		
-			Purpose:
-			    Validates model input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    str: Validated provider model identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = model if isinstance( model, str ) and model.strip( ) else 'gpt-4o-mini-tts'
-			value = value.strip( )
-			if value not in self.model_options:
-				raise ValueError( f'Unsupported TTS model: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'TTS'
-			exception.method = 'validate_model( self, model: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_format( self, format: str=None ) -> str:
-		"""Validate format.
-		
-		
-			Purpose:
-			    Validates format input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    format: Output or response format selected for the operation.
-		
-			Returns:
-			    str: Validated output format for the selected provider workflow.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = format if isinstance( format, str ) and format.strip( ) else 'mp3'
-			value = value.strip( ).lower( )
-			if value not in self.mime_options:
-				raise ValueError( f'Unsupported TTS output format: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'TTS'
-			exception.method = 'validate_format( self, format: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_voice( self, voice: str=None ) -> str:
-		"""Validate voice.
-		
-		
-			Purpose:
-			    Validates voice input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    voice: Text-to-speech voice selected for audio generation.
-		
-			Returns:
-			    str: Validated text-to-speech voice name.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = voice if isinstance( voice, str ) and voice.strip( ) else 'alloy'
-			value = value.strip( )
-			if value not in self.voice_options:
-				raise ValueError( f'Unsupported TTS voice: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'TTS'
-			exception.method = 'validate_voice( self, voice: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_speed( self, speed: float=None ) -> float:
-		"""Validate speed.
-		
-		
-			Purpose:
-			    Validates speed input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    speed: Text-to-speech speed value selected by the caller.
-		
-			Returns:
-			    float: Validated text-to-speech speed value.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = 1.0 if speed is None else float( speed )
-			if value < 0.25:
-				return 0.25
-			
-			if value > 4.0:
-				return 4.0
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'TTS'
-			exception.method = 'validate_speed( self, speed: float=None ) -> float'
-			Logger( ).write( exception )
-			raise exception
-	
-	def create_speech( self, text: str, model: str='gpt-4o-mini-tts', format: str='mp3',
-		speed: float=1.0, voice: str='alloy', instruct: str=None,
-		file_path: str=None ) -> bytes | None:
+	def create_speech( self, text: str, model: str = 'gpt-4o-mini-tts', format: str = 'mp3',
+		speed: float = 1.0, voice: str = 'alloy', instruct: str = '',
+		file_path: str = '' ) -> bytes:
 		"""Create speech.
 		
+		Purpose:
+			Generates speech audio from required input text using the selected OpenAI speech
+			model, voice, format, speed, and optional delivery instructions. The method streams
+			the provider response to a temporary file, reads the generated audio bytes, and
+			optionally persists those bytes to a caller-specified path.
 		
-			Purpose:
-			    Generates speech audio from text after validating text-to-speech model,
-			    output format, voice, and speed settings.
+		Args:
+			text (str): Required text converted to speech.
+			model (str): OpenAI text-to-speech model.
+			format (str): Audio response format.
+			speed (float): Speech playback speed.
+			voice (str): Voice used to generate speech.
+			instruct (str): Optional instructions controlling speech delivery.
+			file_path (str): Optional destination path for generated audio.
 		
-			Args:
-			    text: Input text supplied to the operation.
-			    model: Provider model identifier selected for the operation.
-			    format: Output or response format selected for the operation.
-			    speed: Text-to-speech speed value selected by the caller.
-			    voice: Text-to-speech voice selected for audio generation.
-			    instruct: System or developer instructions supplied to the provider.
-			    file_path: Output or input file path used by the workflow.
+		Returns:
+			bytes: Generated speech audio.
 		
-			Returns:
-			    bytes | None: Generated speech bytes or None when the provider returns no audio
-			    body.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
 			throw_if( 'text', text )
+			throw_if( 'model', model )
+			throw_if( 'format', format )
+			throw_if( 'voice', voice )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
 			self.input = text
-			self.model = self.validate_model( model )
-			self.response_format = self.validate_format( format )
-			self.voice = self.validate_voice( voice )
-			self.speed = self.validate_speed( speed )
+			self.model = model
+			self.response_format = format
+			self.speed = speed
+			self.voice = voice
 			self.instructions = instruct
 			self.file_path = file_path
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			self.client = OpenAI( api_key=self.api_key, )
 			self.response = None
-			self.audio_bytes = None	
+			self.audio_bytes = b''
+			self.request = { 'model': self.model, 'input': self.input, 'voice': self.voice,
+				'response_format': self.response_format, 'speed': self.speed, }
+			
+			if self.instructions:
+				if self.model not in [ 'tts-1', 'tts-1-hd', ]:
+					self.request[ 'instructions' ] = self.instructions
+			
 			with tempfile.NamedTemporaryFile( suffix=f'.{self.response_format}',
-					delete=False ) as tmp:
-				temp_path = tmp.name
+					delete=False, ) as temporary_file:
+				self.temp_path = temporary_file.name
 			
 			try:
-				self.request = { 'model': self.model, 'voice': self.voice, 'input': self.input,
-					'response_format': self.response_format, 'speed': self.speed, }
-				
-				if self.instructions and self.model not in ('tts-1', 'tts-1-hd'):
-					self.request[ 'instructions' ]=self.instructions
-				
 				with self.client.audio.speech.with_streaming_response.create(
 						**self.request ) as response:
 					self.response = response
-					response.stream_to_file( temp_path )
+					self.response.stream_to_file( self.temp_path, )
 				
-				with open( temp_path, 'rb' ) as source:
+				with open( self.temp_path, 'rb' ) as source:
 					self.audio_bytes = source.read( )
+				
+				throw_if( 'audio_bytes', self.audio_bytes )
 				
 				if self.file_path:
 					with open( self.file_path, 'wb' ) as target:
@@ -2439,889 +1887,631 @@ class TTS( ):
 				
 				return self.audio_bytes
 			finally:
-				try:
-					if os.path.exists( temp_path ):
-						os.remove( temp_path )
-				except Exception:
-					pass
+				if self.temp_path:
+					if os.path.exists( self.temp_path ):
+						os.remove( self.temp_path )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'TTS'
-			exception.method = 'create_speech( self, text: str ) -> bytes | None'
+			exception.method = 'create_speech( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
+		Purpose:
+			Returns public members exposed by the OpenAI text-to-speech wrapper.
 		
-			Purpose:
-			    Returns the public TTS members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
+		Returns:
+			List[str]: Public member names.
 		"""
-		return [ 'input', 'file_path', 'voice', 'client', 'response_format', 'speed', 'model',
-			'instructions', 'response', 'audio_bytes', 'request', 'model_options', 'mime_options',
-			'voice_options', 'speed_options', 'validate_model', 'validate_format',
-			'validate_voice',
-			'validate_speed', 'create_speech', ]
+		return [ 'api_key', 'client', 'model', 'input', 'voice', 'response_format', 'speed',
+			'instructions', 'file_path', 'response', 'audio_bytes', 'request', 'temp_path',
+			'model_options', 'mime_options', 'format_options', 'voice_options', 'speed_options',
+			'create_speech', ]
 
 class Transcription( GPT ):
-	"""Transcription provider wrapper.
+	"""Provide OpenAI audio-transcription workflow support.
 	
+	Purpose:
+		Provides audio transcription through the OpenAI Audio Transcriptions API. The class
+		stores each accepted transcription argument as an object member before constructing and
+		executing the provider request. It supports plain-text, JSON, verbose JSON, subtitle,
+		and diarized transcription responses where supported by the selected model.
 	
-		Purpose:
-		    Builds and executes OpenAI audio transcription requests and normalizes transcription
-		    response payloads for the application UI.
-	
-		Attributes:
-		    client: OpenAI client created for the current provider operation.
-		    language: Language option selected for transcription or translation workflows.
-		    instructions: System or developer instructions supplied to model requests.
-		    include: Responses API include fields requested by the current workflow.
-		    normalized_result: Normalized result value retained by the Transcription workflow.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
+	Attributes:
+		api_key (str): OpenAI API key used by the wrapper.
+		client (Optional[OpenAI]): OpenAI client used by the wrapper.
+		model (str): Transcription model used by the current request.
+		audio_file (str): Local audio-file path used by the current request.
+		language (str): Optional ISO-639-1 source-language hint.
+		prompt (str): Optional transcription prompt.
+		response_format (str): Requested transcription response format.
+		temperature (float): Sampling temperature used by the transcription request.
+		include (List[str]): Additional transcription response fields.
+		timestamp_granularities (List[str]): Requested timestamp granularities.
+		chunking_strategy (str): Diarization chunking strategy.
+		response (Any): Latest provider transcription response.
+		transcript (str): Text extracted from the latest response.
+		result (Dict[str, Any]): Structured transcription result.
+		request (Dict[str, Any]): Provider-ready transcription request.
 	"""
+	api_key: str
 	client: Optional[ OpenAI ]
-	language: Optional[ str ]
-	instructions: Optional[ str ]
-	include: Optional[ List[ str ] ]
-	normalized_result: Optional[ Dict[ str, Any ] ]
+	model: str
+	audio_file: str
+	language: str
+	prompt: str
+	response_format: str
+	temperature: float
+	include: List[ str ]
+	timestamp_granularities: List[ str ]
+	chunking_strategy: str
+	response: Any
+	transcript: str
+	result: Dict[ str, Any ]
+	request: Dict[ str, Any ]
 	
-	def __init__( self, model: str='gpt-4o-transcribe', temperature: float=None,
-		prompt: str=None, number: int=None, top_p: float=None, frequency: float=None,
-		presence: float=None, max_tokens: int=None, stream: bool=None, store: bool=None,
-		language: str=None, instruct: str=None, format: str=None, background: bool=None,
-		messages: List[ Dict[ str, str ] ]=None, stops: List[ str ]=None,
-		include: List[ str ]=None ):
-		"""Initialize Transcription.
+	def __init__( self, model: str = 'gpt-4o-transcribe', format: str = 'json',
+		temperature: float = 0.0 ) -> None:
+		"""Initialize instance.
 		
-		
-			Purpose:
-			    Initializes Transcription state by assigning configuration values, request
-			    defaults, cached outputs, and compatibility fields used by later methods.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    number: Requested output count before provider-specific normalization.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    presence: Presence penalty supplied to compatible model requests.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    language: Language code selected for transcription or translation.
-			    instruct: System or developer instructions supplied to the provider.
-			    format: Output or response format selected for the operation.
-			    background: Background transparency or execution option supplied by the caller.
-			    messages: Message history retained for audio or chat workflows.
-			    stops: Stop sequences retained for compatible provider requests.
-			    include: Requested provider include fields.
-		"""
-		super( ).__init__( )
-		self.api_key = cfg.OPENAI_API_KEY
-		self.prompt = prompt
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_tokens = max_tokens
-		self.stream = stream
-		self.response_format = format
-		self.background = background
-		self.message = messages
-		self.stops = stops
-		self.store = store
-		self.language = language
-		self.instructions = instruct
-		self.model = model
-		self.number = number
-		self.input_text = None
-		self.audio_file = None
-		self.transcript = None
-		self.response = None
-		self.include = include if include is not None else [ ]
-		self.normalized_result = None
-		self.request = None
-	
-	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
-		
-		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
-		"""
-		return [ 'gpt-4o-transcribe', 'gpt-4o-mini-transcribe',
-			'gpt-4o-mini-transcribe-2025-12-15',
-			'whisper-1', 'gpt-4o-transcribe-diarize', ]
-	
-	@property
-	def mime_options( self ) -> List[ str ] | None:
-		"""Mime options.
-		
-		
-			Purpose:
-			    Returns mime options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ] | None: MIME type option names exposed to the UI selector.
-		"""
-		return [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm', ]
-	
-	@property
-	def language_options( self ) -> List[ str ] | None:
-		"""Language options.
-		
-		
-			Purpose:
-			    Returns language options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Language option names exposed to the UI selector.
-		"""
-		return [ 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'uk', 'el', 'he', 'ar', 'hi', 'zh',
-			'ja',
-			'ko', 'vi', 'th', ]
-	
-	@property
-	def language_labels( self ) -> Dict[ str, str ] | None:
-		"""Language labels.
-		
-		
-			Purpose:
-			    Returns language labels used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    Dict[ str, str ] | None: Mapping of language codes to display labels.
-		"""
-		return { 'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 'it': 'Italian',
-			'pt': 'Portuguese', 'ru': 'Russian', 'uk': 'Ukrainian', 'el': 'Greek', 'he': 'Hebrew',
-			'ar': 'Arabic', 'hi': 'Hindi', 'zh': 'Chinese', 'ja': 'Japanese', 'ko': 'Korean',
-			'vi': 'Vietnamese', 'th': 'Thai', }
-	
-	@property
-	def include_options( self ) -> List[ str ] | None:
-		"""Include options.
-		
-		
-			Purpose:
-			    Returns include options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Include option names exposed to the UI selector.
-		"""
-		return [ 'logprobs', ]
-	
-	@property
-	def response_format_options( self ) -> Dict[ str, List[ str ] ]:
-		"""Response format options.
-		
-		
-			Purpose:
-			    Returns response format options used by the Streamlit selectors and provider
-			    request builders.
-		
-			Returns:
-			    Dict[ str, List[ str ] ]: Response-format options exposed for the selected audio
-			    workflow.
-		"""
-		return { 'whisper-1': [ 'json', 'text', 'srt', 'verbose_json', 'vtt', ],
-			'gpt-4o-transcribe': [ 'json', ], 'gpt-4o-mini-transcribe': [ 'json', ],
-			'gpt-4o-mini-transcribe-2025-12-15': [ 'json', ],
-			'gpt-4o-transcribe-diarize': [ 'json', 'text', 'diarized_json', ], }
-	
-	def validate_model( self, model: str=None ) -> str:
-		"""Validate model.
-		
-		
-			Purpose:
-			    Validates model input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    str: Validated provider model identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = model if isinstance( model, str ) and model.strip( ) else 'gpt-4o-transcribe'
-			value = value.strip( )
-			if value not in self.model_options:
-				raise ValueError( f'Unsupported transcription model: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Transcription'
-			exception.method = 'validate_model( self, model: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_format( self, model: str, format: str=None ) -> str | None:
-		"""Validate format.
-		
-		
-			Purpose:
-			    Validates format input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-			    format: Output or response format selected for the operation.
-		
-			Returns:
-			    str | None: Validated output format for the selected provider workflow.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			options = self.response_format_options.get( model, [ 'json' ] )
-			if not isinstance( format, str ) or not format.strip( ):
-				return options[ 0 ] if len( options ) > 0 else None
-			
-			value = format.strip( )
-			if value not in options:
-				return options[ 0 ] if len( options ) > 0 else None
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Transcription'
-			exception.method = ('validate_format( self, model: str, format: str=None ) -> str | '
-			                    'None')
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_include( self, model: str, include: List[ str ]=None ) -> List[ str ]:
-		"""Validate include.
-		
-		
-			Purpose:
-			    Validates include input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-			    include: Requested provider include fields.
-		
-			Returns:
-			    List[ str ]: Filtered include fields valid for the selected transcription model.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if include is None or len( include ) == 0:
-				return [ ]
-			
-			if model not in [ 'gpt-4o-transcribe', 'gpt-4o-mini-transcribe',
-				'gpt-4o-mini-transcribe-2025-12-15' ]:
-				return [ ]
-			
-			values = [ ]
-			for item in include:
-				if isinstance( item, str ) and item.strip( ) in self.include_options:
-					values.append( item.strip( ) )
-			
-			return values
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Transcription'
-			exception.method = 'validate_include( self, model: str, include: List[ str ]=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_response( self, response: Any ) -> Dict[ str, Any ]:
-		"""Normalize response.
-		
-		
-			Purpose:
-			    Normalizes response data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    response: Provider response object to normalize or inspect.
-		
-			Returns:
-			    Dict[ str, Any ]: Normalized response metadata and output fields.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			result: Dict[ str, Any ]={ 'text': '', 'segments': [ ], 'language': None,
-				'duration': None, 'raw': None, }
-			
-			if response is None:
-				return result
-			
-			if isinstance( response, str ):
-				result[ 'text' ]=response
-				result[ 'raw' ]=response
-				return result
-			
-			if hasattr( response, 'model_dump' ):
-				try:
-					result[ 'raw' ]=response.model_dump( )
-				except Exception:
-					result[ 'raw' ]=str( response )
-			else:
-				result[ 'raw' ]=str( response )
-			
-			text = getattr( response, 'text', None )
-			if isinstance( text, str ):
-				result[ 'text' ]=text
-			
-			segments = getattr( response, 'segments', None )
-			if isinstance( segments, list ):
-				normalized_segments = [ ]
-				for segment in segments:
-					if hasattr( segment, 'model_dump' ):
-						normalized_segments.append( segment.model_dump( ) )
-					elif isinstance( segment, dict ):
-						normalized_segments.append( segment )
-					else:
-						normalized_segments.append( { 'text': str( segment ) } )
-				
-				result[ 'segments' ]=normalized_segments
-			
-			language = getattr( response, 'language', None )
-			if language:
-				result[ 'language' ]=language
-			
-			duration = getattr( response, 'duration', None )
-			if duration:
-				result[ 'duration' ]=duration
-			
-			if not result[ 'text' ] and len( result[ 'segments' ] ) > 0:
-				parts = [ ]
-				for segment in result[ 'segments' ]:
-					if isinstance( segment, dict ) and segment.get( 'text' ):
-						parts.append( str( segment.get( 'text' ) ) )
-				
-				result[ 'text' ]='\n'.join( parts ).strip( )
-			
-			if not result[ 'text' ]:
-				result[ 'text' ]=str( response )
-			
-			return result
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Transcription'
-			exception.method = 'normalize_response( self, response: Any ) -> Dict[ str, Any ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def transcribe( self, path: str, model: str='gpt-4o-transcribe', language: str=None,
-		prompt: str=None, format: str=None, temperature: float=None,
-		include: List[ str ]=None ) -> str | None:
-		"""Transcribe.
-		
-		
-			Purpose:
-			    Transcribes an audio file through OpenAI after validating model, language,
-			    output format, and include settings.
-		
-			Args:
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    model: Provider model identifier selected for the operation.
-			    language: Language code selected for transcription or translation.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    format: Output or response format selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    include: Requested provider include fields.
-		
-			Returns:
-			    str | None: Transcribed text output or None when transcription returns no text.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			throw_if( 'path', path )
-			self.model = self.validate_model( model )
-			self.language = language if isinstance( language, str ) and language.strip( ) else None
-			self.prompt = prompt if isinstance( prompt, str ) and prompt.strip( ) else None
-			self.response_format = self.validate_format( self.model, format )
-			self.temperature = temperature
-			self.include = self.validate_include( self.model, include )
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.request = { 'model': self.model, }
-			
-			if self.language:
-				self.request[ 'language' ]=self.language
-			
-			if self.prompt:
-				self.request[ 'prompt' ]=self.prompt
-			
-			if self.response_format:
-				self.request[ 'response_format' ]=self.response_format
-			
-			if self.include:
-				self.request[ 'include' ]=self.include
-			
-			if self.temperature is not None:
-				if self.model == 'whisper-1':
-					self.request[ 'temperature' ]=self.temperature
-			
-			with open( path, 'rb' ) as self.audio_file:
-				self.response = self.client.audio.transcriptions.create( file=self.audio_file,
-					**self.request )
-			
-			self.normalized_result = self.normalize_response( self.response )
-			self.transcript = self.normalized_result.get( 'text' )
-			return self.transcript
-		except Exception as e:
-			ex = Error( e )
-			ex.module = 'gpt'
-			ex.cause = 'Transcription'
-			ex.method = 'transcribe( self, path: str ) -> str | None'
-			Logger( ).write( ex )
-			raise ex
-	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
-		
-		
-			Purpose:
-			    Returns the public Transcription members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
-		"""
-		return [ 'number', 'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
-			'max_tokens', 'store', 'stream', 'stops', 'prompt', 'response', 'audio_file',
-			'messages', 'response_format', 'api_key', 'client', 'input_text', 'transcript',
-			'language', 'model', 'include', 'normalized_result', 'model_options', 'mime_options',
-			'language_options', 'language_labels', 'include_options', 'response_format_options',
-			'validate_model', 'validate_format', 'validate_include', 'normalize_response',
-			'transcribe', ]
-
-class Translation( GPT ):
-	"""Translation provider wrapper.
-	
-	
 		Purpose:
-		    Builds and executes OpenAI audio translation requests and normalizes translation
-		    response payloads for the application UI.
-	
-		Attributes:
-		    client: OpenAI client created for the current provider operation.
-		    target_language: Target language value retained by the Translation workflow.
-		    response_format: Response-format configuration used by text or media requests.
-		    normalized_result: Normalized result value retained by the Translation workflow.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
-	"""
-	client: Optional[ OpenAI ]
-	target_language: Optional[ str ]
-	response_format: Optional[ str ]
-	normalized_result: Optional[ Dict[ str, Any ] ]
-	
-	def __init__( self, model: str='whisper-1', temperature: float=None, top_p: float=None,
-		frequency: float=None, presence: float=None, max_tokens: int=None, store: bool =
-		None,
-		stream: bool=None, instruct: str=None, audio_file: str=None, format: str=None,
-		language: str=None ):
-		"""Initialize Translation.
+			Initializes OpenAI transcription configuration and runtime state without executing
+			a provider request.
 		
+		Args:
+			model (str): Default OpenAI transcription model.
+			format (str): Default transcription response format.
+			temperature (float): Default transcription sampling temperature.
 		
-			Purpose:
-			    Initializes Translation state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    top_p: Nucleus sampling value supplied to compatible model requests.
-			    frequency: Frequency penalty supplied to compatible model requests.
-			    presence: Presence penalty supplied to compatible model requests.
-			    max_tokens: Maximum output-token value supplied to compatible requests.
-			    store: Response storage flag supplied to compatible provider requests.
-			    stream: Streaming flag retained by the UI and compatible provider requests.
-			    instruct: System or developer instructions supplied to the provider.
-			    audio_file: Audio file supplied to the init workflow.
-			    format: Output or response format selected for the operation.
-			    language: Language code selected for transcription or translation.
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.model = model
-		self.temperature = temperature
-		self.top_percent = top_p
-		self.frequency_penalty = frequency
-		self.presence_penalty = presence
-		self.max_tokens = max_tokens
-		self.store = store
-		self.stream = stream
-		self.instructions = instruct
-		self.audio_file = audio_file
-		self.response = None
+		self.audio_file = ''
+		self.language = ''
+		self.prompt = ''
 		self.response_format = format
-		self.target_language = language
-		self.normalized_result = None
-		self.request = None
+		self.temperature = temperature
+		self.include = [ ]
+		self.timestamp_granularities = [ ]
+		self.chunking_strategy = 'auto'
+		self.response = None
+		self.transcript = ''
+		self.result = { }
+		self.request = { }
+		self.segments = [ ]
+		self.words = [ ]
+		self.speakers = [ ]
+		self.duration = 0.0
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+	def model_options( self ) -> List[ str ]:
+		"""Get transcription-model options.
 		
+		Purpose:
+			Returns OpenAI models implemented by the audio-transcription wrapper.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported transcription model identifiers.
 		"""
-		return [ 'whisper-1', ]
+		return [ 'gpt-4o-transcribe', 'gpt-4o-mini-transcribe',
+			'gpt-4o-mini-transcribe-2025-12-15',
+			'gpt-4o-transcribe-diarize', 'whisper-1', ]
 	
 	@property
-	def mime_options( self ) -> List[ str ] | None:
-		"""Mime options.
+	def mime_options( self ) -> List[ str ]:
+		"""Get supported audio-file extensions.
 		
+		Purpose:
+			Returns audio formats accepted by the OpenAI transcription workflow.
 		
-			Purpose:
-			    Returns mime options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ] | None: MIME type option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported audio-file extensions.
 		"""
 		return [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm', ]
 	
 	@property
-	def language_options( self ) -> List[ str ] | None:
-		"""Language options.
+	def language_options( self ) -> List[ str ]:
+		"""Get language options.
 		
+		Purpose:
+			Returns ISO-639-1 source-language hints exposed by the transcription wrapper.
 		
-			Purpose:
-			    Returns language options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Language option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported source-language selections.
 		"""
-		return [ 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'uk', 'el', 'he', 'ar', 'hi', 'zh',
-			'ja',
-			'ko', 'vi', 'th', ]
+		return [ '', 'en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'uk', 'tr', 'ar', 'hi',
+			'ja', 'ko', 'zh', ]
 	
 	@property
-	def language_labels( self ) -> Dict[ str, str ] | None:
-		"""Language labels.
+	def format_options( self ) -> List[ str ]:
+		"""Get transcription-format options.
 		
+		Purpose:
+			Returns transcription response formats supported by the wrapper.
 		
-			Purpose:
-			    Returns language labels used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    Dict[ str, str ] | None: Mapping of language codes to display labels.
+		Returns:
+			List[str]: Supported transcription response formats.
 		"""
-		return { 'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 'it': 'Italian',
-			'pt': 'Portuguese', 'ru': 'Russian', 'uk': 'Ukrainian', 'el': 'Greek', 'he': 'Hebrew',
-			'ar': 'Arabic', 'hi': 'Hindi', 'zh': 'Chinese', 'ja': 'Japanese', 'ko': 'Korean',
-			'vi': 'Vietnamese', 'th': 'Thai', }
+		return [ 'json', 'text', 'verbose_json', 'srt', 'vtt', 'diarized_json', ]
 	
 	@property
-	def response_format_options( self ) -> List[ str ] | None:
-		"""Response format options.
+	def include_options( self ) -> List[ str ]:
+		"""Get transcription-include options.
 		
+		Purpose:
+			Returns additional response fields supported by compatible transcription models.
 		
-			Purpose:
-			    Returns response format options used by the Streamlit selectors and provider
-			    request builders.
+		Returns:
+			List[str]: Supported transcription include values.
+		"""
+		return [ 'logprobs', ]
+	
+	@property
+	def timestamp_options( self ) -> List[ str ]:
+		"""Get timestamp-granularity options.
 		
-			Returns:
-			    List[ str ] | None: Response-format options exposed for the selected audio
-			    workflow.
+		Purpose:
+			Returns timestamp granularities supported by verbose Whisper transcription output.
+		
+		Returns:
+			List[str]: Supported timestamp-granularity values.
+		"""
+		return [ 'word', 'segment', ]
+	
+	def build_result( self, response: Any ) -> Dict[ str, Any ]:
+		"""Build transcription result.
+		
+		Purpose:
+			Extracts text, language, duration, segment, word, and speaker information from the
+			provider response and stores the resulting application-facing transcription record.
+		
+		Args:
+			response (Any): Provider transcription response.
+		
+		Returns:
+			Dict[str, Any]: Structured transcription result.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'response', response )
+			self.response = response
+			self.transcript = ''
+			self.segments = [ ]
+			self.words = [ ]
+			self.speakers = [ ]
+			self.duration = 0.0
+			self.result = { 'text': '', 'language': '', 'duration': 0.0, 'segments': [ ],
+				'words': [ ], 'speakers': [ ], 'raw': None, }
+			
+			if isinstance( self.response, str ):
+				self.transcript = self.response
+				self.result[ 'text' ] = self.transcript
+				self.result[ 'raw' ] = self.response
+				return self.result
+			
+			self.transcript = getattr( self.response, 'text', '', )
+			self.language = getattr( self.response, 'language', self.language, )
+			self.duration = getattr( self.response, 'duration', 0.0, )
+			self.response_segments = getattr( self.response, 'segments', [ ], ) or [ ]
+			self.response_words = getattr( self.response, 'words', [ ], ) or [ ]
+			
+			for segment in self.response_segments:
+				if hasattr( segment, 'model_dump' ):
+					self.segments.append( segment.model_dump( ) )
+				elif isinstance( segment, dict ):
+					self.segments.append( segment )
+				else:
+					self.segments.append( { 'text': str( segment ), } )
+			
+			for word in self.response_words:
+				if hasattr( word, 'model_dump' ):
+					self.words.append( word.model_dump( ) )
+				elif isinstance( word, dict ):
+					self.words.append( word )
+				else:
+					self.words.append( { 'word': str( word ), } )
+			
+			for segment in self.segments:
+				if not isinstance( segment, dict ):
+					continue
+				
+				self.speaker = segment.get( 'speaker', '' )
+				
+				if self.speaker:
+					if self.speaker not in self.speakers:
+						self.speakers.append( self.speaker )
+			
+			if not self.transcript:
+				self.text_parts = [ ]
+				
+				for segment in self.segments:
+					if not isinstance( segment, dict ):
+						continue
+					
+					self.segment_text = segment.get( 'text', '' )
+					
+					if self.segment_text:
+						self.text_parts.append( self.segment_text )
+				
+				self.transcript = '\n'.join( self.text_parts ).strip( )
+			
+			if hasattr( self.response, 'model_dump' ):
+				self.raw_response = self.response.model_dump( )
+			else:
+				self.raw_response = str( self.response )
+			
+			self.result = { 'text': self.transcript, 'language': self.language,
+				'duration': self.duration, 'segments': self.segments, 'words': self.words,
+				'speakers': self.speakers, 'raw': self.raw_response, }
+			return self.result
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Transcription'
+			exception.method = 'build_result( self, response: Any )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def transcribe( self, path: str, model: str = 'gpt-4o-transcribe', language: str = '',
+		prompt: str = '', format: str = 'json', temperature: float = 0.0,
+		include: Optional[ List[ str ] ] = None,
+		timestamp_granularities: Optional[ List[ str ] ] = None,
+		chunking_strategy: str = 'auto' ) -> str:
+		"""Transcribe audio.
+		
+		Purpose:
+			Transcribes a required local audio file through the OpenAI Audio Transcriptions API
+			using the selected model, source-language hint, prompt, response format, temperature,
+			include fields, timestamp granularities, and diarization chunking strategy.
+		
+		Args:
+			path (str): Required local audio-file path.
+			model (str): OpenAI transcription model.
+			language (str): Optional ISO-639-1 source-language hint.
+			prompt (str): Optional transcription prompt.
+			format (str): Transcription response format.
+			temperature (float): Transcription sampling temperature.
+			include (Optional[List[str]]): Additional response fields.
+			timestamp_granularities (Optional[List[str]]): Requested timestamp granularities.
+			chunking_strategy (str): Diarization chunking strategy.
+		
+		Returns:
+			str: Extracted transcript text.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'path', path )
+			throw_if( 'model', model )
+			throw_if( 'format', format )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.audio_file = path
+			self.model = model
+			self.language = language
+			self.prompt = prompt
+			self.response_format = format
+			self.temperature = temperature
+			self.include = include if include is not None else [ ]
+			self.timestamp_granularities = (
+				timestamp_granularities if timestamp_granularities is not None else [ ])
+			self.chunking_strategy = chunking_strategy
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'model': self.model, 'response_format': self.response_format,
+				'temperature': self.temperature, }
+			
+			if self.language:
+				self.request[ 'language' ] = self.language
+			
+			if self.prompt:
+				self.request[ 'prompt' ] = self.prompt
+			
+			if self.include:
+				if self.model != 'whisper-1':
+					self.request[ 'include' ] = self.include
+			
+			if self.timestamp_granularities:
+				if self.model == 'whisper-1':
+					if self.response_format == 'verbose_json':
+						self.request[ 'timestamp_granularities' ] = (self.timestamp_granularities)
+			
+			if self.model == 'gpt-4o-transcribe-diarize':
+				self.response_format = 'diarized_json'
+				self.request[ 'response_format' ] = self.response_format
+				self.request[ 'chunking_strategy' ] = self.chunking_strategy
+			
+			with open( self.audio_file, 'rb' ) as source:
+				self.response = self.client.audio.transcriptions.create( file=source,
+					**self.request )
+			
+			self.result = self.build_result( self.response )
+			self.transcript = self.result.get( 'text', '', )
+			return self.transcript
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Transcription'
+			exception.method = 'transcribe( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
+		
+		Purpose:
+			Returns public members exposed by the OpenAI transcription wrapper.
+		
+		Returns:
+			List[str]: Public member names.
+		"""
+		return [ 'api_key', 'client', 'model', 'audio_file', 'language', 'prompt',
+			'response_format', 'temperature', 'include', 'timestamp_granularities',
+			'chunking_strategy', 'response', 'transcript', 'result', 'request', 'segments',
+			'words',
+			'speakers', 'duration', 'model_options', 'mime_options', 'language_options',
+			'format_options', 'include_options', 'timestamp_options', 'build_result',
+			'transcribe', ]
+
+class Translation( GPT ):
+	"""Provide OpenAI audio-translation workflow support.
+	
+	Purpose:
+		Provides audio translation through the OpenAI Audio Translations API. The class stores
+		each accepted translation argument as an object member before constructing and executing
+		the provider request. OpenAI audio translation converts supported spoken audio into
+		English.
+	
+	Attributes:
+		api_key (str): OpenAI API key used by the wrapper.
+		client (Optional[OpenAI]): OpenAI client used by the wrapper.
+		model (str): Translation model used by the current request.
+		audio_file (str): Local audio-file path used by the current request.
+		prompt (str): Optional English prompt used to guide translation.
+		response_format (str): Requested translation response format.
+		temperature (float): Sampling temperature used by the translation request.
+		response (Any): Latest provider translation response.
+		translation (str): English text extracted from the latest response.
+		result (Dict[str, Any]): Structured translation result.
+		request (Dict[str, Any]): Provider-ready translation request.
+	"""
+	api_key: str
+	client: Optional[ OpenAI ]
+	model: str
+	audio_file: str
+	prompt: str
+	response_format: str
+	temperature: float
+	response: Any
+	translation: str
+	result: Dict[ str, Any ]
+	request: Dict[ str, Any ]
+	
+	def __init__( self, model: str = 'whisper-1',
+		format: str = 'json', temperature: float = 0.0 ) -> None:
+		"""Initialize instance.
+		
+		Purpose:
+			Initializes OpenAI audio-translation configuration and runtime state without
+			executing a provider request.
+		
+		Args:
+			model (str): Default OpenAI audio-translation model.
+			format (str): Default translation response format.
+			temperature (float): Default translation sampling temperature.
+		
+		Returns:
+			None: This method initializes object state.
+		"""
+		super( ).__init__( )
+		self.api_key = cfg.OPENAI_API_KEY
+		self.client = None
+		self.model = model
+		self.audio_file = ''
+		self.prompt = ''
+		self.response_format = format
+		self.temperature = temperature
+		self.response = None
+		self.translation = ''
+		self.result = { }
+		self.request = { }
+		self.segments = [ ]
+		self.language = 'English'
+		self.duration = 0.0
+	
+	@property
+	def model_options( self ) -> List[ str ]:
+		"""Get translation-model options.
+		
+		Purpose:
+			Returns OpenAI models supported by the Audio Translations API.
+		
+		Returns:
+			List[str]: Supported translation model identifiers.
+		"""
+		return [ 'whisper-1', ]
+	
+	@property
+	def mime_options( self ) -> List[ str ]:
+		"""Get supported audio-file extensions.
+		
+		Purpose:
+			Returns audio formats accepted by the OpenAI Audio Translations API.
+		
+		Returns:
+			List[str]: Supported audio-file extensions.
+		"""
+		return [ 'flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm', ]
+	
+	@property
+	def format_options( self ) -> List[ str ]:
+		"""Get translation-format options.
+		
+		Purpose:
+			Returns response formats supported by the OpenAI Audio Translations API.
+		
+		Returns:
+			List[str]: Supported translation response formats.
 		"""
 		return [ 'json', 'text', 'srt', 'verbose_json', 'vtt', ]
 	
-	def validate_model( self, model: str=None ) -> str:
-		"""Validate model.
+	@property
+	def language_options( self ) -> List[ str ]:
+		"""Get target-language options.
 		
+		Purpose:
+			Returns the only target language supported by the OpenAI Audio Translations API.
 		
-			Purpose:
-			    Validates model input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    str: Validated provider model identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Returns:
+			List[str]: Supported target-language values.
 		"""
-		try:
-			value = model if isinstance( model, str ) and model.strip( ) else 'whisper-1'
-			value = value.strip( )
-			if value not in self.model_options:
-				raise ValueError( f'Unsupported translation model: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Translation'
-			exception.method = 'validate_model( self, model: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
+		return [ 'English', ]
 	
-	def validate_format( self, format: str=None ) -> str | None:
-		"""Validate format.
+	def translate( self, path: str, model: str = 'whisper-1',
+		prompt: str = '', format: str = 'json',
+		temperature: float = 0.0 ) -> str:
+		"""Translate audio.
 		
+		Purpose:
+			Translates a required local audio file into English through the OpenAI Audio
+			Translations API using the selected model, optional English prompt, response format,
+			and sampling temperature.
 		
-			Purpose:
-			    Validates format input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
+		Args:
+			path (str): Required local audio-file path.
+			model (str): OpenAI audio-translation model.
+			prompt (str): Optional English prompt used to guide translation.
+			format (str): Translation response format.
+			temperature (float): Translation sampling temperature.
 		
-			Args:
-			    format: Output or response format selected for the operation.
+		Returns:
+			str: English translation extracted from the provider response.
 		
-			Returns:
-			    str | None: Validated output format for the selected provider workflow.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if not isinstance( format, str ) or not format.strip( ):
-				return 'json'
-			
-			value = format.strip( )
-			if value not in self.response_format_options:
-				return 'json'
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Translation'
-			exception.method = 'validate_format( self, format: str=None ) -> str | None'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_response( self, response: Any ) -> Dict[ str, Any ]:
-		"""Normalize response.
-		
-		
-			Purpose:
-			    Normalizes response data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    response: Provider response object to normalize or inspect.
-		
-			Returns:
-			    Dict[ str, Any ]: Normalized response metadata and output fields.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			result: Dict[ str, Any ]={ 'text': '', 'segments': [ ], 'language': None,
-				'duration': None, 'raw': None, }
-			
-			if response is None:
-				return result
-			
-			if isinstance( response, str ):
-				result[ 'text' ]=response
-				result[ 'raw' ]=response
-				return result
-			
-			if hasattr( response, 'model_dump' ):
-				try:
-					result[ 'raw' ]=response.model_dump( )
-				except Exception:
-					result[ 'raw' ]=str( response )
-			else:
-				result[ 'raw' ]=str( response )
-			
-			text = getattr( response, 'text', None )
-			if isinstance( text, str ):
-				result[ 'text' ]=text
-			
-			segments = getattr( response, 'segments', None )
-			if isinstance( segments, list ):
-				normalized_segments = [ ]
-				for segment in segments:
-					if hasattr( segment, 'model_dump' ):
-						normalized_segments.append( segment.model_dump( ) )
-					elif isinstance( segment, dict ):
-						normalized_segments.append( segment )
-					else:
-						normalized_segments.append( { 'text': str( segment ) } )
-				
-				result[ 'segments' ]=normalized_segments
-			
-			language = getattr( response, 'language', None )
-			if language:
-				result[ 'language' ]=language
-			
-			duration = getattr( response, 'duration', None )
-			if duration:
-				result[ 'duration' ]=duration
-			
-			if not result[ 'text' ] and len( result[ 'segments' ] ) > 0:
-				parts = [ ]
-				for segment in result[ 'segments' ]:
-					if isinstance( segment, dict ) and segment.get( 'text' ):
-						parts.append( str( segment.get( 'text' ) ) )
-				
-				result[ 'text' ]='\n'.join( parts ).strip( )
-			
-			if not result[ 'text' ]:
-				result[ 'text' ]=str( response )
-			
-			return result
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Translation'
-			exception.method = 'normalize_response( self, response: Any ) -> Dict[ str, Any ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def translate( self, filepath: str, model: str='whisper-1', prompt: str=None,
-		format: str=None, temperature: float=None, language: str=None ) -> str | None:
-		"""Translate.
-		
-		
-			Purpose:
-			    Translates an audio file through OpenAI after validating model, language,
-			    output format, and temperature settings.
-		
-			Args:
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    model: Provider model identifier selected for the operation.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    format: Output or response format selected for the operation.
-			    temperature: Sampling temperature supplied to compatible model requests.
-			    language: Language code selected for transcription or translation.
-		
-			Returns:
-			    str | None: Translated text output or None when translation returns no text.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			throw_if( 'filepath', filepath )
-			self.model = self.validate_model( model )
-			self.prompt = prompt if isinstance( prompt, str ) and prompt.strip( ) else None
-			self.response_format = self.validate_format( format )
+			throw_if( 'path', path )
+			throw_if( 'model', model )
+			throw_if( 'format', format )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.audio_file = path
+			self.model = model
+			self.prompt = prompt
+			self.response_format = format
 			self.temperature = temperature
-			self.target_language = language
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.request = { 'model': self.model, }
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = None
+			self.translation = ''
+			self.result = { }
+			self.segments = [ ]
+			self.duration = 0.0
+			self.request = {
+				'model': self.model,
+				'response_format': self.response_format,
+				'temperature': self.temperature,
+			}
 			
 			if self.prompt:
-				self.request[ 'prompt' ]=self.prompt
+				self.request[ 'prompt' ] = self.prompt
 			
-			if self.response_format:
-				self.request[ 'response_format' ]=self.response_format
-			
-			if self.temperature is not None:
-				self.request[ 'temperature' ]=self.temperature
-			
-			with open( filepath, 'rb' ) as audio_file:
-				self.response = self.client.audio.translations.create( file=audio_file,
+			with open( self.audio_file, 'rb' ) as source:
+				self.response = self.client.audio.translations.create( file=source,
 					**self.request )
 			
-			self.normalized_result = self.normalize_response( self.response )
-			return self.normalized_result.get( 'text' )
+			throw_if( 'response', self.response )
+			if isinstance( self.response, str ):
+				self.translation = self.response
+				self.result = { 'text': self.translation, 'language': self.language,
+					'duration': self.duration, 'segments': self.segments, 'raw': self.response, }
+				return self.translation
+			
+			self.translation = getattr( self.response, 'text', '', )
+			self.duration = getattr( self.response, 'duration', 0.0, )
+			self.response_segments = getattr( self.response, 'segments', [ ], ) or [ ]
+			
+			for segment in self.response_segments:
+				if hasattr( segment, 'model_dump' ):
+					self.segments.append( segment.model_dump( ) )
+				elif isinstance( segment, dict ):
+					self.segments.append( segment )
+				else:
+					self.segments.append( { 'text': str( segment ), } )
+			
+			if not self.translation:
+				self.text_parts = [ ]
+				for segment in self.segments:
+					if not isinstance( segment, dict ):
+						continue
+					
+					self.segment_text = segment.get( 'text', '', )
+					if self.segment_text:
+						self.text_parts.append( self.segment_text )
+				
+				self.translation = '\n'.join( self.text_parts ).strip( )
+			
+			throw_if( 'translation', self.translation )
+			if hasattr( self.response, 'model_dump' ):
+				self.raw_response = self.response.model_dump( )
+			else:
+				self.raw_response = str( self.response )
+			
+			self.result = { 'text': self.translation, 'language': self.language,
+				'duration': self.duration, 'segments': self.segments, 'raw': self.raw_response, }
+			return self.translation
 		except Exception as e:
-			ex = Error( e )
-			ex.module = 'gpt'
-			ex.cause = 'Translation'
-			ex.method = 'translate( self, filepath: str ) -> str | None'
-			Logger( ).write( ex )
-			raise ex
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Translation'
+			exception.method = 'translate( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
+		Purpose:
+			Returns public members exposed by the OpenAI audio-translation wrapper.
 		
-			Purpose:
-			    Returns the public Translation members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
+		Returns:
+			List[str]: Public member names.
 		"""
-		return [ 'temperature', 'top_percent', 'frequency_penalty', 'presence_penalty',
-			'max_tokens', 'store', 'stream', 'prompt', 'response', 'audio_file', 'response_format',
-			'api_key', 'client', 'model', 'target_language', 'normalized_result', 'model_options',
-			'mime_options', 'language_options', 'language_labels', 'response_format_options',
-			'validate_model', 'validate_format', 'normalize_response', 'translate', ]
+		return [ 'api_key', 'client', 'model', 'audio_file', 'prompt', 'response_format',
+			'temperature', 'response', 'translation', 'result', 'request', 'segments', 'language',
+			'duration', 'model_options', 'mime_options', 'format_options', 'language_options',
+			'translate', ]
 
 class Embeddings( GPT ):
-	"""Embeddings provider wrapper.
+	"""Provide Embeddings workflow support.
 	
+	Purpose:
+		Provides OpenAI embedding generation for text inputs. The class manages embedding model
+		selection, encoding format, optional dimensions, usage metadata, and normalized single
+		or batch embedding output.
 	
-		Purpose:
-		    Builds and executes OpenAI embedding requests, validates dimensional settings,
-		    and enforces model token limits for semantic-search workflows.
-	
-		Attributes:
-		    api_key: OpenAI API key loaded from project configuration.
-		    client: OpenAI client created for the current provider operation.
-		    model: Provider model identifier used by the current workflow.
-		    input: Responses API input payload built for the current request.
-		    encoding_format: Encoding format value retained by the Embeddings workflow.
-		    dimensions: Embedding dimensionality requested for supported models.
-		    user: Optional user identifier sent with supported embedding requests.
-		    response: Latest provider response object returned by an API call.
-		    embedding: Embedding value retained by the Embeddings workflow.
-		    embeddings: Embeddings value retained by the Embeddings workflow.
-		    usage: Usage value retained by the Embeddings workflow.
-		    request: Normalized request dictionary prepared for provider execution.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
+	Attributes:
+		api_key (Optional[str]): Api key retained by the provider wrapper.
+		client (Optional[OpenAI]): Client retained by the provider wrapper.
+		model (Optional[str]): Model retained by the provider wrapper.
+		input (Optional[str | List[str]]): Input retained by the provider wrapper.
+		encoding_format (Optional[str]): Encoding format retained by the provider wrapper.
+		dimensions (Optional[int]): Dimensions retained by the provider wrapper.
+		user (Optional[str]): User retained by the provider wrapper.
+		response (Optional[CreateEmbeddingResponse]): Response retained by the provider wrapper.
+		embedding (Optional[List[float] | str]): Embedding retained by the provider wrapper.
+		embeddings (Optional[List[List[float]] | List[str]]): Embeddings retained by the provider
+		wrapper.
+		usage (Optional[Any]): Usage retained by the provider wrapper.
+		request (Optional[Dict[str, Any]]): Request retained by the provider wrapper.
 	"""
 	api_key: Optional[ str ]
 	client: Optional[ OpenAI ]
@@ -3336,21 +2526,21 @@ class Embeddings( GPT ):
 	usage: Optional[ Any ]
 	request: Optional[ Dict[ str, Any ] ]
 	
-	def __init__( self, text: str | List[ str ]=None, model: str='text-embedding-3-small',
+	def __init__( self, text: str | List[ str ] = None, model: str='text-embedding-3-small',
 		format: str='float', dimensions: int=None, user: str=None ):
-		"""Initialize Embeddings.
+		"""Initialize instance.
 		
+		Purpose:
+			Initializes the Embeddings object with default configuration, runtime state, provider
+			settings, and compatibility fields. This constructor prepares the instance for later
+			method calls without performing external work beyond local attribute assignment.
 		
-			Purpose:
-			    Initializes Embeddings state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
-		
-			Args:
-			    text: Input text supplied to the operation.
-			    model: Provider model identifier selected for the operation.
-			    format: Output or response format selected for the operation.
-			    dimensions: Embedding dimensionality requested for supported models.
-			    user: Optional user identifier supplied to embedding requests.
+		Args:
+			text (str | List[str]): Text value used by the operation.
+			model (str): Model value used by the operation.
+			format (str): Format value used by the operation.
+			dimensions (int): Dimensions value used by the operation.
+			user (str): User value used by the operation.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
@@ -3368,215 +2558,98 @@ class Embeddings( GPT ):
 	
 	@property
 	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+		"""Get model options.
 		
+		Purpose:
+			Returns the model options exposed by the Embeddings wrapper. The property
+			centralizes UI
+			option values and keeps application selectors aligned with the provider-specific
+			implementation.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
+		Returns:
+			Available option values exposed by the provider wrapper.
 		"""
 		return [ 'text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002', ]
 	
 	@property
 	def encoding_options( self ) -> List[ str ] | None:
-		"""Encoding options.
+		"""Get encoding options.
 		
+		Purpose:
+			Returns the encoding options exposed by the Embeddings wrapper. The property
+			centralizes
+			UI option values and keeps application selectors aligned with the provider-specific
+			implementation.
 		
-			Purpose:
-			    Returns encoding options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Embedding encoding format options exposed to the UI selector.
+		Returns:
+			Available option values exposed by the provider wrapper.
 		"""
 		return [ 'float', 'base64', ]
 	
 	@property
 	def model_default_dimensions( self ) -> Dict[ str, int ]:
-		"""Model default dimensions.
+		"""Get model default dimensions.
 		
+		Purpose:
+			Returns the model default dimensions exposed by the Embeddings wrapper. The property
+			centralizes UI option values and keeps application selectors aligned with the
+			provider-specific implementation.
 		
-			Purpose:
-			    Returns model default dimensions used by the Streamlit selectors and provider
-			    request builders.
-		
-			Returns:
-			    Dict[ str, int ]: Default embedding dimensions keyed by model name.
+		Returns:
+			Available option values exposed by the provider wrapper.
 		"""
 		return { 'text-embedding-3-small': 1536, 'text-embedding-3-large': 3072,
 			'text-embedding-ada-002': 1536, }
 	
 	@property
 	def model_max_dimensions( self ) -> Dict[ str, int ]:
-		"""Model max dimensions.
+		"""Get model max dimensions.
 		
+		Purpose:
+			Returns the model max dimensions exposed by the Embeddings wrapper. The property
+			centralizes UI option values and keeps application selectors aligned with the
+			provider-specific implementation.
 		
-			Purpose:
-			    Returns model max dimensions used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    Dict[ str, int ]: Maximum embedding dimensions keyed by model name.
+		Returns:
+			Available option values exposed by the provider wrapper.
 		"""
 		return { 'text-embedding-3-small': 1536, 'text-embedding-3-large': 3072,
 			'text-embedding-ada-002': 1536, }
 	
 	@property
 	def model_dimension_support( self ) -> Dict[ str, bool ]:
-		"""Model dimension support.
+		"""Get model dimension support.
 		
+		Purpose:
+			Returns the model dimension support exposed by the Embeddings wrapper. The property
+			centralizes UI option values and keeps application selectors aligned with the
+			provider-specific implementation.
 		
-			Purpose:
-			    Returns model dimension support used by the Streamlit selectors and provider
-			    request builders.
-		
-			Returns:
-			    Dict[ str, bool ]: Flags indicating whether models support custom dimensions.
+		Returns:
+			Available option values exposed by the provider wrapper.
 		"""
 		return { 'text-embedding-3-small': True, 'text-embedding-3-large': True,
 			'text-embedding-ada-002': False, }
 	
-	def validate_model( self, model: str=None ) -> str:
-		"""Validate model.
-		
-		
-			Purpose:
-			    Validates model input, stores the normalized value on the instance when applicable,
-			    and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-		
-			Returns:
-			    str: Validated provider model identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = model if isinstance( model,
-				str ) and model.strip( ) else 'text-embedding-3-small'
-			
-			value = value.strip( )
-			if value not in self.model_options:
-				raise ValueError( f'Unsupported embedding model: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Embeddings'
-			exception.method = 'validate_model( self, model: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_encoding_format( self, format: str=None ) -> str:
-		"""Validate encoding format.
-		
-		
-			Purpose:
-			    Validates encoding format input, stores the normalized value on the instance
-			    when applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    format: Output or response format selected for the operation.
-		
-			Returns:
-			    str: Validated embedding encoding format.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = format if isinstance( format, str ) and format.strip( ) else 'float'
-			value = value.strip( ).lower( )
-			if value not in self.encoding_options:
-				raise ValueError( f'Unsupported embedding encoding format: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Embeddings'
-			exception.method = 'validate_encoding_format( self, format: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_dimensions( self, model: str, dimensions: int=None ) -> int | None:
-		"""Validate dimensions.
-		
-		
-			Purpose:
-			    Validates dimensions input, stores the normalized value on the instance
-			    when applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    model: Provider model identifier selected for the operation.
-			    dimensions: Embedding dimensionality requested for supported models.
-		
-			Returns:
-			    int | None: Validated embedding dimension count or None when dimensions are not
-			    used.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API
-			    execution errors are wrapped and logged.
-		"""
-		try:
-			if dimensions is None:
-				return None
-			
-			try:
-				value = int( dimensions )
-			except Exception:
-				return None
-			
-			if value <= 0:
-				return None
-			
-			supports_dimensions = self.model_dimension_support.get( model, False )
-			if not supports_dimensions:
-				return None
-			
-			max_dimensions = self.get_max_dimensions( model )
-			if value > max_dimensions:
-				return max_dimensions
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Embeddings'
-			exception.method = 'validate_dimensions( self, model: str, dimensions: int=None )'
-			Logger( ).write( exception )
-			raise exception
-	
 	def validate_input( self, text: str | List[ str ] ) -> str | List[ str ]:
 		"""Validate input.
 		
+		Purpose:
+			Validates and normalizes the input value used for the Embeddings workflow. The method
+			raises an application error when required input is missing and returns a clean value
+			suitable for downstream provider calls.
 		
-			Purpose:
-			    Validates input input, stores the normalized value on the instance when applicable,
-			    and blocks unsupported provider values before API execution.
+		Args:
+			text (str | List[str]): Text value used by the operation.
 		
-			Args:
-			    text: Input text supplied to the operation.
+		Returns:
+			Validated and normalized value for downstream use.
 		
-			Returns:
-			    str | List[ str ]: Validated embedding input text or text collection.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is wrapped and written to the application logger.
 		"""
 		try:
 			throw_if( 'text', text )
-			
 			if isinstance( text, str ):
 				value = text.strip( )
 				throw_if( 'text', value )
@@ -3604,25 +2677,72 @@ class Embeddings( GPT ):
 			Logger( ).write( exception )
 			raise exception
 	
+	def validate_dimensions( self ) -> int | None:
+		"""Validate dimensions.
+		
+		Purpose:
+			Validates and normalizes the dimensions value used for the Embeddings workflow. The
+			method raises an application error when required input is missing and returns a clean
+			value suitable for downstream provider calls.
+		
+		Returns:
+			Validated and normalized value for downstream use.
+		
+		Raises:
+			Error: Re-raised after the exception is wrapped and written to the application logger.
+		"""
+		try:
+			if self.dimensions is None:
+				return None
+			
+			try:
+				value = int( self.dimensions )
+			except Exception as e:
+				exception = Error( e )
+				exception.module = 'gpt'
+				exception.cause = 'Embeddings'
+				exception.method = 'validate_dimensions( ... )'
+				Logger( ).write( exception )
+				return None
+			
+			if value <= 0:
+				return None
+			
+			supports_dimensions = self.model_dimension_support.get( self.model, False )
+			if not supports_dimensions:
+				return None
+			
+			max_dimensions = self.get_max_dimensions( self.model )
+			if value > max_dimensions:
+				return max_dimensions
+			
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Embeddings'
+			exception.method = 'validate_dimensions( self ) -> int | None'
+			Logger( ).write( exception )
+			raise exception
+	
 	def get_default_dimensions( self, model: str ) -> int:
 		"""Get default dimensions.
 		
+		Purpose:
+			Returns the default dimensions value for the active Embeddings request. The method
+			inspects current runtime state and provides a safe application-facing result.
 		
-			Purpose:
-			    Gets default dimensions from the current instance state or latest provider
-			    response.
+		Args:
+			model (str): Model value used by the operation.
 		
-			Args:
-			    model: Provider model identifier selected for the operation.
+		Returns:
+			Requested value derived from the current runtime state.
 		
-			Returns:
-			    int: Default embedding dimension count for the selected model.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is wrapped and written to the application logger.
 		"""
 		try:
+			throw_if( 'model', model )
 			return int( self.model_default_dimensions.get( model, 1536 ) )
 		except Exception as e:
 			exception = Error( e )
@@ -3635,21 +2755,21 @@ class Embeddings( GPT ):
 	def get_max_dimensions( self, model: str ) -> int:
 		"""Get max dimensions.
 		
+		Purpose:
+			Returns the max dimensions value for the active Embeddings request. The method inspects
+			current runtime state and provides a safe application-facing result.
 		
-			Purpose:
-			    Gets max dimensions from the current instance state or latest provider response.
+		Args:
+			model (str): Model value used by the operation.
 		
-			Args:
-			    model: Provider model identifier selected for the operation.
+		Returns:
+			Requested value derived from the current runtime state.
 		
-			Returns:
-			    int: Maximum embedding dimension count for the selected model.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is wrapped and written to the application logger.
 		"""
 		try:
+			throw_if( 'model', model )
 			return int( self.model_max_dimensions.get( model, 1536 ) )
 		except Exception as e:
 			exception = Error( e )
@@ -3659,155 +2779,47 @@ class Embeddings( GPT ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def count_tokens( self, text: str, encoding_name: str='cl100k_base' ) -> int:
-		"""Count tokens.
-			
-			Purpose:
-			    Counts tokens for one text value using the configured tokenizer encoding.
-		
-			Args:
-			    text: Input text supplied to the operation.
-			    encoding_name: Tokenizer encoding name used for token counting.
-		
-			Returns:
-			    int: Token count for a single text value.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if not isinstance( text, str ) or not text:
-				return 0
-			
-			encoding = tiktoken.get_encoding( encoding_name )
-			return len( encoding.encode( text ) )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Embeddings'
-			exception.method = 'count_tokens( self, text: str, encoding_name: str ) -> int'
-			Logger( ).write( exception )
-			raise exception
-	
-	def count_total_tokens( self, text: str | List[ str ],
-		encoding_name: str='cl100k_base' ) -> int:
-		"""Count total tokens.
-		
-		
-			Purpose:
-			    Counts tokens across one text value or a collection of text values for embedding
-			    limit enforcement.
-		
-			Args:
-			    text: Input text supplied to the operation.
-			    encoding_name: Tokenizer encoding name used for token counting.
-		
-			Returns:
-			    int: Combined token count for a text value or text collection.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if isinstance( text, str ):
-				return self.count_tokens( text, encoding_name=encoding_name )
-			
-			if isinstance( text, list ):
-				return sum(
-					self.count_tokens( item, encoding_name=encoding_name ) for item in text if
-						isinstance( item, str ) )
-			
-			return 0
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Embeddings'
-			exception.method = 'count_total_tokens( self, text: str | List[ str ] ) -> int'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_token_limits( self, text: str | List[ str ], max_input_tokens: int=8192,
-		max_total_tokens: int=300000 ) -> None:
-		"""Validate token limits.
-		
-		
-			Purpose:
-			    Validates token limits input, stores the normalized value on the
-			    instance when applicable, and blocks unsupported provider values before API
-			    execution.
-		
-			Args:
-			    text: Input text supplied to the operation.
-			    max_input_tokens: Maximum tokens allowed for a single embedding input.
-			    max_total_tokens: Maximum tokens allowed across an embedding input collection.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			values = text if isinstance( text, list ) else [ text ]
-			for index, item in enumerate( values ):
-				token_count = self.count_tokens( item )
-				if token_count > max_input_tokens:
-					raise ValueError( f'Embedding input item {index + 1} has {token_count} '
-					                  f'tokens, '
-					                  f'which exceeds the {max_input_tokens} token per-input '
-					                  f'limit.' )
-			
-			total_tokens = self.count_total_tokens( text )
-			if total_tokens > max_total_tokens:
-				raise ValueError(
-					f'Embedding request has {total_tokens} total tokens, which exceeds '
-					f'the {max_total_tokens} token request limit.' )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Embeddings'
-			exception.method = 'validate_token_limits( self, text: str | List[ str ] )'
-			Logger( ).write( exception )
-			raise exception
-	
 	def build_request( self, text: str | List[ str ], model: str='text-embedding-3-small',
 		format: str='float', dimensions: int=None, user: str=None ) -> Dict[ str, Any ]:
 		"""Build request.
 		
+		Purpose:
+			Builds the request payload used for the Embeddings workflow. The method validates
+			caller
+			input, applies compatibility defaults, and returns a provider-ready structure without
+			executing the provider request.
 		
-			Purpose:
-			    Builds the request structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
+		Args:
+			text (str | List[str]): Text value used by the operation.
+			model (str): Model value used by the operation.
+			format (str): Format value used by the operation.
+			dimensions (int): Dimensions value used by the operation.
+			user (str): User value used by the operation.
 		
-			Args:
-			    text: Input text supplied to the operation.
-			    model: Provider model identifier selected for the operation.
-			    format: Output or response format selected for the operation.
-			    dimensions: Embedding dimensionality requested for supported models.
-			    user: Optional user identifier supplied to embedding requests.
+		Returns:
+			Provider-ready request structure or omitted optional payload.
 		
-			Returns:
-			    Dict[ str, Any ]: Normalized provider request dictionary.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is wrapped and written to the application logger.
 		"""
 		try:
+			throw_if( 'text', text )
+			throw_if( 'model', model )
+			throw_if( 'format', format )
 			self.input = self.validate_input( text )
-			self.model = self.validate_model( model )
-			self.encoding_format = self.validate_encoding_format( format )
-			self.dimensions = self.validate_dimensions( self.model, dimensions )
+			self.model = model
+			self.encoding_format = format
+			self.dimensions = dimensions
+			self.dimensions = self.validate_dimensions( )
 			self.user = user if isinstance( user, str ) and user.strip( ) else None
-			self.validate_token_limits( self.input )
 			self.request = { 'model': self.model, 'input': self.input,
 				'encoding_format': self.encoding_format, }
 			
 			if self.dimensions is not None:
-				self.request[ 'dimensions' ]=self.dimensions
+				self.request[ 'dimensions' ] = self.dimensions
 			
 			if self.user:
-				self.request[ 'user' ]=self.user.strip( )
+				self.request[ 'user' ] = self.user.strip( )
 			
 			return self.request
 		except Exception as e:
@@ -3819,31 +2831,30 @@ class Embeddings( GPT ):
 			raise exception
 	
 	def create( self, text: str | List[ str ], model: str='text-embedding-3-small',
-		format: str='float', dimensions: int=None,
-		user: str=None ) -> List[ float ] | List[ List[ float ] ] | str | List[ str ] | None:
+		format: str='float', dimensions: int=None, user: str=None ) -> List[ float ] | List[
+		List[ float ] ] | str | List[ str ] | None:
 		"""Create.
 		
-			Purpose:
-			    Creates the provider resource represented by the current class after validation
-			    and request construction.
+		Purpose:
+			Creates provider resources or generated outputs for the Embeddings workflow using
+			validated request state and provider-specific defaults.
 		
-			Args:
-			    text: Input text supplied to the operation.
-			    model: Provider model identifier selected for the operation.
-			    format: Output or response format selected for the operation.
-			    dimensions: Embedding dimensionality requested for supported models.
-			    user: Optional user identifier supplied to embedding requests.
+		Args:
+			text (str | List[str]): Text value used by the operation.
+			model (str): Model value used by the operation.
+			format (str): Format value used by the operation.
+			dimensions (int): Dimensions value used by the operation.
+			user (str): User value used by the operation.
 		
-			Returns:
-			    List[ float ] | List[ List[ float ] ] | str | List[ str ] | None: Normalized
-			    created-resource metadata or None when the provider returns no object.
+		Returns:
+			Single embedding, batch embeddings, base64 embedding content, or no value when no
+			embeddings are returned.
 		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is wrapped and written to the application logger.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
+			self.client = OpenAI( api_key=self.api_key )
 			self.request = self.build_request( text=text, model=model, format=format,
 				dimensions=dimensions, user=user )
 			
@@ -3851,6 +2862,7 @@ class Embeddings( GPT ):
 			self.usage = getattr( self.response, 'usage', None )
 			self.data = getattr( self.response, 'data', None )
 			self.embeddings = [ ]
+			
 			if self.data is None or len( self.data ) == 0:
 				self.embedding = None
 				return None
@@ -3865,6 +2877,7 @@ class Embeddings( GPT ):
 				return None
 			
 			self.embedding = self.embeddings[ 0 ]
+			
 			if isinstance( self.input, str ):
 				return self.embedding
 			
@@ -3878,86 +2891,80 @@ class Embeddings( GPT ):
 			raise exception
 	
 	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+		"""Return member names.
 		
+		Purpose:
+			Returns a stable list of public members exposed by the Embeddings object for
+			interactive
+			inspection, debugging, and application-level compatibility.
 		
-			Purpose:
-			    Returns the public Embeddings members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
+		Returns:
+			Member names exposed for inspection.
 		"""
 		return [ 'api_key', 'client', 'model', 'input', 'encoding_format', 'dimensions', 'user',
 			'response', 'embedding', 'embeddings', 'usage', 'request', 'model_options',
 			'encoding_options', 'model_default_dimensions', 'model_max_dimensions',
-			'model_dimension_support', 'validate_model', 'validate_encoding_format',
-			'validate_dimensions', 'validate_input', 'get_default_dimensions',
-			'get_max_dimensions',
-			'count_tokens', 'count_total_tokens', 'validate_token_limits', 'build_request',
-			'create', ]
+			'model_dimension_support', 'validate_input', 'validate_dimensions',
+			'get_default_dimensions', 'get_max_dimensions', 'build_request', 'create', ]
 
 class Files( GPT ):
-	"""Files provider wrapper.
+	"""Provide OpenAI Files API workflow support.
 	
+	Purpose:
+		Provides OpenAI file upload, listing, retrieval, content extraction, deletion, summary,
+		search, and survey operations. The class assigns each accepted method argument to an
+		object member before constructing and executing the corresponding provider request.
 	
-		Purpose:
-		    Builds and executes OpenAI file upload, retrieval, extraction, summarization, search,
-		    survey, and deletion workflows for document-enabled modes.
-	
-		Attributes:
-		    api_key: OpenAI API key loaded from project configuration.
-		    client: OpenAI client created for the current provider operation.
-		    file: Latest file object returned by an OpenAI file workflow.
-		    file_id: OpenAI file identifier used by file and vector-store operations.
-		    filepath: Local file path supplied to upload, transcription, translation,
-		    or vector-store operations.
-		    filename: Filename value retained by the Files workflow.
-		    purpose: OpenAI file purpose used by upload and file operations.
-		    response: Latest provider response object returned by an API call.
-		    content: Supplemental content block retained for request construction.
-		    files: Named OpenAI file identifiers available to the application.
-		    request: Normalized request dictionary prepared for provider execution.
-		    model: Provider model identifier used by the current workflow.
-		    prompt: User prompt or task instruction used by the current request.
-		    output_text: Text extracted from the latest provider response.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks,
-		    provider calls, and documentation-generated API pages expose consistent runtime
-		    behavior.
+	Attributes:
+		api_key (str): OpenAI API key used by the wrapper.
+		client (Optional[OpenAI]): OpenAI client used by the wrapper.
+		file (Any): Latest OpenAI file object.
+		file_id (str): File identifier used by the current operation.
+		filepath (str): Local file path used by an upload operation.
+		filename (str): Filename associated with the current file.
+		purpose (str): OpenAI file purpose.
+		response (Any): Latest provider response.
+		content (str | bytes | Dict[str, Any] | None): Retrieved file content.
+		files (List[Dict[str, Any]]): File metadata returned by the latest list operation.
+		request (Dict[str, Any]): Provider-ready request values.
+		model (str): OpenAI model used for file-content analysis.
+		prompt (str): Prompt used for file-content analysis.
+		output_text (str): Text returned by the latest Responses API request.
+		max_chars (int): Maximum file-content characters included in analysis.
 	"""
-	api_key: Optional[ str ]
+	api_key: str
 	client: Optional[ OpenAI ]
-	file: Optional[ Any ]
-	file_id: Optional[ str ]
-	filepath: Optional[ str ]
-	filename: Optional[ str ]
-	purpose: Optional[ str ]
-	response: Optional[ Any ]
-	content: Optional[ str | bytes | Dict[ str, Any ] ]
-	files: Optional[ List[ Dict[ str, Any ] ] ]
-	request: Optional[ Dict[ str, Any ] ]
-	model: Optional[ str ]
-	prompt: Optional[ str ]
-	output_text: Optional[ str ]
+	file: Any
+	file_id: str
+	filepath: str
+	filename: str
+	purpose: str
+	response: Any
+	content: str | bytes | Dict[ str, Any ] | None
+	files: List[ Dict[ str, Any ] ]
+	request: Dict[ str, Any ]
+	model: str
+	prompt: str
+	output_text: str
+	max_chars: int
 	
-	def __init__( self, id: str=None, filepath: str=None, purpose: str='user_data',
-		model: str='gpt-4o-mini', prompt: str=None ):
-		"""Initialize Files.
+	def __init__( self, id: str = '', filepath: str = '', purpose: str = 'user_data',
+		model: str = 'gpt-4o-mini', prompt: str = '' ) -> None:
+		"""Initialize instance.
 		
+		Purpose:
+			Initializes OpenAI Files API configuration and runtime state without executing a
+			provider request.
 		
-			Purpose:
-			    Initializes Files state by assigning configuration values, request defaults,
-			    cached outputs, and compatibility fields used by later methods.
+		Args:
+			id (str): Optional initial OpenAI file identifier.
+			filepath (str): Optional initial local file path.
+			purpose (str): Default OpenAI upload purpose.
+			model (str): Default model used for file-content analysis.
+			prompt (str): Optional initial file-analysis prompt.
 		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    purpose: OpenAI file purpose used for upload or filtering.
-			    model: Provider model identifier selected for the operation.
-			    prompt: User prompt or task instruction submitted to the provider.
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
@@ -3965,1589 +2972,1183 @@ class Files( GPT ):
 		self.file = None
 		self.file_id = id
 		self.filepath = filepath
-		self.filename = None
+		self.filename = ''
 		self.purpose = purpose
 		self.response = None
 		self.content = None
 		self.files = [ ]
-		self.request = None
+		self.request = { }
 		self.model = model
 		self.prompt = prompt
-		self.output_text = None
+		self.output_text = ''
+		self.max_chars = 0
+		self.metadata = { }
+		self.preview = ''
+		self.file_data = [ ]
+		self.source = { }
+		self.content_text = ''
+		self.input = [ ]
 	
 	@property
-	def upload_purpose_options( self ) -> List[ str ] | None:
-		"""Upload purpose options.
+	def upload_purpose_options( self ) -> List[ str ]:
+		"""Get upload-purpose options.
 		
+		Purpose:
+			Returns purposes accepted when uploading files through the OpenAI Files API.
 		
-			Purpose:
-			    Returns upload purpose options used by the Streamlit selectors and provider
-			    request builders.
-		
-			Returns:
-			    List[ str ] | None: Upload-purpose option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported upload-purpose values.
 		"""
 		return [ 'assistants', 'batch', 'fine-tune', 'vision', 'user_data', 'evals', ]
 	
 	@property
-	def file_purpose_options( self ) -> List[ str ] | None:
-		"""File purpose options.
+	def file_purpose_options( self ) -> List[ str ]:
+		"""Get file-purpose options.
 		
+		Purpose:
+			Returns file-purpose values that may appear in OpenAI file metadata.
 		
-			Purpose:
-			    Returns file purpose options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: File-purpose option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported file-purpose metadata values.
 		"""
 		return [ 'assistants', 'assistants_output', 'batch', 'batch_output', 'fine-tune',
 			'fine-tune-results', 'vision', 'user_data', 'evals', ]
 	
 	@property
-	def purpose_options( self ) -> List[ str ] | None:
-		"""Purpose options.
+	def purpose_options( self ) -> List[ str ]:
+		"""Get purpose options.
 		
+		Purpose:
+			Returns upload-purpose values exposed to the application.
 		
-			Purpose:
-			    Returns purpose options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: File-purpose option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported upload-purpose values.
 		"""
 		return self.upload_purpose_options
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+	def model_options( self ) -> List[ str ]:
+		"""Get file-analysis model options.
 		
+		Purpose:
+			Returns OpenAI models exposed for file-content summary and search operations.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported model identifiers.
 		"""
 		return [ 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o-mini', ]
 	
-	@property
-	def reasoning_options( self ) -> List[ str ] | None:
-		"""Reasoning options.
+	def get_file_metadata( self, file: Any ) -> Dict[ str, Any ]:
+		"""Get file metadata.
 		
+		Purpose:
+			Extracts application-facing metadata from a required OpenAI file object.
 		
-			Purpose:
-			    Returns reasoning options used by the Streamlit selectors and provider request
-			    builders.
+		Args:
+			file (Any): Required OpenAI file object or file metadata dictionary.
 		
-			Returns:
-			    List[ str ] | None: Reasoning-effort option names exposed to the UI selector.
-		"""
-		return [ 'none', 'minimal', 'low', 'medium', 'high', ]
-	
-	@property
-	def include_options( self ) -> List[ str ] | None:
-		"""Include options.
+		Returns:
+			Dict[str, Any]: Application-facing file metadata.
 		
-		
-			Purpose:
-			    Returns include options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Include option names exposed to the UI selector.
-		"""
-		return [ 'file_search_call.results', 'web_search_call.results',
-			'web_search_call.action.sources', 'code_interpreter_call.outputs',
-			'reasoning.encrypted_content', 'message.output_text.logprobs', ]
-	
-	@property
-	def tool_options( self ) -> List[ str ] | None:
-		"""Tool options.
-		
-		
-			Purpose:
-			    Returns tool options used by the Streamlit selectors and provider request builders.
-		
-			Returns:
-			    List[ str ] | None: Tool option names exposed to the UI selector.
-		"""
-		return [ 'web_search', 'file_search', ]
-	
-	@property
-	def choice_options( self ) -> List[ str ] | None:
-		"""Choice options.
-		
-		
-			Purpose:
-			    Returns choice options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Tool-choice option names exposed to the UI selector.
-		"""
-		return [ 'auto', 'required', 'none', ]
-	
-	@property
-	def modality_options( self ) -> List[ str ] | None:
-		"""Modality options.
-		
-		
-			Purpose:
-			    Returns modality options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Modality option names exposed to the UI selector.
-		"""
-		return [ 'text', ]
-	
-	def validate_upload_purpose( self, purpose: str=None ) -> str:
-		"""Validate upload purpose.
-		
-		
-			Purpose:
-			    Validates upload purpose input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    purpose: OpenAI file purpose used for upload or filtering.
-		
-			Returns:
-			    str: Validated file-upload purpose.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			value = purpose if isinstance( purpose, str ) and purpose.strip( ) else 'user_data'
-			value = value.strip( )
-			
-			if value not in self.upload_purpose_options:
-				raise ValueError( f'Unsupported upload purpose: {value}' )
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'validate_upload_purpose( self, purpose: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_file_id( self, id: str=None ) -> str:
-		"""Validate file id.
-		
-		
-			Purpose:
-			    Validates file id input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-		
-			Returns:
-			    str: Validated OpenAI file identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = id if isinstance( id, str ) and id.strip( ) else self.file_id
-			throw_if( 'id', value )
-			return value.strip( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'validate_file_id( self, id: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_file_object( self, file: Any ) -> Dict[ str, Any ]:
-		"""Normalize file object.
-		
-		
-			Purpose:
-			    Normalizes file object data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    file: Provider file object to normalize.
-		
-			Returns:
-			    Dict[ str, Any ]: Normalized file metadata dictionary.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if file is None:
-				return { }
-			
-			if isinstance( file, dict ):
-				source = file
-			elif hasattr( file, 'model_dump' ):
-				source = file.model_dump( )
+			throw_if( 'file', file )
+			self.file = file
+			if isinstance( self.file, dict ):
+				self.source = self.file
+			elif hasattr( self.file, 'model_dump' ):
+				self.source = self.file.model_dump( )
 			else:
-				source = { 'id': getattr( file, 'id', None ),
-					'bytes': getattr( file, 'bytes', None ),
-					'created_at': getattr( file, 'created_at', None ),
-					'expires_at': getattr( file, 'expires_at', None ),
-					'filename': getattr( file, 'filename', None ),
-					'object': getattr( file, 'object', None ),
-					'purpose': getattr( file, 'purpose', None ),
-					'status': getattr( file, 'status', None ),
-					'status_details': getattr( file, 'status_details', None ), }
+				self.source = { 'id': getattr( self.file, 'id', '' ),
+					'bytes': getattr( self.file, 'bytes', 0 ),
+					'created_at': getattr( self.file, 'created_at', 0 ),
+					'expires_at': getattr( self.file, 'expires_at', 0 ),
+					'filename': getattr( self.file, 'filename', '' ),
+					'object': getattr( self.file, 'object', '' ),
+					'purpose': getattr( self.file, 'purpose', '' ),
+					'status': getattr( self.file, 'status', '' ),
+					'status_details': getattr( self.file, 'status_details', None, ), }
 			
-			return { 'id': source.get( 'id' ), 'filename': source.get( 'filename' ),
-				'purpose': source.get( 'purpose' ), 'bytes': source.get( 'bytes' ),
-				'created_at': source.get( 'created_at' ), 'expires_at': source.get( 'expires_at' ),
-				'object': source.get( 'object' ), 'status': source.get( 'status' ),
-				'status_details': source.get( 'status_details' ), }
+			self.metadata = { 'id': self.source.get( 'id', '' ),
+				'filename': self.source.get( 'filename', '' ),
+				'purpose': self.source.get( 'purpose', '' ), 'bytes': self.source.get( 'bytes', 0 ),
+				'created_at': self.source.get( 'created_at', 0 ),
+				'expires_at': self.source.get( 'expires_at', 0 ),
+				'object': self.source.get( 'object', '' ),
+				'status': self.source.get( 'status', '' ),
+				'status_details': self.source.get( 'status_details', None, ), }
+			return self.metadata
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'normalize_file_object( self, file: Any ) -> Dict[ str, Any ]'
+			exception.method = ('get_file_metadata( self, file: Any ) -> Dict[ str, Any ]')
 			Logger( ).write( exception )
 			raise exception
 	
-	def normalize_file_list( self, response: Any, purpose: str=None ) -> List[ Dict[ str, Any ] ]:
-		"""Normalize file list.
+	def get_file_content( self, response: Any ) -> str | bytes | Dict[ str, Any ]:
+		"""Get file content.
 		
+		Purpose:
+			Extracts text, bytes, or structured content from a required OpenAI file-content
+			response.
 		
-			Purpose:
-			    Normalizes file list data from provider-specific objects into application-ready
-			    Python values.
+		Args:
+			response (Any): Required OpenAI file-content response.
 		
-			Args:
-			    response: Provider response object to normalize or inspect.
-			    purpose: OpenAI file purpose used for upload or filtering.
+		Returns:
+			str | bytes | Dict[str, Any]: Extracted file content.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized file metadata dictionaries returned by list
-			    operations.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			if response is None:
-				return [ ]
+			throw_if( 'response', response )
+			self.response = response
+			if isinstance( self.response, bytes ):
+				self.content = self.response
+				return self.content
 			
-			if isinstance( response, list ):
-				items = response
-			elif isinstance( response, dict ):
-				items = response.get( 'data', [ ] )
-			else:
-				items = getattr( response, 'data', [ ] )
+			if isinstance( self.response, str ):
+				self.content = self.response
+				return self.content
 			
-			rows: List[ Dict[ str, Any ] ]=[ ]
-			for item in items:
-				row = self.normalize_file_object( item )
+			if isinstance( self.response, dict ):
+				self.content = self.response
+				return self.content
+			
+			if hasattr( self.response, 'text' ):
+				self.response_text = self.response.text
+				if callable( self.response_text ):
+					self.content = self.response_text( )
+				else:
+					self.content = self.response_text
 				
-				if not row.get( 'id' ):
-					continue
+				if self.content is not None:
+					return self.content
+			
+			if hasattr( self.response, 'content' ):
+				self.response_content = self.response.content
+				if callable( self.response_content ):
+					self.content = self.response_content( )
+				else:
+					self.content = self.response_content
 				
-				if isinstance( purpose, str ) and purpose.strip( ):
-					if row.get( 'purpose' ) != purpose.strip( ):
-						continue
-				
-				rows.append( row )
+				if self.content is not None:
+					return self.content
 			
-			return rows
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'normalize_file_list( self, response: Any, purpose: str=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_file_content( self, content: Any ) -> str | bytes | Dict[ str, Any ] | None:
-		"""Normalize file content.
-		
-		
-			Purpose:
-			    Normalizes file content data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    content: Supplemental content block supplied to request construction.
-		
-			Returns:
-			    str | bytes | Dict[ str, Any ] | None: Normalized file-content payload.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if content is None:
-				return None
+			if hasattr( self.response, 'read' ):
+				self.content = self.response.read( )
+				return self.content
 			
-			if isinstance( content, (str, bytes) ):
-				return content
+			if hasattr( self.response, 'model_dump' ):
+				self.content = self.response.model_dump( )
+				return self.content
 			
-			if hasattr( content, 'read' ):
-				value = content.read( )
-				if isinstance( value, bytes ):
-					try:
-						return value.decode( 'utf-8' )
-					except Exception:
-						return value
-				
-				return value
-			
-			if hasattr( content, 'text' ):
-				value = getattr( content, 'text' )
-				if isinstance( value, str ):
-					return value
-			
-			if hasattr( content, 'content' ):
-				value = getattr( content, 'content' )
-				if isinstance( value, bytes ):
-					try:
-						return value.decode( 'utf-8' )
-					except Exception:
-						return value
-				
-				return value
-			
-			if hasattr( content, 'model_dump' ):
-				return content.model_dump( )
-			
-			return str( content )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'normalize_file_content( self, content: Any )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def upload( self, filepath: str, purpose: str='user_data' ) -> Dict[ str, Any ] | None:
-		"""Upload.
-		
-		
-			Purpose:
-			    Uploads a local file to OpenAI and returns normalized file metadata for downstream
-			    workflows.
-		
-			Args:
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    purpose: OpenAI file purpose used for upload or filtering.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized uploaded-file metadata or None when upload
-			    fails to return a file.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			throw_if( 'filepath', filepath )
-			
-			if not os.path.exists( filepath ):
-				raise FileNotFoundError( f'File not found: {filepath}' )
-			
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.filepath = filepath
-			self.purpose = self.validate_upload_purpose( purpose )
-			self.request = { 'file': filepath, 'purpose': self.purpose, }
-			
-			with open( filepath, 'rb' ) as source:
-				self.response = self.client.files.create( file=source, purpose=self.purpose )
-			
-			self.file = self.response
-			metadata = self.normalize_file_object( self.response )
-			self.file_id = metadata.get( 'id' )
-			self.filename = metadata.get( 'filename' )
-			return metadata
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'upload( self, filepath: str, purpose: str )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def list( self, purpose: str=None ) -> List[ Dict[ str, Any ] ]:
-		"""List.
-		
-		
-			Purpose:
-			    Lists provider resources and normalizes the returned collection for UI display or
-			    downstream processing.
-		
-			Args:
-			    purpose: OpenAI file purpose used for upload or filtering.
-		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized provider object list.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.purpose = purpose if isinstance( purpose, str ) and purpose.strip( ) else None
-			self.request = { }
-			
-			if self.purpose:
-				self.request[ 'purpose_filter' ]=self.purpose
-			
-			self.response = self.client.files.list( )
-			self.files = self.normalize_file_list( self.response, purpose=self.purpose )
-			return self.files
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'list( self, purpose: str=None ) -> List[ Dict[ str, Any ] ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def retrieve( self, id: str ) -> Dict[ str, Any ] | None:
-		"""Retrieve.
-		
-		
-			Purpose:
-			    Retrieves provider resource metadata by identifier and normalizes the response.
-		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized provider object metadata or None when the
-			    provider returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.file_id = self.validate_file_id( id )
-			self.request = { 'file_id': self.file_id, }
-			
-			self.response = self.client.files.retrieve( file_id=self.file_id )
-			self.file = self.response
-			metadata = self.normalize_file_object( self.response )
-			self.filename = metadata.get( 'filename' )
-			return metadata
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'Files'
-			exception.method = 'retrieve( self, id: str ) -> Dict[ str, Any ] | None'
-			Logger( ).write( exception )
-			raise exception
-	
-	def extract( self, id: str ) -> str | bytes | Dict[ str, Any ] | None:
-		"""Extract.
-		
-		
-			Purpose:
-			    Retrieves file content by identifier and normalizes text, bytes, or structured
-			    content for application use.
-		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-		
-			Returns:
-			    str | bytes | Dict[ str, Any ] | None: Extracted file content or None when the
-			    provider returns no content.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.file_id = self.validate_file_id( id )
-			self.request = { 'file_id': self.file_id, }
-			
-			self.response = self.client.files.content( file_id=self.file_id )
-			self.content = self.normalize_file_content( self.response )
+			self.content = str( self.response )
 			return self.content
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'extract( self, id: str )'
+			exception.method = 'get_file_content( self, **kwargs) -> str | bytes | Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
-	def delete( self, id: str ) -> Dict[ str, Any ] | None:
-		"""Delete.
+	def get_content_text( self, content: str | bytes | Dict[ str, Any ] ) -> str:
+		"""Get content text.
 		
+		Purpose:
+			Converts retrieved file content into text suitable for a Responses API request.
 		
-			Purpose:
-			    Deletes the selected provider resource and returns normalized deletion metadata.
+		Args:
+			content (str | bytes | Dict[str, Any]): Required retrieved file content.
 		
-			Args:
-			    id: OpenAI file identifier used by file operations.
+		Returns:
+			str: File content represented as text.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized deletion response or None when deletion
-			    returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.file_id = self.validate_file_id( id )
-			self.request = { 'file_id': self.file_id, }
+			throw_if( 'content', content )
+			self.content = content
+			self.content_text = ''
+			if isinstance( self.content, str ):
+				self.content_text = self.content
+			elif isinstance( self.content, bytes ):
+				self.content_text = self.content.decode( 'utf-8', errors='replace', )
+			elif isinstance( self.content, dict ):
+				self.content_text = json.dumps( self.content, ensure_ascii=False, indent=2,
+					default=str, )
+			else:
+				self.content_text = str( self.content )
 			
-			self.response = self.client.files.delete( file_id=self.file_id )
-			
-			if isinstance( self.response, dict ):
-				return self.response
-			
-			if hasattr( self.response, 'model_dump' ):
-				return self.response.model_dump( )
-			
-			return { 'id': getattr( self.response, 'id', self.file_id ),
-				'deleted': getattr( self.response, 'deleted', None ),
-				'object': getattr( self.response, 'object', None ), }
+			throw_if( 'content_text', self.content_text )
+			return self.content_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'delete( self, id: str ) -> Dict[ str, Any ] | None'
+			exception.method = 'get_content_text( self, **kwargs ) -> str'
 			Logger( ).write( exception )
 			raise exception
 	
-	def summarize( self, id: str, prompt: str=None, model: str='gpt-4o-mini',
-		max_chars: int=120000 ) -> str | None:
-		"""Summarize.
+	def upload( self, path: str, purpose: str = 'user_data' ) -> Dict[ str, Any ]:
+		"""Upload a file.
 		
+		Purpose:
+			Uploads a required local file to the OpenAI Files API using the selected purpose.
 		
-			Purpose:
-			    Summarizes file content by combining extracted document text with a model prompt.
+		Args:
+			path (str): Required local file path.
+			purpose (str): OpenAI upload purpose.
 		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    model: Provider model identifier selected for the operation.
-			    max_chars: Maximum extracted characters included in a model prompt.
+		Returns:
+			Dict[str, Any]: Metadata for the uploaded file.
 		
-			Returns:
-			    str | None: Generated file summary or None when no output text is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.file_id = self.validate_file_id( id )
-			self.prompt = prompt if isinstance( prompt,
-				str ) and prompt.strip( ) else 'Summarize the selected file content.'
-			self.model = model if isinstance( model, str ) and model.strip( ) else 'gpt-4o-mini'
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.request = { 'model': self.model, 'input': [ { 'role': 'user',
-				'content': [ { 'type': 'input_file', 'file_id': self.file_id, },
-					{ 'type': 'input_text', 'text': self.prompt, }, ], }, ], }
+			throw_if( 'path', path )
+			throw_if( 'purpose', purpose )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.filepath = path
+			self.purpose = purpose
+			self.filename = Path( self.filepath ).name
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'purpose': self.purpose, }
+			with open( self.filepath, 'rb' ) as source:
+				self.file = source
+				self.response = self.client.files.create( file=self.file,
+					purpose=self.request[ 'purpose' ], )
 			
+			self.file = self.response
+			self.metadata = self.get_file_metadata( self.file )
+			self.file_id = self.metadata.get( 'id', '', )
+			self.filename = self.metadata.get( 'filename', self.filename, )
+			return self.metadata
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'upload( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list( self, purpose: str = '' ) -> List[ Dict[ str, Any ] ]:
+		"""List files.
+		
+		Purpose:
+			Lists files available through the OpenAI Files API and optionally limits the result
+			to a selected file purpose.
+		
+		Args:
+			purpose (str): Optional file-purpose filter.
+		
+		Returns:
+			List[Dict[str, Any]]: Application-facing file metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.purpose = purpose
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { }
+			self.response = self.client.files.list( )
+			self.file_data = getattr( self.response, 'data', [ ], ) or [ ]
+			self.files = [ ]
+			for item in self.file_data:
+				self.metadata = self.get_file_metadata( item )
+				
+				if self.purpose:
+					if self.metadata.get( 'purpose', '' ) != self.purpose:
+						continue
+				
+				self.files.append( self.metadata )
+			
+			return self.files
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'list( self, purpose: str = "" ) -> List[ Dict[ str, Any ] ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def retrieve( self, id: str ) -> Dict[ str, Any ]:
+		"""Retrieve file metadata.
+		
+		Purpose:
+			Retrieves metadata for a required OpenAI file identifier.
+		
+		Args:
+			id (str): Required OpenAI file identifier.
+		
+		Returns:
+			Dict[str, Any]: Application-facing file metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'id', id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.file_id = id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'file_id': self.file_id, }
+			self.response = self.client.files.retrieve( file_id=self.request[ 'file_id' ], )
+			self.file = self.response
+			self.metadata = self.get_file_metadata( self.file )
+			self.filename = self.metadata.get( 'filename', '', )
+			return self.metadata
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'retrieve( self, id: str ) -> Dict[ str, Any ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def extract( self, id: str ) -> str | bytes | Dict[ str, Any ]:
+		"""Extract file content.
+		
+		Purpose:
+			Retrieves content for a required OpenAI file identifier.
+		
+		Args:
+			id (str): Required OpenAI file identifier.
+		
+		Returns:
+			str | bytes | Dict[str, Any]: Retrieved file content.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'id', id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.file_id = id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'file_id': self.file_id, }
+			self.response = self.client.files.content( file_id=self.request[ 'file_id' ], )
+			self.content = self.get_file_content( self.response )
+			return self.content
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'extract( self, id: str ) -> str | bytes | Dict[ str, Any ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def delete( self, id: str ) -> Dict[ str, Any ]:
+		"""Delete a file.
+		
+		Purpose:
+			Deletes a required OpenAI file identifier and returns the provider deletion result.
+		
+		Args:
+			id (str): Required OpenAI file identifier.
+		
+		Returns:
+			Dict[str, Any]: File deletion result.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'id', id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.file_id = id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'file_id': self.file_id, }
+			self.response = self.client.files.delete( file_id=self.request[ 'file_id' ], )
+			if isinstance( self.response, dict ):
+				self.metadata = self.response
+			elif hasattr( self.response, 'model_dump' ):
+				self.metadata = self.response.model_dump( )
+			else:
+				self.metadata = { 'id': getattr( self.response, 'id', self.file_id, ),
+					'deleted': getattr( self.response, 'deleted', False, ),
+					'object': getattr( self.response, 'object', 'file', ), }
+			
+			return self.metadata
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'Files'
+			exception.method = 'delete( self, id: str ) -> Dict[ str, Any ]'
+			Logger( ).write( exception )
+			raise exception
+	
+	def summarize( self, id: str, prompt: str = 'Summarize the selected file content.',
+		model: str = 'gpt-4o-mini', max_chars: int = 120000 ) -> str:
+		"""Summarize file content.
+		
+		Purpose:
+			Retrieves a required file and summarizes or analyzes its content through the OpenAI
+			Responses API.
+		
+		Args:
+			id (str): Required OpenAI file identifier.
+			prompt (str): File-summary or analysis instruction.
+			model (str): OpenAI model used for analysis.
+			max_chars (int): Maximum content characters included in the request.
+		
+		Returns:
+			str: Generated file-content analysis.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'id', id )
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.file_id = id
+			self.prompt = prompt
+			self.model = model
+			self.max_chars = max_chars
+			self.content = self.extract( self.file_id )
+			self.content_text = self.get_content_text( self.content )
+			
+			if self.max_chars > 0:
+				self.content_text = self.content_text[ :self.max_chars ]
+			_items = (f'{self.prompt}\n\n'
+                                    f'File ID: {
+                                    self.file_id}\n\n'
+                                    f'{self.content_text}')
+			self.input = [ { 'role': 'user',
+				'content': [ { 'type': 'input_text', 'text': _items, }, ], }, ]
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'model': self.model, 'input': self.input, }
 			self.response = self.client.responses.create( **self.request )
-			self.output_text = getattr( self.response, 'output_text', None )
+			self.output_text = getattr( self.response, 'output_text', '', )
 			if self.output_text:
 				return self.output_text
 			
-			if hasattr( self.response, 'output' ) and self.response.output:
-				text_parts: List[ str ]=[ ]
-				
-				for item in self.response.output:
-					if getattr( item, 'type', None ) != 'message':
-						continue
-					
-					if not hasattr( item, 'content' ) or item.content is None:
-						continue
-					
-					for block in item.content:
-						if getattr( block, 'type', None ) == 'output_text':
-							text = getattr( block, 'text', None )
-							if text:
-								text_parts.append( text )
-				
-				if len( text_parts ) > 0:
-					self.output_text = ''.join( text_parts ).strip( )
-					return self.output_text
-			
-			return str( self.response )
+			self.output_text = str( self.response )
+			return self.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'summarize( self, id: str, prompt: str=None ) -> str | None'
+			exception.method = 'summarize( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def search( self, id: str, query: str, model: str='gpt-4o-mini',
-		max_chars: int=120000 ) -> str | None:
-		"""Search.
+	def search( self, id: str, query: str, model: str = 'gpt-4o-mini',
+		max_chars: int = 120000 ) -> str:
+		"""Search file content.
 		
+		Purpose:
+			Answers a required question using content retrieved from a required OpenAI file.
 		
-			Purpose:
-			    Searches provider-managed files or vector stores and returns normalized search
-			    output for grounded workflows.
+		Args:
+			id (str): Required OpenAI file identifier.
+			query (str): Required question about the selected file.
+			model (str): OpenAI model used for analysis.
+			max_chars (int): Maximum content characters included in the request.
 		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-			    query: Search query submitted to a file or vector-store workflow.
-			    model: Provider model identifier selected for the operation.
-			    max_chars: Maximum extracted characters included in a model prompt.
+		Returns:
+			str: Generated answer based on the selected file.
 		
-			Returns:
-			    str | None: Search results or generated answer text returned by the provider
-			    workflow.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
+			throw_if( 'id', id )
 			throw_if( 'query', query )
-			prompt = ('Answer the user question using the uploaded file when possible.\n\n'
-			          f'Question: {query}')
-			
-			return self.summarize( id=id, prompt=prompt, model=model, max_chars=max_chars )
+			throw_if( 'model', model )
+			self.file_id = id
+			self.query = query
+			self.model = model
+			self.max_chars = max_chars
+			self.prompt = ('Answer the user question using the selected file content. '
+			               f'Question: {self.query}')
+			self.output_text = self.summarize( self.file_id, self.prompt, self.model, self.max_chars, )
+			return self.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'search( self, id: str, query: str ) -> str | None'
+			exception.method = 'search( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def survey( self, id: str, max_chars: int=4000 ) -> Dict[ str, Any ]:
-		"""Survey.
+	def survey( self, id: str, max_chars: int = 4000 ) -> Dict[ str, Any ]:
+		"""Survey a file.
 		
+		Purpose:
+			Retrieves file metadata and a bounded content preview for a required OpenAI file.
 		
-			Purpose:
-			    Surveys provider-managed file or vector-store content and returns structured
-			    descriptive output.
+		Args:
+			id (str): Required OpenAI file identifier.
+			max_chars (int): Maximum preview characters returned.
 		
-			Args:
-			    id: OpenAI file identifier used by file operations.
-			    max_chars: Maximum extracted characters included in a model prompt.
+		Returns:
+			Dict[str, Any]: File metadata, content preview, and file identifier.
 		
-			Returns:
-			    Dict[ str, Any ]: Structured file or vector-store survey output.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.file_id = self.validate_file_id( id )
-			metadata = self.retrieve( self.file_id )
-			content = self.extract( self.file_id )
+			throw_if( 'id', id )
+			self.file_id = id
+			self.max_chars = max_chars
+			self.metadata = self.retrieve( self.file_id )
+			self.content = self.extract( self.file_id )
+			self.content_text = self.get_content_text( self.content )
+			self.preview = self.content_text
 			
-			if isinstance( content, bytes ):
-				try:
-					content_text = content.decode( 'utf-8' )
-				except Exception:
-					content_text = str( content )
-			elif isinstance( content, dict ):
-				content_text = str( content )
-			else:
-				content_text = content if isinstance( content, str ) else ''
+			if self.max_chars > 0:
+				self.preview = self.content_text[ :self.max_chars ]
 			
-			preview = content_text[ :max_chars ] if isinstance( max_chars, int ) else content_text
-			
-			return { 'metadata': metadata, 'preview': preview, 'file_id': self.file_id, }
+			self.result = { 'metadata': self.metadata, 'preview': self.preview,
+				'file_id': self.file_id, }
+			return self.result
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'survey( self, id: str ) -> Dict[ str, Any ]'
+			exception.method = 'survey( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
+		Purpose:
+			Returns public members exposed by the OpenAI Files wrapper.
 		
-			Purpose:
-			    Returns the public Files members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
+		Returns:
+			List[str]: Public member names.
 		"""
 		return [ 'api_key', 'client', 'file', 'file_id', 'filepath', 'filename', 'purpose',
 			'response', 'content', 'files', 'request', 'model', 'prompt', 'output_text',
-			'upload_purpose_options', 'file_purpose_options', 'purpose_options', 'model_options',
-			'validate_upload_purpose', 'validate_file_id', 'normalize_file_object',
-			'normalize_file_list', 'normalize_file_content', 'upload', 'list', 'retrieve',
-			'extract', 'delete', 'summarize', 'search', 'survey', ]
+			'max_chars', 'metadata', 'preview', 'upload_purpose_options', 'file_purpose_options',
+			'purpose_options', 'model_options', 'get_file_metadata', 'get_file_content',
+			'get_content_text', 'upload', 'list', 'retrieve', 'extract', 'delete', 'summarize',
+			'search', 'survey', ]
 
 class VectorStores( GPT ):
-	"""VectorStores provider wrapper.
+	"""Provide OpenAI Vector Stores API workflow support.
 	
+	Purpose:
+		Provides vector-store management, attached-file management, file-batch operations,
+		native vector-store search, and Responses API file-search workflows. Each public
+		wrapper method checks required input with throw_if, assigns accepted arguments to
+		object members, constructs provider requests from those members, and returns
+		application-facing metadata or generated text.
 	
-		Purpose:
-		    Builds and executes OpenAI vector-store management workflows for persistent file
-		    search, batch ingestion, search, and file-grounded answers.
-	
-		Attributes:
-		    api_key: OpenAI API key loaded from project configuration.
-		    client: OpenAI client created for the current provider operation.
-		    name: Name value retained by the VectorStores workflow.
-		    description: Description value retained by the VectorStores workflow.
-		    store_id: Vector-store identifier used by store and file operations.
-		    file_id: OpenAI file identifier used by file and vector-store operations.
-		    batch_id: Batch id value retained by the VectorStores workflow.
-		    response: Latest provider response object returned by an API call.
-		    vector_store: Vector store value retained by the VectorStores workflow.
-		    vector_stores: Named OpenAI vector-store identifiers available to the application.
-		    vector_file: Vector file value retained by the VectorStores workflow.
-		    vector_files: Vector files value retained by the VectorStores workflow.
-		    file_batch: File batch value retained by the VectorStores workflow.
-		    search_results: Search results value retained by the VectorStores workflow.
-		    output_text: Text extracted from the latest provider response.
-		    request: Normalized request dictionary prepared for provider execution.
-		    collections: Collections value retained by the VectorStores workflow.
-		    max_search_results: Maximum number of search results requested by supported tools.
-	
-		Notes:
-		    The wrapper stores request state on the instance so Streamlit callbacks, provider
-		    calls, and documentation-generated API pages expose consistent runtime behavior.
+	Attributes:
+		api_key (str): OpenAI API key used by the wrapper.
+		client (Optional[OpenAI]): OpenAI client used by the wrapper.
+		name (str): Vector-store name used by the current operation.
+		description (str): Vector-store description used by the current operation.
+		store_id (str): Vector-store identifier used by the current operation.
+		file_id (str): File identifier used by the current operation.
+		file_ids (List[str]): File identifiers used by the current operation.
+		batch_id (str): File-batch identifier used by the current operation.
+		model (str): OpenAI model used by file-search answer workflows.
+		query (str): Native vector-store search query.
+		prompt (str): Responses API file-search prompt.
+		instructions (str): Optional Responses API instructions.
+		max_search_results (int): Maximum number of search results requested.
+		response (Any): Latest provider response.
+		vector_store (Dict[str, Any]): Latest vector-store metadata.
+		vector_stores (List[Dict[str, Any]]): Latest vector-store collection.
+		vector_file (Dict[str, Any]): Latest attached-file metadata.
+		vector_files (List[Dict[str, Any]]): Latest attached-file collection.
+		file_batch (Dict[str, Any]): Latest file-batch metadata.
+		search_results (List[Dict[str, Any]]): Latest native search results.
+		output_text (str): Latest Responses API file-search answer.
+		request (Dict[str, Any]): Provider-ready request.
 	"""
-	api_key: Optional[ str ]
+	api_key: str
 	client: Optional[ OpenAI ]
-	name: Optional[ str ]
-	description: Optional[ str ]
-	store_id: Optional[ str ]
-	file_id: Optional[ str ]
-	batch_id: Optional[ str ]
-	response: Optional[ Any ]
-	vector_store: Optional[ Dict[ str, Any ] ]
-	vector_stores: Optional[ List[ Dict[ str, Any ] ] ]
-	vector_file: Optional[ Dict[ str, Any ] ]
-	vector_files: Optional[ List[ Dict[ str, Any ] ] ]
-	file_batch: Optional[ Dict[ str, Any ] ]
-	search_results: Optional[ List[ Dict[ str, Any ] ] ]
-	output_text: Optional[ str ]
-	request: Optional[ Dict[ str, Any ] ]
-	collections: Optional[ Dict[ str, str ] ]
-	max_search_results: Optional[ int ]
+	name: str
+	description: str
+	store_id: str
+	file_id: str
+	file_ids: List[ str ]
+	batch_id: str
+	model: str
+	query: str
+	prompt: str
+	instructions: str
+	max_search_results: int
+	response: Any
+	vector_store: Dict[ str, Any ]
+	vector_stores: List[ Dict[ str, Any ] ]
+	vector_file: Dict[ str, Any ]
+	vector_files: List[ Dict[ str, Any ] ]
+	file_batch: Dict[ str, Any ]
+	search_results: List[ Dict[ str, Any ] ]
+	output_text: str
+	request: Dict[ str, Any ]
 	
-	def __init__( self, name: str=None, store_id: str=None, file_id: str=None,
-		model: str='gpt-4o-mini', max_search_results: int=10 ):
-		"""Initialize VectorStores.
+	def __init__( self, name: str = '', store_id: str = '', file_id: str = '',
+		model: str = 'gpt-4o-mini', max_search_results: int = 10 ) -> None:
+		"""Initialize instance.
 		
+		Purpose:
+			Initializes OpenAI vector-store configuration and runtime state without executing a
+			provider request.
 		
-			Purpose:
-			    Initializes VectorStores state by assigning configuration values, request
-			    defaults, cached outputs, and compatibility fields used by later methods.
+		Args:
+			name (str): Optional initial vector-store name.
+			store_id (str): Optional initial vector-store identifier.
+			file_id (str): Optional initial file identifier.
+			model (str): Default model used by file-search answer workflows.
+			max_search_results (int): Default maximum number of search results.
 		
-			Args:
-			    name: Resource, argument, or store name to validate or use.
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_id: File id supplied to the init workflow.
-			    model: Provider model identifier selected for the operation.
-			    max_search_results: Maximum search-result count retained for compatible tools.
+		Returns:
+			None: This method initializes object state.
 		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = None
 		self.name = name
-		self.description = None
+		self.description = ''
 		self.store_id = store_id
 		self.file_id = file_id
-		self.batch_id = None
+		self.file_ids = [ ]
+		self.batch_id = ''
 		self.model = model
-		self.response = None
-		self.vector_store = None
-		self.vector_stores = [ ]
-		self.vector_file = None
-		self.vector_files = [ ]
-		self.file_batch = None
-		self.search_results = [ ]
-		self.output_text = None
-		self.request = None
+		self.query = ''
+		self.prompt = ''
+		self.instructions = ''
 		self.max_search_results = max_search_results
-		self.collections = { 'Guidance': 'vs_712r5W5833G6aLxIYIbuvVcK', }
+		self.metadata = { }
+		self.attributes = { }
+		self.filters = { }
+		self.ranking_options = { }
+		self.expires_after = { }
+		self.chunking_strategy = { }
+		self.response = None
+		self.vector_store = { }
+		self.vector_stores = [ ]
+		self.vector_file = { }
+		self.vector_files = [ ]
+		self.file_batch = { }
+		self.search_results = [ ]
+		self.output_text = ''
+		self.request = { }
+		self.input = [ ]
+		self.limit = 100
+		self.order = 'desc'
+		self.after = ''
+		self.before = ''
+		self.rewrite_query = False
+		self.collections = { 'Governance': 'vs_6a1850a9bdc08191912353eedf59aede',
+			'Public Laws': 'vs_699506f7d5348191990e0557c717fa9d',
+			'Explanatory Statements': 'vs_699505df9ac48191a525c0ecb86fef66',
+			'Army Techniques Publications': 'vs_699356ef052c81918da14c4ed3bcea17',
+			'Army Field Manuals': 'vs_69935542863481918d150c1e89c38633',
+			'Army Regulations': 'vs_6993550488408191919cd70968ba8be8',
+			'DoD Armory': 'vs_697f86ad98888191b967685ae558bfc0',
+			'Army Style Guides': 'vs_68f4efd7d4c4819191458dd6cde6f2cc',
+			'Apportionments': 'vs_68a34aaff93481918c3b3fef8c4e8fea',
+			'Financial Regulations': 'vs_712r5W5833G6aLxIYIbuvVcK', }
 	
 	@property
-	def model_options( self ) -> List[ str ] | None:
-		"""Model options.
+	def model_options( self ) -> List[ str ]:
+		"""Get model options.
 		
+		Purpose:
+			Returns OpenAI models exposed for Responses API file-search answer workflows.
 		
-			Purpose:
-			    Returns model options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Model option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported model identifiers.
 		"""
 		return [ 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o-mini', ]
 	
 	@property
-	def ranker_options( self ) -> List[ str ] | None:
-		"""Ranker options.
+	def ranker_options( self ) -> List[ str ]:
+		"""Get ranker options.
 		
+		Purpose:
+			Returns ranking algorithms exposed for native vector-store search.
 		
-			Purpose:
-			    Returns ranker options used by the Streamlit selectors and provider request
-			    builders.
-		
-			Returns:
-			    List[ str ] | None: Vector-store ranker option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported ranker values.
 		"""
 		return [ 'auto', 'default-2024-11-15', ]
 	
 	@property
-	def chunking_strategy_options( self ) -> List[ str ] | None:
-		"""Chunking strategy options.
+	def chunking_strategy_options( self ) -> List[ str ]:
+		"""Get chunking-strategy options.
 		
+		Purpose:
+			Returns chunking strategies supported by vector-store file operations.
 		
-			Purpose:
-			    Returns chunking strategy options used by the Streamlit selectors and provider
-			    request builders.
-		
-			Returns:
-			    List[ str ] | None: Chunking strategy option names exposed to the UI selector.
+		Returns:
+			List[str]: Supported chunking-strategy values.
 		"""
 		return [ 'auto', 'static', ]
 	
-	def validate_store_name( self, name: str=None ) -> str:
-		"""Validate store name.
+	def get_vector_store( self, response: Any ) -> Dict[ str, Any ]:
+		"""Get vector-store metadata.
 		
+		Purpose:
+			Extracts application-facing metadata from a required vector-store response.
 		
-			Purpose:
-			    Validates store name input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
+		Args:
+			response (Any): Required provider vector-store response.
 		
-			Args:
-			    name: Resource, argument, or store name to validate or use.
+		Returns:
+			Dict[str, Any]: Application-facing vector-store metadata.
 		
-			Returns:
-			    str: Validated vector-store name.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			value = name if isinstance( name, str ) and name.strip( ) else self.name
-			throw_if( 'name', value )
-			return value.strip( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'validate_store_name( self, name: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_store_id( self, store_id: str=None ) -> str:
-		"""Validate store id.
-		
-		
-			Purpose:
-			    Validates store id input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-		
-			Returns:
-			    str: Validated vector-store identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = store_id if isinstance( store_id, str ) and store_id.strip( ) else (
-				self.store_id)
-			throw_if( 'store_id', value )
-			return value.strip( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'validate_store_id( self, store_id: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_file_id( self, file_id: str=None ) -> str:
-		"""Validate file id.
-		
-		
-			Purpose:
-			    Validates file id input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    file_id: File id supplied to the validate file id workflow.
-		
-			Returns:
-			    str: Validated OpenAI file identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = file_id if isinstance( file_id, str ) and file_id.strip( ) else self.file_id
-			throw_if( 'file_id', value )
-			return value.strip( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'validate_file_id( self, file_id: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_batch_id( self, batch_id: str=None ) -> str:
-		"""Validate batch id.
-		
-		
-			Purpose:
-			    Validates batch id input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    batch_id: Vector-store file-batch identifier.
-		
-			Returns:
-			    str: Validated vector-store batch identifier.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = batch_id if isinstance( batch_id, str ) and batch_id.strip( ) else (
-				self.batch_id)
-			throw_if( 'batch_id', value )
-			return value.strip( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'validate_batch_id( self, batch_id: str=None ) -> str'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_file_ids( self, file_ids: List[ str ]=None ) -> List[ str ]:
-		"""Validate file ids.
-		
-		
-			Purpose:
-			    Validates file ids input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    file_ids: OpenAI file identifiers attached to a vector store or batch.
-		
-			Returns:
-			    List[ str ]: Validated file identifier list.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if file_ids is None:
-				return [ ]
+			throw_if( 'response', response )
+			self.response = response
 			
-			values = [ ]
-			for item in file_ids:
-				if isinstance( item, str ) and item.strip( ):
-					values.append( item.strip( ) )
-			
-			return values
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'validate_file_ids( self, file_ids: List[ str ]=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def validate_max_num_results( self, max_num_results: int=None ) -> int:
-		"""Validate max num results.
-		
-		
-			Purpose:
-			    Validates max num results input, stores the normalized value on the instance when
-			    applicable, and blocks unsupported provider values before API execution.
-		
-			Args:
-			    max_num_results: Max num results supplied to the validate max num results workflow.
-		
-			Returns:
-			    int: Validated maximum search-result count.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			value = self.max_search_results if max_num_results is None else int( max_num_results )
-			
-			if value < 1:
-				return 1
-			
-			if value > 50:
-				return 50
-			
-			return value
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'validate_max_num_results( self, max_num_results: int=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_expires_after( self, anchor: str=None, days: int=None ) -> Dict[ str, Any ] | None:
-		"""Build expires after.
-		
-		
-			Purpose:
-			    Builds the expires after structure required by the OpenAI workflow and stores the
-			    normalized request state on the instance.
-		
-			Args:
-			    anchor: Expiration anchor used for vector-store retention policy.
-			    days: Retention duration in days for vector-store expiration policy.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Vector-store expiration policy or None when no policy is
-			    selected.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if days is None:
-				return None
-			
-			value = int( days )
-			if value <= 0:
-				return None
-			
-			anchor_value = anchor if isinstance( anchor,
-				str ) and anchor.strip( ) else 'last_active_at'
-			
-			return { 'anchor': anchor_value.strip( ), 'days': value, }
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'build_expires_after( self, anchor: str=None, days: int=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def build_chunking_strategy( self, strategy: str='auto', max_chunk_size_tokens: int=None,
-		chunk_overlap_tokens: int=None ) -> Dict[ str, Any ] | None:
-		"""Build chunking strategy.
-		
-		
-			Purpose:
-			    Builds the chunking strategy structure required by the OpenAI workflow and stores
-			    the normalized request state on the instance.
-		
-			Args:
-			    strategy: Chunking strategy name selected for vector-store ingestion.
-			    max_chunk_size_tokens: Maximum token count per vector-store chunk.
-			    chunk_overlap_tokens: Token overlap count between vector-store chunks.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Vector-store chunking strategy or None when default
-			    chunking is used.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			strategy_value = strategy if isinstance( strategy,
-				str ) and strategy.strip( ) else 'auto'
-			strategy_value = strategy_value.strip( )
-			
-			if strategy_value == 'auto':
-				return { 'type': 'auto', }
-			
-			if strategy_value != 'static':
-				return None
-			
-			max_value = 800 if max_chunk_size_tokens is None else int( max_chunk_size_tokens )
-			overlap_value = 400 if chunk_overlap_tokens is None else int( chunk_overlap_tokens )
-			
-			if max_value < 100:
-				max_value = 100
-			
-			if max_value > 4096:
-				max_value = 4096
-			
-			if overlap_value < 0:
-				overlap_value = 0
-			
-			if overlap_value > max_value // 2:
-				overlap_value = max_value // 2
-			
-			return { 'type': 'static', 'static': { 'max_chunk_size_tokens': max_value,
-				'chunk_overlap_tokens': overlap_value, }, }
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'build_chunking_strategy( self, strategy: str, **kwargs )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_vector_store( self, store: Any ) -> Dict[ str, Any ]:
-		"""Normalize vector store.
-		
-		
-			Purpose:
-			    Normalizes vector store data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    store: Response storage flag supplied to compatible provider requests.
-		
-			Returns:
-			    Dict[ str, Any ]: Normalized vector-store metadata dictionary.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if store is None:
-				return { }
-			
-			if isinstance( store, dict ):
-				source = store
-			elif hasattr( store, 'model_dump' ):
-				source = store.model_dump( )
+			if isinstance( self.response, dict ):
+				self.source = self.response
+			elif hasattr( self.response, 'model_dump' ):
+				self.source = self.response.model_dump( )
 			else:
-				source = { 'id': getattr( store, 'id', None ),
-					'name': getattr( store, 'name', None ),
-					'description': getattr( store, 'description', None ),
-					'created_at': getattr( store, 'created_at', None ),
-					'object': getattr( store, 'object', None ),
-					'usage_bytes': getattr( store, 'usage_bytes', None ),
-					'file_counts': getattr( store, 'file_counts', None ),
-					'status': getattr( store, 'status', None ),
-					'expires_after': getattr( store, 'expires_after', None ),
-					'expires_at': getattr( store, 'expires_at', None ),
-					'last_active_at': getattr( store, 'last_active_at', None ),
-					'metadata': getattr( store, 'metadata', None ), }
+				self.source = { 'id': getattr( self.response, 'id', '' ),
+					'name': getattr( self.response, 'name', '' ),
+					'description': getattr( self.response, 'description', '' ),
+					'created_at': getattr( self.response, 'created_at', 0 ),
+					'object': getattr( self.response, 'object', '' ),
+					'usage_bytes': getattr( self.response, 'usage_bytes', 0 ),
+					'file_counts': getattr( self.response, 'file_counts', None ),
+					'status': getattr( self.response, 'status', '' ),
+					'expires_after': getattr( self.response, 'expires_after', None ),
+					'expires_at': getattr( self.response, 'expires_at', 0 ),
+					'last_active_at': getattr( self.response, 'last_active_at', 0 ),
+					'metadata': getattr( self.response, 'metadata', None ), }
 			
-			return { 'id': source.get( 'id' ), 'name': source.get( 'name' ),
-				'description': source.get( 'description' ),
-				'created_at': source.get( 'created_at' ), 'object': source.get( 'object' ),
-				'usage_bytes': source.get( 'usage_bytes' ),
-				'file_counts': source.get( 'file_counts' ), 'status': source.get( 'status' ),
-				'expires_after': source.get( 'expires_after' ),
-				'expires_at': source.get( 'expires_at' ),
-				'last_active_at': source.get( 'last_active_at' ),
-				'metadata': source.get( 'metadata' ), }
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'normalize_vector_store( self, store: Any ) -> Dict[ str, Any ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_vector_store_file( self, file: Any ) -> Dict[ str, Any ]:
-		"""Normalize vector store file.
-		
-		
-			Purpose:
-			    Normalizes vector store file data from provider-specific objects into
-			    application-ready Python values.
-		
-			Args:
-			    file: Provider file object to normalize.
-		
-			Returns:
-			    Dict[ str, Any ]: Normalized vector-store file metadata dictionary.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if file is None:
-				return { }
-			
-			if isinstance( file, dict ):
-				source = file
-			elif hasattr( file, 'model_dump' ):
-				source = file.model_dump( )
-			else:
-				source = { 'id': getattr( file, 'id', None ),
-					'object': getattr( file, 'object', None ),
-					'created_at': getattr( file, 'created_at', None ),
-					'vector_store_id': getattr( file, 'vector_store_id', None ),
-					'status': getattr( file, 'status', None ),
-					'last_error': getattr( file, 'last_error', None ),
-					'chunking_strategy': getattr( file, 'chunking_strategy', None ),
-					'attributes': getattr( file, 'attributes', None ),
-					'usage_bytes': getattr( file, 'usage_bytes', None ), }
-			
-			return { 'id': source.get( 'id' ), 'object': source.get( 'object' ),
-				'created_at': source.get( 'created_at' ),
-				'vector_store_id': source.get( 'vector_store_id' ),
-				'status': source.get( 'status' ), 'last_error': source.get( 'last_error' ),
-				'chunking_strategy': source.get( 'chunking_strategy' ),
-				'attributes': source.get( 'attributes' ),
-				'usage_bytes': source.get( 'usage_bytes' ), }
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'normalize_vector_store_file( self, file: Any )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_file_batch( self, batch: Any ) -> Dict[ str, Any ]:
-		"""Normalize file batch.
-		
-		
-			Purpose:
-			    Normalizes file batch data from provider-specific objects into application-ready
-			    Python values.
-		
-			Args:
-			    batch: Batch supplied to the normalize file batch workflow.
-		
-			Returns:
-			    Dict[ str, Any ]: Normalized vector-store file-batch metadata dictionary.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if batch is None:
-				return { }
-			
-			if isinstance( batch, dict ):
-				source = batch
-			elif hasattr( batch, 'model_dump' ):
-				source = batch.model_dump( )
-			else:
-				source = { 'id': getattr( batch, 'id', None ),
-					'object': getattr( batch, 'object', None ),
-					'created_at': getattr( batch, 'created_at', None ),
-					'vector_store_id': getattr( batch, 'vector_store_id', None ),
-					'status': getattr( batch, 'status', None ),
-					'file_counts': getattr( batch, 'file_counts', None ), }
-			
-			return { 'id': source.get( 'id' ), 'object': source.get( 'object' ),
-				'created_at': source.get( 'created_at' ),
-				'vector_store_id': source.get( 'vector_store_id' ),
-				'status': source.get( 'status' ), 'file_counts': source.get( 'file_counts' ), }
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'normalize_file_batch( self, batch: Any ) -> Dict[ str, Any ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def normalize_search_results( self, response: Any ) -> List[ Dict[ str, Any ] ]:
-		"""Normalize search results.
-		
-		
-			Purpose:
-			    Normalizes search results data from provider-specific objects into
-			    application-ready Python values.
-		
-			Args:
-			    response: Provider response object to normalize or inspect.
-		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized vector-store search-result dictionaries.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			if response is None:
-				return [ ]
-			
-			if isinstance( response, dict ):
-				items = response.get( 'data', [ ] )
-			elif isinstance( response, list ):
-				items = response
-			else:
-				items = getattr( response, 'data', [ ] )
-			
-			rows: List[ Dict[ str, Any ] ]=[ ]
-			for item in items:
-				if isinstance( item, dict ):
-					source = item
-				elif hasattr( item, 'model_dump' ):
-					source = item.model_dump( )
-				else:
-					source = { 'file_id': getattr( item, 'file_id', None ),
-						'filename': getattr( item, 'filename', None ),
-						'score': getattr( item, 'score', None ),
-						'attributes': getattr( item, 'attributes', None ),
-						'content': getattr( item, 'content', None ), }
-				
-				rows.append(
-					{ 'file_id': source.get( 'file_id' ), 'filename': source.get( 'filename' ),
-						'score': source.get( 'score' ), 'attributes': source.get( 'attributes' ),
-						'content': source.get( 'content' ), } )
-			
-			return rows
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'normalize_search_results( self, response: Any )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def create( self, name: str, description: str=None, metadata: Dict[ str, Any ]=None,
-		expires_after: Dict[ str, Any ]=None, file_ids: List[ str ]=None,
-		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Create.
-		
-		
-			Purpose:
-			    Creates the provider resource represented by the current class after validation
-			    and request construction.
-		
-			Args:
-			    name: Resource, argument, or store name to validate or use.
-			    description: Description metadata supplied to a vector store.
-			    metadata: Metadata dictionary supplied to a vector store or attached file.
-			    expires_after: Expiration policy supplied to a vector store.
-			    file_ids: OpenAI file identifiers attached to a vector store or batch.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized created-resource metadata or None when the
-			    provider returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.name = self.validate_store_name( name )
-			self.description = description if isinstance( description,
-				str ) and description.strip( ) else None
-			
-			self.request = { 'name': self.name, }
-			
-			if self.description:
-				self.request[ 'description' ]=self.description
-			
-			if isinstance( metadata, dict ) and len( metadata ) > 0:
-				self.request[ 'metadata' ]=metadata
-			
-			if isinstance( expires_after, dict ) and len( expires_after ) > 0:
-				self.request[ 'expires_after' ]=expires_after
-			
-			clean_file_ids = self.validate_file_ids( file_ids )
-			if len( clean_file_ids ) > 0:
-				self.request[ 'file_ids' ]=clean_file_ids
-			
-			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
-				self.request[ 'chunking_strategy' ]=chunking_strategy
-			
-			self.response = self.client.vector_stores.create( **self.request )
-			self.vector_store = self.normalize_vector_store( self.response )
-			self.store_id = self.vector_store.get( 'id' )
+			self.vector_store = { 'id': self.source.get( 'id', '' ),
+				'name': self.source.get( 'name', '' ),
+				'description': self.source.get( 'description', '' ),
+				'created_at': self.source.get( 'created_at', 0 ),
+				'object': self.source.get( 'object', '' ),
+				'usage_bytes': self.source.get( 'usage_bytes', 0 ),
+				'file_counts': self.source.get( 'file_counts', None ),
+				'status': self.source.get( 'status', '' ),
+				'expires_after': self.source.get( 'expires_after', None ),
+				'expires_at': self.source.get( 'expires_at', 0 ),
+				'last_active_at': self.source.get( 'last_active_at', 0 ),
+				'metadata': self.source.get( 'metadata', None ), }
 			return self.vector_store
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'create( self, name: str, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = 'get_vector_store( self, response: Any )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def list_stores( self, limit: int=100, order: str='desc', after: str=None,
-		before: str=None ) -> List[ Dict[ str, Any ] ]:
-		"""List stores.
+	def get_vector_file( self, response: Any ) -> Dict[ str, Any ]:
+		"""Get vector-store file metadata.
 		
+		Purpose:
+			Extracts application-facing metadata from a required vector-store file response.
 		
-			Purpose:
-			    Lists OpenAI vector stores and normalizes store metadata for UI display.
+		Args:
+			response (Any): Required provider vector-store file response.
 		
-			Args:
-			    limit: Maximum number of provider objects to return.
-			    order: Sort order supplied to list operations.
-			    after: Pagination cursor for results after a provider object.
-			    before: Pagination cursor for results before a provider object.
+		Returns:
+			Dict[str, Any]: Application-facing attached-file metadata.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized vector-store metadata dictionaries.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.request = { 'limit': limit, 'order': order, }
+			throw_if( 'response', response )
+			self.response = response
 			
-			if isinstance( after, str ) and after.strip( ):
-				self.request[ 'after' ]=after.strip( )
+			if isinstance( self.response, dict ):
+				self.source = self.response
+			elif hasattr( self.response, 'model_dump' ):
+				self.source = self.response.model_dump( )
+			else:
+				self.source = { 'id': getattr( self.response, 'id', '' ),
+					'object': getattr( self.response, 'object', '' ),
+					'created_at': getattr( self.response, 'created_at', 0 ),
+					'vector_store_id': getattr( self.response, 'vector_store_id', '', ),
+					'status': getattr( self.response, 'status', '' ),
+					'last_error': getattr( self.response, 'last_error', None ),
+					'chunking_strategy': getattr( self.response, 'chunking_strategy', None, ),
+					'attributes': getattr( self.response, 'attributes', None ),
+					'usage_bytes': getattr( self.response, 'usage_bytes', 0 ), }
 			
-			if isinstance( before, str ) and before.strip( ):
-				self.request[ 'before' ]=before.strip( )
+			self.vector_file = { 'id': self.source.get( 'id', '' ),
+				'object': self.source.get( 'object', '' ),
+				'created_at': self.source.get( 'created_at', 0 ),
+				'vector_store_id': self.source.get( 'vector_store_id', '' ),
+				'status': self.source.get( 'status', '' ),
+				'last_error': self.source.get( 'last_error', None ),
+				'chunking_strategy': self.source.get( 'chunking_strategy', None ),
+				'attributes': self.source.get( 'attributes', None ),
+				'usage_bytes': self.source.get( 'usage_bytes', 0 ), }
+			return self.vector_file
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'get_vector_file( self, response: Any )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_file_batch( self, response: Any ) -> Dict[ str, Any ]:
+		"""Get file-batch metadata.
+		
+		Purpose:
+			Extracts application-facing metadata from a required file-batch response.
+		
+		Args:
+			response (Any): Required provider file-batch response.
+		
+		Returns:
+			Dict[str, Any]: Application-facing file-batch metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'response', response )
+			self.response = response
+			
+			if isinstance( self.response, dict ):
+				self.source = self.response
+			elif hasattr( self.response, 'model_dump' ):
+				self.source = self.response.model_dump( )
+			else:
+				self.source = { 'id': getattr( self.response, 'id', '' ),
+					'object': getattr( self.response, 'object', '' ),
+					'created_at': getattr( self.response, 'created_at', 0 ),
+					'vector_store_id': getattr( self.response, 'vector_store_id', '', ),
+					'status': getattr( self.response, 'status', '' ),
+					'file_counts': getattr( self.response, 'file_counts', None, ), }
+			
+			self.file_batch = { 'id': self.source.get( 'id', '' ),
+				'object': self.source.get( 'object', '' ),
+				'created_at': self.source.get( 'created_at', 0 ),
+				'vector_store_id': self.source.get( 'vector_store_id', '' ),
+				'status': self.source.get( 'status', '' ),
+				'file_counts': self.source.get( 'file_counts', None ), }
+			return self.file_batch
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'get_file_batch( self, response: Any )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def get_search_results( self, response: Any ) -> List[ Dict[ str, Any ] ]:
+		"""Get vector-store search results.
+		
+		Purpose:
+			Extracts native vector-store search results from a required provider response.
+		
+		Args:
+			response (Any): Required provider vector-store search response.
+		
+		Returns:
+			List[Dict[str, Any]]: Application-facing search results.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'response', response )
+			self.response = response
+			self.items = getattr( self.response, 'data', [ ], ) or [ ]
+			self.search_results = [ ]
+			for item in self.items:
+				if isinstance( item, dict ):
+					self.source = item
+				elif hasattr( item, 'model_dump' ):
+					self.source = item.model_dump( )
+				else:
+					self.source = { 'file_id': getattr( item, 'file_id', '' ),
+						'filename': getattr( item, 'filename', '' ),
+						'score': getattr( item, 'score', 0.0 ),
+						'attributes': getattr( item, 'attributes', None ),
+						'content': getattr( item, 'content', [ ] ), }
+				
+				self.search_results.append( { 'file_id': self.source.get( 'file_id', '' ),
+					'filename': self.source.get( 'filename', '' ),
+					'score': self.source.get( 'score', 0.0 ),
+					'attributes': self.source.get( 'attributes', None ),
+					'content': self.source.get( 'content', [ ] ), } )
+			
+			return self.search_results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'get_search_results( self, response: Any )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def create( self, name: str, description: str = '',
+		metadata: Optional[ Dict[ str, Any ] ] = None,
+		expires_after: Optional[ Dict[ str, Any ] ] = None,
+		file_ids: Optional[ List[ str ] ] = None,
+		chunking_strategy: Optional[ Dict[ str, Any ] ] = None ) -> Dict[ str, Any ]:
+		"""Create a vector store.
+		
+		Purpose:
+			Creates a vector store with a required name and optional description, metadata,
+			expiration policy, files, and chunking strategy.
+		
+		Args:
+			name (str): Required vector-store name.
+			description (str): Optional vector-store description.
+			metadata (Optional[Dict[str, Any]]): Optional vector-store metadata.
+			expires_after (Optional[Dict[str, Any]]): Optional expiration policy.
+			file_ids (Optional[List[str]]): Optional files attached during creation.
+			chunking_strategy (Optional[Dict[str, Any]]): Optional chunking strategy.
+		
+		Returns:
+			Dict[str, Any]: Created vector-store metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'name', name )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.name = name
+			self.description = description
+			self.metadata = metadata if metadata is not None else { }
+			self.expires_after = (expires_after if expires_after is not None else { })
+			self.file_ids = file_ids if file_ids is not None else [ ]
+			self.chunking_strategy = (chunking_strategy if chunking_strategy is not None else { })
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'name': self.name, }
+			if self.description:
+				self.request[ 'description' ] = self.description
+			
+			if self.metadata:
+				self.request[ 'metadata' ] = self.metadata
+			
+			if self.expires_after:
+				self.request[ 'expires_after' ] = self.expires_after
+			
+			if self.file_ids:
+				self.request[ 'file_ids' ] = self.file_ids
+			
+			if self.chunking_strategy:
+				self.request[ 'chunking_strategy' ] = self.chunking_strategy
+			
+			self.response = self.client.vector_stores.create( **self.request )
+			self.vector_store = self.get_vector_store( self.response )
+			self.store_id = self.vector_store.get( 'id', '', )
+			return self.vector_store
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'create( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list_stores( self, limit: int = 100, order: str = 'desc', after: str = '',
+		before: str = '' ) -> List[ Dict[ str, Any ] ]:
+		"""List vector stores.
+		
+		Purpose:
+			Lists vector stores using the selected result limit, order, and cursor values.
+		
+		Args:
+			limit (int): Maximum number of vector stores returned.
+			order (str): Result order.
+			after (str): Optional cursor identifying the first result boundary.
+			before (str): Optional cursor identifying the last result boundary.
+		
+		Returns:
+			List[Dict[str, Any]]: Vector-store metadata rows.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.limit = limit
+			self.order = order
+			self.after = after
+			self.before = before
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'limit': self.limit, 'order': self.order, }
+			if self.after:
+				self.request[ 'after' ] = self.after
+			
+			if self.before:
+				self.request[ 'before' ] = self.before
 			
 			self.response = self.client.vector_stores.list( **self.request )
-			items = getattr( self.response, 'data', [ ] )
-			self.vector_stores = [ self.normalize_vector_store( item ) for item in items ]
+			self.items = getattr( self.response, 'data', [ ], ) or [ ]
+			self.vector_stores = [ self.get_vector_store( item ) for item in self.items ]
 			return self.vector_stores
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'list_stores( self, limit: int=100 )'
+			exception.method = 'list_stores( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def retrieve( self, store_id: str ) -> Dict[ str, Any ] | None:
-		"""Retrieve.
+	def list( self, limit: int=100, order: str='desc', after: str='',
+		before: str='' ) -> List[ Dict[ str, Any ] ]:
+		"""List vector stores.
 		
+		Purpose:
+			Provides the application-compatible list alias for vector-store listing.
 		
-			Purpose:
-			    Retrieves provider resource metadata by identifier and normalizes the response.
+		Args:
+			limit (int): Maximum number of vector stores returned.
+			order (str): Result order.
+			after (str): Optional after cursor.
+			before (str): Optional before cursor.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
+		Returns:
+			List[Dict[str, Any]]: Vector-store metadata rows.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized provider object metadata or None when the
-			    provider returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.request = { 'vector_store_id': self.store_id, }
-			
-			self.response = self.client.vector_stores.retrieve( vector_store_id=self.store_id )
-			self.vector_store = self.normalize_vector_store( self.response )
+			self.limit = limit
+			self.order = order
+			self.after = after
+			self.before = before
+			return self.list_stores( self.limit, self.order, self.after, self.before, )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'list( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def retrieve( self, store_id: str ) -> Dict[ str, Any ]:
+		"""Retrieve a vector store.
+		
+		Purpose:
+			Retrieves metadata for a required vector-store identifier.
+		
+		Args:
+			store_id (str): Required vector-store identifier.
+		
+		Returns:
+			Dict[str, Any]: Retrieved vector-store metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.retrieve( self.store_id )
+			self.vector_store = self.get_vector_store( self.response )
 			return self.vector_store
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'retrieve( self, store_id: str ) -> Dict[ str, Any ] | None'
+			exception.method = ('retrieve( self, store_id: str ) -> Dict[ str, Any ]')
 			Logger( ).write( exception )
 			raise exception
 	
-	def update( self, store_id: str, name: str=None, description: str=None,
-		metadata: Dict[ str, Any ]=None,
-		expires_after: Dict[ str, Any ]=None ) -> ( Dict[ str, Any ] | None):
-		"""Update.
+	def update( self, store_id: str, name: str = '', description: str = '',
+		metadata: Optional[ Dict[ str, Any ] ] = None,
+		expires_after: Optional[ Dict[ str, Any ] ] = None ) -> Dict[ str, Any ]:
+		"""Update a vector store.
 		
+		Purpose:
+			Updates a required vector store using supplied name, description, metadata, or
+			expiration-policy values.
 		
-			Purpose:
-			    Executes the update workflow for the VectorStores provider wrapper while
-			    preserving normalized instance state for downstream use.
+		Args:
+			store_id (str): Required vector-store identifier.
+			name (str): Optional updated vector-store name.
+			description (str): Optional updated description.
+			metadata (Optional[Dict[str, Any]]): Optional updated metadata.
+			expires_after (Optional[Dict[str, Any]]): Optional updated expiration policy.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    name: Resource, argument, or store name to validate or use.
-			    description: Description metadata supplied to a vector store.
-			    metadata: Metadata dictionary supplied to a vector store or attached file.
-			    expires_after: Expiration policy supplied to a vector store.
+		Returns:
+			Dict[str, Any]: Updated vector-store metadata.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Result produced by the provider workflow.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
+			throw_if( 'store_id', store_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.name = name
+			self.description = description
+			self.metadata = metadata if metadata is not None else { }
+			self.expires_after = (expires_after if expires_after is not None else { })
+			self.client = OpenAI( api_key=self.api_key, )
 			self.request = { }
+			if self.name:
+				self.request[ 'name' ] = self.name
 			
-			if isinstance( name, str ) and name.strip( ):
-				self.request[ 'name' ]=name.strip( )
+			if self.description:
+				self.request[ 'description' ] = self.description
 			
-			if isinstance( description, str ) and description.strip( ):
-				self.request[ 'description' ]=description.strip( )
+			if metadata is not None:
+				self.request[ 'metadata' ] = self.metadata
 			
-			if isinstance( metadata, dict ):
-				self.request[ 'metadata' ]=metadata
+			if self.expires_after:
+				self.request[ 'expires_after' ] = self.expires_after
 			
-			if isinstance( expires_after, dict ) and len( expires_after ) > 0:
-				self.request[ 'expires_after' ]=expires_after
-			
-			if len( self.request ) == 0:
+			if not self.request:
 				return self.retrieve( self.store_id )
 			
-			self.response = self.client.vector_stores.update( vector_store_id=self.store_id,
-				**self.request )
-			
-			self.vector_store = self.normalize_vector_store( self.response )
+			self.response = self.client.vector_stores.update( self.store_id, **self.request )
+			self.vector_store = self.get_vector_store( self.response )
 			return self.vector_store
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'update( self, store_id: str, **kwargs )'
+			exception.method = 'update( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def delete( self, store_id: str ) -> Dict[ str, Any ] | None:
-		"""Delete.
+	def delete( self, store_id: str ) -> Dict[ str, Any ]:
+		"""Delete a vector store.
 		
+		Purpose:
+			Deletes a required vector-store identifier.
 		
-			Purpose:
-			    Deletes the selected provider resource and returns normalized deletion metadata.
+		Args:
+			store_id (str): Required vector-store identifier.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
+		Returns:
+			Dict[str, Any]: Provider deletion result.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized deletion response or None when deletion
-			    returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.request = { 'vector_store_id': self.store_id, }
-			
-			self.response = self.client.vector_stores.delete( vector_store_id=self.store_id )
-			
+			throw_if( 'store_id', store_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.delete( self.store_id )
 			if isinstance( self.response, dict ):
 				return self.response
 			
@@ -5555,485 +4156,216 @@ class VectorStores( GPT ):
 				return self.response.model_dump( )
 			
 			return { 'id': getattr( self.response, 'id', self.store_id ),
-				'deleted': getattr( self.response, 'deleted', None ),
-				'object': getattr( self.response, 'object', None ), }
+				'deleted': getattr( self.response, 'deleted', False ),
+				'object': getattr( self.response, 'object', '' ), }
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'delete( self, store_id: str ) -> Dict[ str, Any ] | None'
+			exception.method = ('delete( self, store_id: str ) -> Dict[ str, Any ]')
 			Logger( ).write( exception )
 			raise exception
 	
-	def list( self, store_id: str, limit: int=100, order: str='desc' ) -> List[
-		Dict[ str, Any ] ]:
-		"""List.
+	def attach_file( self, store_id: str, file_id: str,
+		attributes: Optional[ Dict[ str, Any ] ] = None,
+		chunking_strategy: Optional[ Dict[ str, Any ] ] = None ) -> Dict[ str, Any ]:
+		"""Attach a file.
 		
+		Purpose:
+			Attaches a required OpenAI file to a required vector store.
 		
-			Purpose:
-			    Lists provider resources and normalizes the returned collection for UI display or
-			    downstream processing.
+		Args:
+			store_id (str): Required vector-store identifier.
+			file_id (str): Required OpenAI file identifier.
+			attributes (Optional[Dict[str, Any]]): Optional attached-file attributes.
+			chunking_strategy (Optional[Dict[str, Any]]): Optional chunking strategy.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    limit: Maximum number of provider objects to return.
-			    order: Sort order supplied to list operations.
+		Returns:
+			Dict[str, Any]: Attached-file metadata.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized provider object list.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			return self.list_files( store_id=store_id, limit=limit, order=order )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'list( self, store_id: str ) -> List[ Dict[ str, Any ] ]'
-			Logger( ).write( exception )
-			raise exception
-	
-	def list_files( self, store_id: str, limit: int=100, order: str='desc' ) -> List[
-		Dict[ str, Any ] ]:
-		"""List files.
-		
-		
-			Purpose:
-			    Lists files attached to a vector store and normalizes file metadata for UI display.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    limit: Maximum number of provider objects to return.
-			    order: Sort order supplied to list operations.
-		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized vector-store file metadata dictionaries.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.request = { 'limit': limit, 'order': order, }
-			self.response = self.client.vector_stores.files.list( vector_store_id=self.store_id,
-				**self.request )
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.attributes = attributes if attributes is not None else { }
+			self.chunking_strategy = (chunking_strategy if chunking_strategy is not None else { })
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'file_id': self.file_id, }
+			if self.attributes:
+				self.request[ 'attributes' ] = self.attributes
 			
-			items = getattr( self.response, 'data', [ ] )
-			self.vector_files = [ self.normalize_vector_store_file( item ) for item in items ]
+			if self.chunking_strategy:
+				self.request[ 'chunking_strategy' ] = self.chunking_strategy
+			
+			self.response = self.client.vector_stores.files.create( self.store_id, **self.request )
+			self.vector_file = self.get_vector_file( self.response )
+			return self.vector_file
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'attach_file( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list_files( self, store_id: str, limit: int = 100, order: str = 'desc', after: str = '',
+		before: str = '', filter: str = '' ) -> List[ Dict[ str, Any ] ]:
+		"""List attached files.
+		
+		Purpose:
+			Lists files attached to a required vector store.
+		
+		Args:
+			store_id (str): Required vector-store identifier.
+			limit (int): Maximum number of files returned.
+			order (str): Result order.
+			after (str): Optional after cursor.
+			before (str): Optional before cursor.
+			filter (str): Optional attached-file status filter.
+		
+		Returns:
+			List[Dict[str, Any]]: Attached-file metadata rows.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.limit = limit
+			self.order = order
+			self.after = after
+			self.before = before
+			self.filter = filter
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'limit': self.limit, 'order': self.order, }
+			if self.after:
+				self.request[ 'after' ] = self.after
+			
+			if self.before:
+				self.request[ 'before' ] = self.before
+			
+			if self.filter:
+				self.request[ 'filter' ] = self.filter
+			
+			self.response = self.client.vector_stores.files.list( self.store_id, **self.request )
+			self.items = getattr( self.response, 'data', [ ], ) or [ ]
+			self.vector_files = [ self.get_vector_file( item ) for item in self.items ]
 			return self.vector_files
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'list_files( self, store_id: str )'
+			exception.method = 'list_files( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def retrieve_file( self, store_id: str, file_id: str ) -> Dict[ str, Any ] | None:
-		"""Retrieve file.
+	def retrieve_file( self, store_id: str, file_id: str ) -> Dict[ str, Any ]:
+		"""Retrieve an attached file.
 		
+		Purpose:
+			Retrieves metadata for a required file attached to a required vector store.
 		
-			Purpose:
-			    Retrieves metadata for a file attached to a vector store.
+		Args:
+			store_id (str): Required vector-store identifier.
+			file_id (str): Required attached-file identifier.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_id: File id supplied to the retrieve file workflow.
+		Returns:
+			Dict[str, Any]: Attached-file metadata.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized vector-store file metadata or None when no
-			    file is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.file_id = self.validate_file_id( file_id )
-			self.response = self.client.vector_stores.files.retrieve( vector_store_id=self.store_id,
-				file_id=self.file_id )
-			
-			self.vector_file = self.normalize_vector_store_file( self.response )
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.files.retrieve( self.file_id,
+				vector_store_id=self.store_id, )
+			self.vector_file = self.get_vector_file( self.response )
 			return self.vector_file
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'retrieve_file( self, store_id: str, file_id: str )'
+			exception.method = 'retrieve_file( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def attach_file( self, store_id: str=None, file_id: str=None, vector_store_id: str=None,
-		attributes: Dict[ str, Any ]=None, chunking_strategy: Dict[ str, Any ]=None ) -> Dict[
-			                                                                                     str, Any ] | None:
-		"""Attach file.
+	def update_file( self, store_id: str, file_id: str,
+		attributes: Dict[ str, Any ] ) -> Dict[ str, Any ]:
+		"""Update an attached file.
 		
+		Purpose:
+			Updates attributes for a required file attached to a required vector store.
 		
-			Purpose:
-			    Attaches an existing OpenAI file to a vector store and returns normalized
-			    attachment metadata.
+		Args:
+			store_id (str): Required vector-store identifier.
+			file_id (str): Required attached-file identifier.
+			attributes (Dict[str, Any]): Required updated file attributes.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_id: File id supplied to the attach file workflow.
-			    vector_store_id: Alternate vector-store identifier retained for UI compatibility.
-			    attributes: File attributes supplied to vector-store file operations.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
+		Returns:
+			Dict[str, Any]: Updated attached-file metadata.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized attached-file metadata or None when attachment
-			    returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			selected_store_id = vector_store_id if isinstance( vector_store_id,
-				str ) and vector_store_id.strip( ) else store_id
-			self.store_id = self.validate_store_id( selected_store_id )
-			self.file_id = self.validate_file_id( file_id )
-			self.request = { 'file_id': self.file_id, }
-			
-			if isinstance( attributes, dict ) and len( attributes ) > 0:
-				self.request[ 'attributes' ]=attributes
-			
-			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
-				self.request[ 'chunking_strategy' ]=chunking_strategy
-			
-			self.response = self.client.vector_stores.files.create( vector_store_id=self.store_id,
-				**self.request )
-			
-			self.vector_file = self.normalize_vector_store_file( self.response )
-			return self.vector_file
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'attach_file( self, store_id: str=None, file_id: str=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def upload_and_attach( self, store_id: str=None, vector_store_id: str=None,
-		path: str=None, filepath: str=None, purpose: str='assistants',
-		attributes: Dict[ str, Any ]=None,
-		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Upload and attach.
-		
-		
-			Purpose:
-			    Uploads a local file and attaches it to a vector store in one workflow.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    vector_store_id: Alternate vector-store identifier retained for UI compatibility.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    purpose: OpenAI file purpose used for upload or filtering.
-			    attributes: File attributes supplied to vector-store file operations.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized uploaded-and-attached file metadata or None
-			    when no object is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			selected_store_id = vector_store_id if isinstance( vector_store_id,
-				str ) and vector_store_id.strip( ) else store_id
-			selected_path = path if isinstance( path, str ) and path.strip( ) else filepath
-			self.store_id = self.validate_store_id( selected_store_id )
-			throw_if( 'path', selected_path )
-			upload_purpose = purpose if isinstance( purpose,
-				str ) and purpose.strip( ) else 'assistants'
-			
-			with open( selected_path, 'rb' ) as source:
-				uploaded_file = self.client.files.create( file=source, purpose=upload_purpose )
-			
-			if hasattr( uploaded_file, 'model_dump' ):
-				file_metadata = uploaded_file.model_dump( )
-			else:
-				file_metadata = { 'id': getattr( uploaded_file, 'id', None ),
-					'object': getattr( uploaded_file, 'object', None ),
-					'bytes': getattr( uploaded_file, 'bytes', None ),
-					'created_at': getattr( uploaded_file, 'created_at', None ),
-					'filename': getattr( uploaded_file, 'filename', None ),
-					'purpose': getattr( uploaded_file, 'purpose', upload_purpose ), }
-			
-			self.file_id = file_metadata.get( 'id' )
-			self.vector_file = self.attach_file( store_id=self.store_id, file_id=self.file_id,
-				attributes=attributes, chunking_strategy=chunking_strategy )
-			
-			return { 'file': file_metadata, 'vector_store_file': self.vector_file,
-				'file_id': self.file_id, 'vector_store_id': self.store_id, }
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'upload_and_attach( self, store_id: str=None, path: str=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def upload_file( self, store_id: str=None, vector_store_id: str=None, path: str=None,
-		filepath: str=None, purpose: str='assistants', attributes: Dict[ str, Any ]=None,
-		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Upload file.
-		
-		
-			Purpose:
-			    Uploads a local file for vector-store use and returns normalized file metadata.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    vector_store_id: Alternate vector-store identifier retained for UI compatibility.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    purpose: OpenAI file purpose used for upload or filtering.
-			    attributes: File attributes supplied to vector-store file operations.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized uploaded-file metadata or None when upload
-			    returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			return self.upload_and_attach( store_id=store_id, vector_store_id=vector_store_id,
-				path=path, filepath=filepath, purpose=purpose, attributes=attributes,
-				chunking_strategy=chunking_strategy )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'upload_file( self, store_id: str=None, path: str=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def attach_upload( self, store_id: str=None, vector_store_id: str=None, path: str=None,
-		filepath: str=None, purpose: str='assistants', attributes: Dict[ str, Any ]=None,
-		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Attach upload.
-		
-		
-			Purpose:
-			    Uploads a local file and attaches it to a vector store in one compatibility
-			    workflow.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    vector_store_id: Alternate vector-store identifier retained for UI compatibility.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    purpose: OpenAI file purpose used for upload or filtering.
-			    attributes: File attributes supplied to vector-store file operations.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized uploaded-and-attached file metadata or None
-			    when no object is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			return self.upload_and_attach( store_id=store_id, vector_store_id=vector_store_id,
-				path=path, filepath=filepath, purpose=purpose, attributes=attributes,
-				chunking_strategy=chunking_strategy )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'attach_upload( self, store_id: str=None, path: str=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def upload( self, store_id: str=None, vector_store_id: str=None, path: str=None,
-		filepath: str=None, purpose: str='assistants', attributes: Dict[ str, Any ]=None,
-		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Upload.
-		
-		
-			Purpose:
-			    Uploads a local file to OpenAI and returns normalized file metadata for downstream
-			    workflows.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    vector_store_id: Alternate vector-store identifier retained for UI compatibility.
-			    path: Local file path supplied to image, audio, or vector-store workflows.
-			    filepath: Local file path supplied to upload, transcription, translation,
-			    or vector-store workflows.
-			    purpose: OpenAI file purpose used for upload or filtering.
-			    attributes: File attributes supplied to vector-store file operations.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized uploaded-file metadata or None when upload
-			    fails to return a file.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			return self.upload_and_attach( store_id=store_id, vector_store_id=vector_store_id,
-				path=path, filepath=filepath, purpose=purpose, attributes=attributes,
-				chunking_strategy=chunking_strategy )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = 'upload( self, store_id: str=None, path: str=None )'
-			Logger( ).write( exception )
-			raise exception
-	
-	def create_file_batch( self, store_id: str=None, file_ids: List[ str ]=None,
-		vector_store_id: str=None, attributes: Dict[ str, Any ]=None,
-		chunking_strategy: Dict[ str, Any ]=None ) -> Dict[ str, Any ] | None:
-		"""Create file batch.
-		
-		
-			Purpose:
-			    Creates a vector-store file batch from validated file identifiers.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_ids: OpenAI file identifiers attached to a vector store or batch.
-			    vector_store_id: Alternate vector-store identifier retained for UI compatibility.
-			    attributes: File attributes supplied to vector-store file operations.
-			    chunking_strategy: Chunking strategy supplied to vector-store ingestion.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized file-batch metadata or None when no batch is
-			    returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			selected_store_id = vector_store_id if isinstance( vector_store_id,
-				str ) and vector_store_id.strip( ) else store_id
-			self.store_id = self.validate_store_id( selected_store_id )
-			clean_file_ids = self.validate_file_ids( file_ids )
-			throw_if( 'file_ids', clean_file_ids )
-			
-			if len( clean_file_ids ) > 2000:
-				raise ValueError( 'Vector store file batches cannot exceed 2000 files.' )
-			
-			self.request = { 'file_ids': clean_file_ids, }
-			
-			if isinstance( attributes, dict ) and len( attributes ) > 0:
-				self.request[ 'attributes' ]=attributes
-			
-			if isinstance( chunking_strategy, dict ) and len( chunking_strategy ) > 0:
-				self.request[ 'chunking_strategy' ]=chunking_strategy
-			
-			self.response = self.client.vector_stores.file_batches.create(
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			throw_if( 'attributes', attributes )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.attributes = attributes
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'attributes': self.attributes, }
+			self.response = self.client.vector_stores.files.update( self.file_id,
 				vector_store_id=self.store_id, **self.request )
-			
-			self.file_batch = self.normalize_file_batch( self.response )
-			self.batch_id = self.file_batch.get( 'id' )
-			return self.file_batch
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'gpt'
-			exception.cause = 'VectorStores'
-			exception.method = ('create_file_batch( self, store_id: str=None, file_ids: List[ str '
-			                    ']=None )')
-			Logger( ).write( exception )
-			raise exception
-	
-	def update_file( self, store_id: str, file_id: str, attributes: Dict[ str, Any ]=None ) -> \
-			Dict[ str, Any ] | None:
-		"""Update file.
-		
-		
-			Purpose:
-			    Updates vector-store file attributes and returns normalized file metadata.
-		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_id: File id supplied to the update file workflow.
-			    attributes: File attributes supplied to vector-store file operations.
-		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized vector-store file metadata or None when no
-			    file is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
-		"""
-		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.file_id = self.validate_file_id( file_id )
-			self.request = { }
-			
-			if isinstance( attributes, dict ):
-				self.request[ 'attributes' ]=attributes
-			
-			self.response = self.client.vector_stores.files.update( vector_store_id=self.store_id,
-				file_id=self.file_id, **self.request )
-			
-			self.vector_file = self.normalize_vector_store_file( self.response )
+			self.vector_file = self.get_vector_file( self.response )
 			return self.vector_file
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'update_file( self, store_id: str, file_id: str )'
+			exception.method = 'update_file( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def delete_file( self, store_id: str, file_id: str ) -> Dict[ str, Any ] | None:
-		"""Delete file.
+	def delete_file( self, store_id: str, file_id: str ) -> Dict[ str, Any ]:
+		"""Delete an attached file.
 		
+		Purpose:
+			Removes a required file from a required vector store.
 		
-			Purpose:
-			    Deletes a file attachment from a vector store and returns normalized deletion
-			    metadata.
+		Args:
+			store_id (str): Required vector-store identifier.
+			file_id (str): Required attached-file identifier.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_id: File id supplied to the delete file workflow.
+		Returns:
+			Dict[str, Any]: Provider deletion result.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized deletion response or None when deletion
-			    returns no object.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.file_id = self.validate_file_id( file_id )
-			
-			self.response = self.client.vector_stores.files.delete( vector_store_id=self.store_id,
-				file_id=self.file_id )
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.files.delete( self.file_id,
+				vector_store_id=self.store_id, )
 			
 			if isinstance( self.response, dict ):
 				return self.response
@@ -6042,378 +4374,455 @@ class VectorStores( GPT ):
 				return self.response.model_dump( )
 			
 			return { 'id': getattr( self.response, 'id', self.file_id ),
-				'deleted': getattr( self.response, 'deleted', None ),
-				'object': getattr( self.response, 'object', None ), }
+				'deleted': getattr( self.response, 'deleted', False ),
+				'object': getattr( self.response, 'object', '' ), }
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'delete_file( self, store_id: str, file_id: str )'
+			exception.method = 'delete_file( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
 	def retrieve_file_content( self, store_id: str, file_id: str ) -> Any:
-		"""Retrieve file content.
+		"""Retrieve attached-file content.
 		
+		Purpose:
+			Retrieves parsed content for a required file attached to a required vector store.
 		
-			Purpose:
-			    Retrieves provider content for a file attached to a vector store.
+		Args:
+			store_id (str): Required vector-store identifier.
+			file_id (str): Required attached-file identifier.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    file_id: File id supplied to the retrieve file content workflow.
+		Returns:
+			Any: Provider file-content response.
 		
-			Returns:
-			    Any: Provider file-content payload returned by the vector-store file operation.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.file_id = self.validate_file_id( file_id )
-			
-			self.response = self.client.vector_stores.files.content( vector_store_id=self.store_id,
-				file_id=self.file_id )
-			
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_id', file_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.file_id = file_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.files.content( self.file_id,
+				vector_store_id=self.store_id, )
 			return self.response
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'retrieve_file_content( self, store_id: str, file_id: str )'
+			exception.method = 'retrieve_file_content( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def retrieve_file_batch( self, store_id: str, batch_id: str ) -> Dict[ str, Any ] | None:
-		"""Retrieve file batch.
+	def create_file_batch( self, store_id: str, file_ids: List[ str ],
+		attributes: Optional[ Dict[ str, Any ] ] = None,
+		chunking_strategy: Optional[ Dict[ str, Any ] ] = None ) -> Dict[ str, Any ]:
+		"""Create a file batch.
 		
+		Purpose:
+			Creates a file batch for required files in a required vector store.
 		
-			Purpose:
-			    Retrieves vector-store file-batch metadata by batch identifier.
+		Args:
+			store_id (str): Required vector-store identifier.
+			file_ids (List[str]): Required OpenAI file identifiers.
+			attributes (Optional[Dict[str, Any]]): Optional common file attributes.
+			chunking_strategy (Optional[Dict[str, Any]]): Optional chunking strategy.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    batch_id: Vector-store file-batch identifier.
+		Returns:
+			Dict[str, Any]: Created file-batch metadata.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized file-batch metadata or None when no batch is
-			    returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.batch_id = self.validate_batch_id( batch_id )
+			throw_if( 'store_id', store_id )
+			throw_if( 'file_ids', file_ids )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.file_ids = file_ids
+			self.attributes = attributes if attributes is not None else { }
+			self.chunking_strategy = (chunking_strategy if chunking_strategy is not None else { })
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'file_ids': self.file_ids, }
 			
-			self.response = self.client.vector_stores.file_batches.retrieve(
-				vector_store_id=self.store_id, batch_id=self.batch_id )
+			if self.attributes:
+				self.request[ 'attributes' ] = self.attributes
 			
-			self.file_batch = self.normalize_file_batch( self.response )
+			if self.chunking_strategy:
+				self.request[ 'chunking_strategy' ] = self.chunking_strategy
+			
+			self.response = self.client.vector_stores.file_batches.create( self.store_id,
+				**self.request )
+			self.file_batch = self.get_file_batch( self.response )
+			self.batch_id = self.file_batch.get( 'id', '', )
 			return self.file_batch
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'retrieve_file_batch( self, store_id: str, batch_id: str )'
+			exception.method = 'create_file_batch( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def list_file_batch_files( self, store_id: str, batch_id: str, limit: int=100 ) -> List[
-		Dict[ str, Any ] ]:
-		"""List file batch files.
+	def retrieve_file_batch( self, store_id: str, batch_id: str ) -> Dict[ str, Any ]:
+		"""Retrieve a file batch.
 		
+		Purpose:
+			Retrieves metadata for a required file batch in a required vector store.
 		
-			Purpose:
-			    Lists files associated with a vector-store file batch.
+		Args:
+			store_id (str): Required vector-store identifier.
+			batch_id (str): Required file-batch identifier.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    batch_id: Vector-store file-batch identifier.
-			    limit: Maximum number of provider objects to return.
+		Returns:
+			Dict[str, Any]: File-batch metadata.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized file metadata dictionaries for a file batch.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.batch_id = self.validate_batch_id( batch_id )
+			throw_if( 'store_id', store_id )
+			throw_if( 'batch_id', batch_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.batch_id = batch_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.file_batches.retrieve( self.batch_id,
+				vector_store_id=self.store_id, )
+			self.file_batch = self.get_file_batch( self.response )
+			return self.file_batch
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'gpt'
+			exception.cause = 'VectorStores'
+			exception.method = 'retrieve_file_batch( self, **kwargs )'
+			Logger( ).write( exception )
+			raise exception
+	
+	def list_file_batch_files( self, store_id: str, batch_id: str, limit: int = 100,
+		order: str = 'desc', after: str = '', before: str = '', filter: str = '' ) -> List[
+		Dict[ str, Any ] ]:
+		"""List file-batch files.
+		
+		Purpose:
+			Lists files associated with a required file batch and vector store.
+		
+		Args:
+			store_id (str): Required vector-store identifier.
+			batch_id (str): Required file-batch identifier.
+			limit (int): Maximum number of files returned.
+			order (str): Result order.
+			after (str): Optional after cursor.
+			before (str): Optional before cursor.
+			filter (str): Optional file-status filter.
+		
+		Returns:
+			List[Dict[str, Any]]: File-batch attached-file metadata.
+		
+		Raises:
+			Error: Re-raised after the exception is logged.
+		"""
+		try:
+			throw_if( 'store_id', store_id )
+			throw_if( 'batch_id', batch_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.batch_id = batch_id
+			self.limit = limit
+			self.order = order
+			self.after = after
+			self.before = before
+			self.filter = filter
+			self.client = OpenAI( api_key=self.api_key, )
+			self.request = { 'limit': self.limit, 'order': self.order, }
 			
-			self.response = self.client.vector_stores.file_batches.files.list(
-				vector_store_id=self.store_id, batch_id=self.batch_id, limit=limit )
+			if self.after:
+				self.request[ 'after' ] = self.after
 			
-			items = getattr( self.response, 'data', [ ] )
-			self.vector_files = [ self.normalize_vector_store_file( item ) for item in items ]
+			if self.before:
+				self.request[ 'before' ] = self.before
+			
+			if self.filter:
+				self.request[ 'filter' ] = self.filter
+			
+			self.response = self.client.vector_stores.file_batches.list_files( self.batch_id,
+				vector_store_id=self.store_id, **self.request )
+			self.items = getattr( self.response, 'data', [ ], ) or [ ]
+			self.vector_files = [ self.get_vector_file( item ) for item in self.items ]
 			return self.vector_files
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'list_file_batch_files( self, store_id: str, batch_id: str )'
+			exception.method = 'list_file_batch_files( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def cancel_file_batch( self, store_id: str, batch_id: str ) -> Dict[ str, Any ] | None:
-		"""Cancel file batch.
+	def cancel_file_batch( self, store_id: str, batch_id: str ) -> Dict[ str, Any ]:
+		"""Cancel a file batch.
 		
+		Purpose:
+			Cancels a required file batch in a required vector store.
 		
-			Purpose:
-			    Cancels an active vector-store file batch and returns normalized batch metadata.
+		Args:
+			store_id (str): Required vector-store identifier.
+			batch_id (str): Required file-batch identifier.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    batch_id: Vector-store file-batch identifier.
+		Returns:
+			Dict[str, Any]: Updated file-batch metadata.
 		
-			Returns:
-			    Dict[ str, Any ] | None: Normalized cancelled-batch metadata or None when no batch
-			    is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
-			self.batch_id = self.validate_batch_id( batch_id )
-			
-			self.response = self.client.vector_stores.file_batches.cancel(
-				vector_store_id=self.store_id, batch_id=self.batch_id )
-			
-			self.file_batch = self.normalize_file_batch( self.response )
+			throw_if( 'store_id', store_id )
+			throw_if( 'batch_id', batch_id )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.batch_id = batch_id
+			self.client = OpenAI( api_key=self.api_key, )
+			self.response = self.client.vector_stores.file_batches.cancel( self.batch_id,
+				vector_store_id=self.store_id, )
+			self.file_batch = self.get_file_batch( self.response )
 			return self.file_batch
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'cancel_file_batch( self, store_id: str, batch_id: str )'
+			exception.method = 'cancel_file_batch( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def search( self, store_id: str, query: str, max_num_results: int=10,
-		filters: Dict[ str, Any ]=None, ranking_options: Dict[ str, Any ]=None,
-		rewrite_query: bool=None ) -> List[ Dict[ str, Any ] ]:
-		"""Search.
+	def search( self, store_id: str, query: str, max_num_results: int = 10,
+		filters: Optional[ Dict[ str, Any ] ] = None,
+		ranking_options: Optional[ Dict[ str, Any ] ] = None, rewrite_query: bool = False ) -> (
+			List)[
+		Dict[ str, Any ] ]:
+		"""Search a vector store.
 		
+		Purpose:
+			Provides the application-compatible alias for native vector-store search.
 		
-			Purpose:
-			    Searches provider-managed files or vector stores and returns normalized search
-			    output for grounded workflows.
+		Args:
+			store_id (str): Required vector-store identifier.
+			query (str): Required semantic-search query.
+			max_num_results (int): Maximum number of results.
+			filters (Optional[Dict[str, Any]]): Optional attribute filters.
+			ranking_options (Optional[Dict[str, Any]]): Optional ranking configuration.
+			rewrite_query (bool): Indicates whether the provider may rewrite the query.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    query: Search query submitted to a file or vector-store workflow.
-			    max_num_results: Max num results supplied to the search workflow.
-			    filters: Search filters supplied to vector-store search.
-			    ranking_options: Ranking options supplied to vector-store search.
-			    rewrite_query: Flag controlling provider query rewriting.
+		Returns:
+			List[Dict[str, Any]]: Native vector-store search results.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Search results or generated answer text returned by the
-			    provider workflow.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			return self.search_store( store_id=store_id, query=query,
-				max_num_results=max_num_results, filters=filters, ranking_options=ranking_options,
-				rewrite_query=rewrite_query )
+			self.store_id = store_id
+			self.query = query
+			self.max_search_results = max_num_results
+			self.filters = filters if filters is not None else { }
+			self.ranking_options = (ranking_options if ranking_options is not None else { })
+			self.rewrite_query = rewrite_query
+			return self.search_store( self.store_id, self.query, self.max_search_results,
+				self.filters, self.ranking_options, self.rewrite_query, )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'search( self, store_id: str, query: str )'
+			exception.method = 'search( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def search_store( self, store_id: str, query: str, max_num_results: int=10,
-		filters: Dict[ str, Any ]=None, ranking_options: Dict[ str, Any ]=None,
-		rewrite_query: bool=None ) -> List[ Dict[ str, Any ] ]:
-		"""Search store.
+	def search_store( self, store_id: str, query: str, max_num_results: int = 10,
+		filters: Optional[ Dict[ str, Any ] ] = None,
+		ranking_options: Optional[ Dict[ str, Any ] ] = None, rewrite_query: bool = False ) -> (
+			List)[
+		Dict[ str, Any ] ]:
+		"""Search a vector store.
 		
+		Purpose:
+			Executes native semantic search against a required vector store.
 		
-			Purpose:
-			    Searches a vector store and returns normalized search-result dictionaries.
+		Args:
+			store_id (str): Required vector-store identifier.
+			query (str): Required semantic-search query.
+			max_num_results (int): Maximum number of results.
+			filters (Optional[Dict[str, Any]]): Optional attribute filters.
+			ranking_options (Optional[Dict[str, Any]]): Optional ranking configuration.
+			rewrite_query (bool): Indicates whether the provider may rewrite the query.
 		
-			Args:
-			    store_id: Vector-store identifier used by store and file operations.
-			    query: Search query submitted to a file or vector-store workflow.
-			    max_num_results: Max num results supplied to the search store workflow.
-			    filters: Search filters supplied to vector-store search.
-			    ranking_options: Ranking options supplied to vector-store search.
-			    rewrite_query: Flag controlling provider query rewriting.
+		Returns:
+			List[Dict[str, Any]]: Native vector-store search results.
 		
-			Returns:
-			    List[ Dict[ str, Any ] ]: Normalized vector-store search-result dictionaries.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			self.store_id = self.validate_store_id( store_id )
+			throw_if( 'store_id', store_id )
 			throw_if( 'query', query )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_id = store_id
+			self.query = query
+			self.max_search_results = max_num_results
+			self.filters = filters if filters is not None else { }
+			self.ranking_options = (ranking_options if ranking_options is not None else { })
+			self.rewrite_query = rewrite_query
+			self.client = OpenAI( api_key=self.api_key, )
 			
-			self.request = { 'query': query.strip( ),
-				'max_num_results': self.validate_max_num_results( max_num_results ), }
+			if self.max_search_results < 1:
+				self.max_search_results = 1
 			
-			if isinstance( filters, dict ) and len( filters ) > 0:
-				self.request[ 'filters' ]=filters
+			if self.max_search_results > 50:
+				self.max_search_results = 50
 			
-			if isinstance( ranking_options, dict ) and len( ranking_options ) > 0:
-				self.request[ 'ranking_options' ]=ranking_options
+			self.request = { 'query': self.query, 'max_num_results': self.max_search_results,
+				'rewrite_query': self.rewrite_query, }
 			
-			if isinstance( rewrite_query, bool ):
-				self.request[ 'rewrite_query' ]=rewrite_query
+			if self.filters:
+				self.request[ 'filters' ] = self.filters
 			
-			self.response = self.client.vector_stores.search( vector_store_id=self.store_id,
-				**self.request )
+			if self.ranking_options:
+				self.request[ 'ranking_options' ] = self.ranking_options
 			
-			self.search_results = self.normalize_search_results( self.response )
+			self.response = self.client.vector_stores.search( self.store_id, **self.request )
+			self.search_results = self.get_search_results( self.response )
 			return self.search_results
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'search_store( self, store_id: str, query: str )'
+			exception.method = 'search_store( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
 	def answer_with_file_search( self, store_ids: List[ str ], prompt: str,
-		model: str='gpt-4o-mini', max_num_results: int=10,
-		instructions: str=None ) -> str | None:
+		model: str = 'gpt-4o-mini', max_num_results: int = 10, instructions: str = '' ) -> str:
 		"""Answer with file search.
 		
+		Purpose:
+			Answers a required prompt using the Responses API file-search tool across required
+			vector stores.
 		
-			Purpose:
-			    Generates a file-grounded answer using OpenAI file_search tool configuration.
+		Args:
+			store_ids (List[str]): Required vector-store identifiers.
+			prompt (str): Required user prompt.
+			model (str): OpenAI model used to generate the answer.
+			max_num_results (int): Maximum number of retrieved results.
+			instructions (str): Optional system or developer instructions.
 		
-			Args:
-			    store_ids: Vector-store identifiers used for file-search answer generation.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    model: Provider model identifier selected for the operation.
-			    max_num_results: Max num results supplied to the answer with file search workflow.
-			    instructions: System or developer instructions supplied to answer generation.
+		Returns:
+			str: Generated answer text.
 		
-			Returns:
-			    str | None: Generated answer text from file-search grounding or None when no
-			    output text is returned.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			self.client = OpenAI( api_key=cfg.OPENAI_API_KEY )
-			clean_store_ids = [ item.strip( ) for item in store_ids if
-				isinstance( item, str ) and item.strip( ) ]
-			
-			throw_if( 'store_ids', clean_store_ids )
+			throw_if( 'store_ids', store_ids )
 			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			throw_if( 'OPENAI_API_KEY', self.api_key )
+			self.store_ids = store_ids
+			self.prompt = prompt
+			self.model = model
+			self.max_search_results = max_num_results
+			self.instructions = instructions
+			self.client = OpenAI( api_key=self.api_key, )
 			
-			model_value = model if isinstance( model, str ) and model.strip( ) else 'gpt-4o-mini'
+			if self.max_search_results < 1:
+				self.max_search_results = 1
 			
-			input_items: List[ Dict[ str, Any ] ]=[ ]
-			if isinstance( instructions, str ) and instructions.strip( ):
-				input_items.append( { 'role': 'developer',
-					'content': [ { 'type': 'input_text', 'text': instructions.strip( ), }, ], } )
+			if self.max_search_results > 50:
+				self.max_search_results = 50
 			
-			input_items.append( { 'role': 'user',
-				'content': [ { 'type': 'input_text', 'text': prompt.strip( ), }, ], } )
+			self.input = [ { 'role': 'user',
+				'content': [ { 'type': 'input_text', 'text': self.prompt, }, ], }, ]
+			self.request = { 'model': self.model, 'input': self.input, 'tools': [
+				{ 'type': 'file_search', 'vector_store_ids': self.store_ids,
+					'max_num_results': self.max_search_results, }, ], }
 			
-			self.request = { 'model': model_value, 'input': input_items, 'tools': [
-				{ 'type': 'file_search', 'vector_store_ids': clean_store_ids,
-					'max_num_results': self.validate_max_num_results( max_num_results ), }, ], }
+			if self.instructions:
+				self.request[ 'instructions' ] = self.instructions
 			
 			self.response = self.client.responses.create( **self.request )
-			self.output_text = getattr( self.response, 'output_text', None )
+			self.output_text = getattr( self.response, 'output_text', '', )
 			
 			if self.output_text:
 				return self.output_text
 			
-			return str( self.response )
+			self.output_text = str( self.response )
+			return self.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = ('answer_with_file_search( self, store_ids: List[ str ], prompt: '
-			                    'str )')
+			exception.method = 'answer_with_file_search( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def survey( self, store_ids: List[ str ], prompt: str=None, model: str='gpt-4o-mini',
-		max_num_results: int=10, instructions: str=None ) -> str | None:
-		"""Survey.
+	def survey( self, store_ids: List[ str ],
+		prompt: str = ('Summarize the most relevant information available in the '
+		               'selected vector stores.'), model: str = 'gpt-4o-mini',
+		max_num_results: int = 10, instructions: str = '' ) -> str:
+		"""Survey vector stores.
 		
+		Purpose:
+			Generates a summary across required vector stores through the Responses API
+			file-search tool.
 		
-			Purpose:
-			    Surveys provider-managed file or vector-store content and returns structured
-			    descriptive output.
+		Args:
+			store_ids (List[str]): Required vector-store identifiers.
+			prompt (str): Summary prompt.
+			model (str): OpenAI model used to generate the summary.
+			max_num_results (int): Maximum number of retrieved results.
+			instructions (str): Optional system or developer instructions.
 		
-			Args:
-			    store_ids: Vector-store identifiers used for file-search answer generation.
-			    prompt: User prompt or task instruction submitted to the provider.
-			    model: Provider model identifier selected for the operation.
-			    max_num_results: Max num results supplied to the survey workflow.
-			    instructions: System or developer instructions supplied to answer generation.
+		Returns:
+			str: Generated vector-store summary.
 		
-			Returns:
-			    str | None: Structured file or vector-store survey output.
-		
-			Raises:
-			    Error: Re-raised after provider validation, request construction, or API execution
-			    errors are wrapped and logged.
+		Raises:
+			Error: Re-raised after the exception is logged.
 		"""
 		try:
-			query = prompt if isinstance( prompt, str ) and prompt.strip( ) else (
-				'Summarize the most relevant information available '
-				'in the selected vector stores.')
-			
-			return self.answer_with_file_search( store_ids=store_ids, prompt=query, model=model,
-				max_num_results=max_num_results, instructions=instructions )
+			throw_if( 'store_ids', store_ids )
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			self.store_ids = store_ids
+			self.prompt = prompt
+			self.model = model
+			self.max_search_results = max_num_results
+			self.instructions = instructions
+			self.output_text = self.answer_with_file_search( self.store_ids, self.prompt,
+				self.model, self.max_search_results, self.instructions, )
+			return self.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'VectorStores'
-			exception.method = 'survey( self, store_ids: List[ str ], prompt: str=None )'
+			exception.method = 'survey( self, **kwargs )'
 			Logger( ).write( exception )
 			raise exception
 	
-	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+	def __dir__( self ) -> List[ str ]:
+		"""Return member names.
 		
+		Purpose:
+			Returns public members exposed by the OpenAI VectorStores wrapper.
 		
-			Purpose:
-			    Returns the public VectorStores members displayed by interactive inspection and
-			    documentation tooling.
-		
-			Returns:
-			    List[ str ] | None: Public member names exposed for interactive inspection.
+		Returns:
+			List[str]: Public member names.
 		"""
-		return [ 'api_key', 'client', 'name', 'description', 'store_id', 'file_id', 'batch_id',
-			'model', 'response', 'vector_store', 'vector_stores', 'vector_file', 'vector_files',
+		return [ 'api_key', 'client', 'name', 'description', 'store_id', 'file_id', 'file_ids',
+			'batch_id', 'model', 'query', 'prompt', 'instructions', 'max_search_results',
+			'response', 'vector_store', 'vector_stores', 'vector_file', 'vector_files',
 			'file_batch', 'search_results', 'output_text', 'request', 'collections',
-			'max_search_results', 'model_options', 'ranker_options', 'chunking_strategy_options',
-			'validate_store_name', 'validate_store_id', 'validate_file_id', 'validate_batch_id',
-			'validate_file_ids', 'validate_max_num_results', 'build_expires_after',
-			'build_chunking_strategy', 'normalize_vector_store', 'normalize_vector_store_file',
-			'normalize_file_batch', 'normalize_search_results', 'create', 'list_stores',
-			'retrieve',
-			'update', 'delete', 'attach_file', 'list', 'list_files', 'retrieve_file',
-			'update_file',
-			'delete_file', 'retrieve_file_content', 'create_file_batch', 'retrieve_file_batch',
-			'list_file_batch_files', 'cancel_file_batch', 'search', 'search_store',
-			'answer_with_file_search', 'survey', ]
+			'model_options', 'ranker_options', 'chunking_strategy_options', 'get_vector_store',
+			'get_vector_file', 'get_file_batch', 'get_search_results', 'create', 'list_stores',
+			'list', 'retrieve', 'update', 'delete', 'attach_file', 'list_files', 'retrieve_file',
+			'update_file', 'delete_file', 'retrieve_file_content', 'create_file_batch',
+			'retrieve_file_batch', 'list_file_batch_files', 'cancel_file_batch', 'search',
+			'search_store', 'answer_with_file_search', 'survey', ]
