@@ -322,8 +322,7 @@ This enables controlled experimentation and governance of AI behavior.
 
 ## SF 133
 
--
-The [SF 133 Report on Budget Execution and Budgetary Resources](https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html)
+- The [SF 133 Report on Budget Execution and Budgetary Resources](https://portal.max.gov/portal/document/SF133/Budget/FACTS%20II%20-%20SF%20133%20Report%20on%20Budget%20Execution%20and%20Budgetary%20Resources.html)
 fulfills the requirement in 31
 U.S.C. 1511 - 1514 that the President review Federal expenditures at least four times a year.
 
