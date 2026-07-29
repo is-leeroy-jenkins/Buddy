@@ -1,0 +1,2158 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for Buddy, a federal financial management AI assistant for LLM-enabled analysis, retrieval, prompt management, and data workflows.">
+      
+      
+        <meta name="author" content="Terry D. Eppler">
+      
+      
+        <link rel="canonical" href="https://is-leeroy-jenkins.github.io/Buddy/development/">
+      
+      
+        <link rel="prev" href="../api/grok/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Development - Buddy Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/css/buddy.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Buddy Documentation" class="md-header__button md-logo" aria-label="Buddy Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Buddy Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/is-leeroy-jenkins/Buddy" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Buddy
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../user-guide/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Development
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Buddy Documentation" class="md-nav__button md-logo" aria-label="Buddy Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Buddy Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/is-leeroy-jenkins/Buddy" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Buddy
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/document-qna/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Document Q&A
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/image-generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/audio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audio Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/embeddings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embeddings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/vector-stores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector Stores
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/data-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/prompt-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompt Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/export-reporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export & Reporting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/utilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/gpt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GPT Provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/gemini/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gemini Provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/grok/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grok Provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Source Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧬 Development Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-style-docstring-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📝 Google-Style Docstring Standard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📝 Google-Style Docstring Standard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#function-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#property-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Property Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging-and-exception-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚨 Logging and Exception Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Configuration Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-development-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Local Development Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Source Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mkdocs-build-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 MkDocs Build Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mkdocs-configuration-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 MkDocs Configuration Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 API Reference Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-state-discipline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Session-State Discipline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-and-storage-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗄️ Data and Storage Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieval-and-grounding-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔎 Retrieval and Grounding Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-wrapper-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ Provider Wrapper Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pull-request-review-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚦 Pull Request Review Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧯 Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-build-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Release Build Sequence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Review Standard
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Source Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧬 Development Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-style-docstring-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📝 Google-Style Docstring Standard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📝 Google-Style Docstring Standard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#function-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#property-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Property Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging-and-exception-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚨 Logging and Exception Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Configuration Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-development-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Local Development Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Source Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mkdocs-build-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 MkDocs Build Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mkdocs-configuration-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 MkDocs Configuration Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 API Reference Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-state-discipline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Session-State Discipline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-and-storage-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗄️ Data and Storage Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieval-and-grounding-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔎 Retrieval and Grounding Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-wrapper-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ Provider Wrapper Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pull-request-review-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚦 Pull Request Review Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧯 Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-build-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Release Build Sequence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Review Standard
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h1>
+<p>This page describes the development workflow for Buddy, including source preservation, documentation
+comments, logging integration, validation, and MkDocs build practices.</p>
+<p>Buddy combines a Streamlit application, provider wrapper modules, local storage utilities, and
+source-driven documentation. Changes should be made conservatively because UI state, provider
+request construction, and document workflows depend on shared session-state keys and
+provider-specific wrapper contracts.</p>
+<h2 id="purpose">🧭 Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>The development process has four objectives:</p>
+<ol>
+<li>Preserve existing application behavior.</li>
+<li>Keep provider wrappers isolated and predictable.</li>
+<li>Maintain MkDocs-compatible Google-style docstrings.</li>
+<li>Validate source files before building or publishing documentation.</li>
+</ol>
+<p>Buddy documentation is built from source files, so source comments are part of the product. A
+documentation change should not introduce runtime changes unless the behavior change is intentional
+and tested.</p>
+<h2 id="source-layout">🧱 Source Layout<a class="headerlink" href="#source-layout" title="Permanent link">&para;</a></h2>
+<p>The core project files are organized around the Streamlit application and provider wrappers.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app.py</code></td>
+<td>Main Streamlit application, mode routing, session-state initialization, local database utilities, data-management workflows, prompt handling, document workflows, and export logic.</td>
+</tr>
+<tr>
+<td><code>gpt.py</code></td>
+<td>OpenAI wrapper for chat, images, text-to-speech, transcription, translation, embeddings, files, and vector stores.</td>
+</tr>
+<tr>
+<td><code>gemini.py</code></td>
+<td>Gemini wrapper for chat, image workflows, embeddings, speech, transcription, translation, files, file search, and cloud buckets.</td>
+</tr>
+<tr>
+<td><code>grok.py</code></td>
+<td>xAI Grok wrapper for chat, text-to-speech, transcription, translation, images, files, and collection-style retrieval workflows.</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td>Application configuration, API keys, constants, paths, logos, provider defaults, and UI settings.</td>
+</tr>
+<tr>
+<td><code>requirements.txt</code></td>
+<td>Runtime and documentation dependencies.</td>
+</tr>
+<tr>
+<td><code>mkdocs.yml</code></td>
+<td>MkDocs configuration for the generated documentation site.</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Markdown documentation pages, assets, API pages, and generated diagrams.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="development-principles">🧬 Development Principles<a class="headerlink" href="#development-principles" title="Permanent link">&para;</a></h2>
+<p>Buddy development should follow a preservation-first model.</p>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Preserve behavior</td>
+<td>Do not change control flow, provider calls, session-state keys, or return behavior during documentation-only work.</td>
+</tr>
+<tr>
+<td>Preserve signatures</td>
+<td>Do not change function, method, or constructor signatures unless a feature requires it.</td>
+</tr>
+<tr>
+<td>Preserve layout</td>
+<td>Do not move Streamlit widgets, columns, tabs, expanders, or state writes unless a UI change is requested.</td>
+</tr>
+<tr>
+<td>Keep providers isolated</td>
+<td>Provider-specific API logic belongs in <code>gpt.py</code>, <code>gemini.py</code>, or <code>grok.py</code>, not in unrelated UI code.</td>
+</tr>
+<tr>
+<td>Validate early</td>
+<td>Compile and inspect files before running MkDocs.</td>
+</tr>
+<tr>
+<td>Treat warnings as defects</td>
+<td>Griffe and MkDocs warnings usually indicate malformed docstrings, missing nav entries, or broken links.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="google-style-docstring-standard">📝 Google-Style Docstring Standard<a class="headerlink" href="#google-style-docstring-standard" title="Permanent link">&para;</a></h2>
+<p>Buddy uses Google-style docstrings because the API reference is generated by <code>mkdocstrings</code> and
+parsed by <code>griffe</code>.</p>
+<p>Use this section order when applicable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Purpose:
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Args:
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Attributes:
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Returns:
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Raises:
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>Notes:
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Examples:
+</code></pre></div>
+<p>Do not use underline-style headings such as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Parameters:
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>-----------
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Returns:
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>--------
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Purpose:
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>--------
+</code></pre></div>
+<p>Do not document <code>self</code> or <code>cls</code>.</p>
+<p>Do not add a <code>Returns:</code> section to <code>__init__</code>.</p>
+<p>Do not add <code>Returns: None</code> to constructors or procedures that only mutate state.</p>
+<h3 id="function-example">Function Example<a class="headerlink" href="#function-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a provider input payload.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="sd">    Purpose:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="sd">        Creates the provider request input structure from the current prompt and optional</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">        prior conversation context while preserving the message roles expected by the API.</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="sd">    Args:</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="sd">        prompt: User prompt submitted to the provider.</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="sd">        context: Optional prior user, assistant, system, or developer messages.</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="sd">        list[dict[str, object]]: Provider-ready message payload.</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="sd">        Error: Raised when validation or payload construction fails.</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<h3 id="property-example">Property Example<a class="headerlink" href="#property-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@property</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return supported model names.</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="sd">    Purpose:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="sd">        Provides model names used by the Streamlit selector for the current provider mode.</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="sd">        list[str]: Supported model option names.</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<h2 id="logging-and-exception-handling">🚨 Logging and Exception Handling<a class="headerlink" href="#logging-and-exception-handling" title="Permanent link">&para;</a></h2>
+<p>Buddy wraps provider and workflow exceptions with the project <code>Error</code> object. Where existing
+exception handlers catch and re-raise wrapped errors, they should also write to the project logger.</p>
+<p>Recommended pattern:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">exception</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">exception</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;gpt&#39;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">exception</span><span class="o">.</span><span class="n">cause</span> <span class="o">=</span> <span class="s1">&#39;Chat&#39;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;generate_text( self, prompt: str ) -&gt; str | None&#39;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">Logger</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">raise</span> <span class="n">exception</span>
+</code></pre></div>
+<p>The <code>exception.method</code> value should be a stable signature string. It must not include:</p>
+<ul>
+<li>API keys.</li>
+<li>User prompts.</li>
+<li>File contents.</li>
+<li>DataFrame contents.</li>
+<li>Full local file paths.</li>
+<li>Tokens.</li>
+<li>Provider responses.</li>
+<li>Object memory addresses.</li>
+<li>Other sensitive or volatile runtime values.</li>
+</ul>
+<h2 id="configuration-practices">🔐 Configuration Practices<a class="headerlink" href="#configuration-practices" title="Permanent link">&para;</a></h2>
+<p>Provider credentials and runtime defaults should come from configuration or environment variables.
+Do not hard-code secrets in source files.</p>
+<p>Common environment variables include:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>OpenAI provider access.</td>
+</tr>
+<tr>
+<td><code>GOOGLE_API_KEY</code></td>
+<td>Google Gemini access.</td>
+</tr>
+<tr>
+<td><code>GEMINI_API_KEY</code></td>
+<td>Gemini-specific provider access where separately configured.</td>
+</tr>
+<tr>
+<td><code>XAI_API_KEY</code></td>
+<td>xAI Grok access.</td>
+</tr>
+<tr>
+<td><code>GOOGLE_CSE_ID</code></td>
+<td>Search-related workflows where enabled.</td>
+</tr>
+<tr>
+<td><code>GOOGLEMAPS_API_KEY</code></td>
+<td>Maps-related workflows where enabled.</td>
+</tr>
+<tr>
+<td><code>GEOCODING_API_KEY</code></td>
+<td>Geocoding workflows where enabled.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="local-development-setup">🧪 Local Development Setup<a class="headerlink" href="#local-development-setup" title="Permanent link">&para;</a></h2>
+<p>Create a clean virtual environment and install dependencies.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">activate</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="p">-</span><span class="n">-upgrade</span> <span class="n">pip</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">-r</span> <span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+</code></pre></div>
+<p>Run the Streamlit application:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">streamlit</span> <span class="n">run</span> <span class="n">app</span><span class="p">.</span><span class="n">py</span>
+</code></pre></div>
+<p>Run from the repository root so imports, configuration paths, and SQLite paths resolve consistently.</p>
+<h2 id="source-validation">✅ Source Validation<a class="headerlink" href="#source-validation" title="Permanent link">&para;</a></h2>
+<p>Before building documentation, validate the Python files.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="p">.\</span><span class="n">app</span><span class="p">.</span><span class="n">py</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="p">.\</span><span class="n">gpt</span><span class="p">.</span><span class="n">py</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="p">.\</span><span class="n">gemini</span><span class="p">.</span><span class="n">py</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="p">.\</span><span class="n">grok</span><span class="p">.</span><span class="n">py</span>
+</code></pre></div>
+<p>Then run a project-wide compile check:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">compileall</span> <span class="p">.</span>
+</code></pre></div>
+<p>If a compile check fails, fix source syntax first. Do not troubleshoot MkDocs until the source files
+compile.</p>
+<h2 id="mkdocs-build-workflow">📚 MkDocs Build Workflow<a class="headerlink" href="#mkdocs-build-workflow" title="Permanent link">&para;</a></h2>
+<p>Build the documentation locally:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">mkdocs</span> <span class="n">build</span>
+</code></pre></div>
+<p>Serve the documentation locally:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">mkdocs</span> <span class="n">serve</span>
+</code></pre></div>
+<p>Then open the local site in a browser and verify:</p>
+<ul>
+<li>The home page renders.</li>
+<li>The user guide pages are listed in navigation.</li>
+<li>API reference pages render with source-driven content.</li>
+<li>Search works.</li>
+<li>Dark-mode styling loads.</li>
+<li>Tables are readable.</li>
+<li>No broken local links appear.</li>
+<li>No missing image or asset warnings appear.</li>
+</ul>
+<h2 id="mkdocs-configuration-checklist">🧾 MkDocs Configuration Checklist<a class="headerlink" href="#mkdocs-configuration-checklist" title="Permanent link">&para;</a></h2>
+<p>The <code>mkdocs.yml</code> file should include only pages and assets that exist.</p>
+<p>Required sections:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">theme</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">material</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="nt">plugins</span><span class="p">:</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mkdocstrings</span><span class="p">:</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">      </span><span class="nt">handlers</span><span class="p">:</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">        </span><span class="nt">python</span><span class="p">:</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">          </span><span class="nt">paths</span><span class="p">:</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">          </span><span class="nt">options</span><span class="p">:</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">            </span><span class="nt">docstring_style</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">google</span>
+</code></pre></div>
+<p>If CSS or JavaScript assets are added, confirm the files exist before referencing them:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">extra_css</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assets/css/buddy.css</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nt">extra_javascript</span><span class="p">:</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assets/js/buddy.js</span>
+</code></pre></div>
+<h2 id="api-reference-pattern">🧩 API Reference Pattern<a class="headerlink" href="#api-reference-pattern" title="Permanent link">&para;</a></h2>
+<p>API pages should be simple and source-driven.</p>
+<p>Example <code>docs/api/gpt.md</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gh"># GPT API</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>::: gpt
+</code></pre></div>
+<p>Example <code>docs/api/gemini.md</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="gh"># Gemini API</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>::: gemini
+</code></pre></div>
+<p>Example <code>docs/api/grok.md</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="gh"># Grok API</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>::: grok
+</code></pre></div>
+<p>Example <code>docs/api/app.md</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="gh"># Application API</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>::: app
+</code></pre></div>
+<p>Manual prose should stay in user-guide and architecture pages. API pages should rely on the Python
+docstrings.</p>
+<h2 id="session-state-discipline">🧭 Session-State Discipline<a class="headerlink" href="#session-state-discipline" title="Permanent link">&para;</a></h2>
+<p><code>app.py</code> uses session-state keys to coordinate modes. When changing UI or mode logic:</p>
+<ol>
+<li>Ensure keys are written before they are read.</li>
+<li>Do not reuse unrelated keys across modes.</li>
+<li>Do not clear upstream state unless the reset action is explicit.</li>
+<li>Keep reset functions scoped to their mode.</li>
+<li>Preserve compatibility aliases where existing workflows expect them.</li>
+</ol>
+<p>Mode-state functions should remain defensive because widgets may render in different orders after
+reruns.</p>
+<h2 id="data-and-storage-practices">🗄️ Data and Storage Practices<a class="headerlink" href="#data-and-storage-practices" title="Permanent link">&para;</a></h2>
+<p>Buddy uses SQLite-backed workflows for prompts, history, embeddings, and data-management utilities.</p>
+<p>Development rules:</p>
+<ul>
+<li>Validate table and column names before dynamic SQL.</li>
+<li>Quote SQLite identifiers where needed.</li>
+<li>Avoid destructive operations unless explicitly requested.</li>
+<li>Keep user-uploaded data separate from prompt and history storage.</li>
+<li>Preserve export paths and generated artifact behavior.</li>
+<li>Keep retrieval data traceable to the active document or vector-store source.</li>
+</ul>
+<h2 id="retrieval-and-grounding-practices">🔎 Retrieval and Grounding Practices<a class="headerlink" href="#retrieval-and-grounding-practices" title="Permanent link">&para;</a></h2>
+<p>Retrieval workflows should keep answer generation close to source material.</p>
+<p>Recommended pattern:</p>
+<ol>
+<li>Load or upload source material.</li>
+<li>Extract text.</li>
+<li>Normalize and chunk text.</li>
+<li>Generate embeddings or provider file references.</li>
+<li>Retrieve relevant chunks or sources.</li>
+<li>Submit grounded prompt context.</li>
+<li>Display answer and source information.</li>
+<li>Export results when needed.</li>
+</ol>
+<p>Source attribution should remain visible when the provider or local workflow exposes it.</p>
+<h2 id="provider-wrapper-practices">🛠️ Provider Wrapper Practices<a class="headerlink" href="#provider-wrapper-practices" title="Permanent link">&para;</a></h2>
+<p>Provider wrappers should expose similar high-level workflows even when provider APIs differ.</p>
+<table>
+<thead>
+<tr>
+<th>Wrapper</th>
+<th>Development Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpt.py</code></td>
+<td>Keep OpenAI Responses, Files, Images, Audio, Embeddings, and Vector Stores logic inside OpenAI wrapper classes.</td>
+</tr>
+<tr>
+<td><code>gemini.py</code></td>
+<td>Keep Gemini SDK, file search, cloud bucket, safety, grounding, and multimodal request logic inside Gemini wrapper classes.</td>
+</tr>
+<tr>
+<td><code>grok.py</code></td>
+<td>Keep xAI model, image, audio, file, and collection-style retrieval logic inside Grok wrapper classes.</td>
+</tr>
+</tbody>
+</table>
+<p>The UI should ask wrappers for available options through properties such as <code>model_options</code>,
+<code>tool_options</code>, <code>format_options</code>, and related option lists.</p>
+<h2 id="pull-request-review-checklist">🚦 Pull Request Review Checklist<a class="headerlink" href="#pull-request-review-checklist" title="Permanent link">&para;</a></h2>
+<p>Use this checklist before merging changes.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python files compile</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>MkDocs builds</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>No avoidable griffe warnings</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>No broken docs links</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>No missing assets referenced by <code>mkdocs.yml</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Public docstrings use Google style</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Constructors do not include <code>Returns:</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Logging handlers avoid sensitive runtime values</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Session-state keys are preserved</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Provider behavior is preserved</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>UI layout changes are intentional</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="common-issues">🧯 Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Likely Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>No type or annotation for returned value 'None'</code></td>
+<td>Constructor or procedure has malformed <code>Returns:</code> section.</td>
+<td>Remove <code>Returns:</code> from <code>__init__</code> and avoid <code>Returns: None</code>.</td>
+</tr>
+<tr>
+<td>API page is empty</td>
+<td>Module path is wrong or source file fails import.</td>
+<td>Confirm <code>paths: - .</code> and run <code>py_compile</code>.</td>
+</tr>
+<tr>
+<td>Page exists but is not in nav</td>
+<td>Markdown file was created but not listed in <code>mkdocs.yml</code>.</td>
+<td>Add the file to <code>nav</code> or remove it.</td>
+</tr>
+<tr>
+<td>CSS/JS warning</td>
+<td>Asset referenced but missing.</td>
+<td>Create the asset or remove the reference.</td>
+</tr>
+<tr>
+<td>Broken image link</td>
+<td>Image path is incorrect or image was not copied into <code>docs/images/</code>.</td>
+<td>Fix the relative path or copy the image.</td>
+</tr>
+<tr>
+<td>Streamlit key error</td>
+<td>Session-state key is read before initialization.</td>
+<td>Add or repair the relevant <code>ensure_*_mode_state</code> function.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="release-build-sequence">✅ Release Build Sequence<a class="headerlink" href="#release-build-sequence" title="Permanent link">&para;</a></h2>
+<p>Use this sequence for a clean documentation release:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">compileall</span> <span class="p">.</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">mkdocs</span> <span class="n">build</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">mkdocs</span> <span class="n">serve</span>
+</code></pre></div>
+<p>After visual review, commit source and documentation changes together.</p>
+<p>Recommended commit groups:</p>
+<ol>
+<li>Source docstring and logging updates.</li>
+<li>Documentation Markdown pages.</li>
+<li>CSS and JavaScript assets.</li>
+<li>Diagrams and images.</li>
+<li>MkDocs configuration.</li>
+</ol>
+<h2 id="review-standard">⚠️ Review Standard<a class="headerlink" href="#review-standard" title="Permanent link">&para;</a></h2>
+<p>Buddy supports analysis and documentation workflows, but AI-generated outputs still require
+professional review. Treat generated responses, extracted summaries, and exported reports as draft
+analytical products until validated against authoritative source material.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../api/grok/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Grok Provider">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Grok Provider
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2026 Terry D. Eppler
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/js/buddy.js"></script>
+      
+    
+  </body>
+</html>
