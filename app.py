@@ -11869,7 +11869,7 @@ elif mode == 'Vector Stores':
 		'stores_max_results': 10, 'stores_rewrite_query': False, 'stores_ranker': '',
 		'stores_chunking_strategy': '', 'stores_attributes': '', 'stores_expires_after_days': 0,
 		'stores_confirm_delete': False, 'stores_prompt_category': None, 'stores_prompt_id': None,
-		'stores_system_instructions': '', 'stores_uploaded_file': None, }
+		'stores_system_instructions': '',  }
 	
 	for state_key, default_value in stores_defaults.items( ):
 		if state_key not in st.session_state:
@@ -12673,7 +12673,7 @@ elif mode == 'Collections':
 		'collections_max_results': 10, 'collections_rewrite_query': False,
 		'collections_attributes': '', 'collections_confirm_delete': False,
 		'collections_prompt_category': None, 'collections_prompt_id': None,
-		'collections_system_instructions': '', 'collections_uploaded_file': None, }
+		'collections_system_instructions': '', }
 	
 	for state_key, default_value in collections_defaults.items( ):
 		if state_key not in st.session_state:
