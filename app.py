@@ -12899,13 +12899,11 @@ elif mode == 'Collections':
 		    None: This function updates Streamlit session state.
 		"""
 		instructions = str( st.session_state.get( 'collections_system_instructions', '' ) or '' )
-		
 		if instructions.strip( ):
 			st.session_state[ 'collections_system_instructions' ] = convert_markdown(
 				instructions )
 	
 	model_options = get_collection_options( collection, 'model_options', [ ] )
-	
 	if (st.session_state.get( 'collections_model' ) and model_options and st.session_state[
 		'collections_model' ] not in model_options):
 		st.session_state[ 'collections_model' ] = ''
@@ -12942,6 +12940,7 @@ elif mode == 'Collections':
 				if collection_id:
 					collection_options[ f'{collection_name} — {collection_id}' ] = collection_id
 			
+			# ----- Select -----
 			with selection_c1:
 				selected_label = st.selectbox( label='Collection',
 					options=list( collection_options.keys( ) ), index=None,
@@ -12952,12 +12951,14 @@ elif mode == 'Collections':
 					st.session_state[ 'collections_selected_id' ] = (
 						collection_options[ selected_label ])
 			
+			# ----- Collection ID -----
 			with selection_c2:
 				st.text_input( label='Collection ID', key='collections_manual_id',
 					placeholder='collection_...', help='Optional manual xAI Collection '
 					                                   'identifier.',
 					width='stretch', )
 			
+			# ----- Refresh -----
 			with selection_c3:
 				if st.button( label='Refresh', key='collections_refresh_button', width='stretch',
 						icon='🔄', ):
@@ -12990,10 +12991,12 @@ elif mode == 'Collections':
 			
 			document_c1, document_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 			
+			# ----- Doc ID -----
 			with document_c1:
 				st.text_input( label='Document ID', key='collections_document_id',
 					placeholder='file_...', width='stretch', )
 			
+			# ----- Attributes -----
 			with document_c2:
 				st.text_area( label='Document Attributes', key='collections_attributes',
 					placeholder='{ "category": "policy" }', height=68, )
@@ -13001,9 +13004,10 @@ elif mode == 'Collections':
 			document_action_c1, document_action_c2, document_action_c3, document_action_c4 = (
 				st.columns( 4, border=True, gap='xxsmall', ))
 			
+			# ----- Upload -----
 			with document_action_c1:
 				if st.button( label='Upload', key='collections_upload_document_button',
-						width='stretch', icon='⬆️', ):
+						width='stretch', icon='📤', ):
 					try:
 						if files is None:
 							raise ValueError( 'Grok does not provide a Files wrapper.' )
@@ -13025,6 +13029,7 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Document upload failed: {err.info}' )
 			
+			# ----- Add Document -----
 			with document_action_c2:
 				if st.button( label='Add', key='collections_add_document_button', width='stretch',
 						icon='➕', ):
@@ -13047,6 +13052,7 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Add document failed: {err.info}' )
 			
+			# ----- List Documents -----
 			with document_action_c3:
 				if st.button( label='List', key='collections_list_documents_button',
 						width='stretch', icon='📋', ):
@@ -13069,6 +13075,7 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Unable to list documents: {err.info}' )
 			
+			# ----- Remove -----
 			with document_action_c4:
 				if st.button( label='Remove', key='collections_remove_document_button',
 						width='stretch', icon='➖', ):
@@ -13096,12 +13103,14 @@ elif mode == 'Collections':
 			
 			batch_c1, batch_c2 = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
 			
+			# ----- Document IDs -----
 			with batch_c1:
 				st.text_input( label='Document IDs', key='collections_document_ids_text',
 					placeholder='file_abc123,file_def456',
 					help='Comma-delimited document identifiers for batch retrieval.',
 					width='stretch', )
 			
+			# ----- Get Batch -----
 			with batch_c2:
 				if st.button( label='Batch Get', key='collections_batch_get_documents_button',
 						width='stretch', icon='🔎', ):
@@ -13138,28 +13147,28 @@ elif mode == 'Collections':
 		# ------------------------------------------------------------------
 		with st.expander( label='Collection Lifecycle', icon='♻️', expanded=False,
 				width='stretch', ):
-			lifecycle_tab, metadata_tab = st.tabs(
-				[ 'Create / List', 'Retrieve / Update / Delete' ] )
+			lifecycle_tab, metadata_tab = st.tabs( [ 'Create / List', 'Retrieve / Update / Delete' ] )
 			
 			with lifecycle_tab:
 				create_c1, create_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 				
+				# ----- Name -----
 				with create_c1:
 					st.text_input( label='Name', key='collections_name', width='stretch', )
 				
+				# ----- Description -----
 				with create_c2:
 					st.text_area( label='Description', key='collections_description', height=68, )
 				
 				create_action_c1, create_action_c2 = st.columns( 2, border=True, gap='xxsmall', )
 				
+				# ----- Create -----
 				with create_action_c1:
 					if st.button( label='Create Collection', key='create_collection',
 							width='stretch', icon='➕', ):
 						try:
-							name = str(
-								st.session_state.get( 'collections_name', '', ) or '' ).strip( )
+							name = str(st.session_state.get( 'collections_name', '', ) or '' ).strip( )
 							throw_if( 'name', name )
-							
 							result = collection.create( name=name, description=str(
 								st.session_state.get( 'collections_description', '', ) or '' ), )
 							
@@ -13173,10 +13182,10 @@ elif mode == 'Collections':
 							err = Error( exc )
 							st.error( f'Collection creation failed: {err.info}' )
 				
+				# ----- List -----
 				with create_action_c2:
 					if st.button( label='List Collections', key='list_collections',
-							width='stretch',
-							icon='📋', ):
+							width='stretch', icon='📋', ):
 						try:
 							result = collection.list( limit=100, order='desc',
 								pagination_token=str(
@@ -13204,11 +13213,13 @@ elif mode == 'Collections':
 				metadata_c1, metadata_c2 = st.columns( [ 0.65, 0.35 ], border=True,
 					gap='xxsmall', )
 				
+				# ----- Collection ID -----
 				with metadata_c1:
 					st.text_input( label='Collection ID', key='collections_id',
 						value=get_selected_collection_id( ), placeholder='collection_...',
 						width='stretch', )
 				
+				# ----- Team ID -----
 				with metadata_c2:
 					st.text_input( label='Team ID', key='collections_team_id',
 						placeholder='Optional Team ID', width='stretch', )
@@ -13216,9 +13227,10 @@ elif mode == 'Collections':
 				metadata_action_c1, metadata_action_c2, metadata_action_c3 = st.columns( 3,
 					border=True, gap='xxsmall', )
 				
+				# ----- Retrieve -----
 				with metadata_action_c1:
 					if st.button( label='Retrieve', key='retrieve_collection', width='stretch',
-							icon='🔎', ):
+							icon='🐕', ):
 						try:
 							collection_id = str( st.session_state.get( 'collections_id',
 								'' ) or get_selected_collection_id( ) ).strip( )
@@ -13233,6 +13245,7 @@ elif mode == 'Collections':
 							err = Error( exc )
 							st.error( f'Collection retrieval failed: {err.info}' )
 				
+				# ----- Update -----
 				with metadata_action_c2:
 					if st.button( label='Update', key='update_collection', width='stretch',
 							icon='✏️', ):
@@ -13255,6 +13268,7 @@ elif mode == 'Collections':
 							err = Error( exc )
 							st.error( f'Collection update failed: {err.info}' )
 				
+				# ----- Confirm -----
 				with metadata_action_c3:
 					st.checkbox( label='Confirm Delete', key='collections_confirm_delete', )
 					
@@ -13293,6 +13307,7 @@ elif mode == 'Collections':
 			
 			prompt_c1, prompt_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
 			
+			# ----- Category -----
 			with prompt_c1:
 				st.selectbox( label='Prompt Category', options=prompt_categories,
 					key='collections_prompt_category', index=None, placeholder='Select Category',
@@ -13303,6 +13318,7 @@ elif mode == 'Collections':
 				fetch_prompt_options( selected_category ) if selected_category else [ ])
 			prompt_ids = [ int( option[ 'ID' ] ) for option in prompt_options ]
 			
+			# ----- Template -----
 			with prompt_c2:
 				st.selectbox( label='Prompt Template', options=prompt_ids,
 					key='collections_prompt_id', index=None, placeholder='Select Template',
@@ -13310,40 +13326,47 @@ elif mode == 'Collections':
 						prompt_options, ), on_change=load_collection_instruction_template,
 					disabled=not prompt_ids, )
 			
+			# ----- System Instructions -----
 			st.text_area( label='System Instructions', key='collections_system_instructions',
 				height=160, width='stretch', )
 			
 			instruction_c1, instruction_c2 = st.columns( 2, border=True, gap='xxsmall', )
 			
+			# ----- Convert Format -----
 			with instruction_c1:
 				st.button( label='Convert', key='collections_convert_instructions',
-					width='stretch',
-					on_click=convert_collection_instructions, icon='🔁', )
+					width='stretch', on_click=convert_collection_instructions, icon='↔️', )
 			
+			# ----- Clear Instructions -----
 			with instruction_c2:
 				st.button( label='Clear Instructions', key='collections_clear_instructions',
 					width='stretch', on_click=clear_collection_instructions, icon='🧹', )
 			
 			search_c1, search_c2 = st.columns( [ 0.60, 0.40 ], border=True, gap='xxsmall', )
 			
+			# ----- Model -----
 			with search_c1:
 				st.selectbox( label='Model', options=model_options, key='collections_model',
 					index=None, placeholder='Select Model', disabled=not model_options, )
 			
+			# ----- Max Results  -----
 			with search_c2:
 				st.slider( label='Maximum Results', min_value=1, max_value=50, step=1,
 					key='collections_max_results',
 					help=('Retained as Collection-search state for display and future '
 					      'wrapper support.'), )
 			
+			# ----- Metadata -----
 			st.text_input( label='Metadata Filter', key='collections_filter',
 				placeholder='Optional xAI Collection filter expression.', width='stretch', )
 			
+			# ----- Query -----
 			st.text_area( label='Search Query', key='collections_query', height=120,
 				placeholder='Enter a semantic Collection search query.', width='stretch', )
 			
 			search_action_c1, search_action_c2 = st.columns( 2, border=True, gap='xxsmall', )
 			
+			# ----- Search -----
 			with search_action_c1:
 				if st.button( label='Search Collection', key='search_collection', width='stretch',
 						icon='🔍', ):
@@ -13375,6 +13398,7 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Collection search failed: {err.info}' )
 			
+			# ----- Clear Button -----
 			with search_action_c2:
 				st.button( label='Clear Results', key='clear_collection_outputs_button',
 					width='stretch', on_click=clear_collection_outputs, icon='🧹', )
@@ -13392,9 +13416,7 @@ elif mode == 'Collections':
 elif mode == 'File Search Stores':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
 	
-	# ------------------------------------------------------------------
-	# Provider Capability Validation
-	# ------------------------------------------------------------------
+	# ----- Provider Capability Validation -----
 	if provider_name != 'Gemini':
 		st.warning( f'{provider_name} does not provide a File Search Stores wrapper. '
 		            f'File Search Stores are available for Gemini only.' )
@@ -13406,9 +13428,7 @@ elif mode == 'File Search Stores':
 	
 	searcher = get_file_search_module( provider_name )
 	
-	# ------------------------------------------------------------------
-	# Mode State
-	# ------------------------------------------------------------------
+	# ------ Mode Session State -----
 	filestore_defaults: Dict[ str, Any ] = { 'filestore_table': [ ], 'filestore_metadata': { },
 		'filestore_upload_result': { }, 'filestore_results': None, 'filestore_messages': [ ],
 		'filestore_name': '', 'filestore_manual_id': '', 'filestore_selected_id': '',
@@ -13438,9 +13458,7 @@ elif mode == 'File Search Stores':
 	if not isinstance( st.session_state.get( 'filestore_messages' ), list ):
 		st.session_state[ 'filestore_messages' ] = [ ]
 	
-	# ------------------------------------------------------------------
-	# File Search Store Utilities
-	# ------------------------------------------------------------------
+	# ------ File Search Store Utilities -----
 	def get_filestore_options( instance: Any, attr_name: str,
 		fallback: Optional[ List[ Any ] ] = None, ) -> List[ Any ]:
 		"""Get File Search Store options.
@@ -13948,9 +13966,7 @@ elif mode == 'File Search Stores':
 		return str( getattr( searcher, 'output_text', '', ) or getattr( result, 'text',
 			'', ) or result or '' ).strip( )
 	
-	# ------------------------------------------------------------------
-	# Provider Options
-	# ------------------------------------------------------------------
+	# ----- Provider Options -----
 	model_options = [ str( option ) for option in
 		get_filestore_options( searcher, 'model_options', [ ], ) if str( option ).strip( ) ]
 	embedding_model_options = [ str( option ) for option in
@@ -13974,9 +13990,7 @@ elif mode == 'File Search Stores':
 	st.session_state[ 'filestore_stream' ] = False
 	st.session_state[ 'filestore_background' ] = False
 	
-	# ------------------------------------------------------------------
-	# Store Selection
-	# ------------------------------------------------------------------
+	# ----- Store Selection -----
 	store_options = [ str( row.get( 'id', '' ) ) for row in
 		st.session_state.get( 'filestore_table', [ ], ) if
 		isinstance( row, dict ) and row.get( 'id' ) ]
@@ -16386,23 +16400,12 @@ st.markdown( """
 # ======================================================================================
 # FOOTER RENDERING
 # ======================================================================================
-_mode_to_model_key = {
-	'Chat': 'chat_model',
-	'Text': 'text_model',
-	'Images': 'image_model',
-	'Audio': 'audio_model',
-	'TTS': 'tts_model',
-	'Translation': 'translation_model',
-	'Transcription': 'transcription_model',
-	'Embeddings': 'embedding_model',
-	'Document Q&A': 'docqna_model',
-	'Files': 'files_model',
-	'Vector Stores': 'stores_model',
-	'Collections': 'collections_model',
-	'File Search Stores': 'filestore_model',
-	'Google Cloud Buckets': 'bucket_model',
-	'Data Management': 'text_model',
-}
+_mode_to_model_key = { 'Chat': 'chat_model', 'Text': 'text_model', 'Images': 'image_model',
+	'Audio': 'audio_model', 'TTS': 'tts_model', 'Translation': 'translation_model',
+	'Transcription': 'transcription_model', 'Embeddings': 'embedding_model',
+	'Document Q&A': 'docqna_model', 'Files': 'files_model', 'Vector Stores': 'stores_model',
+	'Collections': 'collections_model', 'File Search Stores': 'filestore_model',
+	'Google Cloud Buckets': 'bucket_model', 'Data Management': 'text_model', }
 
 provider_val = st.session_state.get( 'provider', '—' )
 mode_val = mode or '—'
@@ -16675,11 +16678,7 @@ elif mode == 'Audio':
 	if audio_rate is not None:
 		right_parts.append( f'Rate: {audio_rate}' )
 	
-	if (
-			audio_start is not None
-			and audio_end is not None
-			and audio_end > audio_start
-	):
+	if (audio_start is not None and audio_end is not None and audio_end > audio_start):
 		right_parts.append( f'Trim: {audio_start}s–{audio_end}s' )
 	
 	if audio_loop:
@@ -16766,11 +16765,8 @@ elif mode == 'Files':
 		right_parts.append( f'Messages: {len( files_messages )}' )
 
 elif mode == 'Vector Stores':
-	active_store_id = (
-		st.session_state.get( 'stores_selected_id' )
-		or st.session_state.get( 'stores_manual_id' )
-		or st.session_state.get( 'stores_id' )
-	)
+	active_store_id = (st.session_state.get( 'stores_selected_id' ) or st.session_state.get(
+		'stores_manual_id' ) or st.session_state.get( 'stores_id' ))
 	max_results = st.session_state.get( 'stores_max_results' )
 	ranker = st.session_state.get( 'stores_ranker' )
 	chunking_strategy = st.session_state.get( 'stores_chunking_strategy' )
@@ -16797,10 +16793,8 @@ elif mode == 'Vector Stores':
 
 elif mode == 'Collections':
 	active_collection_id = (
-		st.session_state.get( 'collections_selected_id' )
-		or st.session_state.get( 'collections_manual_id' )
-		or st.session_state.get( 'collections_id' )
-	)
+			st.session_state.get( 'collections_selected_id' ) or st.session_state.get(
+		'collections_manual_id' ) or st.session_state.get( 'collections_id' ))
 	max_results = st.session_state.get( 'collections_max_results' )
 	team_id = st.session_state.get( 'collections_team_id' )
 	metadata_filter = st.session_state.get( 'collections_filter' )
@@ -16826,11 +16820,8 @@ elif mode == 'Collections':
 		right_parts.append( 'Instructions: Set' )
 
 elif mode == 'File Search Stores':
-	active_store_id = (
-		st.session_state.get( 'filestore_selected_id' )
-		or st.session_state.get( 'filestore_manual_id' )
-		or st.session_state.get( 'filestore_id' )
-	)
+	active_store_id = (st.session_state.get( 'filestore_selected_id' ) or st.session_state.get(
+		'filestore_manual_id' ) or st.session_state.get( 'filestore_id' ))
 	temperature = st.session_state.get( 'filestore_temperature' )
 	top_p = st.session_state.get( 'filestore_top_percent' )
 	frequency = st.session_state.get( 'filestore_frequency_penalty' )
