@@ -11853,8 +11853,7 @@ elif mode == 'Vector Stores':
 		st.stop( )
 	
 	vector = get_vectorstores_module( provider_name )
-	files = (
-		get_files_module( provider_name ) if provider_has_class( 'Files', provider_name ) else
+	files = ( get_files_module( provider_name ) if provider_has_class( 'Files', provider_name ) else
 		None)
 	
 	# ------------------------------------------------------------------
