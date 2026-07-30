@@ -45,7 +45,6 @@ import os
 import re
 import multiprocessing
 from pathlib import Path
-
 # -------------- APP-LEVEL UTILITIES -------------
 
 def throw_if( name: str, value: object ) -> None:
@@ -182,31 +181,9 @@ def get_text( name: str, default: str ) -> str:
 		return default if value in (None, '') else str( value )
 	except Exception:
 		return default
+	
+# ----------------- CONSTANTS -------------------
 
-# -------------- API KEYS ---------------------
-OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
-GEMINI_API_KEY = os.getenv( 'GEMINI_API_KEY' )
-GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
-GOOGLE_CLOUD_PROJECT_ID = os.getenv( 'GOOGLE_CLOUD_PROJECT_ID' )
-GOOGLE_CLOUD_LOCATION = os.getenv( 'GOOGLE_CLOUD_LOCATION' )
-GOOGLE_GENAI_USE_VERTEXAI = os.getenv( 'GOOGLE_GENAI_USE_VERTEXAI' )
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv( 'GOOGLE_APPLICATION_CREDENTIALS' )
-GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
-XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
-GOOGLEMAPS_API_KEY = os.getenv( 'GOOGLEMAPS_API_KEY' )
-GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
-GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
-GOOGLE_CSE_ID = os.getenv( 'GOOGLE_CSE_ID' )
-
-#------------- COMMON CONSTANTS ---------------------
-BASE_DIR = os.path.dirname( os.path.abspath( __file__ ) )
-ROOT_DIR = Path( __file__ ).resolve( ).parent
-DOCS_DIR: Path = ROOT_DIR / 'docs'
-LOG_DIR: Path = get_path( 'LOG_DIR', ROOT_DIR / 'logging' )
-LOG_PATH: str = get_text( 'LOG_PATH', str( LOG_DIR / 'Exceptions.db' ) )
-LOG_FILE: str = get_text( 'LOG_FILE', 'Exceptions' )
-FAVICON = r'resources/favicon.ico'
-CRS = r'https://www.congress.gov/crs-appropriations-status-table'
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:30px 0px 30px 0px;'></div>"
 APP_TITLE = 'Buddy'
 APP_SUBTITLE = 'A mulit-modal, Budget Execution AI'
@@ -218,20 +195,42 @@ DB_PATH = 'stores/sqlite/Data.db'
 AUDIO_TEST_FILE = r'stores/audio/conditions.mp3'
 ANALYST = '❓'
 BUDDY = '🧠'
-MODELS = [ 'gpt-5-nano-2025-08-07', 'gpt-4.1-nano-2025-04-14', 'gpt-4o-mini', ]
-GPT_AVATAR = r'resources/images/gpt_avatar.png'
-GROK_AVATAR = r'resources/images/grok_avatar.png'
-GEMINI_AVATAR = r'resources/images/gemini_avatar.png'
 PROVIDERS = { 'GPT': 'gpt', 'Gemini': 'gemini', 'Grok': 'grok', }
 PROMPT_ID = 'pmpt_697f53f7ddc881938d81f9b9d18d6136054cd88c36f94549'
 PROMPT_VERSION = '16'
 LOCAL_AUDIO_PATH = r'stores/audio/conditions.mp3'
-DEFAULT_CTX = 4096
-CORES = multiprocessing.cpu_count( )
+OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
+GEOAPIFY_API_KEY = os.getenv( 'GEOAPIFY_API_KEY' )
+GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
+GEMINI_API_KEY = os.getenv( 'GEMINI_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
+XAI_MANAGEMENT_KEY = os.getenv( 'XAI_MANAGEMENT_KEY' )
 XAI_BASE_URL = 'https://api.x.ai/v1'
+XAI_MANAGEMENT_BASE_URL = os.getenv( 'XAI_MANAGEMENT_BASE_URL' )
+GROK_LOGO = r'resources/images/grok.png'
+GROK = '𝕏'
+GPT_AVATAR = r'resources/images/gpt_avatar.png'
+GROK_AVATAR = r'resources/images/grok_avatar.png'
+GEMINI_AVATAR = r'resources/images/gemini_avatar.png'
+GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
+GOOGLE_CSE_ID = os.getenv( 'GOOGLE_CSE_ID' )
+GOOGLE_CLOUD_LOCATION = os.getenv( 'GOOGLE_CLOUD_LOCATION' )
+GOOGLE_CLOUD_PROJECT_ID = os.getenv( 'GOOGLE_CLOUD_PROJECT_ID' )
+GOOGLEMAPS_API_KEY = os.getenv( 'GOOGLEMAPS_API_KEY' )
+OUTPUT_FILE_NAME = "buddy.wav"
+SAMPLE_RATE = 48000
+MODELS = [ 'gpt-5-nano-2025-08-07', 'gpt-4.1-nano-2025-04-14', 'gpt-4o-mini', ]
+DEFAULT_MODEL = MODELS[ 0 ]
+BASE_DIR = os.path.dirname( os.path.abspath( __file__ ) )
+ROOT_DIR = Path( __file__ ).resolve( ).parent
+DOCS_DIR: Path = ROOT_DIR / 'docs'
+LOG_DIR: Path = get_path( 'LOG_DIR', ROOT_DIR / 'logging' )
+LOG_PATH: str = get_text( 'LOG_PATH', str( LOG_DIR / 'Exceptions.db' ) )
+LOG_FILE: str = get_text( 'LOG_FILE', 'Exceptions' )
+FAVICON = r'resources/images/favicon.ico'
 
-#----------------- GPT CONFIG -------------------
+# ----------------- GPT CONFIG -------------------
+
 GPT_LOGO = r'resources/buddy_logo.ico'
 
 GPT_VECTOR_STORES = { 'Governance': 'vs_6a1850a9bdc08191912353eedf59aede',
@@ -260,14 +259,17 @@ GPT_DOMAINS = [ 'congress.gov',
                 'defense.gov' ]
 
 GPT_MODES = [ 'Chat',
-               'Text',
-               'Images',
-               'Document Q&A',
-               'Files',
-               'Vector Stores',
-               'Prompt Engineering',
-               'Data Management',
-               'Export' ]
+		'Text',
+		'Images',
+		'Audio',
+		'Embeddings',
+		'Document Q&A',
+		'Files',
+		'Vector Stores',
+		'Prompt Engineering',
+		'Data Management',
+		'Export'
+]
 
 GPT_GENERATION = [ 'gpt-image-1.5', 'dall-e-2', 'dall-e-3', 'gpt-image-1', 'gpt-image-1-mini' ]
 
@@ -277,32 +279,27 @@ GPT_ANALYSIS = [ 'gpt-5.2', 'gpt-5.1', 'gpt-5', 'gpt-5-nano', 'gpt-image-1', 'gp
 GPT_EDITING = [ 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini', 'chatgpt-image-latest',
                 'dall-e-2' ]
 
-GPT_VECTORSTORES = [ 'vs_712r5W5833G6aLxIYIbuvVcK', 'vs_699506f7d5348191990e0557c717fa9d']
-
-GPT_FILES = [ 'file-Wd8G8pbLSgVjHur8Qv4mdt',
-                 'file-WPmTsHFYDLGHbyERqJdyqv',
-                 'file-DW5TuqYoEfqFfqFFsMXBvy',
-                 'file-U8ExiB6aJunAeT6872HtEU',
-                 'file-FHkNiF6Rv29eCkAWEagevT',
-                 'file-XsjQorjtffHTWjth8EVnkL',
-                 'file-32s641QK1Xb5QUatY3zfWF' ]
-
-GPT_DOMAINS = [ 'congress.gov', 'google.com', 'gao.gov', 'omb.gov', 'defense.gov' ]
-
 GPT_REASONING_MODELS = [ 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4o', 'gpt-4.1', 'gpt-4.1-mini' ]
 
-
 # ---------------- GROK CONFIG ------------------
+
 GROK_LOGO = r'resources/grok_logo.png'
 
 GROK_MODES = [ 'Text',
                'Images',
+               'Audio',
                'Document Q&A',
                'Files',
                'Vector Stores',
                'Prompt Engineering',
                'Data Management',
                'Export' ]
+
+GROK_GENERATION = [ 'grok-imagine-image', 'grok-2-image-1212' ]
+
+GROK_ANALYSIS = [ 'grok-4.20', 'grok-4', 'grok-4-latest' ]
+
+GROK_EDITING = [ 'grok-imagine-image' ]
 
 GROK_COLLECTIONS = { 'DoD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa947041c6',
                      'Federal Financial Data': 'collection_e28cdcc2-a9e5-430a-bdf5-94fbaf44b6a4',
@@ -316,23 +313,26 @@ GROK_COLLECTIONS = { 'DoD Regulations': 'collection_a7973fd2-a336-4ed0-a495-4ffa
                      'Public Laws': 'collection_c1d0b83e-2f59-4f10-9cf7-51392b490fee',
                      'Governance': 'collection_a01f0ed0-37a9-4323-8691-9a9de9d7053a' }
 
-
 # ---------------- GEMINI CONFIG ------------------
+
 GEMINI_LOGO = r'resources/gemini_logo.png'
 
-GEMINI_MODES = [ 'Text',
-                 'Images',
-                 'Files',
-                 'Document Q&A',
-                 'Embeddings',
-                 'Audio',
-                 'Vector Stores',
-                 'Prompt Engineering',
-                 'Data Management',
-                 'Export' ]
+GEMINI_MODES = [
+		'Text',
+		'Images',
+		'Audio',
+		'Embeddings',
+		'Document Q&A',
+		'Files',
+		'File Search Stores',
+		'Google Cloud Buckets',
+		'Prompt Engineering',
+		'Data Management',
+		'Export'
+]
 
 GEMINI_GENERATION = [ 'gemini-2.5-flash-image', 'gemini-3-flash-preview',
-                      'gemini-3-pro-image-preview', 'gemini-3.1-flash-image-preview',  ]
+                      'gemini-3-pro-image-preview', 'gemini-3.1-flash-image-preview', ]
 
 GEMINI_ANALYSIS = [ 'gemini-2.5-flash-image', 'gemini-2.5-flash-lite',
                     'gemini-3.1-flash-image-preview', ]
@@ -340,18 +340,36 @@ GEMINI_ANALYSIS = [ 'gemini-2.5-flash-image', 'gemini-2.5-flash-lite',
 GEMINI_EDITING = [ 'gemini-2.5-flash-image', 'gemini-2.5-flash-lite',
                    'gemini-3.1-flash-image-preview' ]
 
-#----------------- MAPS ---------------------------
-MODE_CLASS_MAP = {
-		'Chat': None,
-		'Text': [ 'Chat' ],
-		'Images': [ 'Images' ],
-		'Audio': [ 'TTS',
-		           'Translation',
-		           'Transcription' ],
-		'Embeddings': [ 'Embeddings' ],
-		'Documents': [ 'Files'  ],
-		'Files': [ 'Files'  ],
-		'Vector Stores': [ 'VectorStores' ],
+# ----------------- MAPS ---------------------------
+
+PROVIDER_CLASS_MAP = {
+		'GPT': {
+				'Chat': 'Chat',
+				'Text': 'Chat',
+				'Images': 'Images',
+				'Audio': [ 'TTS', 'Translation', 'Transcription' ],
+				'Embeddings': 'Embeddings',
+				'Document Q&A': 'Files',
+				'Files': 'Files',
+				'Vector Stores': 'VectorStores',
+		},
+		'Gemini': {
+				'Text': 'Chat',
+				'Images': 'Images',
+				'Audio': [ 'TTS', 'Translation', 'Transcription' ],
+				'Embeddings': 'Embeddings',
+				'Document Q&A': 'Files',
+				'Files': 'Files',
+				'File Search Stores': 'FileSearch',
+				'Google Cloud Buckets': 'CloudBuckets',
+		},
+		'Grok': {
+				'Text': 'Chat',
+				'Images': 'Images',
+				'Document Q&A': 'Files',
+				'Files': 'Files',
+				'Vector Stores': 'VectorStores',
+		},
 }
 
 CLASS_MODE_MAP = {
@@ -364,7 +382,59 @@ LOGO_MAP = {
 		'Gemini': GEMINI_LOGO,
 		'Grok': GROK_LOGO }
 
-#-------- DEFINITIONS -------------------
+TEXT_TYPES = [
+		'txt',
+		'md',
+		'csv',
+		'json',
+		'xml',
+		'html',
+		'htm',
+		'py',
+		'cs',
+		'cpp',
+		'c',
+		'h',
+		'hpp',
+		'java',
+		'js',
+		'ts',
+		'sql',
+		'yaml',
+		'yml',
+		'log',
+]
+
+DOCUMENT_TYPES = [
+		'pdf',
+		'txt',
+		'md',
+		'docx',
+		'json',
+		'csv',
+		'xlsx',
+		'xls',
+]
+
+IMAGE_TYPES = [
+		'png',
+		'jpg',
+		'jpeg',
+		'webp',
+]
+
+AUDIO_TYPES = [
+		'mp3',
+		'mp4',
+		'mpeg',
+		'mpga',
+		'm4a',
+		'wav',
+		'webm',
+		'ogg',
+]
+
+# -------- DEFINITIONS -------------------
 TEMPERATURE = r'''Optional. A number between 0 and 2. Higher values like 0.8 will make the output
 		more random, while lower values like 0.2 will make it more focused and deterministic'''
 
@@ -448,14 +518,14 @@ PROMPT_ENGINEERING = r'''Prompt engineering is the process of writing effective 
 TEXT_GENERATION = r'''Use a large language model to produce coherent, context-aware natural language
 		output in response to user prompts, system instructions, or retrieved document context.
 		When a user submits a request—whether it is a general inquiry, a structured analytical task,
-		or a document-grounded question—Buddy constructs a prompt that may include system directives,
+		or a document-grounded question—Boo constructs a prompt that may include system directives,
 		conversation history, and optionally retrieved content from its vector store. The underlying
 		model then generates text according to configurable parameters such as temperature,
-		maximum tokens, and response format. This capability enables Buddy to function as
+		maximum tokens, and response format. This capability enables Boo to function as
 		a conversational assistant, analytical explainer, summarizer, drafting tool, and reasoning engine,
 		producing structured or narrative outputs tailored to the user’s workflow. '''
 
-CHAT_COMPLETIONS  = r'''A unified interface for interacting with advanced generative models through
+CHAT_COMPLETIONS = r'''A unified interface for interacting with advanced generative models through
 		a single request–response workflow. It allows a client to send structured inputs—such as text,
 		images, audio, or tool instructions—and receive model-generated outputs that may include
 		natural language responses, structured data, reasoning traces, or tool call instructions.
@@ -470,7 +540,7 @@ AUDIO_API = r'''The Audio API functionality enables the ingestion, transformatio
 		summarized, embedded, or used in Document Q&A and conversational contexts. It can also
 		support translation of spoken content into other languages and text-to-speech generation, p
 		roducing natural-sounding audio from model-generated text. By integrating speech recognition
-		and synthesis alongside text and document processing, the Audio API expands Buddy into a
+		and synthesis alongside text and document processing, the Audio API expands Boo into a
 		multimodal assistant capable of handling voice-driven inputs and delivering spoken outputs
 		within analytical or conversational workflows.  '''
 
@@ -507,7 +577,7 @@ VECTORSTORES_API = r'''Specialized databases designed to store and index embeddi
 EMBEDDINGS_API = r'''Creates numerical vector representations of text that capture semantic meaning in a
 		high-dimensional space. When documents, prompts, or queries are processed, their textual
 		content is transformed into embeddings so that semantically similar content is positioned
-		close together mathematically. Buddy stores these vectors in its local vector database,
+		close together mathematically. Boo stores these vectors in its local vector database,
 		enabling similarity search, clustering, document retrieval, and contextual grounding for
 		downstream tasks like Document Q&A. By converting language into structured numerical form,
 		embeddings serve as the foundation for intelligent search, relevance ranking, and
@@ -521,16 +591,16 @@ DOCUMENT_Q_AND_A = r'''A retrieval-augmented workflow that allows users to ask n
 		question is asked. The retrieved context is then supplied to the language model to
 		generate a precise, source-aware response. This approach enables accurate,
 		citation-ready answers tied to user-provided content rather than relying solely on general
-		model knowledge, effectively turning Buddy into a document-aware analytical assistant.  '''
+		model knowledge, effectively turning Boo into a document-aware analytical assistant.  '''
 
-DATA_MANAGEMENT = r'''Structured handling, organization, processing of
-		user-provided data in a self-contained SQLite Database. It allows uploading of files, extracting and
+DATA_MANAGEMENT = r'''Structured handling, organization, processing of user-provided data in a
+		self-contained SQLite Database. It allows uploading of files, extracting and
 		normalizing their content, chunking text for semantic processing, generating embeddings,
 		storing metadata, and enabling controlled retrieval for downstream features such as Document Q&A
 		and Data Analysis. Beyond ingestion, it includes version awareness, indexing, schema inspection
 		(where applicable), and the ability to manage or remove stored assets safely. Document
 		Management provides the foundational infrastructure that transforms raw files into structured,
-		searchable, and model-ready assets, ensuring that Buddy’s intelligence features operate
+		searchable, and model-ready assets, ensuring that Boo’s intelligence features operate
 		on reliable, well-governed data rather than unmanaged documents.  '''
 
 IMAGE_BACKGROUND = r'''Optional. Allows to set transparency for the background of the generated image(s).
@@ -562,15 +632,11 @@ IMAGE_STYLE = r'''Optional. The style of the generated images. This parameter is
 '''
 
 IMAGE_QUALITY = r'''Optional. The quality of the image that will be generated: 'standard' or 'hd'
-or 'low'. auto (default value) will automatically select the best quality for the given model. high,
-medium and low are supported for the GPT image models. hd and standard are supported for dall-e-3.
-standard is the only option for dall-e-2.
+		or 'low'. auto (default value) will automatically select the best quality for the given model. high,
+		medium and low are supported for the GPT image models. hd and standard are supported for dall-e-3.
+		standard is the only option for dall-e-2.
 '''
 
 IMAGE_DETAIL = r'''The detail parameter tells the model what level of detail to use when processing
-		and understanding the image (low, high, or auto to let the model decide). If you skip the
-		parameter, the model will use auto.'''
-
-IMAGE_COMPRESSION = r'''The detail parameter tells the model what level of detail to use when processing
 		and understanding the image (low, high, or auto to let the model decide). If you skip the
 		parameter, the model will use auto.'''

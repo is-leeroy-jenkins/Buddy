@@ -3271,7 +3271,7 @@ class Transcription( Grok ):
 			'format_options', 'language_options', 'mime_options', 'get_mime_type', 'transcribe',
 			'get_result', 'get_words', 'get_channels', ]
 
-class VectorStores( Grok ):
+class Collections( Grok ):
 	"""Provide xAI Collections workflow support.
 	
 	Purpose:
