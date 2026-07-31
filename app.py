@@ -1,6 +1,6 @@
 '''
   ******************************************************************************************
-      Assembly:                Wario
+      Assembly:                Buddy
       Filename:                app.py
       Author:                  Terry D. Eppler
       Created:                 01-31-2026
@@ -11,7 +11,7 @@
   <copyright file="app.py" company="Terry D. Eppler">
 
 	     app.py
-	     Copyright ©  2026  Terry Eppler
+	     Copyright ©  2024  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
      of this software and associated documentation files (the “Software”),
