@@ -3524,9 +3524,7 @@ class Transcription( Gemini ):
 				end_time=self.end_time )
 			self.generation_config = self.build_generation_config( temperature=self.temperature,
 				top_p=self.top_p, max_tokens=self.max_tokens )
-			self.api_key = self.gemini_api_key or self.google_api_key)
-			throw_if( 'api_key', self.api_key )
-			
+			self.api_key = self.gemini_api_key or self.google_api_key
 			self.client = genai.Client( api_key=self.api_key, http_options=self.http_options )
 			self.uploaded_file = self.client.files.upload( file=self.file_path )
 			self.file_uri = str( getattr( self.uploaded_file, 'uri', '' ) or '' ).strip( )
