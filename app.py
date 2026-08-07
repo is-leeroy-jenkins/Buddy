@@ -9883,7 +9883,6 @@ elif mode == 'Document Q&A':
 # ======================================================================================
 elif mode == 'Embeddings':
 	provider_name = st.session_state.get( 'provider', 'GPT' )
-	
 	if not provider_has_class( 'Embeddings', provider_name ):
 		st.error( f'{provider_name} does not provide an Embeddings wrapper.' )
 		st.stop( )
@@ -10127,9 +10126,7 @@ elif mode == 'Embeddings':
 			encoding_format = st.session_state.get( 'embedding_encoding_format',
 				st.session_state.get( 'embeddings_encoding_format', '' ), )
 			model = st.session_state.get( 'embedding_model' ) or None
-			
 			throw_if( 'model', model )
-			
 			if provider_name == 'GPT':
 				return embedding.create( text=input_value, model=model,
 					format=encoding_format or 'float',
