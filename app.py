@@ -12952,7 +12952,7 @@ elif mode == 'Collections':
 		# ------------------------------------------------------------------
 		with st.expander( label='Collection Selection', icon='🗃️', expanded=True,
 				width='stretch', ):
-			selection_c1, selection_c2, selection_c3 = st.columns( [ 0.40, 0.40, 0.20 ],
+			selection_c1, selection_c2  = st.columns( [ 0.5, 0.5 ],
 				border=True, gap='xxsmall', )
 			
 			collection_rows = st.session_state.get( 'collections_table', [ ] )
@@ -12989,22 +12989,21 @@ elif mode == 'Collections':
 					width='stretch', )
 			
 			# ----- Refresh -----
-			with selection_c3:
-				if st.button( label='Refresh', key='collections_refresh_button', width='stretch',
-						icon='🔄', ):
-					try:
-						result = collection.list( limit=100, order='desc', pagination_token=str(
-							st.session_state.get( 'collections_pagination_token', '', ) or '' ), )
-						
-						st.session_state[ 'collections_results' ] = result
-						st.session_state[ 'collections_table' ] = (
-							normalize_collection_rows( result ))
-						st.session_state[ 'collections_next_token' ] = str(
-							getattr( collection, 'next_token', '' ) or '' )
-						st.success( 'Collections refreshed.' )
-					except Exception as exc:
-						err = Error( exc )
-						st.error( f'Unable to list Collections: {err.info}' )
+			if st.button( label='Refresh', key='collections_refresh_button', width='stretch',
+					icon='🔄', ):
+				try:
+					result = collection.list( limit=100, order='desc', pagination_token=str(
+						st.session_state.get( 'collections_pagination_token', '', ) or '' ), )
+					
+					st.session_state[ 'collections_results' ] = result
+					st.session_state[ 'collections_table' ] = (
+						normalize_collection_rows( result ))
+					st.session_state[ 'collections_next_token' ] = str(
+						getattr( collection, 'next_token', '' ) or '' )
+					st.success( 'Collections refreshed.' )
+				except Exception as exc:
+					err = Error( exc )
+					st.error( f'Unable to list Collections: {err.info}' )
 			
 			active_collection_id = get_selected_collection_id( )
 			
