@@ -113,11 +113,11 @@ class Grok( ):
 	    temperature (Optional[float]): Stores temperature for the component runtime state.
 	    top_percent (Optional[float]): Stores top percent for the component runtime state.
 	    frequency_penalty (Optional[float]): Stores frequency penalty for the component runtime
-	    state.
+	        state.
 	    presence_penalty (Optional[float]): Stores presence penalty for the component runtime
-	    state.
+	        state.
 	    max_output_tokens (Optional[int]): Stores max output tokens for the component runtime
-	    state.
+	        state.
 	    tool_choice (Optional[str]): Stores tool choice for the component runtime state.
 	    tools (Optional[List[str]]): Stores tools for the component runtime state.
 	    stops (Optional[List[str]]): Stores stops for the component runtime state.

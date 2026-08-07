@@ -3360,7 +3360,7 @@ def format_prompt_option( prompt_id: int, prompt_options: List[ Dict[ str, Any ]
 	Args:
 	    prompt_id (int): Numeric prompt identifier rendered by the selection control.
 	    prompt_options (List[Dict[str, Any]]): Available prompt records used to resolve the
-	    caption.
+	        caption.
 	
 	Returns:
 	    str: Prompt caption when found; otherwise the numeric identifier as text.
@@ -3413,7 +3413,7 @@ def insert_prompt( data: Dict[ str, Any ] ) -> None:
 	
 	Args:
 	    data (Dict[str, Any]): Prompt-template values containing Caption, Name, Category,
-	    and Prompt.
+	        and Prompt.
 	
 	Returns:
 	    None: This function performs its work through side effects and does not return a value.
@@ -9919,14 +9919,14 @@ elif mode == 'Embeddings':
 		Args:
 		    instance (Any): Provider Embeddings wrapper instance.
 		    attr_name (str): Name of the wrapper option property or method.
-		    fallback (Optional[List[Any]]): Values used when the wrapper exposes no options.
+		        fallback (Optional[List[Any]]): Values used when the wrapper exposes no options.
 		
 		Returns:
 		    List[Any]: Provider-supported option values or the supplied fallback.
 		
 		Raises:
 		    Exception: Re-raises provider-wrapper failures after recording them with the application
-		    logger.
+		        logger.
 		"""
 		try:
 			throw_if( 'instance', instance )
@@ -13014,14 +13014,14 @@ elif mode == 'Collections':
 		st.session_state[ 'collections_messages' ] = [ ]
 	
 	model_options = get_collection_options( collection, 'model_options', [ ] )
-	if (st.session_state.get( 'collections_model' ) and model_options and st.session_state[
-		'collections_model' ] not in model_options):
+	if (st.session_state.get( 'collections_model' ) and model_options
+			and st.session_state[ 'collections_model' ] not in model_options):
 		st.session_state[ 'collections_model' ] = ''
 	
 	# ------------------------------------------------------------------
 	# Main Collections UI
 	# ------------------------------------------------------------------
-	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 	
 	with center:
 		st.subheader( '🗂️ Collections', help=getattr( cfg, 'COLLECTIONS', '' ) )
@@ -13054,7 +13054,7 @@ elif mode == 'Collections':
 				
 				if selected_label:
 					st.session_state[ 'collections_selected_id' ] = (
-						collection_options[ selected_label ])
+						collection_options[ selected_label ] )
 			
 			# ----- Collection ID -----
 			with sel_c2:
@@ -13062,12 +13062,11 @@ elif mode == 'Collections':
 					placeholder='collection_...', help='Optional manual xAI Collection '
 					                                   'identifier.', width='stretch', )
 			
+			# ----- Select -----
 			with sel_c3:
 				st.file_uploader( label='Upload Document', key='collections_uploaded_file',
 					help='Upload a file before adding it to the active Collection.', )
-			
 					
-				
 			# ----- Clear -----
 			button_c1, button_c2 = st.columns( [ 0.5 , 0.5 ], gap='xxsmall', )
 			with button_c1:
@@ -13248,9 +13247,7 @@ elif mode == 'Collections':
 		# Expander — Collection Lifecycle
 		# ------------------------------------------------------------------
 		with st.expander( label='Lifecycle', icon='♻️', expanded=False, width='stretch' ):
-		
-			meta_c1, meta_c2, meta_c3, meta_c4 = st.columns( 4, border=True,
-				gap='xxsmall', )
+			meta_c1, meta_c2, meta_c3, meta_c4 = st.columns( 4, border=True, gap='xxsmall', )
 			
 			# ----- Name -----
 			with meta_c1:
@@ -13294,7 +13291,7 @@ elif mode == 'Collections':
 						
 						st.session_state[ 'collections_results' ] = result
 						st.session_state[ 'collections_table' ] = (
-							normalize_collection_rows( result ))
+							normalize_collection_rows( result ) )
 						st.session_state[ 'collections_next_token' ] = str(
 							getattr( collection, 'next_token', '' ) or '' )
 						st.success( 'Collections loaded.' )
@@ -13302,9 +13299,7 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Unable to list Collections: {err.info}' )
 			
-			data_c1, data_c2 = st.columns( 2, border=True,
-				gap='xxsmall', )
-			
+			data_c1, data_c2 = st.columns( 2, border=True, gap='xxsmall', )
 			with data_c1:
 				if st.session_state.get( 'collections_table' ):
 					st.data_editor( pd.DataFrame( st.session_state[ 'collections_table' ] ),
@@ -13320,8 +13315,7 @@ elif mode == 'Collections':
 					value=get_selected_collection_id( ), placeholder='collection_...',
 					width='stretch', )
 			
-			btn_c1, btn_c2, btn_c3, btn_c4 = st.columns( 4,
-				border=False, gap='xxsmall', )
+			btn_c1, btn_c2, btn_c3, btn_c4 = st.columns( 4, border=False, gap='xxsmall', )
 			
 			# ----- Retrieve -----
 			with btn_c1:
@@ -13392,7 +13386,6 @@ elif mode == 'Collections':
 					except Exception as exc:
 						err = Error( exc )
 						st.error( f'Collection deletion failed: {err.info}' )
-			
 			render_storage_metadata( st.session_state.get( 'collections_metadata', { } ) )
 		
 			# ----- Reset Button -----
@@ -13418,7 +13411,6 @@ elif mode == 'Collections':
 					      'wrapper support.'), )
 			
 			query_c1, query_c2 = st.columns( [ 0.40, 0.60 ], border=True, gap='xxsmall', )
-			
 			# ----- Metadata -----
 			with query_c1:
 				st.text_input( label='Metadata Filter', key='collections_filter',
@@ -13428,8 +13420,7 @@ elif mode == 'Collections':
 			with query_c2:
 				st.text_area( label='Search Query', key='collections_query', height=68,
 					placeholder='Enter a semantic Collection search query.', width='stretch', )
-			
-			search_action_c1, search_action_c2 = st.columns( 2, border=True, gap='xxsmall', )
+			search_action_c1, search_action_c2 = st.columns( 2, border=False, gap='xxsmall', )
 			
 			# ----- Search -----
 			with search_action_c1:
@@ -13437,28 +13428,23 @@ elif mode == 'Collections':
 						icon='🔍', ):
 					try:
 						collection_id = get_selected_collection_id( )
-						query_text = str(
-							st.session_state.get( 'collections_query', '' ) or '' ).strip( )
-						model = str(
-							st.session_state.get( 'collections_model', '' ) or '' ).strip( )
+						query_text = str( st.session_state.get( 'collections_query',
+							'' ) or '' ).strip( )
+						model = str( st.session_state.get( 'collections_model',
+							'' ) or '' ).strip( )
 						
 						throw_if( 'collection_id', collection_id )
 						throw_if( 'query', query_text )
 						throw_if( 'model', model )
-						
 						result = collection.search( prompt=query_text, store_id=collection_id,
-							model=model,
-							filter=str( st.session_state.get( 'collections_filter', '', ) or ''
-							), )
+							model=model, filter=str( st.session_state.get( 'collections_filter',
+								'', ) or '' ), )
 						
 						st.session_state[ 'collections_results' ] = result
-						
 						if isinstance( result, str ):
-							st.session_state[ 'collections_search_results' ] = [
-								{ 'text': result }, ]
+							st.session_state[ 'collections_search_results' ] = [{ 'text': result },]
 						else:
-							st.session_state[ 'collections_search_results' ] = (
-								normalize_collection_document_rows( result ))
+							st.session_state[ 'collections_search_results' ] = normalize_collection_document_rows( result )
 					except Exception as exc:
 						err = Error( exc )
 						st.error( f'Collection search failed: {err.info}' )

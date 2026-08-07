@@ -86,7 +86,7 @@ class GPT:
 		background (Optional[bool]): Background retained by the provider wrapper.
 		number (Optional[int]): Number retained by the provider wrapper.
 		response_format (Optional[Dict[str, str]]): Response format retained by the provider
-		wrapper.
+			wrapper.
 		context (Optional[List[Dict[str, str]]]): Context retained by the provider wrapper.
 		instructions (Optional[str]): Instructions retained by the provider wrapper.
 	"""
@@ -176,8 +176,7 @@ class Chat( GPT ):
 	def __init__( self, model: str = 'gpt-5-nano', prompt: str = '', temperature: float = 0.0,
 		top_p: float = 0.0, frequency: float = 0.0, presence: float = 0.0, max_tokens: int = 0,
 		max_tools: int = 0, store: bool = False, stream: bool = False, background: bool = False,
-		is_parallel: bool = False, instruct: str = '', tool_choice: str = '', previous_id: str =
-		'',
+		is_parallel: bool = False, instruct: str = '', tool_choice: str = '', previous_id: str = '',
 		conversation_id: str = '', reasoning: str = '',
 		response_format: Optional[ Dict[ str, Any ] ] = None,
 		context: Optional[ List[ Dict[ str, Any ] ] ] = None,
@@ -2509,7 +2508,7 @@ class Embeddings( GPT ):
 		response (Optional[CreateEmbeddingResponse]): Response retained by the provider wrapper.
 		embedding (Optional[List[float] | str]): Embedding retained by the provider wrapper.
 		embeddings (Optional[List[List[float]] | List[str]]): Embeddings retained by the provider
-		wrapper.
+			wrapper.
 		usage (Optional[Any]): Usage retained by the provider wrapper.
 		request (Optional[Dict[str, Any]]): Request retained by the provider wrapper.
 	"""
