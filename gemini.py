@@ -3524,8 +3524,7 @@ class Transcription( Gemini ):
 				end_time=self.end_time )
 			self.generation_config = self.build_generation_config( temperature=self.temperature,
 				top_p=self.top_p, max_tokens=self.max_tokens )
-			self.api_key = (os.getenv( 'GEMINI_API_KEY' ) or os.getenv(
-				'GOOGLE_API_KEY' ) or self.gemini_api_key or self.google_api_key)
+			self.api_key = self.gemini_api_key or self.google_api_key)
 			throw_if( 'api_key', self.api_key )
 			
 			self.client = genai.Client( api_key=self.api_key, http_options=self.http_options )
@@ -3551,7 +3550,6 @@ class Transcription( Gemini ):
 			self.response = self.interaction
 			self.content_response = self.interaction
 			self.transcript = str( getattr( self.interaction, 'output_text', '' ) or '' ).strip( )
-			
 			if not self.transcript:
 				raise ValueError( 'Gemini returned an empty transcription.' )
 			
@@ -3560,10 +3558,7 @@ class Transcription( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Transcription'
-			exception.method = ('transcribe( self, path: str, model: str, language: str, mime_type: '
-			                    'str, temperature: float, top_p: float, frequency: float, '
-			                    'presence: float, max_tokens: int, start_time: float, end_time: '
-			                    'float, instruct: str ) -> str')
+			exception.method = ('transcribe( self, **kwargs) -> str')
 			Logger( ).write( exception )
 			raise exception
 
@@ -3696,7 +3691,6 @@ class Translation( Gemini ):
 		"""
 		try:
 			import mimetypes
-			
 			throw_if( 'path', path )
 			self.file_path = path
 			self.mime_type = mime_type
