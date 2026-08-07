@@ -6692,36 +6692,38 @@ elif mode == 'Images':
 				mode_options = [ 'Generation', 'Analysis', 'Editing', ]
 				sanitize_image_selection( 'image_mode', mode_options, 'Generation', )
 				
+				model_c1, model_c2, model_c3 = st.columns( [ 0.33, 0.33, 0.33 ], border=True,
+					gap='xxsmall', )
+				
 				# ----- Image Mode -----
-				st.selectbox( label='Image Mode', options=mode_options, key='image_mode',
-					help='Select the image operation used to configure the controls below.', )
+				with model_c1:
+					st.selectbox( label='Image Mode', options=mode_options, key='image_mode',
+						help='Select the image operation used to configure the controls below.', )
+					
+					selected_image_mode = st.session_state.get( 'image_mode', 'Generation', )
+					model_options = get_provider_image_models( selected_image_mode )
+					if selected_image_mode == 'Generation':
+						sanitize_image_selection( 'image_generation_model', model_options, '', )
+						model_key = 'image_generation_model'
+					
+					elif selected_image_mode == 'Analysis':
+						sanitize_image_selection( 'image_analysis_model', model_options, '', )
+						model_key = 'image_analysis_model'
+					
+					else:
+						sanitize_image_selection( 'image_editing_model', model_options, '', )
+						model_key = 'image_editing_model'
 				
-				selected_image_mode = st.session_state.get( 'image_mode', 'Generation', )
-				model_options = get_provider_image_models( selected_image_mode )
-				
-				if selected_image_mode == 'Generation':
-					sanitize_image_selection( 'image_generation_model', model_options, '', )
-					model_key = 'image_generation_model'
-				
-				elif selected_image_mode == 'Analysis':
-					sanitize_image_selection( 'image_analysis_model', model_options, '', )
-					model_key = 'image_analysis_model'
-				
-				else:
-					sanitize_image_selection( 'image_editing_model', model_options, '', )
-					model_key = 'image_editing_model'
-				
-				model_c1, model_c2 = st.columns( [ 0.75, 0.25, ], border=True, gap='xxsmall', )
 				
 				# ----- Model -----
-				with model_c1:
+				with model_c2:
 					st.selectbox( label='Model', options=model_options, key=model_key, index=None,
 						placeholder='Select Model',
 						help='Required. Select the provider model for the chosen image '
 						     'operation.', )
 				
 				# ----- Number of Images -----
-				with model_c2:
+				with model_c3:
 					st.slider( label='Images', min_value=1, max_value=10, step=1,
 						key='image_number', disabled=selected_image_mode == 'Analysis',
 						help='Number of generated or edited images requested.', )
@@ -6740,8 +6742,8 @@ elif mode == 'Images':
 				selected_image_mode = st.session_state.get( 'image_mode', 'Generation', )
 				
 				if provider_name == 'Gemini':
-					inf_c1, inf_c2, inf_c3, inf_c4 = st.columns( [ 0.25, 0.25, 0.25, 0.25, ],
-						border=True, gap='xxsmall', )
+					inf_c1, inf_c2, inf_c3, inf_c4, inf_c5 = st.columns(
+						[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall', )
 					
 					# ----- Temperature -----
 					with inf_c1:
@@ -6764,8 +6766,9 @@ elif mode == 'Images':
 							step=0.01, key='image_presence_penalty', help=cfg.PRESENCE_PENALTY, )
 					
 					# ----- Max Tokens -----
-					st.slider( label='Max Tokens', min_value=0, max_value=100000, step=500,
-						key='image_max_tokens', help=cfg.MAX_OUTPUT_TOKENS, )
+					with inf_c5:
+						st.slider( label='Max Tokens', min_value=0, max_value=100000, step=500,
+							key='image_max_tokens', help=cfg.MAX_OUTPUT_TOKENS, )
 				
 				elif (provider_name == 'GPT' and selected_image_mode == 'Analysis'):
 					inf_c1, inf_c2 = st.columns( [ 0.50, 0.50, ], border=True, gap='xxsmall', )
@@ -6884,8 +6887,8 @@ elif mode == 'Images':
 						sanitize_image_selection( 'image_mime_type', format_options, '', )
 						sanitize_image_selection( 'image_backcolor', background_options, '', )
 						
-						visual_c1, visual_c2, visual_c3, visual_c4 = st.columns(
-							[ 0.25, 0.25, 0.25, 0.25, ], border=True, gap='xxsmall', )
+						visual_c1, visual_c2, visual_c3, visual_c4, visual_c5 = st.columns(
+							[ 0.20, 0.20, 0.20, 0.20, 0.20 ], border=True, gap='xxsmall', )
 						
 						# ----- Size -----
 						with visual_c1:
@@ -6913,9 +6916,10 @@ elif mode == 'Images':
 								help='GPT output background behavior.', )
 						
 						# ----- Compression -----
-						st.slider( label='Compression', min_value=0.0, max_value=100.0, step=1.0,
-							key='image_compression',
-							help='GPT JPEG or WebP compression level when supported.', )
+						with visual_c5:
+							st.slider( label='Compression', min_value=0.0, max_value=100.0, step=1.0,
+								key='image_compression',
+								help='GPT JPEG or WebP compression level when supported.', )
 						
 						st.session_state[ 'image_aspect_ratio' ] = ''
 						st.session_state[ 'image_modality' ] = ''
@@ -6938,7 +6942,7 @@ elif mode == 'Images':
 						sanitize_image_selection( 'image_media_resolution', media_options, '', )
 						
 						visual_c1, visual_c2, visual_c3, visual_c4 = st.columns(
-							[ 0.25, 0.25, 0.25, 0.25, ], border=True, gap='xxsmall', )
+							[ 0.25, 0.25, 0.25, 0.25 ], border=True, gap='xxsmall', )
 						
 						# ----- Aspect Ratio -----
 						with visual_c1:
@@ -6966,22 +6970,24 @@ elif mode == 'Images':
 								disabled=not modality_options,
 								help='Gemini response modality for image generation or editing.', )
 						
+							
+						ground_c1, ground_c2, ground_c3 = st.columns( [ 0.33, 0.33, 0.33 ],
+							border=True, gap='xxsmall', )
+						
 						# ----- Media Resolution -----
-						st.selectbox( label='Media Resolution', options=media_options,
-							key='image_media_resolution', index=None, placeholder='Options',
-							disabled=not media_options,
-							help='Gemini media-resolution configuration.', )
-						
-						ground_c1, ground_c2 = st.columns( [ 0.50, 0.50, ], border=True,
-							gap='xxsmall', )
-						
-						# ----- Google Grounding -----
 						with ground_c1:
+							st.selectbox( label='Media Resolution', options=media_options,
+								key='image_media_resolution', index=None, placeholder='Options',
+								disabled=not media_options,
+								help='Gemini media-resolution configuration.', )
+							
+						# ----- Google Grounding -----
+						with ground_c2:
 							st.toggle( label='Google Grounding', key='image_grounded',
 								help='Enable Gemini Google Search grounding when supported.', )
 						
 						# ----- Image Search -----
-						with ground_c2:
+						with ground_c3:
 							st.toggle( label='Image Search', key='image_image_search',
 								help='Enable Gemini Image Search when supported.', )
 						
