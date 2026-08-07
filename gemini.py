@@ -3778,13 +3778,12 @@ class Translation( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Translation'
-			exception.method = ('build_prompt( self, target_language: str, source_language: str, '
-			                    'start_time: float, end_time: float ) -> str')
+			exception.method = ('build_prompt( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_generation_config( self, temperature: float, top_p: float, max_tokens: int ) -> Dict[
-		str, Any ]:
+	def build_generation_config( self, temperature: float, top_p: float, \
+			max_tokens: int ) -> Dict[ str, Any ]:
 		"""Build the translation generation configuration.
 
 		Purpose:
@@ -3821,8 +3820,7 @@ class Translation( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Translation'
-			exception.method = ('build_generation_config( self, temperature: float, top_p: float, '
-			                    'max_tokens: int ) -> Dict[ str, Any ]')
+			exception.method = ('build_generation_config( self, **kwargs ) -> Dict[ str, Any ]')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -3917,10 +3915,7 @@ class Translation( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Translation'
-			exception.method = ('translate( self, path: str, target_language: str, model: str, '
-			                    'source_language: str, mime_type: str, temperature: float, '
-			                    'top_p: float, frequency: float, presence: float, max_tokens: int, '
-			                    'start_time: float, end_time: float, instruct: str ) -> str')
+			exception.method = ('translate( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 
@@ -3943,7 +3938,7 @@ class Files( Gemini ):
 		mime_type (Optional[str]): Active file MIME type.
 		file_path (Optional[str]): Active local file path.
 		file_list (List[str]): Google Cloud Storage object names returned by the latest list
-		operation.
+			operation.
 		file_paths (List[str]): Local paths used by a multi-document request.
 		file_lists (List[File]): Uploaded Gemini file resources used by a multi-document request.
 		response (Optional[Any]): Most recent Files API or Interactions response.
@@ -4126,11 +4121,9 @@ class Files( Gemini ):
 		"""
 		try:
 			import mimetypes
-			
 			throw_if( 'filepath', filepath )
 			self.file_path = filepath
 			self.mime_type = mimetypes.guess_type( self.file_path )[ 0 ]
-			
 			if self.mime_type:
 				return self.mime_type
 			
@@ -4249,12 +4242,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('list( self, model: str, top_p: float, top_k: int, '
-			                    'temperature: float, frequency: float, presence: float, '
-			                    'max_tokens: int, tool_choice: str, stops: List[ str ], '
-			                    'tools: List[ str ], domains: List[ str ], '
-			                    'modalities: List[ str ], media_resolution: str ) '
-			                    '-> List[ str ]')
+			exception.method = ('list( self, **kwargs ) -> List[ str ]')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4344,8 +4332,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('build_document_block( self, filepath: str ) '
-			                    '-> Dict[ str, Any ]')
+			exception.method = ('build_document_block( self, filepath: str ) -> Dict[ str, Any ]')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4414,10 +4401,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('execute_document_interaction( self, prompt: str, '
-			                    'filepaths: List[ str ], model: str, temperature: float, '
-			                    'top_p: float, frequency: float, presence: float, '
-			                    'max_tokens: int, stops: List[ str ], instruct: str ) -> str')
+			exception.method = ('execute_document_interaction( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4436,10 +4420,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('summarize( self, prompt: str, filepath: str, model: str, '
-			                    'temperature: float, top_p: float, frequency: float, '
-			                    'presence: float, max_tokens: int, stops: List[ str ], '
-			                    'instruct: str ) -> str')
+			exception.method = ('summarize( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4458,10 +4439,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('search( self, prompt: str, filepath: str, model: str, '
-			                    'temperature: float, top_p: float, frequency: float, '
-			                    'presence: float, max_tokens: int, stops: List[ str ], '
-			                    'instruct: str ) -> str')
+			exception.method = ('search( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4477,10 +4455,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('survey( self, prompt: str, filepaths: List[ str ], '
-			                    'model: str, temperature: float, top_p: float, '
-			                    'frequency: float, presence: float, max_tokens: int, '
-			                    'stops: List[ str ] ) -> str')
+			exception.method = ('survey( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4530,10 +4505,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('execute_grounded_interaction( self, prompt: str, model: str, '
-			                    'tool_type: str, temperature: float, top_p: float, '
-			                    'frequency: float, presence: float, max_tokens: int, '
-			                    'stops: List[ str ], instruct: str ) -> str')
+			exception.method = ('execute_grounded_interaction( self, **kwarg ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4550,10 +4522,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('web_search( self, prompt: str, model: str, '
-			                    'temperature: float, top_p: float, frequency: float, '
-			                    'presence: float, max_tokens: int, stops: List[ str ], '
-			                    'instruct: str ) -> str')
+			exception.method = ('web_search( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4569,10 +4538,7 @@ class Files( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Files'
-			exception.method = ('search_maps( self, prompt: str, model: str, '
-			                    'temperature: float, top_p: float, frequency: float, '
-			                    'presence: float, max_tokens: int, stops: List[ str ], '
-			                    'instruct: str ) -> str')
+			exception.method = ('search_maps( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4972,8 +4938,7 @@ class CloudBuckets( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'CloudBuckets'
-			exception.method = ('upload( self, path: str, bucket: str, '
-			                    'name: str ) -> Blob')
+			exception.method = ('upload( self, **kwargs ) -> Blob')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5003,8 +4968,7 @@ class CloudBuckets( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'CloudBuckets'
-			exception.method = ('retrieve( self, bucket: str, name: str ) '
-			                    '-> Optional[ Blob ]')
+			exception.method = ('retrieve( self, **kwargs ) -> Optional[ Blob ]')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5121,11 +5085,7 @@ class CloudBuckets( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'CloudBuckets'
-			exception.method = ('execute_grounded_interaction( self, prompt: str, '
-			                    'model: str, tool_type: str, temperature: float, '
-			                    'top_p: float, frequency: float, presence: float, '
-			                    'max_tokens: int, stops: List[ str ], '
-			                    'instruct: str ) -> str')
+			exception.method = ('execute_grounded_interaction( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
