@@ -12933,6 +12933,86 @@ elif mode == 'Collections':
 			st.session_state[ 'collections_system_instructions' ] = convert_markdown(
 				instructions )
 	
+	def reset_collection_selection( ) -> None:
+		"""Reset Collection-selection controls.
+
+		Purpose:
+		    Restores the Collection-selection controls to their default values.
+
+		Returns:
+		    None: This function updates Streamlit session state.
+		"""
+		st.session_state[ 'collections_selected_label' ] = ''
+		st.session_state[ 'collections_selected_id' ] = ''
+		st.session_state[ 'collections_manual_id' ] = ''
+	
+	def reset_collection_documents( ) -> None:
+		"""Reset Collection-document controls.
+
+		Purpose:
+		    Restores the Collection-document controls to their default values.
+
+		Returns:
+		    None: This function updates Streamlit session state.
+		"""
+		st.session_state.pop( 'collections_uploaded_file', None )
+		st.session_state[ 'collections_document_id' ] = ''
+		st.session_state[ 'collections_attributes' ] = ''
+		st.session_state[ 'collections_document_ids_text' ] = ''
+	
+	def reset_collection_lifecycle( ) -> None:
+		"""Reset Collection-lifecycle controls.
+
+		Purpose:
+		    Restores the Collection-lifecycle controls to their default values.
+
+		Returns:
+		    None: This function updates Streamlit session state.
+		"""
+		st.session_state[ 'collections_name' ] = ''
+		st.session_state[ 'collections_description' ] = ''
+		st.session_state[ 'collections_id' ] = ''
+		st.session_state[ 'collections_team_id' ] = ''
+		st.session_state[ 'collections_confirm_delete' ] = False
+	
+	def reset_collection_search( ) -> None:
+		"""Reset Collection-search controls.
+
+		Purpose:
+		    Restores the Collection-search controls to their default values.
+
+		Returns:
+		    None: This function updates Streamlit session state.
+		"""
+		st.session_state[ 'collections_model' ] = ''
+		st.session_state[ 'collections_max_results' ] = 10
+		st.session_state[ 'collections_filter' ] = ''
+		st.session_state[ 'collections_query' ] = ''
+	
+	def reset_collection_system_instructions( ) -> None:
+		"""Reset Collection system-instruction controls.
+
+		Purpose:
+		    Restores the Collection system-instruction controls to their default values.
+
+		Returns:
+		    None: This function updates Streamlit session state.
+		"""
+		st.session_state[ 'collections_prompt_category' ] = None
+		st.session_state[ 'collections_prompt_id' ] = None
+		st.session_state[ 'collections_system_instructions' ] = ''
+	
+	def clear_collection_messages( ) -> None:
+		"""Clear Collection conversation messages.
+
+		Purpose:
+		    Removes the user and assistant messages retained by Collections mode.
+
+		Returns:
+		    None: This function updates Streamlit session state.
+		"""
+		st.session_state[ 'collections_messages' ] = [ ]
+	
 	model_options = get_collection_options( collection, 'model_options', [ ] )
 	if (st.session_state.get( 'collections_model' ) and model_options and st.session_state[
 		'collections_model' ] not in model_options):
@@ -12952,8 +13032,7 @@ elif mode == 'Collections':
 		# ------------------------------------------------------------------
 		with st.expander( label='Collection Selection', icon='🗃️', expanded=True,
 				width='stretch', ):
-			selection_c1, selection_c2  = st.columns( [ 0.5, 0.5 ],
-				border=True, gap='xxsmall', )
+			selection_c1, selection_c2 = st.columns( [ 0.5, 0.5 ], border=True, gap='xxsmall', )
 			
 			collection_rows = st.session_state.get( 'collections_table', [ ] )
 			collection_options: Dict[ str, str ] = { }
@@ -12985,8 +13064,7 @@ elif mode == 'Collections':
 			with selection_c2:
 				st.text_input( label='Collection ID', key='collections_manual_id',
 					placeholder='collection_...', help='Optional manual xAI Collection '
-					                                   'identifier.',
-					width='stretch', )
+					                                   'identifier.', width='stretch', )
 			
 			# ----- Refresh -----
 			if st.button( label='Refresh', key='collections_refresh_button', width='stretch',
@@ -12996,8 +13074,7 @@ elif mode == 'Collections':
 						st.session_state.get( 'collections_pagination_token', '', ) or '' ), )
 					
 					st.session_state[ 'collections_results' ] = result
-					st.session_state[ 'collections_table' ] = (
-						normalize_collection_rows( result ))
+					st.session_state[ 'collections_table' ] = (normalize_collection_rows( result ))
 					st.session_state[ 'collections_next_token' ] = str(
 						getattr( collection, 'next_token', '' ) or '' )
 					st.success( 'Collections refreshed.' )
@@ -13009,6 +13086,10 @@ elif mode == 'Collections':
 			
 			if active_collection_id:
 				st.caption( f'Active Collection: `{active_collection_id}`' )
+			
+			# ----- Reset Button -----
+			st.button( label='Reset', key='collections_selection_reset', width='stretch',
+				on_click=reset_collection_selection, icon='🔄', )
 		
 		# ------------------------------------------------------------------
 		# Expander — Collection Documents
@@ -13170,13 +13251,18 @@ elif mode == 'Collections':
 			
 			if st.session_state.get( 'collections_batch_result' ):
 				st.json( st.session_state[ 'collections_batch_result' ] )
+			
+			# ----- Reset Button -----
+			st.button( label='Reset', key='collections_documents_reset', width='stretch',
+				on_click=reset_collection_documents, icon='🔄', )
 		
 		# ------------------------------------------------------------------
 		# Expander — Collection Lifecycle
 		# ------------------------------------------------------------------
 		with st.expander( label='Collection Lifecycle', icon='♻️', expanded=False,
 				width='stretch', ):
-			lifecycle_tab, metadata_tab = st.tabs( [ 'Create / List', 'Retrieve / Update / Delete' ] )
+			lifecycle_tab, metadata_tab = st.tabs(
+				[ 'Create / List', 'Retrieve / Update / Delete' ] )
 			
 			with lifecycle_tab:
 				create_c1, create_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
@@ -13196,7 +13282,8 @@ elif mode == 'Collections':
 					if st.button( label='Create Collection', key='create_collection',
 							width='stretch', icon='➕', ):
 						try:
-							name = str(st.session_state.get( 'collections_name', '', ) or '' ).strip( )
+							name = str(
+								st.session_state.get( 'collections_name', '', ) or '' ).strip( )
 							throw_if( 'name', name )
 							result = collection.create( name=name, description=str(
 								st.session_state.get( 'collections_description', '', ) or '' ), )
@@ -13214,7 +13301,8 @@ elif mode == 'Collections':
 				# ----- List -----
 				with create_action_c2:
 					if st.button( label='List Collections', key='list_collections',
-							width='stretch', icon='📋', ):
+							width='stretch',
+							icon='📋', ):
 						try:
 							result = collection.list( limit=100, order='desc',
 								pagination_token=str(
@@ -13327,50 +13415,15 @@ elif mode == 'Collections':
 							st.error( f'Collection deletion failed: {err.info}' )
 				
 				render_storage_metadata( st.session_state.get( 'collections_metadata', { } ) )
+			
+			# ----- Reset Button -----
+			st.button( label='Reset', key='collections_lifecycle_reset', width='stretch',
+				on_click=reset_collection_lifecycle, icon='🔄', )
 		
 		# ------------------------------------------------------------------
 		# Expander — Collection Search
 		# ------------------------------------------------------------------
 		with st.expander( label='Collection Search', icon='🔍', expanded=False, width='stretch', ):
-			prompt_categories = fetch_prompt_categories( 'Vector Stores' )
-			
-			prompt_c1, prompt_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
-			
-			# ----- Category -----
-			with prompt_c1:
-				st.selectbox( label='Prompt Category', options=prompt_categories,
-					key='collections_prompt_category', index=None, placeholder='Select Category',
-					on_change=reset_prompt_template_selection, args=('collections_prompt_id',), )
-			
-			selected_category = st.session_state.get( 'collections_prompt_category' )
-			prompt_options = (
-				fetch_prompt_options( selected_category ) if selected_category else [ ])
-			prompt_ids = [ int( option[ 'ID' ] ) for option in prompt_options ]
-			
-			# ----- Template -----
-			with prompt_c2:
-				st.selectbox( label='Prompt Template', options=prompt_ids,
-					key='collections_prompt_id', index=None, placeholder='Select Template',
-					format_func=lambda prompt_id: format_prompt_option( prompt_id,
-						prompt_options, ), on_change=load_collection_instruction_template,
-					disabled=not prompt_ids, )
-			
-			# ----- System Instructions -----
-			st.text_area( label='System Instructions', key='collections_system_instructions',
-				height=160, width='stretch', )
-			
-			instruction_c1, instruction_c2 = st.columns( 2, border=True, gap='xxsmall', )
-			
-			# ----- Convert Format -----
-			with instruction_c1:
-				st.button( label='Convert', key='collections_convert_instructions',
-					width='stretch', on_click=convert_collection_instructions, icon='↔️', )
-			
-			# ----- Clear Instructions -----
-			with instruction_c2:
-				st.button( label='Clear Instructions', key='collections_clear_instructions',
-					width='stretch', on_click=clear_collection_instructions, icon='🧹', )
-			
 			search_c1, search_c2 = st.columns( [ 0.60, 0.40 ], border=True, gap='xxsmall', )
 			
 			# ----- Model -----
@@ -13385,13 +13438,17 @@ elif mode == 'Collections':
 					help=('Retained as Collection-search state for display and future '
 					      'wrapper support.'), )
 			
+			query_c1, query_c2 = st.columns( [ 0.40, 0.60 ], border=True, gap='xxsmall', )
+			
 			# ----- Metadata -----
-			st.text_input( label='Metadata Filter', key='collections_filter',
-				placeholder='Optional xAI Collection filter expression.', width='stretch', )
+			with query_c1:
+				st.text_input( label='Metadata Filter', key='collections_filter',
+					placeholder='Optional xAI Collection filter expression.', width='stretch', )
 			
 			# ----- Query -----
-			st.text_area( label='Search Query', key='collections_query', height=120,
-				placeholder='Enter a semantic Collection search query.', width='stretch', )
+			with query_c2:
+				st.text_area( label='Search Query', key='collections_query', height=68,
+					placeholder='Enter a semantic Collection search query.', width='stretch', )
 			
 			search_action_c1, search_action_c2 = st.columns( 2, border=True, gap='xxsmall', )
 			
@@ -13438,6 +13495,112 @@ elif mode == 'Collections':
 					key='collection_search_results_view', )
 			else:
 				st.info( 'No Collection search results loaded yet.' )
+			
+			# ----- Reset Button -----
+			st.button( label='Reset', key='collections_search_reset', width='stretch',
+				on_click=reset_collection_search, icon='🔄', )
+		
+		# ------------------------------------------------------------------
+		# Expander — System Instructions
+		# ------------------------------------------------------------------
+		with st.expander( label='System Instructions', icon='🖥️', expanded=False,
+				width='stretch', ):
+			instruction_c1, instruction_c2 = st.columns( [ 0.80, 0.20 ], border=True,
+				gap='xxsmall', )
+			prompt_categories = fetch_prompt_categories( 'Vector Stores' )
+			current_prompt_category = st.session_state.get( 'collections_prompt_category' )
+			
+			if current_prompt_category not in prompt_categories:
+				st.session_state[ 'collections_prompt_category' ] = None
+			
+			selected_category = st.session_state.get( 'collections_prompt_category' )
+			prompt_options = (
+				fetch_prompt_options( selected_category ) if selected_category else [ ])
+			prompt_ids = [ int( option[ 'ID' ] ) for option in prompt_options ]
+			
+			if st.session_state.get( 'collections_prompt_id' ) not in prompt_ids:
+				st.session_state[ 'collections_prompt_id' ] = None
+			
+			# ----- Instruction Text -----
+			with instruction_c1:
+				st.text_area( label='Enter Text', key='collections_system_instructions',
+					height=140,
+					width='stretch', help=cfg.SYSTEM_INSTRUCTIONS, )
+			
+			# ----- Template Selection -----
+			with instruction_c2:
+				st.selectbox( label='Category', options=prompt_categories,
+					key='collections_prompt_category', index=None, placeholder='Select Category',
+					on_change=reset_prompt_template_selection, args=('collections_prompt_id',), )
+				
+				st.selectbox( label='Use Template', options=prompt_ids,
+					key='collections_prompt_id',
+					index=None, placeholder='Select Template',
+					format_func=lambda prompt_id: format_prompt_option( prompt_id,
+						prompt_options, ), on_change=load_collection_instruction_template,
+					disabled=not prompt_ids, )
+			
+			instruction_action_c1, instruction_action_c2 = st.columns( [ 0.80, 0.20 ], border=True,
+				gap='xxsmall', )
+			
+			# ----- Clear Instructions -----
+			with instruction_action_c1:
+				st.button( label='Clear Instructions', key='collections_clear_instructions',
+					width='stretch', on_click=clear_collection_instructions, icon='🧹', )
+			
+			# ----- Convert Format -----
+			with instruction_action_c2:
+				st.button( label='XML ↔️ Markdown', key='collections_convert_instructions',
+					width='stretch', on_click=convert_collection_instructions, )
+			
+			# ----- Reset Button -----
+			st.button( label='Reset', key='collections_instructions_reset', width='stretch',
+				on_click=reset_collection_system_instructions, icon='🔄', )
+		
+		# ------------------------------------------------------------------
+		# Messages
+		# ------------------------------------------------------------------
+		for message in st.session_state.get( 'collections_messages', [ ], ):
+			if not isinstance( message, dict ):
+				continue
+			
+			with st.chat_message( message.get( 'role', 'assistant' ), ):
+				st.markdown( message.get( 'content', '' ) )
+		
+		if prompt := st.chat_input( 'Ask a question about the Collection' ):
+			st.session_state[ 'collections_messages' ].append(
+				{ 'role': 'user', 'content': prompt, } )
+			
+			try:
+				collection_id = get_selected_collection_id( )
+				model = str( st.session_state.get( 'collections_model', '' ) or '' ).strip( )
+				instructions = str(
+					st.session_state.get( 'collections_system_instructions', '' ) or '' ).strip( )
+				
+				throw_if( 'collection_id', collection_id )
+				throw_if( 'model', model )
+				
+				conversation_prompt = (f'{instructions}\n\n{prompt}' if instructions else prompt)
+				
+				with st.spinner( 'Searching the Collection…' ):
+					response = collection.search( prompt=conversation_prompt,
+						store_id=collection_id, model=model,
+						filter=str( st.session_state.get( 'collections_filter', '' ) or '' ), )
+				
+				response_text = response if isinstance( response, str ) else json.dumps(
+					normalize_storage_object( response ), indent=2, default=str, )
+				st.session_state[ 'collections_messages' ].append(
+					{ 'role': 'assistant', 'content': response_text, } )
+				st.rerun( )
+			except Exception as exc:
+				err = Error( exc )
+				st.error( f'Collection conversation failed: {err.info}' )
+
+		# ------------------------------------------------------------------
+		# Clear Messages
+		# ------------------------------------------------------------------
+		st.button( label='Clear Messages', key='collections_clear_messages', icon='🧹',
+			width='content', on_click=clear_collection_messages, )
 				
 # ======================================================================================
 # FILE SEARCH STORES MODE
