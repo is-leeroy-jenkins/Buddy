@@ -13030,27 +13030,23 @@ elif mode == 'Collections':
 		# ------------------------------------------------------------------
 		# Expander — Collection Selection
 		# ------------------------------------------------------------------
-		with st.expander( label='Collection Selection', icon='🗃️', expanded=True,
-				width='stretch', ):
-			selection_c1, selection_c2 = st.columns( [ 0.5, 0.5 ], border=True, gap='xxsmall', )
-			
+		with st.expander( label='Selection', icon='🗃️', expanded=True, width='stretch', ):
+			sel_c1, sel_c2, sel_c3 = st.columns( [ 0.33, 0.33, 0.33 ], border=True, gap='xxsmall', )
 			collection_rows = st.session_state.get( 'collections_table', [ ] )
 			collection_options: Dict[ str, str ] = { }
-			
 			for row in collection_rows:
 				if not isinstance( row, dict ):
 					continue
 				
 				collection_id = str( row.get( 'collection_id' ) or row.get( 'id' ) or '' ).strip( )
 				collection_name = str( row.get( 'collection_name' ) or row.get( 'name' ) or
-				                       row.get(
-					'display_name' ) or collection_id ).strip( )
+				                       row.get( 'display_name' ) or collection_id ).strip( )
 				
 				if collection_id:
 					collection_options[ f'{collection_name} — {collection_id}' ] = collection_id
 			
 			# ----- Select -----
-			with selection_c1:
+			with sel_c1:
 				selected_label = st.selectbox( label='Collection',
 					options=list( collection_options.keys( ) ), index=None,
 					placeholder='Select Collection', key='collections_selected_label',
@@ -13061,61 +13057,72 @@ elif mode == 'Collections':
 						collection_options[ selected_label ])
 			
 			# ----- Collection ID -----
-			with selection_c2:
+			with sel_c2:
 				st.text_input( label='Collection ID', key='collections_manual_id',
 					placeholder='collection_...', help='Optional manual xAI Collection '
 					                                   'identifier.', width='stretch', )
 			
-			# ----- Refresh -----
-			if st.button( label='Refresh', key='collections_refresh_button', width='stretch',
-					icon='🔄', ):
-				try:
-					result = collection.list( limit=100, order='desc', pagination_token=str(
-						st.session_state.get( 'collections_pagination_token', '', ) or '' ), )
+			with sel_c3:
+				st.file_uploader( label='Upload Document', key='collections_uploaded_file',
+					help='Upload a file before adding it to the active Collection.', )
+			
 					
-					st.session_state[ 'collections_results' ] = result
-					st.session_state[ 'collections_table' ] = (normalize_collection_rows( result ))
-					st.session_state[ 'collections_next_token' ] = str(
-						getattr( collection, 'next_token', '' ) or '' )
-					st.success( 'Collections refreshed.' )
-				except Exception as exc:
-					err = Error( exc )
-					st.error( f'Unable to list Collections: {err.info}' )
+				
+			# ----- Clear -----
+			button_c1, button_c2 = st.columns( [ 0.5 , 0.5 ], gap='xxsmall', )
+			with button_c1:
+				if st.button( label='Clear', key='collections_refresh_button', width='stretch',
+						icon='🧹', ):
+					try:
+						result = collection.list( limit=100, order='desc', pagination_token=str(
+							st.session_state.get( 'collections_pagination_token', '', ) or '' ), )
+						
+						st.session_state[ 'collections_results' ] = result
+						st.session_state[ 'collections_table' ] = (normalize_collection_rows( result ))
+						st.session_state[ 'collections_next_token' ] = str(
+							getattr( collection, 'next_token', '' ) or '' )
+						st.success( 'Collections refreshed.' )
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Unable to list Collections: {err.info}' )
 			
-			active_collection_id = get_selected_collection_id( )
+			# ----- Reset -----
+			with button_c2:
+				st.button( label='Reset', key='collections_selection_reset', width='stretch',
+					on_click=reset_collection_selection, icon='🔄', )
+				
+				active_collection_id = get_selected_collection_id( )
+				
+				if active_collection_id:
+					st.caption( f'Active Collection: `{active_collection_id}`' )
 			
-			if active_collection_id:
-				st.caption( f'Active Collection: `{active_collection_id}`' )
-			
-			# ----- Reset Button -----
-			st.button( label='Reset', key='collections_selection_reset', width='stretch',
-				on_click=reset_collection_selection, icon='🔄', )
-		
 		# ------------------------------------------------------------------
 		# Expander — Collection Documents
 		# ------------------------------------------------------------------
-		with st.expander( label='Collection Documents', icon='📁', expanded=False,
-				width='stretch', ):
-			st.file_uploader( label='Upload Document', key='collections_uploaded_file',
-				help='Upload a file before adding it to the active Collection.', )
+		with st.expander( label='Documents', icon='📁', expanded=False, width='stretch', ):
 			
-			document_c1, document_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
+			doc_c1, doc_c2, doc_c3 = st.columns( [ 0.33, 0.33, 0.3 ], border=True, gap='xxsmall', )
 			
 			# ----- Doc ID -----
-			with document_c1:
+			with doc_c1:
 				st.text_input( label='Document ID', key='collections_document_id',
 					placeholder='file_...', width='stretch', )
 			
 			# ----- Attributes -----
-			with document_c2:
+			with doc_c2:
 				st.text_area( label='Document Attributes', key='collections_attributes',
 					placeholder='{ "category": "policy" }', height=68, )
 			
-			document_action_c1, document_action_c2, document_action_c3, document_action_c4 = (
-				st.columns( 4, border=True, gap='xxsmall', ))
+			# ------
+			with doc_c3:
+				st.text_input( label='Document IDs', key='collections_document_ids_text',
+					placeholder='file_abc123,file_def456',
+					help='Comma-delimited document identifiers for batch retrieval.',
+					width='stretch', )
 			
 			# ----- Upload -----
-			with document_action_c1:
+			act_c1, act_c2, act_c3, act_c4, act_c5 = st.columns( 5, border=False, gap='xxsmall', )
+			with act_c1:
 				if st.button( label='Upload', key='collections_upload_document_button',
 						width='stretch', icon='📤', ):
 					try:
@@ -13139,8 +13146,8 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Document upload failed: {err.info}' )
 			
-			# ----- Add Document -----
-			with document_action_c2:
+			# ----- Add -----
+			with act_c2:
 				if st.button( label='Add', key='collections_add_document_button', width='stretch',
 						icon='➕', ):
 					try:
@@ -13162,8 +13169,8 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Add document failed: {err.info}' )
 			
-			# ----- List Documents -----
-			with document_action_c3:
+			# ----- List -----
+			with act_c3:
 				if st.button( label='List', key='collections_list_documents_button',
 						width='stretch', icon='📋', ):
 					try:
@@ -13186,7 +13193,7 @@ elif mode == 'Collections':
 						st.error( f'Unable to list documents: {err.info}' )
 			
 			# ----- Remove -----
-			with document_action_c4:
+			with act_c4:
 				if st.button( label='Remove', key='collections_remove_document_button',
 						width='stretch', icon='➖', ):
 					try:
@@ -13211,17 +13218,8 @@ elif mode == 'Collections':
 						err = Error( exc )
 						st.error( f'Document removal failed: {err.info}' )
 			
-			batch_c1, batch_c2 = st.columns( [ 0.75, 0.25 ], border=True, gap='xxsmall', )
-			
-			# ----- Document IDs -----
-			with batch_c1:
-				st.text_input( label='Document IDs', key='collections_document_ids_text',
-					placeholder='file_abc123,file_def456',
-					help='Comma-delimited document identifiers for batch retrieval.',
-					width='stretch', )
-			
-			# ----- Get Batch -----
-			with batch_c2:
+			# ----- Batch ------
+			with act_c5:
 				if st.button( label='Batch Get', key='collections_batch_get_documents_button',
 						width='stretch', icon='🔎', ):
 					try:
@@ -13241,17 +13239,7 @@ elif mode == 'Collections':
 					except Exception as exc:
 						err = Error( exc )
 						st.error( f'Batch retrieval failed: {err.info}' )
-			
-			if st.session_state.get( 'collections_documents_table' ):
-				st.data_editor( pd.DataFrame( st.session_state[ 'collections_documents_table' ] ),
-					use_container_width=True, hide_index=True, disabled=True,
-					key='collections_documents_table_view', )
-			else:
-				st.info( 'No Collection documents loaded yet.' )
-			
-			if st.session_state.get( 'collections_batch_result' ):
-				st.json( st.session_state[ 'collections_batch_result' ] )
-			
+					
 			# ----- Reset Button -----
 			st.button( label='Reset', key='collections_documents_reset', width='stretch',
 				on_click=reset_collection_documents, icon='🔄', )
@@ -13259,163 +13247,154 @@ elif mode == 'Collections':
 		# ------------------------------------------------------------------
 		# Expander — Collection Lifecycle
 		# ------------------------------------------------------------------
-		with st.expander( label='Collection Lifecycle', icon='♻️', expanded=False,
-				width='stretch', ):
-			lifecycle_tab, metadata_tab = st.tabs(
-				[ 'Create / List', 'Retrieve / Update / Delete' ] )
+		with st.expander( label='Lifecycle', icon='♻️', expanded=False, width='stretch' ):
+		
+			meta_c1, meta_c2, meta_c3, meta_c4 = st.columns( 4, border=True,
+				gap='xxsmall', )
 			
-			with lifecycle_tab:
-				create_c1, create_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
-				
-				# ----- Name -----
-				with create_c1:
-					st.text_input( label='Name', key='collections_name', width='stretch', )
-				
-				# ----- Description -----
-				with create_c2:
-					st.text_area( label='Description', key='collections_description', height=68, )
-				
-				create_action_c1, create_action_c2 = st.columns( 2, border=True, gap='xxsmall', )
-				
-				# ----- Create -----
-				with create_action_c1:
-					if st.button( label='Create Collection', key='create_collection',
-							width='stretch', icon='➕', ):
-						try:
-							name = str(
-								st.session_state.get( 'collections_name', '', ) or '' ).strip( )
-							throw_if( 'name', name )
-							result = collection.create( name=name, description=str(
-								st.session_state.get( 'collections_description', '', ) or '' ), )
-							
-							normalized_result = normalize_storage_object( result )
-							st.session_state[ 'collections_metadata' ] = (normalized_result)
-							st.session_state[ 'collections_selected_id' ] = str(
-								normalized_result.get( 'collection_id' ) or normalized_result.get(
-									'id' ) or '' )
-							st.success( 'Collection created.' )
-						except Exception as exc:
-							err = Error( exc )
-							st.error( f'Collection creation failed: {err.info}' )
-				
-				# ----- List -----
-				with create_action_c2:
-					if st.button( label='List Collections', key='list_collections',
-							width='stretch',
-							icon='📋', ):
-						try:
-							result = collection.list( limit=100, order='desc',
-								pagination_token=str(
-								st.session_state.get( 'collections_pagination_token',
-									'', ) or '' ), )
-							
-							st.session_state[ 'collections_results' ] = result
-							st.session_state[ 'collections_table' ] = (
-								normalize_collection_rows( result ))
-							st.session_state[ 'collections_next_token' ] = str(
-								getattr( collection, 'next_token', '' ) or '' )
-							st.success( 'Collections loaded.' )
-						except Exception as exc:
-							err = Error( exc )
-							st.error( f'Unable to list Collections: {err.info}' )
-				
+			# ----- Name -----
+			with meta_c1:
+				st.text_input( label='Name', key='collections_name', width='stretch', )
+			
+			# ----- Description -----
+			with meta_c2:
+				st.text_area( label='Description', key='collections_description', height=68, )
+			
+			# ----- Create -----
+			with meta_c3:
+				if st.button( label='Create Collection', key='create_collection',
+						width='stretch', icon='➕', ):
+					try:
+						name = str(
+							st.session_state.get( 'collections_name', '', ) or '' ).strip( )
+						throw_if( 'name', name )
+						result = collection.create( name=name, description=str(
+							st.session_state.get( 'collections_description', '', ) or '' ), )
+						
+						normalized_result = normalize_storage_object( result )
+						st.session_state[ 'collections_metadata' ] = (normalized_result)
+						st.session_state[ 'collections_selected_id' ] = str(
+							normalized_result.get( 'collection_id' ) or normalized_result.get(
+								'id' ) or '' )
+						st.success( 'Collection created.' )
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Collection creation failed: {err.info}' )
+			
+			# ----- List -----
+			with meta_c4:
+				if st.button( label='List Collections', key='list_collections',
+						width='stretch',
+						icon='📋', ):
+					try:
+						result = collection.list( limit=100, order='desc',
+							pagination_token=str(
+							st.session_state.get( 'collections_pagination_token',
+								'', ) or '' ), )
+						
+						st.session_state[ 'collections_results' ] = result
+						st.session_state[ 'collections_table' ] = (
+							normalize_collection_rows( result ))
+						st.session_state[ 'collections_next_token' ] = str(
+							getattr( collection, 'next_token', '' ) or '' )
+						st.success( 'Collections loaded.' )
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Unable to list Collections: {err.info}' )
+			
+			data_c1, data_c2 = st.columns( 2, border=True,
+				gap='xxsmall', )
+			
+			with data_c1:
 				if st.session_state.get( 'collections_table' ):
 					st.data_editor( pd.DataFrame( st.session_state[ 'collections_table' ] ),
 						use_container_width=True, hide_index=True, disabled=True,
 						key='collections_table_view', )
 				else:
 					st.info( 'No Collections loaded yet.' )
+		
+		 
+			# ----- Collection ID -----
+			with data_c2:
+				st.text_input( label='Collection ID', key='collections_id',
+					value=get_selected_collection_id( ), placeholder='collection_...',
+					width='stretch', )
 			
-			with metadata_tab:
-				metadata_c1, metadata_c2 = st.columns( [ 0.65, 0.35 ], border=True,
-					gap='xxsmall', )
-				
-				# ----- Collection ID -----
-				with metadata_c1:
-					st.text_input( label='Collection ID', key='collections_id',
-						value=get_selected_collection_id( ), placeholder='collection_...',
-						width='stretch', )
-				
-				# ----- Team ID -----
-				with metadata_c2:
-					st.text_input( label='Team ID', key='collections_team_id',
-						placeholder='Optional Team ID', width='stretch', )
-				
-				metadata_action_c1, metadata_action_c2, metadata_action_c3 = st.columns( 3,
-					border=True, gap='xxsmall', )
-				
-				# ----- Retrieve -----
-				with metadata_action_c1:
-					if st.button( label='Retrieve', key='retrieve_collection', width='stretch',
-							icon='🐕', ):
-						try:
-							collection_id = str( st.session_state.get( 'collections_id',
-								'' ) or get_selected_collection_id( ) ).strip( )
-							throw_if( 'collection_id', collection_id )
-							
-							result = collection.retrieve( store_id=collection_id, team_id=str(
-								st.session_state.get( 'collections_team_id', '', ) or '' ), )
-							
-							st.session_state[ 'collections_metadata' ] = (
-								normalize_storage_object( result ))
-						except Exception as exc:
-							err = Error( exc )
-							st.error( f'Collection retrieval failed: {err.info}' )
-				
-				# ----- Update -----
-				with metadata_action_c2:
-					if st.button( label='Update', key='update_collection', width='stretch',
-							icon='✏️', ):
-						try:
-							collection_id = str( st.session_state.get( 'collections_id',
-								'' ) or get_selected_collection_id( ) ).strip( )
-							throw_if( 'collection_id', collection_id )
-							
-							result = collection.update( store_id=collection_id,
-								name=str( st.session_state.get( 'collections_name', '', ) or '' ),
-								description=str(
-									st.session_state.get( 'collections_description', '', ) or '' ),
-								team_id=str(
-									st.session_state.get( 'collections_team_id', '', ) or '' ), )
-							
-							st.session_state[ 'collections_metadata' ] = (
-								normalize_storage_object( result ))
-							st.success( 'Collection updated.' )
-						except Exception as exc:
-							err = Error( exc )
-							st.error( f'Collection update failed: {err.info}' )
-				
-				# ----- Confirm -----
-				with metadata_action_c3:
-					st.checkbox( label='Confirm Delete', key='collections_confirm_delete', )
-					
-					if st.button( label='Delete', key='delete_collection', width='stretch',
-							disabled=not st.session_state.get( 'collections_confirm_delete',
-								False, ), icon='❌', ):
-						try:
-							collection_id = str( st.session_state.get( 'collections_id',
-								'' ) or get_selected_collection_id( ) ).strip( )
-							throw_if( 'collection_id', collection_id )
-							
-							result = collection.delete( store_id=collection_id, team_id=str(
-								st.session_state.get( 'collections_team_id', '', ) or '' ), )
-							
-							st.session_state[ 'collections_metadata' ] = (
-								normalize_storage_object( result ))
-							st.session_state[ 'collections_table' ] = [ row for row in
-								st.session_state.get( 'collections_table', [ ], ) if not (
-										isinstance( row, dict ) and str(
-									row.get( 'collection_id' ) or row.get(
-										'id' ) or '' ) == collection_id) ]
-							st.session_state[ 'collections_selected_id' ] = ''
-							st.session_state[ 'collections_id' ] = ''
-							st.success( 'Collection deleted.' )
-						except Exception as exc:
-							err = Error( exc )
-							st.error( f'Collection deletion failed: {err.info}' )
-				
-				render_storage_metadata( st.session_state.get( 'collections_metadata', { } ) )
+			btn_c1, btn_c2, btn_c3, btn_c4 = st.columns( 4,
+				border=False, gap='xxsmall', )
 			
+			# ----- Retrieve -----
+			with btn_c1:
+				if st.button( label='Retrieve', key='retrieve_collection', width='stretch',
+						icon='🐕', ):
+					try:
+						collection_id = str( st.session_state.get( 'collections_id',
+							'' ) or get_selected_collection_id( ) ).strip( )
+						throw_if( 'collection_id', collection_id )
+						
+						result = collection.retrieve( store_id=collection_id, team_id=str(
+							st.session_state.get( 'collections_team_id', '', ) or '' ), )
+						
+						st.session_state[ 'collections_metadata' ] = (
+							normalize_storage_object( result ))
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Collection retrieval failed: {err.info}' )
+			
+			# ----- Update -----
+			with btn_c2:
+				if st.button( label='Update', key='update_collection', width='stretch',
+						icon='✏️', ):
+					try:
+						collection_id = str( st.session_state.get( 'collections_id',
+							'' ) or get_selected_collection_id( ) ).strip( )
+						throw_if( 'collection_id', collection_id )
+						result = collection.update( store_id=collection_id,
+							name=str( st.session_state.get( 'collections_name', '', ) or '' ),
+							description=str( st.session_state.get( 'collections_description',
+								'', ) or '' ),
+							team_id=str( st.session_state.get( 'collections_team_id',
+								'', ) or '' ), )
+						
+						st.session_state[ 'collections_metadata' ] = (
+							normalize_storage_object( result ))
+						st.success( 'Collection updated.' )
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Collection update failed: {err.info}' )
+			
+			# ----- Confirm -----
+			with btn_c3:
+				st.checkbox( label='Confirm Delete', key='collections_confirm_delete', )
+			
+			with btn_c4:
+				if st.button( label='Delete', key='delete_collection', width='stretch',
+						disabled=not st.session_state.get( 'collections_confirm_delete',
+							False, ), icon='❌', ):
+					try:
+						collection_id = str( st.session_state.get( 'collections_id',
+							'' ) or get_selected_collection_id( ) ).strip( )
+						throw_if( 'collection_id', collection_id )
+						
+						result = collection.delete( store_id=collection_id, team_id=str(
+							st.session_state.get( 'collections_team_id', '', ) or '' ), )
+						
+						st.session_state[ 'collections_metadata' ] = (
+							normalize_storage_object( result ))
+						st.session_state[ 'collections_table' ] = [ row for row in
+							st.session_state.get( 'collections_table', [ ], ) if not (
+									isinstance( row, dict ) and str(
+								row.get( 'collection_id' ) or row.get(
+									'id' ) or '' ) == collection_id) ]
+						st.session_state[ 'collections_selected_id' ] = ''
+						st.session_state[ 'collections_id' ] = ''
+						st.success( 'Collection deleted.' )
+					except Exception as exc:
+						err = Error( exc )
+						st.error( f'Collection deletion failed: {err.info}' )
+			
+			render_storage_metadata( st.session_state.get( 'collections_metadata', { } ) )
+		
 			# ----- Reset Button -----
 			st.button( label='Reset', key='collections_lifecycle_reset', width='stretch',
 				on_click=reset_collection_lifecycle, icon='🔄', )
@@ -13423,7 +13402,7 @@ elif mode == 'Collections':
 		# ------------------------------------------------------------------
 		# Expander — Collection Search
 		# ------------------------------------------------------------------
-		with st.expander( label='Collection Search', icon='🔍', expanded=False, width='stretch', ):
+		with st.expander( label='Search', icon='🔍', expanded=False, width='stretch', ):
 			search_c1, search_c2 = st.columns( [ 0.60, 0.40 ], border=True, gap='xxsmall', )
 			
 			# ----- Model -----
@@ -13540,7 +13519,7 @@ elif mode == 'Collections':
 						prompt_options, ), on_change=load_collection_instruction_template,
 					disabled=not prompt_ids, )
 			
-			instruction_action_c1, instruction_action_c2 = st.columns( [ 0.80, 0.20 ], border=True,
+			instruction_action_c1, instruction_action_c2 = st.columns( [ 0.80, 0.20 ], border=False,
 				gap='xxsmall', )
 			
 			# ----- Clear Instructions -----
@@ -13552,11 +13531,17 @@ elif mode == 'Collections':
 			with instruction_action_c2:
 				st.button( label='XML ↔️ Markdown', key='collections_convert_instructions',
 					width='stretch', on_click=convert_collection_instructions, )
-			
-			# ----- Reset Button -----
-			st.button( label='Reset', key='collections_instructions_reset', width='stretch',
-				on_click=reset_collection_system_instructions, icon='🔄', )
 		
+		if st.session_state.get( 'collections_documents_table' ):
+			st.data_editor( pd.DataFrame( st.session_state[ 'collections_documents_table' ] ),
+				use_container_width=True, hide_index=True, disabled=True,
+				key='collections_documents_table_view', )
+		else:
+			st.info( 'No Collection documents loaded yet.' )
+		
+		if st.session_state.get( 'collections_batch_result' ):
+			st.json( st.session_state[ 'collections_batch_result' ] )
+			
 		# ------------------------------------------------------------------
 		# Messages
 		# ------------------------------------------------------------------
