@@ -5967,7 +5967,7 @@ if mode == 'Text':
 		# ------------------------------------------------------------------
 		# Message Reset
 		# ------------------------------------------------------------------
-		if st.button( 'Clear Messages', key='text_clear_messages', icon='🧹', width='stretch', ):
+		if st.button( 'Clear Messages', key='text_clear_messages', icon='🧹', width='content', ):
 			clear_text_messages( )
 			st.rerun( )
 
@@ -6879,6 +6879,7 @@ elif mode == 'Images':
 						quality_options = get_image_options( image, 'quality_options', )
 						format_options = get_image_options( image, 'format_options',
 							[ 'png', 'jpeg', 'webp', ], )
+						
 						background_options = get_image_options( image, 'background_options',
 							[ 'auto', 'transparent', 'opaque', ], )
 						
@@ -7077,8 +7078,6 @@ elif mode == 'Images':
 			with btn_c2:
 				st.button( label='XML ↔️ Markdown', width='stretch',
 					on_click=convert_image_system_instructions, )
-		
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
 		
 		# ----- Tab Section ------
 		tab_gen, tab_analyze, tab_edit = st.tabs( [ 'Generate', 'Analyze', 'Edit', ] )
@@ -9914,7 +9913,8 @@ elif mode == 'Embeddings':
 		
 		Purpose:
 		    Returns a normalized list of provider options exposed through an Embeddings wrapper
-		    property or method.
+		    property or method. Missing or explicitly unavailable options use the supplied fallback,
+		    while provider-wrapper execution failures are logged and re-raised.
 		
 		Args:
 		    instance (Any): Provider Embeddings wrapper instance.
@@ -9922,25 +9922,47 @@ elif mode == 'Embeddings':
 		    fallback (Optional[List[Any]]): Values used when the wrapper exposes no options.
 		
 		Returns:
-		    List[Any]: Provider-supported option values.
+		    List[Any]: Provider-supported option values or the supplied fallback.
+		
+		Raises:
+		    Exception: Re-raises provider-wrapper failures after recording them with the application
+		    logger.
 		"""
-		values = getattr( instance, attr_name, None )
-		if callable( values ):
-			try:
+		try:
+			throw_if( 'instance', instance )
+			throw_if( 'attr_name', attr_name )
+			
+			default_values = list( fallback ) if fallback is not None else [ ]
+			
+			if not hasattr( instance, attr_name ):
+				return default_values
+			
+			values = getattr( instance, attr_name )
+			
+			if callable( values ):
 				values = values( )
-			except Exception:
-				values = None
+			
+			if values is None:
+				return default_values
+			
+			if isinstance( values, list ):
+				return values
+			
+			if isinstance( values, tuple ):
+				return list( values )
+			
+			return default_values
 		
-		if values is None:
-			values = fallback or [ ]
-		
-		if isinstance( values, tuple ):
-			values = list( values )
-		
-		if isinstance( values, list ):
-			return values
-		
-		return fallback or [ ]
+		except Exception as e:
+			ex = Error( e )
+			ex.module = 'app'
+			ex.cause = 'Embeddings'
+			ex.method = (
+				'get_embedding_options( instance: Any, attr_name: str, '
+				'fallback: Optional[ List[ Any ] ] = None ) -> List[ Any ]'
+			)
+			Logger( ).write( ex )
+			raise ex
 	
 	def normalize_embedding_text( value: Any ) -> str:
 		"""Normalize embedding text.
@@ -10447,14 +10469,15 @@ elif mode == 'Embeddings':
 					supports_dimensions = (bool( selected_model ) and bool(
 						embedding.supports_dimensions( selected_model ) ))
 					dimension_options = get_embedding_options( embedding, 'dimension_options',
-						[ 0 ], )
-					dimension_max = max( [ int( item ) for item in dimension_options ] or [ 4096
-					] )
+						[ ], )
+					positive_dimensions = [ int( item ) for item in dimension_options if
+						int( item ) > 0 ]
+					dimension_max = max( positive_dimensions ) if positive_dimensions else 4096
 				
 				current_dimensions = int( st.session_state.get( 'embedding_dimensions', 0, ) or 0 )
 				
 				if current_dimensions > dimension_max:
-					st.session_state[ 'embedding_dimensions' ] = (dimension_max)
+					st.session_state[ 'embedding_dimensions' ] = dimension_max
 				
 				st.slider( label='Dimensions', min_value=0, max_value=dimension_max,
 					value=int( st.session_state.get( 'embedding_dimensions', 0, ) or 0 ), step=1,
@@ -11568,8 +11591,7 @@ elif mode == 'Files':
 			with btn_c2:
 				st.button( label='XML ↔️ Markdown', width='stretch',
 					on_click=convert_files_system_instructions, )
-		
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
+	
 		
 		upload_tab, list_tab, retrieve_tab, extract_tab, ask_tab, delete_tab = st.tabs(
 			[ 'Upload', 'List', 'Retrieve', 'Extract', 'Ask', 'Delete' ] )
@@ -11587,7 +11609,7 @@ elif mode == 'Files':
 				st.caption( f'Selected: {uploaded_file.name}' )
 			
 			# ----- Upload Button -----
-			if st.button( 'Upload File', key='files_upload_button', width='stretch', icon='📤', ):
+			if st.button( 'Upload File', key='files_upload_button', width='content', icon='📤', ):
 				with st.spinner( 'Uploading file…' ):
 					try:
 						if uploaded_file is None:
@@ -11609,7 +11631,7 @@ elif mode == 'Files':
 			
 			if st.session_state.get( 'files_results' ) is not None:
 				with st.expander( label='Upload Result', icon='📄', expanded=False,
-						width='stretch', ):
+						width='content', ):
 					st.write( st.session_state.get( 'files_results' ) )
 		
 		# ----- List -----
@@ -11651,7 +11673,7 @@ elif mode == 'Files':
 			st.text_input( label='Retrieve File ID', key='files_retrieve_id',
 				help='Provider file ID/name to retrieve.', width='stretch', )
 			
-			if st.button( 'Retrieve File', key='files_retrieve_button', width='stretch',
+			if st.button( 'Retrieve File', key='files_retrieve_button', width='content',
 					icon='🐕', ):
 				with st.spinner( 'Retrieving file metadata…' ):
 					try:
@@ -11682,7 +11704,7 @@ elif mode == 'Files':
 				st.session_state[ 'files_extract_id' ] = (
 					get_effective_file_id( 'files_selected_id', 'files_manual_id', ))
 			
-			ext_c1, ext_c2 = st.columns( [ 0.50, 0.50 ], border=True, gap='xxsmall', )
+			ext_c1, ext_c2, ext_c3 = st.columns( [ 0.33, 0.33, 0.33 ], border=True, gap='xxsmall', )
 			
 			# ----- Extract ------
 			with ext_c1:
@@ -11697,11 +11719,12 @@ elif mode == 'Files':
 					      'workflows. The current extract wrappers choose '
 					      'the provider-native content representation.'), disabled=True, )
 			
-			st.number_input( label='Page Number', min_value=0, step=1, key='files_page_number',
-				help=('Retained for provider compatibility. Current Files '
-				      'wrappers extract complete content.'), disabled=True, )
-			
-			if st.button( 'Extract File Content', key='files_extract_button', width='stretch',
+			with ext_c3:
+				st.number_input( label='Page Number', min_value=0, step=1, key='files_page_number',
+					help=('Retained for provider compatibility. Current Files '
+					      'wrappers extract complete content.'), disabled=True, )
+				
+			if st.button( 'Extract File Content', key='files_extract_button', width='content',
 					disabled=not extract_supported, icon='🦷', ):
 				with st.spinner( 'Extracting file content…' ):
 					try:
@@ -11807,13 +11830,16 @@ elif mode == 'Files':
 				st.session_state[ 'files_delete_id' ] = (
 					get_effective_file_id( 'files_selected_id', 'files_manual_id', ))
 			
-			st.text_input( label='Delete File ID', key='files_delete_id',
-				help='Provider file ID/name to delete.', width='stretch', )
+			del_c1, del_c2 = st.columns( [ 0.5, 0.5 ] )
+			with del_c1:
+				st.text_input( label='Delete File ID', key='files_delete_id',
+					help='Provider file ID/name to delete.', width='stretch', )
 			
-			confirm_delete = st.checkbox( 'Confirm Delete', key='files_confirm_delete', )
+			with del_c2:
+				confirm_delete = st.checkbox( 'Confirm Delete', key='files_confirm_delete', )
 			
 			# ----- Delete Button -----
-			if st.button( 'Delete File', key='files_delete_button', width='stretch',
+			if st.button( 'Delete File', key='files_delete_button', width='content',
 					disabled=not confirm_delete, icon='❌', ):
 				with st.spinner( 'Deleting file…' ):
 					try:
