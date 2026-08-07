@@ -3342,16 +3342,13 @@ class Transcription( Gemini ):
 		"""
 		try:
 			import mimetypes
-			
 			throw_if( 'path', path )
 			self.file_path = path
 			self.mime_type = mime_type
-			
 			if self.mime_type is not None and str( self.mime_type ).strip( ):
 				return str( self.mime_type ).strip( )
 			
 			self.guessed_mime_type = mimetypes.guess_type( self.file_path )[ 0 ]
-			
 			if self.guessed_mime_type:
 				return self.guessed_mime_type
 			
@@ -3399,7 +3396,6 @@ class Transcription( Gemini ):
 				'additional formatting.', ]
 			
 			self.language_name = str( self.language or '' ).strip( )
-			
 			if self.language_name and self.language_name.lower( ) != 'auto detect':
 				self.prompt_parts.append( f'The expected spoken language is '
 				                          f'{self.language_name}.' )
@@ -3410,8 +3406,7 @@ class Transcription( Gemini ):
 					f'through {self.end_time:.3f} seconds.' )
 			
 			elif self.start_time > 0.0:
-				self.prompt_parts.append( f'Begin transcription at {self.start_time:.3f} '
-				                          f'seconds.' )
+				self.prompt_parts.append( f'Begin transcription at {self.start_time:.3f} seconds.' )
 			
 			elif self.end_time > 0.0:
 				self.prompt_parts.append( f'Stop transcription at {self.end_time:.3f} seconds.' )
@@ -3422,13 +3417,12 @@ class Transcription( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Transcription'
-			exception.method = ('build_prompt( self, language: str, start_time: float, '
-			                    'end_time: float ) -> str')
+			exception.method = ('build_prompt( self, **kwargs ) -> str')
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_generation_config( self, temperature: float, top_p: float, max_tokens: int ) -> Dict[
-		str, Any ]:
+	def build_generation_config( self, temperature: float, top_p: float,
+		max_tokens: int ) -> Dict[ str, Any ]:
 		"""Build the transcription generation configuration.
 
 		Purpose:
@@ -3465,8 +3459,7 @@ class Transcription( Gemini ):
 			exception = Error( e )
 			exception.module = 'gemini'
 			exception.cause = 'Transcription'
-			exception.method = ('build_generation_config( self, temperature: float, top_p: float, '
-			                    'max_tokens: int ) -> Dict[str, Any]')
+			exception.method = ('build_generation_config( self, **kwargs) -> Dict[str, Any]')
 			Logger( ).write( exception )
 			raise exception
 	
@@ -3511,8 +3504,7 @@ class Transcription( Gemini ):
 			self.mime_type = mime_type
 			self.temperature = (temperature if temperature is not None else self.temperature)
 			self.top_p = top_p if top_p is not None else self.top_p
-			self.frequency_penalty = (
-				frequency if frequency is not None else self.frequency_penalty)
+			self.frequency_penalty = (frequency if frequency is not None else self.frequency_penalty)
 			self.presence_penalty = (presence if presence is not None else self.presence_penalty)
 			self.max_tokens = (max_tokens if max_tokens is not None else self.max_tokens)
 			self.start_time = start_time
@@ -5031,7 +5023,6 @@ class CloudBuckets( Gemini ):
 			self.max_tokens = max_tokens
 			self.stops = stops if isinstance( stops, list ) else [ ]
 			self.instructions = instruct
-			
 			if self.tool_type not in ('google_search', 'google_maps'):
 				raise ValueError( f'Unsupported grounding tool: {self.tool_type}' )
 			

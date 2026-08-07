@@ -12103,7 +12103,6 @@ elif mode == 'Vector Stores':
 	# Main Vector Stores UI
 	# ------------------------------------------------------------------
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
-	
 	with center:
 		st.subheader( '🗄️ Vector Stores', help=getattr( cfg, 'VECTOR_STORES', '' ) )
 		st.divider( )
