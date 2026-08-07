@@ -16407,15 +16407,12 @@ _mode_to_model_key = { 'Chat': 'chat_model', 'Text': 'text_model', 'Images': 'im
 
 provider_val = st.session_state.get( 'provider', '—' )
 mode_val = mode or '—'
-
 model_state_key = _mode_to_model_key.get( mode )
 active_model = None
-
 if model_state_key:
 	active_model = st.session_state.get( model_state_key, None )
 
 right_parts: List[ str ] = [ ]
-
 if active_model:
 	right_parts.append( f'Model: {active_model}' )
 
