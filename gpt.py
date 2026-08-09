@@ -2830,8 +2830,8 @@ class Embeddings( GPT ):
 			raise exception
 	
 	def create( self, text: str | List[ str ], model: str='text-embedding-3-small',
-		format: str='float', dimensions: int=None, user: str=None ) -> List[ float ] | List[
-		List[ float ] ] | str | List[ str ] | None:
+		format: str='float', dimensions: int=None,
+		user: str=None ) -> List[ float ] | List[ List[ float ] ] | str | List[ str ] | None:
 		"""Create.
 		
 		Purpose:

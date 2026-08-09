@@ -1,11 +1,276 @@
+# =============================================================================
+# U.S. Army Dark Theme for Streamlit
+# File: .streamlit/config.toml
+# =============================================================================
+
 [theme]
-base = 'dark'
-backgroundColor = '#141414'
-secondaryBackgroundColor = '#414141'
-textColor = '#FFFFFF'
-dataframeBorderColor = '#00254C'
-primaryColor = '#0078FC'
-borderColor = '#565557'
-dataframeHeaderBackgroundColor = '#023770'
-font = 'Roboto'
-baseFontSize = 13
+
+# -----------------------------------------------------------------------------
+# Core Theme
+# -----------------------------------------------------------------------------
+
+base = "dark"
+
+# Army Green is used as the interactive accent because Streamlit places white
+# text over the primary color on selected controls and primary buttons.
+primaryColor = "#2F372F"
+
+# Official Army Black.
+backgroundColor = "#221F20"
+
+# Elevated surfaces, input controls, expanders, and secondary containers.
+secondaryBackgroundColor = "#302E2F"
+
+# Warm off-white reduces glare while retaining strong contrast.
+textColor = "#F1E4C7"
+
+# -----------------------------------------------------------------------------
+# Typography
+# -----------------------------------------------------------------------------
+
+# Streamlit's built-in fonts avoid external requests and deployment dependencies.
+font = "sans-serif"
+headingFont = "sans-serif"
+codeFont = "monospace"
+
+baseFontSize = 16
+baseFontWeight = 400
+codeFontSize = "0.875rem"
+codeFontWeight = 400
+
+# Strong, compact heading hierarchy suitable for dashboards.
+headingFontSizes = [
+    "2.50rem",
+    "2.00rem",
+    "1.55rem",
+    "1.25rem",
+    "1.05rem",
+    "0.90rem"
+]
+
+headingFontWeights = [
+    750,
+    700,
+    650,
+    600,
+    600,
+    600
+]
+
+# -----------------------------------------------------------------------------
+# Links and Code
+# -----------------------------------------------------------------------------
+
+# Official Army Gold.
+linkColor = "#FFCC01"
+linkUnderline = false
+
+codeTextColor = "#F1E4C7"
+codeBackgroundColor = "#171617"
+
+# -----------------------------------------------------------------------------
+# Borders and Component Shape
+# -----------------------------------------------------------------------------
+
+# Slightly squared corners create a restrained, institutional appearance.
+baseRadius = "0.35rem"
+buttonRadius = "0.25rem"
+
+borderColor = "#565557"
+dataframeBorderColor = "#565557"
+dataframeHeaderBackgroundColor = "#2F372F"
+
+showWidgetBorder = true
+showSidebarBorder = true
+
+# -----------------------------------------------------------------------------
+# Semantic Colors
+# -----------------------------------------------------------------------------
+
+# Error and critical-state color.
+redColor = "#D35F5F"
+redBackgroundColor = "#3B2224"
+redTextColor = "#FFD7D7"
+
+# Warning and attention color.
+orangeColor = "#D98B32"
+orangeBackgroundColor = "#3A2C1E"
+orangeTextColor = "#FFE0B7"
+
+# Army Gold for informational emphasis and caution states.
+yellowColor = "#FFCC01"
+yellowBackgroundColor = "#3B3418"
+yellowTextColor = "#FFE899"
+
+# Army-inspired success color.
+greenColor = "#7AB427"
+greenBackgroundColor = "#25321F"
+greenTextColor = "#DDF4BC"
+
+# Accessible blue for informational messages and chart series.
+blueColor = "#4D9BD6"
+blueBackgroundColor = "#1C2D3A"
+blueTextColor = "#CAE8FF"
+
+# Muted violet for secondary analytical categories.
+violetColor = "#9A82B8"
+violetBackgroundColor = "#30273A"
+violetTextColor = "#E6D7F8"
+
+# Official Army gray family.
+grayColor = "#727365"
+grayBackgroundColor = "#302F30"
+grayTextColor = "#D5D5D7"
+
+# -----------------------------------------------------------------------------
+# Chart Palettes
+# -----------------------------------------------------------------------------
+
+# Categorical series use Army colors first, followed by complementary colors.
+chartCategoricalColors = [
+    "#FFCC01",
+    "#7AB427",
+    "#0072BA",
+    "#F1E4C7",
+    "#727365",
+    "#D98B32",
+    "#4D9BD6",
+    "#9A82B8",
+    "#D35F5F",
+    "#D5D5D7"
+]
+
+# Dark-to-light sequential scale based on Army Green, field tones, and khaki.
+chartSequentialColors = [
+    "#1C211C",
+    "#252B25",
+    "#2F372F",
+    "#3E493C",
+    "#53604E",
+    "#697761",
+    "#849078",
+    "#A1AA8F",
+    "#C3C7AA",
+    "#F1E4C7"
+]
+
+# Critical-to-positive diverging scale with Army Gold near the midpoint.
+chartDivergingColors = [
+    "#6E2528",
+    "#96383B",
+    "#BE4C4F",
+    "#D9786F",
+    "#E9A88D",
+    "#E8D58F",
+    "#C3C36A",
+    "#91A848",
+    "#627F35",
+    "#36582B"
+]
+
+
+# =============================================================================
+# Sidebar
+# =============================================================================
+
+[theme.sidebar]
+
+# Gold emphasizes selected sidebar navigation while retaining the main area's
+# more restrained Army Green controls.
+primaryColor = "#8A7000"
+
+# Slightly darker than the main content area.
+backgroundColor = "#171617"
+secondaryBackgroundColor = "#292728"
+textColor = "#F1E4C7"
+
+linkColor = "#FFCC01"
+linkUnderline = false
+
+codeTextColor = "#F1E4C7"
+codeBackgroundColor = "#221F20"
+
+font = "sans-serif"
+headingFont = "sans-serif"
+codeFont = "monospace"
+
+headingFontSizes = [
+    "2.00rem",
+    "1.65rem",
+    "1.35rem",
+    "1.15rem",
+    "1.00rem",
+    "0.875rem"
+]
+
+headingFontWeights = [
+    750,
+    700,
+    650,
+    600,
+    600,
+    600
+]
+
+baseRadius = "0.35rem"
+buttonRadius = "0.25rem"
+
+borderColor = "#565557"
+dataframeBorderColor = "#565557"
+dataframeHeaderBackgroundColor = "#2F372F"
+
+showWidgetBorder = true
+
+redColor = "#D35F5F"
+redBackgroundColor = "#3B2224"
+redTextColor = "#FFD7D7"
+
+orangeColor = "#D98B32"
+orangeBackgroundColor = "#3A2C1E"
+orangeTextColor = "#FFE0B7"
+
+yellowColor = "#FFCC01"
+yellowBackgroundColor = "#3B3418"
+yellowTextColor = "#FFE899"
+
+greenColor = "#7AB427"
+greenBackgroundColor = "#25321F"
+greenTextColor = "#DDF4BC"
+
+blueColor = "#4D9BD6"
+blueBackgroundColor = "#1C2D3A"
+blueTextColor = "#CAE8FF"
+
+violetColor = "#9A82B8"
+violetBackgroundColor = "#30273A"
+violetTextColor = "#E6D7F8"
+
+grayColor = "#727365"
+grayBackgroundColor = "#302F30"
+grayTextColor = "#D5D5D7"
+
+
+# =============================================================================
+# Browser and Application Appearance
+# =============================================================================
+
+[browser]
+
+# Prevents Streamlit from collecting anonymous usage statistics.
+gatherUsageStats = false
+
+
+[client]
+
+# Displays detailed application errors in the browser during development.
+# Change to "generic" for a public production deployment if desired.
+showErrorDetails = "full"
+
+# Keeps the toolbar unobtrusive without removing useful developer controls.
+toolbarMode = "minimal"
+
+
+[server]
+
+# Enables static assets placed under the application's ./static directory.
+enableStaticServing = true

@@ -1554,6 +1554,7 @@ def convert_markdown( text: Any ) -> str:
 	out = md_heading_pattern.sub( _md_to_htag, src )
 	return out.strip( )
 
+
 def inject_response_css( ) -> None:
 	"""Inject response css.
 	
@@ -1568,34 +1569,34 @@ def inject_response_css( ) -> None:
 		<style>
 		/* Chat message text */
 		.stChatMessage p {
-			color: rgb(220, 220, 220);
+			color: #F1E4C7;
 			font-size: 1rem;
 			line-height: 1.6;
 		}
 
 		/* Headings inside chat responses */
 		.stChatMessage h1 {
-			color: rgb(0, 120, 252); /* DoD Blue */
+			color: #FFCC01; /* Army Gold */
 			font-size: 1.6rem;
 		}
 
 		.stChatMessage h2 {
-			color: rgb(0, 120, 252);
+			color: #FFCC01;
 			font-size: 1.35rem;
 		}
 
 		.stChatMessage h3 {
-			color: rgb(0, 120, 252);
+			color: #FFCC01;
 			font-size: 1.15rem;
 		}
 		
 		.stChatMessage a {
-			color: rgb(0, 120, 252); /* DoD Blue */
+			color: #FFCC01; /* Army Gold */
 			text-decoration: underline;
 		}
 		
 		.stChatMessage a:hover {
-			color: rgb(80, 160, 255);
+			color: #FFCC01;
 		}
 
 		</style>
@@ -1606,7 +1607,7 @@ def style_subheaders( ) -> None:
 	
 	Purpose:
 	    Performs the style_subheaders workflow using the inputs supplied by the caller and the
-	    current  runtime configuration. The function keeps this behavior isolated so related UI,
+	    current runtime configuration. The function keeps this behavior isolated so related UI,
 	    provider,
 	    and data-processing paths can call it consistently.
 	
@@ -1616,9 +1617,13 @@ def style_subheaders( ) -> None:
 		<style>
 		div[data-testid="stMarkdownContainer"] h2,
 		div[data-testid="stMarkdownContainer"] h3,
+		div[data-testid="stMarkdownContainer"] h4,
+		div[data-testid="stMarkdownContainer"] h5,
 		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h2,
+		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h4,
+		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h5,
 		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h3 {
-			color: rgb(0, 120, 252) !important;
+			color: #FFCC01 !important;
 		}
 		</style>
 		""", unsafe_allow_html=True, )
@@ -10135,7 +10140,6 @@ elif mode == 'Embeddings':
 			if provider_name == 'Gemini':
 				task_type = str( st.session_state.get( 'embedding_task_type', '' ) or '' )
 				title = str( st.session_state.get( 'embedding_title', '' ) or '' )
-				
 				return embedding.create( text=input_value, model=model,
 					dimensions=int( dimensions or 0 ), task_type=task_type, title=title, )
 			
