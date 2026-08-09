@@ -46,11 +46,9 @@ import base64
 import requests
 from pathlib import Path
 from typing import Any, List, Optional, Dict, Union
-from google.genai.types import ListFilesResponse
 import config as cfg
 from boogr import Error, Logger
 import config as cfg
-from openai import OpenAI
 from xai_sdk.aio.image import ImageResponse
 from xai_sdk import Client
 from xai_sdk.tools import web_search, x_search, collections_search, code_execution
