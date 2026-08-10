@@ -16526,6 +16526,7 @@ elif mode == 'Data Management':
 					except Exception as e:
 						st.error( f'Execution failed: {e}' )
 
+
 # ======================================================================================
 # FOOTER — SECTION
 # ======================================================================================
@@ -16546,10 +16547,10 @@ st.markdown( """
 		left: 0;
 		width: 100%;
 		background-color: rgba(27, 27, 27, 0.95);
-		border-top: 1px solid #4d4d4d;
+		border-top: 1px solid #727365;
 		padding: 10px 16px;
 		font-size: 0.80rem;
-		color: #4aa2f7;
+		color: #FFCC01;
 		z-index: 1000;
 	}
 	.boo-status-inner {
@@ -16567,9 +16568,8 @@ st.markdown( """
 _mode_to_model_key = { 'Chat': 'chat_model', 'Text': 'text_model', 'Images': 'image_model',
 	'Audio': 'audio_model', 'TTS': 'tts_model', 'Translation': 'translation_model',
 	'Transcription': 'transcription_model', 'Embeddings': 'embedding_model',
-	'Document Q&A': 'docqna_model', 'Files': 'files_model', 'Vector Stores': 'stores_model',
-	'Collections': 'collections_model', 'File Search Stores': 'filestore_model',
-	'Google Cloud Buckets': 'bucket_model', 'Data Management': 'text_model', }
+	'Document Q&A': 'docqna_model', 'Files': 'files_model',
+	'Collections': 'collections_model', 'Data Management': 'text_model', }
 
 provider_val = st.session_state.get( 'provider', '—' )
 mode_val = mode or '—'
@@ -16925,33 +16925,6 @@ elif mode == 'Files':
 	if files_messages:
 		right_parts.append( f'Messages: {len( files_messages )}' )
 
-elif mode == 'Vector Stores':
-	active_store_id = (st.session_state.get( 'stores_selected_id' ) or st.session_state.get(
-		'stores_manual_id' ) or st.session_state.get( 'stores_id' ))
-	max_results = st.session_state.get( 'stores_max_results' )
-	ranker = st.session_state.get( 'stores_ranker' )
-	chunking_strategy = st.session_state.get( 'stores_chunking_strategy' )
-	expires_after_days = st.session_state.get( 'stores_expires_after_days' )
-	instructions = st.session_state.get( 'stores_system_instructions' )
-	
-	if active_store_id:
-		right_parts.append( f'Store: {active_store_id}' )
-	
-	if max_results:
-		right_parts.append( f'Max Results: {max_results}' )
-	
-	if ranker:
-		right_parts.append( f'Ranker: {ranker}' )
-	
-	if chunking_strategy:
-		right_parts.append( f'Chunking: {chunking_strategy}' )
-	
-	if expires_after_days:
-		right_parts.append( f'Expires: {expires_after_days} Days' )
-	
-	if instructions:
-		right_parts.append( 'Instructions: Set' )
-
 elif mode == 'Collections':
 	active_collection_id = (
 			st.session_state.get( 'collections_selected_id' ) or st.session_state.get(
@@ -16976,111 +16949,6 @@ elif mode == 'Collections':
 	
 	if next_token:
 		right_parts.append( 'Next Page: Available' )
-	
-	if instructions:
-		right_parts.append( 'Instructions: Set' )
-
-elif mode == 'File Search Stores':
-	active_store_id = (st.session_state.get( 'filestore_selected_id' ) or st.session_state.get(
-		'filestore_manual_id' ) or st.session_state.get( 'filestore_id' ))
-	temperature = st.session_state.get( 'filestore_temperature' )
-	top_p = st.session_state.get( 'filestore_top_percent' )
-	frequency = st.session_state.get( 'filestore_frequency_penalty' )
-	presence = st.session_state.get( 'filestore_presence_penalty' )
-	max_tokens = st.session_state.get( 'filestore_max_tokens' )
-	background = st.session_state.get( 'filestore_background' )
-	store = st.session_state.get( 'filestore_store' )
-	stream = st.session_state.get( 'filestore_stream' )
-	response_format = st.session_state.get( 'filestore_response_format' )
-	tool_choice = st.session_state.get( 'filestore_tool_choice' )
-	reasoning = st.session_state.get( 'filestore_reasoning' )
-	instructions = st.session_state.get( 'filestore_system_instructions' )
-	
-	if active_store_id:
-		right_parts.append( f'Store: {active_store_id}' )
-	
-	if temperature is not None:
-		right_parts.append( f'Temp: {temperature:.2f}' )
-	
-	if top_p is not None:
-		right_parts.append( f'Top-P: {top_p:.2f}' )
-	
-	if frequency is not None:
-		right_parts.append( f'Freq: {frequency:.2f}' )
-	
-	if presence is not None:
-		right_parts.append( f'Presence: {presence:.2f}' )
-	
-	if max_tokens:
-		right_parts.append( f'Max Tokens: {max_tokens}' )
-	
-	if response_format:
-		right_parts.append( f'Format: {response_format}' )
-	
-	if tool_choice:
-		right_parts.append( 'Tool Choice: Set' )
-	
-	if reasoning:
-		right_parts.append( f'Reasoning: {reasoning}' )
-	
-	if background:
-		right_parts.append( 'Background: On' )
-	
-	if store:
-		right_parts.append( 'Store: On' )
-	
-	if stream:
-		right_parts.append( 'Stream: On' )
-	
-	if instructions:
-		right_parts.append( 'Instructions: Set' )
-
-elif mode == 'Google Cloud Buckets':
-	bucket_name = st.session_state.get( 'bucket_name' )
-	project_id = st.session_state.get( 'bucket_project_id' )
-	location = st.session_state.get( 'bucket_location' )
-	prefix = st.session_state.get( 'bucket_prefix' )
-	max_files = st.session_state.get( 'bucket_max_files' )
-	max_tokens = st.session_state.get( 'bucket_max_tokens' )
-	temperature = st.session_state.get( 'bucket_temperature' )
-	top_p = st.session_state.get( 'bucket_top_percent' )
-	frequency = st.session_state.get( 'bucket_frequency_penalty' )
-	presence = st.session_state.get( 'bucket_presence_penalty' )
-	response_format = st.session_state.get( 'bucket_response_format' )
-	instructions = st.session_state.get( 'bucket_system_instructions' )
-	
-	if bucket_name:
-		right_parts.append( f'Bucket: {bucket_name}' )
-	
-	if project_id:
-		right_parts.append( f'Project: {project_id}' )
-	
-	if location:
-		right_parts.append( f'Location: {location}' )
-	
-	if prefix:
-		right_parts.append( 'Prefix: Set' )
-	
-	if max_files:
-		right_parts.append( f'Max Files: {max_files}' )
-	
-	if max_tokens:
-		right_parts.append( f'Max Tokens: {max_tokens}' )
-	
-	if temperature is not None:
-		right_parts.append( f'Temp: {temperature:.2f}' )
-	
-	if top_p is not None:
-		right_parts.append( f'Top-P: {top_p:.2f}' )
-	
-	if frequency is not None:
-		right_parts.append( f'Freq: {frequency:.2f}' )
-	
-	if presence is not None:
-		right_parts.append( f'Presence: {presence:.2f}' )
-	
-	if response_format:
-		right_parts.append( f'Format: {response_format}' )
 	
 	if instructions:
 		right_parts.append( 'Instructions: Set' )
