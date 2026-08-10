@@ -3276,7 +3276,7 @@ class Files( GPT ):
 			exception = Error( e )
 			exception.module = 'gpt'
 			exception.cause = 'Files'
-			exception.method = 'list( self, purpose: str = "" ) -> List[ Dict[ str, Any ] ]'
+			exception.method = 'list( self, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -3421,8 +3421,7 @@ class Files( GPT ):
 			if self.max_chars > 0:
 				self.content_text = self.content_text[ :self.max_chars ]
 			_items = (f'{self.prompt}\n\n'
-                                    f'File ID: {
-                                    self.file_id}\n\n'
+                                    f'File ID: {  self.file_id }\n\n'
                                     f'{self.content_text}')
 			self.input = [ { 'role': 'user',
 				'content': [ { 'type': 'input_text', 'text': _items, }, ], }, ]
