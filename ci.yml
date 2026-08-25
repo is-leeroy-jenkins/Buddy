@@ -1,0 +1,49 @@
+# DO NOT MODIFY OR DELETE THIS FILE.
+#
+# ANY CHANGES MAY RESULT IN SERIOUS DAMAGE
+# TO THE TECHNICAL INFRASTRUCTURE AND LOSS OF DATA!
+#
+# ACCESS TO OR USE OF PALANTIR FOUNDRY IS SUBJECT
+# TO PALANTIR’S TECHNICAL SPECIFICATIONS AVAILABLE
+# IN THE DOCUMENTATION. THIS WARNING CONSTITUTES AN
+# ADDITION TO THOSE TECHNICAL SPECIFICATIONS AND
+# NON-COMPLIANCE MAY CONSTITUTE A VIOLATION OF
+# THE FOUNDRY LICENSE AGREEMENT.
+
+java-version: java_17
+env:
+  ARTIFACTS_URI:
+    uri-role: foundry-artifacts-api
+  TRANSFORMS_WORKER_URI:
+    uri-role: transforms-worker-api
+  FOUNDRY_CONTAINER_SERVICE_API:
+    uri-role: foundry-container-service-api
+  STEMMA_API:
+    uri-role: stemma-api
+
+required-job-token-capabilities:
+  - transforms
+  - code-workspaces
+
+jobs:
+  foundry-publish:
+    timeout: 20 minutes
+    steps:
+      - |
+        set -euo pipefail
+        unset SUDO_UID SUDO_GID SUDO_USER
+        
+        if [ -n "$EXTERNAL_CONNECTIONS_CA_PATH" ]; then
+          export CURL_CA_BUNDLE="${CURL_CA_BUNDLE:-$EXTERNAL_CONNECTIONS_CA_PATH}"
+        fi
+        
+        export BUILD_PLUGIN_VERSION=latest
+        export CI_PLUGIN_NAME="build.py"
+        
+        if $STATIC_CONDA_PREFIX/bin/python .palantir/.download_ci_bundle.py; then 
+          $STATIC_CONDA_PREFIX/bin/python $CI_PLUGIN_NAME
+        else
+          echo "Failed to download parent template CI bundle, this could be because the container transforms parent template is not installed, failling back to using built in build scripts."
+          export GIT_VERSION=$(git rev-list --count HEAD)-g$(git show -s --abbrev-commit --abbrev=7 --pretty=format:%h)
+          $STATIC_CONDA_PREFIX/bin/python .publish-dashboards.py
+        fi
