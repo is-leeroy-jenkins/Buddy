@@ -35,9 +35,24 @@ semantic searching, and structured prompt engineering to assist with interpretat
 guidance,
 budget execution data, and a vectorized data set of financial policy documents. Buddy is integrated
 with **GPT-5.2**, **Grok**, **Gemini**, and has been **fine-tuned** on datasets
-on vectorized financial management and policy datasets hosted on Huggingface:
+on vectorized financial gudance
+
 
 ## 🎥 Demo
+
+### 🧊 Azure
+
+[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io)
+
+- Containerized application prototype
+
+### 🔥 Streamlit 
+
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://buddy-py.streamlit.app/)
+
+- A Python framework to build dynamic, interactive web applications.
+
+- Execute chat queries against federal financial management documentationinancial management and policy datasets hosted on Huggingface:
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Launch%20App-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy)
 
@@ -58,19 +73,6 @@ ___
 | 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
 | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
 
-## 🧊 Azure
-
-[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io)
-
-- Containerized application prototype
-
-## 🔥 Streamlit 
-
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://buddy-py.streamlit.app/)
-
-- A Python framework to build dynamic, interactive web applications.
-
-- Execute chat queries against federal financial management documentation
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 
