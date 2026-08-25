@@ -54,8 +54,6 @@ on vectorized financial gudance
 
 - Execute chat queries against federal financial management documentationinancial management and policy datasets hosted on Huggingface:
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Launch%20App-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy)
-
 ### 🧱 Databricks
 
 [![Buddy](https://img.shields.io/badge/Databricks-Buddy-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351)
@@ -63,6 +61,8 @@ on vectorized financial gudance
 - A data engineering, analytics, and artificial intelligence collaborative workspace
 
 - Customize the knowledge-base, use computer vision, and text embeddings
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Launch%20App-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy)
 
 ___
 
