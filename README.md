@@ -86,9 +86,6 @@ ___
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
 
 ___ 
-
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
-
 ## Model Integration
 
 ### GPT-5.2 (Primary Inference Engine)
@@ -99,6 +96,8 @@ application is structured to support:
 * Structured response outputs (text, sources, analytical artifacts)
 * Tool-generated analysis (tables, derived files)
 * Prompt versioning via OpenAI Prompt IDs
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
+
 
 ### Fine-Tuned Models on Hugging Face
 
