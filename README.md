@@ -61,7 +61,7 @@ ___
 </td>
 <td align="center">
 <a href="https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy">
-<img src="https://img.shields.io/badge/OpenAI-GPT-412991?logo=openai&logoColor=white" alt="OpenAI GPT">
+<img src="https://img.shields.io/badge/OpenAI-ChatGPT-412991?logo=openai&logoColor=white" alt="OpenAI GPT">
 </a>
 </td>
 <td align="center">
