@@ -1,6 +1,7 @@
 google-genai
 google-cloud-storage
 numpy==1.26.4
+matplot
 openpyxl
 openai
 pydantic>=2.7,<2.10
@@ -20,7 +21,7 @@ transformers==4.41.2
 huggingface_hub==0.23.5
 safetensors==0.4.3
 tiktoken
-plotly-express
+plotly==6.3.0
 
 xai-sdk
 pillow>=10.0.0
