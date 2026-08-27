@@ -46,7 +46,6 @@ ___
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
 
-
 ## ☁️ Cloud
 
 <table>
