@@ -40,9 +40,12 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 ## 🎥 Demo
 
 
+![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
+
 ___
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
+
 
 ## ☁️ Cloud
 
@@ -90,8 +93,6 @@ ___
 | 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
 | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
 
-
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
 
 ## Model Integration
 
