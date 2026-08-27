@@ -39,11 +39,43 @@ on vectorized financial management and policy datasets hosted on Huggingface:
 
 ## 🎥 Demo
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Launch%20App-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy)
 
 ___
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
+
+## ☁️ Cloud
+
+<table>
+<tr>
+<th align="center"><img width="190" height="1" alt=""><br>🧊 Azure</th>
+<th align="center"><img width="190" height="1" alt=""><br>🧠 GPT</th>
+<th align="center"><img width="190" height="1" alt=""><br>🔥 Streamlit</th>
+<th align="center"><img width="190" height="1" alt=""><br>🧱 Databricks</th>
+</tr>
+<tr>
+<td align="center">
+<a href="https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io">
+<img src="https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white" alt="Docker App">
+</a>
+</td>
+<td align="center">
+<a href="https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy">
+<img src="https://img.shields.io/badge/OpenAI-GPT-412991?logo=openai&logoColor=white" alt="OpenAI GPT">
+</a>
+</td>
+<td align="center">
+<a href="https://buddy-py.streamlit.app/">
+<img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white" alt="Streamlit App">
+</a>
+</td>
+<td align="center">
+<a href="https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152440505?o=7474645703081351">
+<img src="https://img.shields.io/badge/Databricks-Bro-FF3621?logo=databricks&logoColor=white" alt="Databricks Bro">
+</a>
+</td>
+</tr>
+</table>
 
 ## Core Capabilities
 
@@ -58,29 +90,6 @@ ___
 | 🧾 **Data Management**  | Schema inspection, profiling, import/export, and transformations |
 | 🛠 **Utilities**        | Runtime configuration, environment inspection, reset tools |
 
-## 🧊 Azure
-
-[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io)
-
-- Containerized application prototype
-
-## 🔥 Streamlit 
-
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://buddy-py.streamlit.app/)
-
-- A Python framework to build dynamic, interactive web applications.
-
-- Execute chat queries against federal financial management documentation
-
-![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/Buddy-chat.gif)
-
-## 🧱 Databricks
-
-[![Buddy](https://img.shields.io/badge/Databricks-Buddy-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351)
-
-- A data engineering, analytics, and artificial intelligence collaborative workspace
-
-- Customize the knowledge-base, use computer vision, and text embeddings
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
 
