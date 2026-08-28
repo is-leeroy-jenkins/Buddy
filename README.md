@@ -76,9 +76,50 @@ ___
 <img src="https://img.shields.io/badge/Databricks-Bro-FF3621?logo=databricks&logoColor=white" alt="Databricks Bro">
 </a>
 </td>
+  
+<td align="center">
+<a href="https://leeroy.usw-16.palantirfoundry.com/shares/links/7sd7ylxjnqzva">
+<img width="150" height="1" alt=""><br>
+<img src="https://img.shields.io/badge/Palantir%20Foundry-Repository-101113?logo=palantir&logoColor=white" alt="Palantir Repo">
+</a>
+</td>
 </tr>
 </table>
 
+## ☁️ Cloud
+
+<table>
+<tr>
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io">
+<img src="https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white" alt="Docker App">
+</a>
+</td>
+
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://buddy-py.streamlit.app/">
+<img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white" alt="Streamlit App">
+</a>
+</td>
+
+
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351">
+<img src="https://img.shields.io/badge/Databricks%20Repo-Buddy-Py-FF3621?logo=databricks&logoColor=white" alt="Databricks Notebook">
+</a>
+</td>
+
+<td align="center">
+<a href="https://leeroy.usw-16.palantirfoundry.com/shares/links/mwmui22wwb7so">
+<img width="190" height="1" alt=""><br>
+<img src="https://leeroy.usw-16.palantirfoundry.com/shares/links/mwmui22wwb7so" alt="Palantir Repo">
+</a>
+</td>
+</tr>
+</table>
 ## Core Capabilities
 
 | Mode | Description |
