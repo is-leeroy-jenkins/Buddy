@@ -279,7 +279,7 @@ This enables controlled experimentation and governance of AI behavior.
 
 ## Department of War Guidance
 
-- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.\
+- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.
 
 - [![HuggingFace](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-sm.svg)](https://huggingface.co/leeroy-jankins/datasets)
 
