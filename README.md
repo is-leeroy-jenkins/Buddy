@@ -76,7 +76,7 @@ ___
 <td align="center">
 <img width="190" height="1" alt=""><br>
 <a href="https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351">
-<img src="https://img.shields.io/badge/Databricks%20Repo-Sige--Py-FF3621?logo=databricks&logoColor=white" alt="Databricks Notebook">
+<img src="https://img.shields.io/badge/Databricks%20Repo-Buddy--Py-FF3621?logo=databricks&logoColor=white" alt="Databricks Notebook">
 </a>
 </td>
 
