@@ -46,39 +46,48 @@ ___
 
 ![](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/buddy-demo.gif)
 
+
+
 ## ☁️ Cloud
 
 <table>
 <tr>
-<th align="center"><img width="190" height="1" alt=""><br>🧊 Azure</th>
-<th align="center"><img width="190" height="1" alt=""><br>🧠 GPT</th>
-<th align="center"><img width="190" height="1" alt=""><br>🔥 Streamlit</th>
-<th align="center"><img width="190" height="1" alt=""><br>🧱 Databricks</th>
-</tr>
-<tr>
 <td align="center">
+<img width="190" height="1" alt=""><br>
 <a href="https://buddy.thankfulocean-66471d87.eastus.azurecontainerapps.io">
 <img src="https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white" alt="Docker App">
 </a>
 </td>
+
 <td align="center">
-<a href="https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy">
-<img src="https://img.shields.io/badge/OpenAI-ChatGPT-412991?logo=openai&logoColor=white" alt="OpenAI GPT">
-</a>
-</td>
-<td align="center">
+<img width="190" height="1" alt=""><br>
 <a href="https://buddy-py.streamlit.app/">
 <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white" alt="Streamlit App">
 </a>
 </td>
+
 <td align="center">
-<a href="https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152440505?o=7474645703081351">
-<img src="https://img.shields.io/badge/Databricks-Bro-FF3621?logo=databricks&logoColor=white" alt="Databricks Bro">
+<img width="190" height="1" alt=""><br>
+<a href="https://chatgpt.com/g/g-67579c62ebf88191b67889476229e498-buddy">
+<img src="https://img.shields.io/badge/OpenAI-ChatGPT-412991?logo=openai&logoColor=white" alt="OpenAI GPT">
+</a>
+</td>
+
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152438532?o=7474645703081351">
+<img src="https://img.shields.io/badge/Databricks%20Repo-Buddy--Py-FF3621?logo=databricks&logoColor=white" alt="Databricks Notebook">
+</a>
+</td>
+
+<td align="center">
+<a href="https://leeroy.usw-16.palantirfoundry.com/shares/links/mwmui22wwb7so">
+<img width="190" height="1" alt=""><br>
+<img src="https://img.shields.io/badge/Palantir%20Foundry-Repo-101113?logo=palantir&logoColor=white" alt="Palantir Repo">
 </a>
 </td>
 </tr>
 </table>
-
 ## Core Capabilities
 
 | Mode | Description |
@@ -270,7 +279,7 @@ This enables controlled experimentation and governance of AI behavior.
 
 ## Department of War Guidance
 
-- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.\
+- Support for DoD-specific budget formulation, execution, audit, and compliance analysis.
 
 - [![HuggingFace](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-sm.svg)](https://huggingface.co/leeroy-jankins/datasets)
 
